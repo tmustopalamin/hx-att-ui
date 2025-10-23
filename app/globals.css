@@ -1,0 +1,49 @@
+/* --- Atur urutan layer supaya rapi --- */
+@layer theme, base, components, primereact, utilities;
+
+/* === Tailwind v4 === */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* === PrimeReact Theme & Icons === */
+/* Light theme */
+@import "primereact/resources/themes/lara-light-blue/theme.css" layer(primereact);
+@import "primeicons/primeicons.css" layer(primereact);
+
+/* === Font Custom === */
+@font-face {
+  font-family: 'Lato';
+  src: url('/fonts/Lato/Lato-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* === Override Global Font === */
+html, body {
+  font-family: 'Lato', sans-serif;
+}
+
+/* === PrimeReact Components pakai font Lato juga === */
+.p-component {
+  font-family: 'Lato', sans-serif;
+}
+
+.custom-sidebar .p-sidebar-content {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.ellipsis-text {
+  display: inline-block;
+  max-width: 10px; /* sesuaikan */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.p-dropdown .p-dropdown-clear-icon {
+  right: 2rem !important; /* geser sedikit ke kiri */
+}
