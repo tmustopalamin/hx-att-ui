@@ -1,40 +1,48 @@
 "use client";
 
 import { Employee } from '@/app/types/employee';
+import { redirect, useParams } from 'next/navigation';
 import { Avatar } from 'primereact/avatar'
-// import { Badge } from 'primereact/badge'
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 
 interface EmployeePhotoProfileProps {
-  data: Employee | undefined
+  data: Employee | undefined,
 }
 
 const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const params = useParams();
 
-  // const handleBadgeClick = () => {
-  //   fileInputRef.current?.click();
-  // };
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isHovering, setIsHovering] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
       const file = files[0];
-      // Handle your upload logic here
-      console.log("Selected file:", file);
-
-      // For example: uploadFile(file);
     }
   };
 
   return (
-    <div style={{ position: 'relative', width: '7rem', height: '7rem' }}>
+    <div
+      style={{ position: 'relative', width: '7rem', height: '7rem' }}
+      className='relative'
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       <Avatar
         label={`${data?.first_name[0]}${data?.last_name[0]}`}
-        image={`http://localhost:3000/api/public/images/uploads/${data?.photo_url}`}
+        image={data?.photo_url ? `http://localhost:3050/public/images/uploads/${data?.photo_url}` : undefined}
         shape="circle"
         style={{ width: '7rem', height: '7rem', fontSize: '3rem' }}
       />
+
+      {isHovering && (
+        <div
+          onClick={() => redirect(`/employees/${params?.id}/edit-photo`)}
+          className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center text-white text-sm font-medium cursor-pointer"
+        >Change</div>
+      )
+      }
 
       <input
         type="file"
@@ -43,11 +51,7 @@ const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
-
-      {/* <Badge className='flex justify-center items-center cursor-pointer' onClick={handleBadgeClick}
-        value={<i className="pi pi-camera" style={{ fontSize: '1rem' }}></i>} severity="danger" style={{ position: 'absolute', bottom: '0rem', right: '0rem', width: '2rem', height: '2rem', borderRadius: '50%' }}
-      /> */}
-    </div>
+    </div >
   )
 }
 

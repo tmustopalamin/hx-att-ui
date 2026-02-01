@@ -35,7 +35,7 @@ const PersonalIdentityAndAddress = () => {
   const dispatch = useDispatch();
 
 
-  const { control, handleSubmit, setValue } = useForm<FormData>();
+  const { control, handleSubmit, setValue, watch } = useForm<FormData>();
   const [listIdentityType, setListIdentityType] = React.useState<IdentityType[]>([]);
   const [isPageEdit, setIsPageEdit] = React.useState<boolean>(false);
 
@@ -62,7 +62,7 @@ const PersonalIdentityAndAddress = () => {
       employee_id: Number(id),
       number: data.identity_number,
       citizen_address: data.citizen_address,
-      expire_date: dayjs(data.exp_date).format("YYYY-MM-DD"),
+      expire_date: data.exp_date ? dayjs(data.exp_date).format("YYYY-MM-DD") : null,
       residential_address: data.residential_address,
       is_permanent: data.is_permanent,
     }
@@ -158,14 +158,19 @@ const PersonalIdentityAndAddress = () => {
                               <Checkbox
                                 inputId="is_permanent"
                                 disabled={!isPageEdit}
-                                onChange={(e) => field.onChange(e.checked)}
+                                onChange={(e) => {
+                                  field.onChange(e.checked);
+                                  if (e.checked) {
+                                    setValue('exp_date', '');
+                                  }
+                                }}
                                 checked={field.value}
                               />
                               {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
                             </>
                           )}
                         />
-                        <label htmlFor="is_permanent">Permanent</label>
+                        <label htmlFor="is_permanent">berlaku seumur hidup</label>
                       </div>
 
                     </div>
@@ -215,6 +220,12 @@ const PersonalIdentityAndAddress = () => {
                     <Controller
                       name="exp_date"
                       control={control}
+                      rules={{
+                        validate: (value) => {
+                          if (watch("is_permanent")) return true;
+                          return value ? true : "Expiration Date is required";
+                        },
+                      }}
                       render={({ field, fieldState }) => (
                         <>
                           <Calendar

@@ -1,0 +1,8 @@
+export interface Role {
+    id: number;
+    name: string;
+    description: string;
+    is_active: boolean;
+    deleted_at: string;
+    row_version: number;
+}

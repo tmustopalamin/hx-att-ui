@@ -6,6 +6,8 @@ import "@/app/globals.css";
 import StoreProvider from "@/store/StoreProvider";
 import GlobalToast from "../_components/GlobalToast";
 import AppMain from "./AppMain";
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -20,7 +22,15 @@ const value = {
   locale: 'en',
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
+  const cookieStore = await cookies();
+  const access = cookieStore.get('access_token');
+  const refresh = cookieStore.get('refresh_token');
+
+  if (!access && !refresh) {
+    redirect('/login')
+  }
+
   return (
     <StoreProvider>
       <html lang="en" className="bg-[#EFF3F8]">

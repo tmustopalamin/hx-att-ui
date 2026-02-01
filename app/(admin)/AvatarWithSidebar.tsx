@@ -41,10 +41,19 @@ const AvatarWithSidebar = () => {
 
     return (
         <>
-            <Avatar
+            {/* <Avatar
                 size="large"
                 label="R"
                 style={{ backgroundColor: "#9c27b0", color: "#ffffff" }}
+                shape="circle"
+                onClick={() => setIsSidebarVisible(true)}
+            /> */}
+
+            <Avatar
+                size="large"
+                style={{ backgroundColor: "#9c27b0", color: "#ffffff" }}
+                label={`${profileData?.name ? profileData.name[0] : 'U'}`}
+                image={profileData?.photo_url ? `http://localhost:3050/public/images/uploads/${profileData?.photo_url}` : undefined}
                 shape="circle"
                 onClick={() => setIsSidebarVisible(true)}
             />

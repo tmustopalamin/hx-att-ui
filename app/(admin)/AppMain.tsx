@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import AuthProvider from "../(auth)/auth-provider"
 import Breadcrumb from "../_components/Breadcrumb"
 import BProgressProvider from "../utils/providers/BProgressProvider"
@@ -9,6 +9,8 @@ import SidebarMenu from "./SidebarMenu"
 import SidebarProfileMenu from "./SidebarProfileMenu"
 import { Sidebar } from "primereact/sidebar"
 import { useMediaQuery } from "react-responsive"
+import { apiFetch } from "../services/api-fetch"
+import { usePathname } from "next/navigation"
 // import Notification from "../_components/top-menu/Notification"
 
 const AppMain = ({ children }: { children: React.ReactNode }) => {
@@ -17,9 +19,27 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
   const isDesktop = useMediaQuery({ minWidth: 768 }); // md ke atas
   const isMobile = useMediaQuery({ maxWidth: 767 });  // md ke bawah
 
+  const pathname = usePathname()
+  const lastPath = useRef<string | null>(null)
+
   useEffect(() => {
     setIsUILoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (lastPath.current === pathname) return
+    lastPath.current = pathname
+
+    const bootstrapAuth = async () => {
+      try {
+        await apiFetch('/api/auth/me')
+      } catch {
+        // redirect ditangani apiFetch
+      }
+    }
+
+    bootstrapAuth()
+  }, [pathname]);
 
   return (
     <main className="w-full flex h-screen bg-[#EFF3F8]">

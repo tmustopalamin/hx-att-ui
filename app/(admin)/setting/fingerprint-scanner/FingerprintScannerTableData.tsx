@@ -203,19 +203,23 @@ const FingerprintScannerTableData = () => {
     setSelectedData(data);
   }
 
+  const [checkLoading, setCheckloading] = useState(false);
   const onClickCheckConnection = async (data: FingerprintScanner) => {
-    console.log(data)
+    setCheckloading(true)
 
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await checkConnectionFingerprintScanner(data);
       dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+      setCheckloading(false)
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
       } else if (err instanceof Error) {
         dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
       }
+      setCheckloading(false)
     }
+
   }
 
 
@@ -240,7 +244,7 @@ const FingerprintScannerTableData = () => {
 
         <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='update' rounded severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { onClickUpdate(rowData) }} />
 
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='check connection' rounded severity='warning' label="" icon="pi pi-lightbulb" size="small" onClick={() => { onClickCheckConnection(rowData) }} />
+        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='check connection' rounded severity='warning' label="" loading={checkLoading} icon="pi pi-lightbulb" size="small" onClick={() => { onClickCheckConnection(rowData) }} />
       </div>
     </>
   };

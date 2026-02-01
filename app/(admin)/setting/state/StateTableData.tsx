@@ -59,7 +59,7 @@ const StateTableData = () => {
     clearErrors();
     setIsAddNew(true);
     setVisible(true);
-    setPopupHeaderTitle("New State");
+    setPopupHeaderTitle("New Province");
     reset({
       id: 0,
       code: '',
@@ -199,7 +199,7 @@ const StateTableData = () => {
   const onClickUpdate = (data: State) => {
     setVisible(true);
     setIsAddNew(false);
-    setPopupHeaderTitle('Update State');
+    setPopupHeaderTitle('Update Province');
 
     reset(data)
     setSelectedData(data);
@@ -292,7 +292,7 @@ const StateTableData = () => {
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='State' url='' />}>
+      <Card title={<CardTitle title='Province' url='' />}>
 
         <div className="p-3 flex flex-col gap-5">
           <div className="flex items-center justify-between">
@@ -366,7 +366,7 @@ const StateTableData = () => {
                   <>
                     <InputText
                       id="code"
-                      placeholder='example: state_abc'
+                      placeholder='example: province_abc'
                       {...field}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />

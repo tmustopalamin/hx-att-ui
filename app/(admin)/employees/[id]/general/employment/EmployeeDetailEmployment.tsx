@@ -85,6 +85,7 @@ const EmployeeDetailEmployment = () => {
   const [listAgency, setListAgency] = React.useState<AgencyType[]>([]);
   const [listBranch, setListBranch] = React.useState<BranchType[]>([]);
   const [listPosition, setListPosition] = React.useState<PositionType[]>([]);
+  const [listPositionFiltered, setListPositionFiltered] = React.useState<PositionType[]>([]);
   const [listEmploymentStatus, setListEmploymentStatus] = React.useState<EmploymentStatusType[]>([]);
 
   const getListDepartment = async () => {
@@ -109,6 +110,7 @@ const EmployeeDetailEmployment = () => {
     const response = await fetch('http://localhost:3050/position');
     const data = await response.json();
     setListPosition(data);
+    setListPositionFiltered(data);
   }
 
   const getListEmploymentStatus = async () => {
@@ -338,7 +340,10 @@ const EmployeeDetailEmployment = () => {
                             appendTo={getBody}
                             value={field.value}
                             options={listDepartment}
-                            onChange={(e) => field.onChange(e.value)}
+                            onChange={(e) => {
+                              field.onChange(e.value)
+                              setListPositionFiltered(listPosition.filter((pos) => pos.department_id === e.value))
+                            }}
                             optionLabel="name"
                             optionValue="id"
                             placeholder="Select a Department"
@@ -367,7 +372,7 @@ const EmployeeDetailEmployment = () => {
                             disabled={!isPageEdit}
                             appendTo={getBody}
                             value={field.value}
-                            options={listPosition}
+                            options={listPositionFiltered}
                             onChange={(e) => field.onChange(e.value)}
                             optionLabel="name"
                             optionValue="id"

@@ -12,6 +12,4 @@ const IncomeComponentPage = () => {
     </>
 }
 
-
-
 export default IncomeComponentPage

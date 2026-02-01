@@ -32,6 +32,7 @@ import { ReligionType } from '@/app/types/religion-type';
 import { Gender } from '@/app/types/gender';
 import { MaritalStatus } from '@/app/types/marital-status';
 import { createEmployee } from '@/app/services/employee-service';
+import Link from 'next/link';
 
 
 const EmployeesDataTable = () => {
@@ -116,65 +117,6 @@ const EmployeesDataTable = () => {
   const genderActive = genderData?.filter(a => a.is_active);
   const religionActive = religionData?.filter(a => a.is_active);
   const maritalStatusActive = maritalStatusData?.filter(a => a.is_active);
-
-  // const onIngredientsChange = () => {
-  //   setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
-  // }
-
-  // const handleDelete = async (data: Employee) => {
-  //   try {
-  //     const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployees(data.id, data.row_version);
-  //     mutate(`/api/employees/list`);
-
-  //     dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-  //   } catch (err: unknown) {
-  //     if (isResponseTypeError(err)) {
-  //       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-  //     } else if (err instanceof Error) {
-  //       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-  //     }
-  //   }
-  // }
-
-  // const handlePurge = async (data: Employee) => {
-  //   try {
-  //     const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployees(data.id);
-  //     mutate(`/api/employees/list`);
-
-  //     dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-  //   } catch (err: unknown) {
-  //     if (isResponseTypeError(err)) {
-  //       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-  //     } else if (err instanceof Error) {
-  //       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-  //     }
-  //   }
-  // }
-
-  // const handleRestore = async (data: Employee) => {
-  //   try {
-  //     const res: ResponseType<ResponseTypeCreateSuccess> = await restoreEmployees(data.id, data.row_version);
-  //     mutate(`/api/employees/list`);
-
-  //     dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-  //   } catch (err: unknown) {
-  //     if (isResponseTypeError(err)) {
-  //       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-  //     } else if (err instanceof Error) {
-  //       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-  //     }
-  //   }
-  // }
-
-
-  // const activeColumnBody = (rowData: Employee) => {
-  //   return rowData.is_active ? (
-  //     <Tag value="Active" severity="success" />
-  //   ) : (
-  //     <Tag value="Inactive" severity="danger" />
-  //   );
-  // };
-
   const nameColumnBody = (rowData: Employee) => {
     return rowData.first_name + " " + rowData.last_name
   };
@@ -183,14 +125,9 @@ const EmployeesDataTable = () => {
   const actionColumnBody = (rowData: Employee) => {
     return <>
       <div className="flex gap-2">
-        {/* {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
-
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
-
-        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />} */}
-
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='update' rounded severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { onClickUpdate(rowData) }} />
-
+        <Link href={`/employees/${rowData.id}/general/personal`}>
+          <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='edit' rounded severity='help' label="" icon="pi pi-pencil" size="small" />
+        </Link>
       </div>
     </>
   };
@@ -198,63 +135,6 @@ const EmployeesDataTable = () => {
   const onClickUpdate = (data: Employee) => {
     router.push(`/employees/${data.id}/general/personal`);
   }
-
-  // const onClickDelete = (data: Employee) => {
-  //   confirmDialog({
-  //     message: 'Do you want to delete this record?',
-  //     header: 'Delete Confirmation',
-  //     icon: 'pi pi-info-circle',
-  //     defaultFocus: 'accept',
-  //     accept: () => {
-  //       handleDelete(data);
-  //     },
-  //     reject: () => { },
-  //     footer: (options) => (
-  //       <div className="flex gap-3 justify-end">
-  //         <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-  //         <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-  //       </div>
-  //     )
-  //   });
-  // };
-
-  // const onClickRestore = (data: Employee) => {
-  //   confirmDialog({
-  //     message: 'Do you want to restore this record?',
-  //     header: 'Restore Confirmation',
-  //     icon: 'pi pi-info-circle',
-  //     defaultFocus: 'accept',
-  //     accept: () => {
-  //       handleRestore(data);
-  //     },
-  //     reject: () => { },
-  //     footer: (options) => (
-  //       <div className="flex gap-3 justify-end">
-  //         <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-  //         <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
-  //       </div>
-  //     )
-  //   });
-  // };
-
-  // const onClickPurge = (data: Employee) => {
-  //   confirmDialog({
-  //     message: 'Do you want to delete this record forever?',
-  //     header: 'Delete Confirmation',
-  //     icon: 'pi pi-info-circle',
-  //     defaultFocus: 'accept',
-  //     accept: () => {
-  //       handlePurge(data);
-  //     },
-  //     reject: () => { },
-  //     footer: (options) => (
-  //       <div className="flex gap-3 justify-end">
-  //         <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-  //         <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-  //       </div>
-  //     )
-  //   });
-  // };
 
   const onSubmit = (data: Employee) => {
     if (!isValid)
@@ -265,9 +145,6 @@ const EmployeesDataTable = () => {
       return;
     }
 
-    // if (selectedData) {
-    //   handleUpdate(data);
-    // }
   };
 
   const getBody = () => document.body;
@@ -275,23 +152,25 @@ const EmployeesDataTable = () => {
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Employees' url='' />}>
+      <Card>
+        <div className="pt-0 pr-3 pb-3 pl-3">
 
-        <div className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
-
-              {/* <div className="flex align-items-center pl-5">
-                <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onIngredientsChange} checked={isShowDeletedDataChecked} />
-                <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
-              </div> */}
+          <div className="flex items-center justify-between pb-5">
+            <div className="flex">
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold">Employees</p>
+                <p className="text-md">Manage your employee records and branches</p>
+              </div>
             </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-            </IconField>
+            <div className="flex gap-5">
+              <IconField iconPosition="left">
+                <InputIcon className="pi pi-search" />
+                <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+              </IconField>
+
+              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+            </div>
           </div>
 
           <DataTable
@@ -318,7 +197,6 @@ const EmployeesDataTable = () => {
             <Column field="gender_name" header="Gender"></Column>
             <Column field="agency_name" header="Agency"></Column>
             <Column field="branch_name" header="Branch"></Column>
-            {/* <Column field="is_active" header="Active" body={activeColumnBody}></Column> */}
             <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
           </DataTable>
 

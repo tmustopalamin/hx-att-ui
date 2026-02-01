@@ -22,11 +22,8 @@ const EmployeeDetailLayout = ({ children, params }: EmployeeLayoutProps) => {
   const id = paramsPath.id;
 
   const [titlePage, setTitlePage] = React.useState('');
-  const { data, error } = useSWR<Employee>(`/api/employees/${id}/personal-data`, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error } = useSWR<Employee>(`/api/employees/${id}/personal-data`, fetcher, {});
   const { data: employmentData } = useSWR<EmploymentData>(`/api/employees/${id}/employment-data`, fetcher, {
-    revalidateOnFocus: false,
   });
 
   if (error) {
@@ -51,7 +48,7 @@ const EmployeeDetailLayout = ({ children, params }: EmployeeLayoutProps) => {
           </div>
 
           <div className="w-full">
-            <VerticalTabview params={params} onTitlePageChange={changeTitlePage} />
+            <VerticalTabview params={params} />
           </div>
         </div>
 

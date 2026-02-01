@@ -34,6 +34,8 @@ import dayjs from 'dayjs';
 import { createEmployeeIncomeComponent, updateEmployeeIncomeComponent, deleteEmployeeIncomeComponent, purgeEmployeeIncomeComponent, restoreEmployeeIncomeComponent } from '@/app/services/employee-income-component-service';
 import { InputSwitch } from 'primereact/inputswitch';
 import { Tag } from 'primereact/tag';
+import { Frequency } from '@/app/types/frequency';
+import { IncomeComponent } from '@/app/types/income-component';
 
 
 const EmployeePayrollEmployeeIncomeComponentTableData = () => {
@@ -47,6 +49,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
   const [filters, setFilters] = useState({
     global: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
+  const [selectedIncomeComponent, setSelectedIncomeComponent] = useState<IncomeComponent | null>(null);
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
@@ -71,18 +74,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     reset({
       id: 0,
       employee_id: 0,
-      component_id: 0,
+      income_component_master_id: 0,
       based_on_component_id: 0,
       amount: 0,
-      frequency: "",
+      frequency: 0,
       start_date: null,
       end_date: null,
       is_active: true,
-      unit_amount: 0,
-      threshold_percent: 0,
-      max_amount: 0,
-      penalty_trigger: 0,
-      percentage: 0,
       notes: "",
       deleted_at: '',
       row_version: 0,
@@ -98,9 +96,11 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const { data: EmployeeIncomeComponentData, error, isLoading } = useSWR<EmployeeIncomeComponent[]>(`/api/employees/${id}/income-component?show_all=${isShowDeletedDataChecked}`, fetcher);
   const { data: employeeData, error: employeeError, isLoading: employeeIsLoading } = useSWR<Employee[]>(`/api/employees`, fetcher);
-  const { data: employeeIncomeComponentData, error: employeeIncomeComponentError, isLoading: employeeIncomeComponentIsLoading } = useSWR<EmployeeIncomeComponent[]>(`/api/income-component`, fetcher);
+  const { data: incomeComponentData, error: incomeComponentError, isLoading: incomeComponentIsLoading } = useSWR<IncomeComponent[]>(`/api/income-component`, fetcher);
+  const { data: frequencyData, error: errorFrequency, isLoading: isLoadingFrequency } = useSWR<Frequency[]>(`/api/frequency`, fetcher);
+  const employeeIncomeComponentActive = incomeComponentData?.filter(a => a.is_active);
   const employeeActive = employeeData?.filter(a => a.id === Number(id));
-  const employeeIncomeComponentActive = employeeIncomeComponentData?.filter(a => a.is_active);
+  const activeFrequency = frequencyData?.filter(a => a.is_active);
 
   if (isLoading) return <LoadingDataTable />;
   if (error) {
@@ -310,6 +310,14 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     });
   };
 
+  const onChangeIncomeComponent = (id: number) => {
+    const incomeComponent = incomeComponentData?.find((ic: IncomeComponent) => ic.id === id);
+    console.log(incomeComponent)
+    if (incomeComponent) {
+      setSelectedIncomeComponent(incomeComponent)
+    }
+  }
+
   return (
     <>
       <ConfirmDialog />
@@ -418,75 +426,90 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             </div>
 
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="component_id">Income Component</label>
+              <label htmlFor="income_component_master_id">Income Component</label>
               <Controller
-                name="component_id"
+                name="income_component_master_id"
                 control={control}
                 rules={{ required: "Income Component is required" }}
                 render={({ field, fieldState }) => (
                   <>
                     <Dropdown
-                      id="component_id"
+                      id="income_component_master_id"
                       appendTo={() => document.body}
                       value={field.value}
                       options={employeeIncomeComponentActive}
                       loading={isLoading}
-                      disabled={employeeIncomeComponentIsLoading || !!employeeIncomeComponentError}
-                      onChange={(e) => field.onChange(e.value)}
+                      disabled={incomeComponentIsLoading || !!incomeComponentError}
+                      onChange={(e) => {
+                        field.onChange(e.value)
+                        onChangeIncomeComponent(e.value)
+                      }}
                       optionLabel="name"
                       optionValue="id"
                       placeholder={isLoading ? "Loading income components..." : "Select a income component"}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                    {employeeIncomeComponentError && <small className="p-error font-bold">We couldn’t load the list of income components. Please try again</small>}
+                    {incomeComponentError && <small className="p-error font-bold">We couldn’t load the list of income components. Please try again</small>}
                   </>
                 )}
               />
             </div>
+
+            {selectedIncomeComponent?.calculation_method_code === 'fixed' && <>
+              <div className="m-0 flex flex-col gap-2 flex-1">
+                <label htmlFor="amount">Amount</label>
+                <Controller
+                  name="amount"
+                  control={control}
+                  defaultValue={0}
+                  rules={{ required: "*required", }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputNumber
+                        id="amount"
+                        placeholder='input amount of balance'
+                        inputRef={field.ref} onValueChange={(e) => {
+                          field.onChange(e.value);
+                        }}
+                        value={Number(field.value ? field.value : 0)}
+                        className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
+                      />
+                      {fieldState.error && (
+                        <small className="font-bold p-error"> {fieldState.error.message} </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+            </>}
 
             <div className="m-0 flex flex-col gap-2 flex-1">
-              <label htmlFor="amount">Amount</label>
-              <Controller
-                name="amount"
-                control={control}
-                defaultValue={0}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputNumber
-                      id="amount"
-                      placeholder='input amount of balance'
-                      inputRef={field.ref} onValueChange={(e) => {
-                        field.onChange(e.value);
-                      }}
-                      value={Number(field.value ? field.value : 0)}
-                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
               <label htmlFor="frequency">Frequency</label>
               <Controller
                 name="frequency"
                 control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
+                rules={{ required: "*required", }}
                 render={({ field, fieldState }) => (
                   <>
-                    <InputText
+                    <Dropdown
                       id="frequency"
-                      placeholder='default frequency'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
+                      appendTo={() => document.body}
+                      value={field.value}
+                      options={activeFrequency}
+                      loading={isLoadingFrequency}
+                      disabled={isLoadingFrequency || !!errorFrequency}
+                      onChange={(e) => field.onChange(e.value)}
+                      optionLabel="name"
+                      optionValue="id"
+                      placeholder={isLoading ? "Loading frequencys..." : "Select a frequency"}
+                      className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
                     />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
+                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                    {errorFrequency && (
+                      <small className="p-error font-bold">
+                        We couldn’t load the list of frequency. Please try again
+                      </small>
                     )}
                   </>
                 )}
@@ -546,9 +569,9 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               </div>
             </div>
 
-            <div className="flex w-full gap-5">
-              {/* Kolom kiri 50% */}
-              <div className="w-1/2 flex flex-col gap-2">
+
+            {selectedIncomeComponent?.calculation_method_code === 'percentage' && <>
+              <div className="m-0 flex flex-col gap-2">
                 <label htmlFor="based_on_component_id">Based On Income Component</label>
                 <Controller
                   name="based_on_component_id"
@@ -561,7 +584,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                         value={field.value}
                         options={employeeIncomeComponentActive}
                         loading={isLoading}
-                        disabled={employeeIncomeComponentIsLoading || !!employeeIncomeComponentError}
+                        disabled={incomeComponentIsLoading || !!incomeComponentError}
                         onChange={(e) => field.onChange(e.value)}
                         optionLabel="name"
                         optionValue="id"
@@ -569,7 +592,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                         className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
                       />
                       {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                      {employeeIncomeComponentError && (
+                      {incomeComponentError && (
                         <small className="p-error font-bold">
                           We couldn’t load the list of income components. Please try again
                         </small>
@@ -578,9 +601,10 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   )}
                 />
               </div>
+            </>}
 
-              {/* Kolom kanan 50% */}
-              <div className="w-1/2 flex flex-col gap-2">
+            {selectedIncomeComponent?.calculation_method_code === 'percentage' && <>
+              <div className="m-0 flex flex-col gap-2">
                 <label htmlFor="percentage">Percentage</label>
                 <Controller
                   name="percentage"
@@ -604,112 +628,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   )}
                 />
               </div>
-            </div>
-
-
-            <div className="m-0 flex flex-col gap-2 flex-1">
-              <label htmlFor="unit_amount">Unit Amount</label>
-              <Controller
-                name="unit_amount"
-                control={control}
-                defaultValue={0}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputNumber
-                      id="unit_amount"
-                      placeholder='input amount of balance'
-                      inputRef={field.ref} onValueChange={(e) => {
-                        field.onChange(e.value)
-                      }}
-                      value={Number(field.value ? field.value : 0)}
-                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2 flex-1">
-              <label htmlFor="threshold_percent">Threshold Percent</label>
-              <Controller
-                name="threshold_percent"
-                control={control}
-                defaultValue={0}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputNumber
-                      id="threshold_percent"
-                      placeholder='input amount of balance'
-                      inputRef={field.ref} onValueChange={(e) => {
-                        field.onChange(e.value);
-                      }}
-                      value={Number(field.value ? field.value : 0)}
-                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2 flex-1">
-              <label htmlFor="max_amount">Max Amount</label>
-              <Controller
-                name="max_amount"
-                control={control}
-                defaultValue={0}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputNumber
-                      id="max_amount"
-                      placeholder='input amount of balance'
-                      inputRef={field.ref} onValueChange={(e) => {
-                        field.onChange(e.value);
-                      }}
-                      value={Number(field.value ? field.value : 0)}
-                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2 flex-1">
-              <label htmlFor="penalty_trigger">Penalty Trigger</label>
-              <Controller
-                name="penalty_trigger"
-                control={control}
-                defaultValue={0}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputNumber
-                      id="penalty_trigger"
-                      placeholder='input amount of balance'
-                      inputRef={field.ref} onValueChange={(e) => {
-                        field.onChange(e.value);
-                      }}
-                      value={Number(field.value ? field.value : 0)}
-                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+            </>}
 
             <div className="m-0 flex flex-col gap-2">
               <label htmlFor="notes">Notes</label>

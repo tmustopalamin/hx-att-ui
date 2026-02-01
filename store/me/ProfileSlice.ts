@@ -27,9 +27,12 @@ export const ProfileSlice = createSlice({
             state.name = action.payload.name;
             state.role = action.payload.role;
             state.photo_url = action.payload.photo_url;
+        },
+        clearProfile: () => {
+            return initialState;
         }
     },
 });
 
-export const { updateDataProfile } = ProfileSlice.actions;
+export const { updateDataProfile, clearProfile } = ProfileSlice.actions;
 export default ProfileSlice.reducer;

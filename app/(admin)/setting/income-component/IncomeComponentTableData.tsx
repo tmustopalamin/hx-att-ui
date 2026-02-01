@@ -28,6 +28,10 @@ import { RootState } from '@/store/store';
 import { hasRole } from '@/app/utils/role-utils';
 import { IncomeComponent } from '@/app/types/income-component';
 import { createIncomeComponent, updateIncomeComponent, deleteIncomeComponent, purgeIncomeComponent, restoreIncomeComponent } from '@/app/services/income-component-service';
+import { CalculationMethod } from '@/app/types/calculation-method';
+import { Dropdown } from 'primereact/dropdown';
+import { PayrollFormula } from '@/app/types/payroll-formula';
+import { ComponentCategory } from '@/app/types/component-category';
 
 
 const IncomeComponentTableData = () => {
@@ -41,7 +45,7 @@ const IncomeComponentTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<IncomeComponent>();
+  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors, watch } = useForm<IncomeComponent>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,9 +68,9 @@ const IncomeComponentTableData = () => {
       code: '',
       name: '',
       is_taxable: false,
-      is_attendance_based: false,
-      calculation_method: '',
-      default_frequency: '',
+      calculation_method: 0,
+      formula_id: null,
+      category: 0,
       is_active: true,
       deleted_at: '',
       row_version: 0,
@@ -81,6 +85,12 @@ const IncomeComponentTableData = () => {
   );
 
   const { data: IncomeComponentData, error, isLoading } = useSWR<IncomeComponent[]>(`/api/income-component?show_all=${isShowDeletedDataChecked}`, fetcher);
+  const { data: calculationMethodData, error: calculationMethodError, isLoading: calculationMethodIsLoading } = useSWR<CalculationMethod[]>(`/api/calculation-method`, fetcher);
+  const { data: dataFormula, error: errorFormula, isLoading: isLoadingFormula } = useSWR<PayrollFormula[]>(`/api/payroll-formula`, fetcher);
+  const { data: dataComponentCategory, error: errorComponentCategory, isLoading: isLoadingComponentCategory } = useSWR<ComponentCategory[]>(`/api/component-category`, fetcher);
+  const calculationMethodActive = calculationMethodData?.filter(a => a.is_active);
+  const activeFormula = dataFormula?.filter(a => a.is_active);
+  const activeComponentCategory = dataComponentCategory?.filter(a => a.is_active && a.category_type === 'income');
 
   if (isLoading) return <LoadingDataTable />;
   if (error) {
@@ -92,6 +102,10 @@ const IncomeComponentTableData = () => {
   }
 
   const handleSubmitNew = async (data: IncomeComponent) => {
+    if (watch('calculation_method') !== 4) {
+      data.formula_id = null
+    }
+
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await createIncomeComponent(data);
       setVisible(false);
@@ -111,6 +125,10 @@ const IncomeComponentTableData = () => {
     if (!selectedData) {
       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: "please select data" }));
       return;
+    }
+
+    if (watch('calculation_method') !== 4) {
+      data.formula_id = null
     }
 
     try {
@@ -197,7 +215,7 @@ const IncomeComponentTableData = () => {
   const onClickUpdate = (data: IncomeComponent) => {
     setVisible(true);
     setIsAddNew(false);
-    setPopupHeaderTitle('Update IncomeComponent');
+    setPopupHeaderTitle('Update Income Component');
 
     reset(data)
     setSelectedData(data);
@@ -296,14 +314,6 @@ const IncomeComponentTableData = () => {
     );
   };
 
-  const isAttendanceBasedColumnBody = (rowData: IncomeComponent) => {
-    return rowData.is_attendance_based ? (
-      <i className="pi pi-check"></i>
-    ) : (
-      <i className="pi pi-times"></i>
-    );
-  };
-
   return (
     <>
       <ConfirmDialog />
@@ -348,9 +358,7 @@ const IncomeComponentTableData = () => {
             <Column field="code" header="Code"></Column>
             <Column field="name" header="Name"></Column>
             <Column field="is_taxable" header="Taxable" body={isTaxableColumnBody}></Column>
-            <Column field="is_attendance_based" header="Attendance Based" body={isAttendanceBasedColumnBody}></Column>
-            <Column field="calculation_method" header="Calculation Method"></Column>
-            <Column field="default_frequency" header="Default Frequency"></Column>
+            <Column field="calculation_method_name" header="Calculation Method"></Column>
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
 
             <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
@@ -371,6 +379,40 @@ const IncomeComponentTableData = () => {
           }}
         >
           <div className="flex flex-col gap-5">
+
+            <div className="m-0 flex flex-col gap-2">
+              <label htmlFor="category">Category</label>
+              <Controller
+                name="category"
+                rules={{ required: "*required" }}
+                control={control}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Dropdown
+                      id="category"
+                      appendTo={() => document.body}
+                      value={field.value}
+                      options={activeComponentCategory}
+                      loading={isLoadingComponentCategory}
+                      disabled={isLoadingComponentCategory}
+                      onChange={(e) => {
+                        field.onChange(e.value ?? null);
+                      }}
+                      optionLabel="name"
+                      optionValue="id"
+                      showClear={true}
+                      placeholder={
+                        isLoadingComponentCategory ? "Loading component categories..." : "Select a component category"
+                      }
+                      className={fieldState.invalid ? "p-invalid" : ""}
+                    />
+                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                    {errorComponentCategory && (<small className="p-error font-bold">We couldn’t load the list of component categories. Please try again</small>)}
+                  </>
+                )}
+              />
+            </div>
+
             <div className="m-0 flex flex-col gap-2">
               <label htmlFor="code">Code</label>
               <Controller
@@ -419,6 +461,73 @@ const IncomeComponentTableData = () => {
               />
             </div>
 
+            <div className="m-0 flex flex-col gap-2">
+              <label htmlFor="calculation_method">Calculation Method</label>
+              <Controller
+                name="calculation_method"
+                control={control}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Dropdown
+                      id="calculation_method"
+                      appendTo={() => document.body}
+                      value={field.value}
+                      options={calculationMethodActive}
+                      loading={calculationMethodIsLoading}
+                      disabled={calculationMethodIsLoading}
+                      onChange={(e) => {
+                        field.onChange(e.value ?? null);
+                      }}
+                      optionLabel="name"
+                      optionValue="id"
+                      showClear={true}
+                      placeholder={
+                        isLoading ? "Loading calculation methods..." : "Select a calculation method"
+                      }
+                      className={fieldState.invalid ? "p-invalid" : ""}
+                    />
+                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                    {calculationMethodError && (<small className="p-error font-bold">We couldn’t load the list of calculation methods. Please try again</small>)}
+                  </>
+                )}
+              />
+            </div>
+
+            {watch('calculation_method') === 4 && ( //cek lagi master calculation method
+              <div className="m-0 flex flex-col gap-2">
+                <label htmlFor="formula_id">Formula</label>
+                <Controller
+                  name="formula_id"
+                  rules={watch('calculation_method') === 4 ? { required: "*required" } : {}}
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="formula_id"
+                        appendTo={() => document.body}
+                        value={field.value}
+                        options={activeFormula}
+                        loading={isLoadingFormula}
+                        disabled={isLoadingFormula}
+                        onChange={(e) => {
+                          field.onChange(e.value ?? null);
+                        }}
+                        optionLabel="name"
+                        optionValue="id"
+                        showClear={true}
+                        placeholder={
+                          isLoading ? "Loading formulas..." : "Select a formula"
+                        }
+                        className={fieldState.invalid ? "p-invalid" : ""}
+                      />
+                      {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                      {errorFormula && (<small className="p-error font-bold">We couldn’t load the list of formulas. Please try again</small>)}
+                    </>
+                  )}
+                />
+              </div>
+            )}
+
             <div className="m-0 flex gap-2">
               <Controller
                 name="is_taxable"
@@ -432,65 +541,6 @@ const IncomeComponentTableData = () => {
                 )}
               />
               <label htmlFor="is_taxable">Taxable</label>
-            </div>
-
-            <div className="m-0 flex gap-2">
-              <Controller
-                name="is_attendance_based"
-                control={control}
-                render={({ field }) => (
-                  <Checkbox
-                    inputId="is_attendance_based"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.checked)}
-                  ></Checkbox>
-                )}
-              />
-              <label htmlFor="is_attendance_based">Attendance Based</label>
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="calculation_method">Calculation Method</label>
-              <Controller
-                name="calculation_method"
-                control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="calculation_method"
-                      placeholder='calculation method'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="default_frequency">Default Frequency</label>
-              <Controller
-                name="default_frequency"
-                control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="default_frequency"
-                      placeholder='default frequency'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
             </div>
 
             <div className="m-0 flex flex-col gap-2">

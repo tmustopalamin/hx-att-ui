@@ -29,7 +29,7 @@ import { hasRole } from '@/app/utils/role-utils';
 import { DeductionComponent } from '@/app/types/deduction-component';
 import { createDeductionComponent, updateDeductionComponent, deleteDeductionComponent, purgeDeductionComponent, restoreDeductionComponent } from '@/app/services/deduction-component-service';
 import { Dropdown } from 'primereact/dropdown';
-
+import { ComponentCategory } from '@/app/types/component-category';
 
 const DeductionComponentTableData = () => {
   const dispatch = useDispatch();
@@ -42,7 +42,7 @@ const DeductionComponentTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<DeductionComponent>();
+  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors, watch } = useForm<DeductionComponent>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,9 +66,9 @@ const DeductionComponentTableData = () => {
       name: '',
       is_taxable: false,
       formula_id: 0,
-      calculation_method: '',
-      default_frequency: '',
+      calculation_method: 0,
       is_active: true,
+      category: 0,
       deleted_at: '',
       row_version: 0,
     });
@@ -83,7 +83,11 @@ const DeductionComponentTableData = () => {
 
   const { data: DeductionComponentData, error, isLoading } = useSWR<DeductionComponent[]>(`/api/deduction-component?show_all=${isShowDeletedDataChecked}`, fetcher);
   const { data: dataFormula, error: errorFormula, isLoading: isLoadingFormula } = useSWR<DeductionComponent[]>(`/api/payroll-formula`, fetcher);
+  const { data: dataCalculationMethod, error: errorCalculationMethod, isLoading: isLoadingCalculationMethod } = useSWR<DeductionComponent[]>(`/api/calculation-method`, fetcher);
+  const { data: dataComponentCategory, error: errorComponentCategory, isLoading: isLoadingComponentCategory } = useSWR<ComponentCategory[]>(`/api/component-category`, fetcher);
   const activeFormula = dataFormula?.filter(a => a.is_active);
+  const activeCalculationMethod = dataCalculationMethod?.filter(a => a.is_active);
+  const activeComponentCategory = dataComponentCategory?.filter(a => a.is_active && a.category_type === 'deduction');
 
   if (isLoading) return <LoadingDataTable />;
   if (error) {
@@ -95,6 +99,10 @@ const DeductionComponentTableData = () => {
   }
 
   const handleSubmitNew = async (data: DeductionComponent) => {
+    if (watch('calculation_method') !== 4) {
+      data.formula_id = null
+    }
+
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await createDeductionComponent(data);
       setVisible(false);
@@ -114,6 +122,10 @@ const DeductionComponentTableData = () => {
     if (!selectedData) {
       dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: "please select data" }));
       return;
+    }
+
+    if (watch('calculation_method') !== 4) {
+      data.formula_id = null
     }
 
     try {
@@ -351,9 +363,7 @@ const DeductionComponentTableData = () => {
             <Column field="code" header="Code"></Column>
             <Column field="name" header="Name"></Column>
             <Column field="is_taxable" header="Taxable" body={isTaxableColumnBody}></Column>
-            <Column field="formula_id" header="Formula"></Column>
-            <Column field="calculation_method" header="Calculation Method"></Column>
-            <Column field="default_frequency" header="Default Frequency"></Column>
+            <Column field="calculation_method_name" header="Calculation Method"></Column>
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
 
             <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
@@ -374,6 +384,40 @@ const DeductionComponentTableData = () => {
           }}
         >
           <div className="flex flex-col gap-5">
+
+            <div className="m-0 flex flex-col gap-2">
+              <label htmlFor="category">Category</label>
+              <Controller
+                name="category"
+                rules={{ required: "*required" }}
+                control={control}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Dropdown
+                      id="category"
+                      appendTo={() => document.body}
+                      value={field.value}
+                      options={activeComponentCategory}
+                      loading={isLoadingComponentCategory}
+                      disabled={isLoadingComponentCategory}
+                      onChange={(e) => {
+                        field.onChange(e.value ?? null);
+                      }}
+                      optionLabel="name"
+                      optionValue="id"
+                      showClear={true}
+                      placeholder={
+                        isLoadingComponentCategory ? "Loading component categories..." : "Select a component category"
+                      }
+                      className={fieldState.invalid ? "p-invalid" : ""}
+                    />
+                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                    {errorComponentCategory && (<small className="p-error font-bold">We couldn’t load the list of component categories. Please try again</small>)}
+                  </>
+                )}
+              />
+            </div>
+
             <div className="m-0 flex flex-col gap-2">
               <label htmlFor="code">Code</label>
               <Controller
@@ -423,63 +467,20 @@ const DeductionComponentTableData = () => {
             </div>
 
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="default_frequency">Default Frequency</label>
-              <Controller
-                name="default_frequency"
-                control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="default_frequency"
-                      placeholder='default frequency'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
               <label htmlFor="calculation_method">Calculation Method</label>
               <Controller
                 name="calculation_method"
                 control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="calculation_method"
-                      placeholder='calculation method'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="formula_id">Formula</label>
-              <Controller
-                name="formula_id"
-                control={control}
+                rules={{ required: "*required" }}
                 render={({ field, fieldState }) => (
                   <>
                     <Dropdown
-                      id="formula_id"
+                      id="calculation_method"
                       appendTo={() => document.body}
                       value={field.value}
-                      options={activeFormula}
-                      loading={isLoadingFormula}
-                      disabled={isLoadingFormula}
+                      options={activeCalculationMethod}
+                      loading={isLoadingCalculationMethod}
+                      disabled={isLoadingCalculationMethod}
                       onChange={(e) => {
                         field.onChange(e.value ?? null);
                       }}
@@ -487,16 +488,51 @@ const DeductionComponentTableData = () => {
                       optionValue="id"
                       showClear={true}
                       placeholder={
-                        isLoading ? "Loading formulas..." : "Select a formula"
+                        isLoading ? "Loading calculation methods..." : "Select a calculation method"
                       }
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                    {errorFormula && (<small className="p-error font-bold">We couldn’t load the list of formulas. Please try again</small>)}
+                    {errorCalculationMethod && (<small className="p-error font-bold">We couldn’t load the list of calculation methods. Please try again</small>)}
                   </>
                 )}
               />
             </div>
+
+            {watch('calculation_method') === 4 && ( //cek lagi master calculation method
+              <div className="m-0 flex flex-col gap-2">
+                <label htmlFor="formula_id">Formula</label>
+                <Controller
+                  name="formula_id"
+                  rules={watch('calculation_method') === 4 ? { required: "*required" } : {}}
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="formula_id"
+                        appendTo={() => document.body}
+                        value={field.value}
+                        options={activeFormula}
+                        loading={isLoadingFormula}
+                        disabled={isLoadingFormula}
+                        onChange={(e) => {
+                          field.onChange(e.value ?? null);
+                        }}
+                        optionLabel="name"
+                        optionValue="id"
+                        showClear={true}
+                        placeholder={
+                          isLoading ? "Loading formulas..." : "Select a formula"
+                        }
+                        className={fieldState.invalid ? "p-invalid" : ""}
+                      />
+                      {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                      {errorFormula && (<small className="p-error font-bold">We couldn’t load the list of formulas. Please try again</small>)}
+                    </>
+                  )}
+                />
+              </div>
+            )}
 
             <div className="m-0 flex gap-2">
               <Controller

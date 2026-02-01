@@ -13,10 +13,10 @@ import ChangeProfilePicture from './ChangeProfilePicture';
 import { showToast } from '@/store/ToastSlice';
 
 const AccountSettingsPage = () => {
-  const { handleSubmit, control, getValues  } = useForm<FormChangePassword>();
+  const { handleSubmit, control, getValues } = useForm<FormChangePassword>();
   const [submitting, setSubmitting] = useState(false);
   const dispatch = useDispatch();
-  const profileState = useSelector((state: RootState) => state.profile); 
+  const profileState = useSelector((state: RootState) => state.profile);
 
   useEffect(() => {
     document.title = "Account Settings";
@@ -95,6 +95,15 @@ const AccountSettingsPage = () => {
               onSubmit={handleSubmit(onSubmit)}
             >
               <div className="flex flex-col gap-2 w-full">
+                <div className="mb-6">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    Change Password
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Protect your account by using a strong password
+                  </p>
+                </div>
+
                 <label htmlFor="currentPassword">Current Password</label>
                 <Controller
                   name="currentPassword"
@@ -106,13 +115,26 @@ const AccountSettingsPage = () => {
                   render={({ field, fieldState }) => (
                     <>
                       <Password
+                        toggleMask
+                        pt={{
+                          iconField: {
+                            root: {
+                              style: { width: "100%" },
+                            },
+                          },
+                          input: {
+                            style: { width: "100%" },
+                          },
+                          root: {
+                            style: { width: "100%" },
+                          },
+                        }}
                         id="currentPassword"
                         {...field}
                         feedback={false}
                         inputClassName="w-full"
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
+                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
+                          }`}
                         disabled={submitting}
                       />
                       {fieldState.error && (
@@ -137,13 +159,26 @@ const AccountSettingsPage = () => {
                   render={({ field, fieldState }) => (
                     <>
                       <Password
+                        toggleMask
+                        pt={{
+                          iconField: {
+                            root: {
+                              style: { width: "100%" },
+                            },
+                          },
+                          input: {
+                            style: { width: "100%" },
+                          },
+                          root: {
+                            style: { width: "100%" },
+                          },
+                        }}
                         id="newPassword"
                         {...field}
                         feedback={false}
                         inputClassName="w-full"
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
+                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
+                          }`}
                         disabled={submitting}
                       />
                       {fieldState.error && (
@@ -171,13 +206,26 @@ const AccountSettingsPage = () => {
                   render={({ field, fieldState }) => (
                     <>
                       <Password
+                        toggleMask
+                        pt={{
+                          iconField: {
+                            root: {
+                              style: { width: "100%" },
+                            },
+                          },
+                          input: {
+                            style: { width: "100%" },
+                          },
+                          root: {
+                            style: { width: "100%" },
+                          },
+                        }}
                         id="newPasswordRetype"
                         {...field}
                         feedback={false}
                         inputClassName="w-full"
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
+                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
+                          }`}
                         disabled={submitting}
                       />
                       {fieldState.error && (

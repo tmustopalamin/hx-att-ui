@@ -327,37 +327,258 @@ export default function Sidebar() {
                   `}
                 >
                   {[
-                    { href: "/setting/agency", label: "Agency", icon: "pi-building" },
-                    { href: "/setting/branch", label: "Branch", icon: "pi-sitemap" },
-                    { href: "/setting/bank", label: "Bank", icon: "pi-credit-card" },
-                    { href: "/setting/city", label: "City", icon: "pi-map-marker" },
-                    { href: "/setting/country", label: "Country", icon: "pi-globe" },
-                    { href: "/setting/department", label: "Department", icon: "pi-briefcase" },
-                    { href: "/setting/document-type", label: "Document Type", icon: "pi-file" },
-                    { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi-calendar" },
-                    { href: "/setting/employee-shift-assignment", label: "Employee Shift Assignment", icon: "pi-calendar-plus" },
-                    { href: "/setting/employment-status", label: "Employment Status", icon: "pi-id-card" },
-                    { href: "/setting/fingerprint-scanner", label: "Fingerprint Scanner", icon: "pi-box" },
-                    { href: "/setting/identity-type", label: "Identity Type", icon: "pi-id-card" },
-                    { href: "/setting/leave-type", label: "Leave Type", icon: "pi-calendar-plus" },
-                    { href: "/setting/position", label: "Position", icon: "pi-users" },
-                    { href: "/setting/relationship", label: "Relationship", icon: "pi-heart" },
-                    { href: "/setting/shift", label: "Shift", icon: "pi-clock" },
-                    { href: "/setting/state", label: "State", icon: "pi-map" },
-                    { href: "/setting/user", label: "User", icon: "pi-user" },
-                  ].map((item) => (
-                    <li key={item.href}>
-                      <ActiveLink
-                        href={item.href}
-                        className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                        activeClassName="bg-gray-200"
-                        exact={false}
-                      >
-                        <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                        <span className="text-[.820rem]">{item.label}</span>
-                      </ActiveLink>
-                    </li>
-                  ))}
+                    { href: "/setting/bank", label: "Bank", icon: "pi pi-credit-card" },
+                    { href: "/setting/city", label: "City", icon: "pi pi-map-marker" },
+                    { href: "/setting/state", label: "Province", icon: "pi pi-map" },
+                    { href: "/setting/country", label: "Country", icon: "pi pi-globe" },
+                    { href: "/setting/document-type", label: "Document Type", icon: "pi pi-file" },
+                    { href: "/setting/employment-status", label: "Employment Status", icon: "pi pi-id-card" },
+                    { href: "/setting/identity-type", label: "Identity Type", icon: "pi pi-id-card" },
+                    { href: "/setting/relationship", label: "Relationship", icon: "pi pi-heart" },
+                  ]
+                    .map((item) => (
+                      <li key={item.href}>
+                        <ActiveLink
+                          href={item.href}
+                          className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
+                          activeClassName="bg-gray-200"
+                          exact={false}
+                        >
+                          <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
+                          <span className="text-[.820rem]">{item.label}</span>
+                        </ActiveLink>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+              <li>
+                <div
+                  className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
+                  onClick={() => toggleSubMenu("org")}
+                >
+                  <div className="flex items-center">
+                    <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                    <span className="text-[.830rem]">Organization</span>
+                  </div>
+                  <i
+                    className={`pi ${openSubMenu === "org"
+                      ? "pi-chevron-down"
+                      : "pi-chevron-right"
+                      } text-gray-500 text-xs`}
+                  />
+                </div>
+
+                <ul
+                  className={`
+                    overflow-hidden transition-all duration-300 ease-in-out
+                    ${openSubMenu === "org"
+                      ? "max-h-screen opacity-100"
+                      : "max-h-0 opacity-0"
+                    }
+                  `}
+                >
+                  {[
+                    { href: "/setting/agency", label: "Agency", icon: "pi pi-building" },
+                    { href: "/setting/branch", label: "Branch", icon: "pi pi-sitemap" },
+                    { href: "/setting/department", label: "Department", icon: "pi pi-briefcase" },
+                    { href: "/setting/position", label: "Position", icon: "pi pi-user" },
+                  ]
+                    .map((item) => (
+                      <li key={item.href}>
+                        <ActiveLink
+                          href={item.href}
+                          className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
+                          activeClassName="bg-gray-200"
+                          exact={false}
+                        >
+                          <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
+                          <span className="text-[.820rem]">{item.label}</span>
+                        </ActiveLink>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+              <li>
+                <div
+                  className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
+                  onClick={() => toggleSubMenu("attendance")}
+                >
+                  <div className="flex items-center">
+                    <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                    <span className="text-[.830rem]">Time & Attendance</span>
+                  </div>
+                  <i
+                    className={`pi ${openSubMenu === "attendance"
+                      ? "pi-chevron-down"
+                      : "pi-chevron-right"
+                      } text-gray-500 text-xs`}
+                  />
+                </div>
+
+                <ul
+                  className={`
+                    overflow-hidden transition-all duration-300 ease-in-out
+                    ${openSubMenu === "attendance"
+                      ? "max-h-screen opacity-100"
+                      : "max-h-0 opacity-0"
+                    }
+                  `}
+                >
+                  {[
+                    { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi pi-calendar-times" },
+                    { href: "/setting/employee-shift-assignment", label: "Employee Shift Assignment", icon: "pi pi-calendar-plus" },
+                  ]
+                    .map((item) => (
+                      <li key={item.href}>
+                        <ActiveLink
+                          href={item.href}
+                          className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
+                          activeClassName="bg-gray-200"
+                          exact={false}
+                        >
+                          <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
+                          <span className="text-[.820rem]">{item.label}</span>
+                        </ActiveLink>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+              <li>
+                <div
+                  className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
+                  onClick={() => toggleSubMenu("fp")}
+                >
+                  <div className="flex items-center">
+                    <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                    <span className="text-[.830rem]">Fingerprint</span>
+                  </div>
+                  <i
+                    className={`pi ${openSubMenu === "fp"
+                      ? "pi-chevron-down"
+                      : "pi-chevron-right"
+                      } text-gray-500 text-xs`}
+                  />
+                </div>
+
+                <ul
+                  className={`
+                    overflow-hidden transition-all duration-300 ease-in-out
+                    ${openSubMenu === "fp"
+                      ? "max-h-screen opacity-100"
+                      : "max-h-0 opacity-0"
+                    }
+                  `}
+                >
+                  {[
+                    { href: "/setting/fingerprint-scanner", label: "Fingerprint Scanner", icon: "pi pi-box" },
+                  ]
+                    .map((item) => (
+                      <li key={item.href}>
+                        <ActiveLink
+                          href={item.href}
+                          className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
+                          activeClassName="bg-gray-200"
+                          exact={false}
+                        >
+                          <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
+                          <span className="text-[.820rem]">{item.label}</span>
+                        </ActiveLink>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+              <li>
+                <div
+                  className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
+                  onClick={() => toggleSubMenu("payroll")}
+                >
+                  <div className="flex items-center">
+                    <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                    <span className="text-[.830rem]">Payroll Configuration</span>
+                  </div>
+                  <i
+                    className={`pi ${openSubMenu === "payroll"
+                      ? "pi-chevron-down"
+                      : "pi-chevron-right"
+                      } text-gray-500 text-xs`}
+                  />
+                </div>
+
+                <ul
+                  className={`
+                    overflow-hidden transition-all duration-300 ease-in-out
+                    ${openSubMenu === "payroll"
+                      ? "max-h-screen opacity-100"
+                      : "max-h-0 opacity-0"
+                    }
+                  `}
+                >
+                  {[
+                    { href: "/setting/payroll-formula", label: "Payroll Formula", icon: "pi pi-calculator" },
+                    { href: "/setting/income-component", label: "Income Component", icon: "pi pi-plus-circle" },
+                    { href: "/setting/deduction-component", label: "Deduction Component", icon: "pi pi-minus-circle" },
+                    { href: "/setting/bank", label: "Bank", icon: "pi pi-credit-card" },
+                  ]
+                    .map((item) => (
+                      <li key={item.href}>
+                        <ActiveLink
+                          href={item.href}
+                          className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
+                          activeClassName="bg-gray-200"
+                          exact={false}
+                        >
+                          <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
+                          <span className="text-[.820rem]">{item.label}</span>
+                        </ActiveLink>
+                      </li>
+                    ))}
+                </ul>
+              </li>
+              <li>
+                <div
+                  className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
+                  onClick={() => toggleSubMenu("user")}
+                >
+                  <div className="flex items-center">
+                    <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                    <span className="text-[.830rem]">User Management</span>
+                  </div>
+                  <i
+                    className={`pi ${openSubMenu === "user"
+                      ? "pi-chevron-down"
+                      : "pi-chevron-right"
+                      } text-gray-500 text-xs`}
+                  />
+                </div>
+
+                <ul
+                  className={`
+                    overflow-hidden transition-all duration-300 ease-in-out
+                    ${openSubMenu === "user"
+                      ? "max-h-screen opacity-100"
+                      : "max-h-0 opacity-0"
+                    }
+                  `}
+                >
+                  {[
+                    { href: "/setting/user", label: "Users", icon: "pi pi-user" },
+                    { href: "/setting/role", label: "Roles", icon: "pi pi-user" },
+                    { href: "/setting/permissions", label: "Permissions", icon: "pi pi-user" },
+                    { href: "/setting/role-permissions", label: "Role Permissions", icon: "pi pi-user" },
+                  ]
+                    .map((item) => (
+                      <li key={item.href}>
+                        <ActiveLink
+                          href={item.href}
+                          className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
+                          activeClassName="bg-gray-200"
+                          exact={false}
+                        >
+                          <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
+                          <span className="text-[.820rem]">{item.label}</span>
+                        </ActiveLink>
+                      </li>
+                    ))}
                 </ul>
               </li>
             </ul>

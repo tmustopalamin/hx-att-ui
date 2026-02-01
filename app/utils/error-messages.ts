@@ -6,6 +6,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export function getErrorMessage(err: ResponseTypeError, source: 'code' | 'message'): string {
+  console.log(err, 'pani')
   if (source === 'code') {
     if(err.code) {
       return ERROR_MESSAGES[err.code];
@@ -18,5 +19,6 @@ export function getErrorMessage(err: ResponseTypeError, source: 'code' | 'messag
 }
 
 export function isResponseTypeError(obj: unknown): obj is ResponseTypeError {
-    return typeof obj === "object" && obj !== null && "code" in obj;
+    const isErrorObject = typeof obj === "object";
+    return isErrorObject;
 }

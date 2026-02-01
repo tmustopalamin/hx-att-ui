@@ -3,10 +3,12 @@ export interface IncomeComponent {
     code: string;
     name: string;
     is_taxable: boolean;
-    is_attendance_based: boolean;
-    calculation_method: string;
-    default_frequency: string;
+    calculation_method: number;
+    formula_id: number | null;
+    category: number;
     is_active:boolean;
     deleted_at: string;
     row_version: number;
+    calculation_method_name: string;
+    calculation_method_code: string;
 }

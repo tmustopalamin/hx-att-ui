@@ -21,52 +21,52 @@ const ForgotPasswordPage = () => {
   useEffect(() => {
     document.title = "Reset Password - PT. Hexing Technology";
   }, [])
-  
+
   const onSubmit = async (formData: ForgotPassword) => {
-      try {
-        setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-        const res = await fetch("/api/auth/forgot-password", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
-  
-        const responseData = await res.json();
-        setOtpFormVisible(true)
-  
-        if (!res.ok) {
-          const errorMessage =
-            responseData?.message || `Failed to request. Please try again.`;
-          throw new Error(errorMessage);
-        }
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-        dispatch(showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: responseData.message,
-        }));
-      } catch (err: unknown) {
-        console.error(err);
-  
+      const responseData = await res.json();
+      setOtpFormVisible(true)
+
+      if (!res.ok) {
         const errorMessage =
-          err instanceof Error
-            ? err.message
-            : "Unexpected error occurred. Please try again.";
-
-        dispatch(showToast({
-          visible: true,
-          severity: "error",
-          summary: "failed",
-          detail: errorMessage,
-        }));
-      } finally {
-        setSubmitting(false);
+          responseData?.message || `Failed to request. Please try again.`;
+        throw new Error(errorMessage);
       }
-    };
+
+      dispatch(showToast({
+        visible: true,
+        severity: "success",
+        summary: "success",
+        detail: responseData.message,
+      }));
+    } catch (err: unknown) {
+      console.error(err);
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Unexpected error occurred. Please try again.";
+
+      dispatch(showToast({
+        visible: true,
+        severity: "error",
+        summary: "failed",
+        detail: errorMessage,
+      }));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const onClickConfirmResetPassword = async () => {
     try {
@@ -83,7 +83,7 @@ const ForgotPasswordPage = () => {
         },
         body: JSON.stringify(body),
       });
-      
+
       const responseData = await res.json();
 
       if (!res.ok) {
@@ -126,7 +126,9 @@ const ForgotPasswordPage = () => {
           <h1 className='font-bold'>Input OTP</h1>
           <p>You can find the OTP code in your email.</p>
         </div>
-        <InputOtp disabled={submitting} value={token} onChange={(e) => setTokens(e.value)} length={6}/>
+        <div className="self-center">
+          <InputOtp disabled={submitting} value={token} onChange={(e) => setTokens(e.value)} length={6} />
+        </div>
       </div>
       <button
         className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
@@ -146,58 +148,57 @@ const ForgotPasswordPage = () => {
           <p>Enter your registered email address.</p>
         </div>
         <form
-            className="space-y-4 w-full"
-            onSubmit={handleSubmit(onSubmit)}
-          >
-            <div className="flex flex-col gap-2 w-full">
-              <Controller
-                name="email"
-                defaultValue=""
-                control={control}
-                rules={{
-                  required: "Email is required",
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="email"
-                      {...field}
-                      className={`w-full ${
-                        fieldState.invalid ? "p-invalid" : ""
+          className="space-y-4 w-full"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <div className="flex flex-col gap-2 w-full">
+            <Controller
+              name="email"
+              defaultValue=""
+              control={control}
+              rules={{
+                required: "Email is required",
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <InputText
+                    id="email"
+                    {...field}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""
                       }`}
-                      disabled={submitting}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold text-red-500">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-              
-            <div className="flex w-full flex-col gap-2 text-center">
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Submit"}
-              </button>
-            </div>
-          </form>
+                    disabled={submitting}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold text-red-500">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex w-full flex-col gap-2 text-center">
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+              disabled={submitting}
+            >
+              {submitting ? "Submitting..." : "Submit"}
+            </button>
+          </div>
+        </form>
       </div>
     </>
   }
 
   return (
-      <>
-        <div className="bg-white p-10 rounded-lg shadow-md">
-          {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
-        </div>
-      </>
-    );
+    <>
+      <div className="bg-white p-10 rounded-lg shadow-md">
+        {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
+      </div>
+    </>
+  );
 }
 
 export default ForgotPasswordPage
