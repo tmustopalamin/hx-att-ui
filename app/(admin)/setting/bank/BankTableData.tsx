@@ -83,7 +83,7 @@ const BankTableData = () => {
     return <ErrorNotConnectedToApi mutateKey='/api/bank?show_all=true' />
   }
 
-  const onIngredientsChange = () => {
+  const onShowDeletedDataChecked = () => {
     setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
   }
 
@@ -295,7 +295,7 @@ const BankTableData = () => {
               <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
 
               <div className="flex align-items-center pl-5">
-                <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onIngredientsChange} checked={isShowDeletedDataChecked} />
+                <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onShowDeletedDataChecked} checked={isShowDeletedDataChecked} />
                 <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
               </div>
             </div>

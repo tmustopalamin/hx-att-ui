@@ -4,38 +4,49 @@ import { Card } from 'primereact/card'
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { FilterMatchMode } from 'primereact/api';
 import { Button } from 'primereact/button';
-import CardTitle from '@/app/_components/CardTitle';
 import { ConfirmDialog } from 'primereact/confirmdialog';
 import { useState } from 'react';
 import useSWR from 'swr';
 import { fetcher } from '@/app/utils/fetcher';
-// import { Tag } from 'primereact/tag';
 import { AttendanceLog } from '@/app/types/attendance-log';
 import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
 import LoadingDataTable from '@/app/_components/LoadingDataTable';
 import dayjs from 'dayjs';
+import { Calendar } from 'primereact/calendar';
+import { Dropdown } from 'primereact/dropdown';
+import { remapEmployeeAttendanceLog } from '@/app/services/attendance-log-service';
+import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages';
+import { useDispatch } from 'react-redux';
+import { showToast } from '@/store/ToastSlice';
+import { Dialog } from 'primereact/dialog';
+
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const AttendanceLogTableData = () => {
-  // const profileState = useSelector((state: RootState) => state.profile);
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
-  const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-  });
+
+  const dispatch = useDispatch();
   const [isFetchData, setIsFetchData] = useState(false);
 
+  // FILTER STATE
+  const [dateFrom, setDateFrom] = useState<Date | null>(null);
+  const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [sourceType, setSourceType] = useState<string | null>(null);
+  const [employeeName, setEmployeeName] = useState('');
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
+  // PHOTO POPUP
+  const [photoDialog, setPhotoDialog] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
-    _filters['global'].value = value;
+  const openPhoto = (url: string) => {
+    setSelectedPhoto(url);
+    setPhotoDialog(true);
+  };
 
-    setFilters(_filters);
-    setGlobalFilterValue(value);
+  const hidePhoto = () => {
+    setPhotoDialog(false);
+    setSelectedPhoto(null);
   };
 
   const { data: AttendanceLogData, error, isLoading, mutate } = useSWR<AttendanceLog[]>(`/api/attendance-log?is_fetch_data=${isFetchData}`, fetcher, {
@@ -43,93 +54,164 @@ const AttendanceLogTableData = () => {
   });
 
   if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/attendance-log' />
-  }
-
-  // const activeColumnBody = (rowData: AttendanceLog) => {
-  //   return rowData.is_active ? (
-  //     <Tag value="Active" severity="success" />
-  //   ) : (
-  //     <Tag value="Inactive" severity="danger" />
-  //   );
-  // };
+  if (error) return <ErrorNotConnectedToApi mutateKey='/api/attendance-log' />
 
   const onClickGetData = () => {
     setIsFetchData(true)
     mutate();
   };
 
+  const onClickRemapEmployee = async () => {
+    try {
+      await remapEmployeeAttendanceLog();
+      mutate();
+      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: 'Mapping PIN to Employee Success ' }));
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
+      } else if (err instanceof Error) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
+      }
+    }
+  };
 
-  // const actionColumnBody = (rowData: AttendanceLog) => {
-  //   console.log(rowData);
+  // FILTER LOGIC
+  const filteredData = AttendanceLogData?.filter((item) => {
+    if (!item.event_time) return true;
 
-  //   return <>
-  //     <div className="flex gap-2">
-  //       {/* {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
+    const eventDate = new Date(item.event_time);
 
-  //       {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      from.setHours(0, 0, 0, 0);
+      if (eventDate < from) return false;
+    }
 
-  //       {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />} */}
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      if (eventDate > to) return false;
+    }
 
-  //       {/* <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='update' rounded severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { }} /> */}
-  //     </div>
-  //   </>
-  // };
+    if (sourceType && item.source_type !== sourceType) return false;
 
-  const sourceColumnBody = (rowData: AttendanceLog) => {
-    return <>
-      <div className="">
-        {rowData.source_type} {rowData.machine_name}
-      </div>
-    </>
-  }
+    if (employeeName && !item.employee_name.toLowerCase().includes(employeeName.toLowerCase())) return false;
 
-  const coordsColumnBody = (rowData: AttendanceLog) => {
-    return <>
-      <div className="">
-        {rowData.latitude} / {rowData.longitude}
-      </div>
-    </>
-  }
+    return true;
+  });
 
-  const photoColumnBody = (rowData: AttendanceLog) => {
-    const url = `http://localhost:3050/public/upload/attendance/${rowData.photo_url}`;
+  // EXPORT EXCEL
+  const exportExcel = () => {
+    if (!filteredData) return;
 
-    return <>
-      {rowData.photo_url && (
-        <div className="underline">
-          <a href={url} target="_blank">View</a>
-        </div>
-      )}
-    </>
-  }
+    const exportData = filteredData.map((item, index) => ({
+      No: index + 1,
+      Employee: item.employee_name,
+      EventTime: dayjs(item.event_time).format("DD-MM-YYYY HH:mm"),
+      Source: item.source_type,
+      Machine: item.machine_name,
+      Latitude: item.latitude,
+      Longitude: item.longitude
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance Log");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array'
+    });
+
+    const data = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    });
+
+    saveAs(data, "attendance_log.xlsx");
+  };
+
+  const sourceOptions = [
+    { label: 'GPS+PHOTO', value: 'GPS+PHOTO' },
+    { label: 'MACHINE', value: 'MACHINE' }
+  ];
 
   const eventDateColumnBody = (rowData: AttendanceLog) => {
-    const event_time = dayjs(rowData.event_time).isValid() ? dayjs(rowData.event_time).format("DD-MM-YYYY HH:mm") : '';
-    return <>{event_time}</>
-  }
-
+    return dayjs(rowData.event_time).format("DD-MM-YYYY HH:mm:ss");
+  };
 
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Attendance Log' url='' />}>
-        <div className="p-3 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button label="Get Data" icon="pi pi-refresh" size="small" onClick={() => { onClickGetData() }} />
+
+      <Card>
+        <div className="p-4 flex flex-col gap-4">
+
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
+            <div>
+              <div className="text-2xl font-semibold">Attendance Log</div>
+              <div className="text-sm text-gray-500">
+                Manage and monitor employee attendance records
+              </div>
             </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-            </IconField>
+            <div className="flex flex-wrap gap-2">
+              <Button label="Sync Log" icon="pi pi-refresh" size="small" onClick={() => onClickGetData()} />
+              <Button label="Remap Employee" icon="pi pi-refresh" size="small" className="p-button-warning" onClick={() => onClickRemapEmployee()} />
+              <Button label="Export Excel" icon="pi pi-file-excel" size="small" className="p-button-success" onClick={exportExcel} />
+            </div>
           </div>
 
+          {/* FILTER TOOLBAR */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 bg-gray-50 p-3 rounded-lg border">
+            <InputText
+              placeholder="Employee"
+              value={employeeName}
+              onChange={(e) => setEmployeeName(e.target.value)}
+            />
+
+            <Calendar
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.value as Date)}
+              placeholder="Date From"
+              dateFormat="dd-mm-yy"
+              showIcon
+              appendTo={document.body}
+            />
+
+            <Calendar
+              value={dateTo}
+              onChange={(e) => setDateTo(e.value as Date)}
+              placeholder="Date To"
+              dateFormat="dd-mm-yy"
+              showIcon
+              appendTo={document.body}
+            />
+
+            <Dropdown
+              value={sourceType}
+              options={sourceOptions}
+              onChange={(e) => setSourceType(e.value)}
+              placeholder="Source"
+              className="w-full"
+            />
+
+            <Button
+              label="Reset"
+              icon="pi pi-filter-slash"
+              className="p-button-secondary"
+              onClick={() => {
+                setDateFrom(null);
+                setDateTo(null);
+                setSourceType(null);
+                setEmployeeName('');
+              }}
+            />
+          </div>
+
+          {/* TABLE */}
           <DataTable
-            value={AttendanceLogData}
-            tableStyle={{ minWidth: "50rem" }}
+            value={filteredData}
             stripedRows
             paginator
             scrollable
@@ -137,28 +219,33 @@ const AttendanceLogTableData = () => {
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['name']}
             emptyMessage="No AttendanceLog found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
           >
             <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
             <Column field="employee_name" header="Employee"></Column>
-            <Column header="Event Time" body={(rowData) => eventDateColumnBody(rowData)}></Column>
-            <Column header="Source" body={(rowData) => sourceColumnBody(rowData)}></Column>
-            {/* <Column field="device_id" header="Device"></Column> */}
-            <Column header="Photo" body={(rowData) => photoColumnBody(rowData)}></Column>
-            <Column header="Location" body={(rowData) => coordsColumnBody(rowData)}></Column>
-            {/* <Column field="is_active" header="Active" body={activeColumnBody}></Column> */}
-            {/* <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column> */}
+            <Column field="event_time" header="Event Time" body={(rowData) => eventDateColumnBody(rowData)}></Column>
+            <Column field='source_type' header="Verification Source"></Column>
+            <Column field="machine_name" header="Machine"></Column>
+            <Column field="latitude" header="Lat"></Column>
+            <Column field="longitude" header="Lon"></Column>
           </DataTable>
+
         </div>
       </Card>
+
+      {/* PHOTO POPUP */}
+      <Dialog
+        header="Photo"
+        visible={photoDialog}
+        style={{ width: '400px' }}
+        onHide={hidePhoto}
+      >
+        {selectedPhoto && (
+          <img src={selectedPhoto} alt="Attendance" className="w-full" />
+        )}
+      </Dialog>
     </>
   )
 }
 
-export default AttendanceLogTableData
+export default AttendanceLogTableData;

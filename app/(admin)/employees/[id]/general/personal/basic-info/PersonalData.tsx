@@ -66,7 +66,7 @@ const PersonalData = () => {
 
   const getPersonalData = async () => {
 
-    const response = await fetch(`http://localhost:3050/employees/${id}/personal-data`);
+    const response = await fetch(`http://localhost:3050/api/employees/${id}/personal-data`, { credentials: "include", });
     const data = await response.json();
 
     setValue('firstName', data.first_name);
@@ -90,19 +90,19 @@ const PersonalData = () => {
   }, [listReligion, listGender, listMaritalStatus]);
 
   const getlistReligion = async () => {
-    const response = await fetch('http://localhost:3050/religion');
+    const response = await fetch('http://localhost:3050/api/religion', { credentials: "include", });
     const data = await response.json();
     setListReligion(data);
   }
 
   const getListGender = async () => {
-    const response = await fetch('http://localhost:3050/gender');
+    const response = await fetch('http://localhost:3050/api/gender', { credentials: "include", });
     const data = await response.json();
     setListGender(data);
   }
 
   const getListMaritalStatus = async () => {
-    const response = await fetch('http://localhost:3050/marital');
+    const response = await fetch('http://localhost:3050/api/marital', { credentials: "include", });
     const data = await response.json();
     setListMaritalStatus(data);
   }
@@ -119,8 +119,9 @@ const PersonalData = () => {
       photo_url: profileData.photo_url,
     }
 
-    const res = await fetch(`http://localhost:3050/employees/${id}/personal-data`, {
+    const res = await fetch(`http://localhost:3050/api/employees/${id}/personal-data`, {
       method: 'PUT',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

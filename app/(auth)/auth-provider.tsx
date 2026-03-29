@@ -5,7 +5,6 @@ import useSWR from "swr";
 import { useDispatch, useSelector } from "react-redux";
 import { clearProfile, updateDataProfile } from "@/store/me/ProfileSlice";
 import { RootState } from "@/store/store";
-import { useRouter } from "next/navigation";
 import { Me } from "../types/me";
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -42,12 +41,10 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error?.status === 401) {
       dispatch(clearProfile());
     }
-  }, [data, error, dispatch]);
+  }, [data, error]);
 
-  if (isLoading) {
-    return null; // atau skeleton
-  }
-
+  if (isLoading) return null;
+  if (!profileData?.employee_id) return null;
   return <>{children}</>;
 };
 

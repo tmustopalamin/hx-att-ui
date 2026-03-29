@@ -4,7 +4,7 @@ export interface User {
     username: string;
     password: string;
     email: string;
-    role: string;
+    role: string[];
     is_active: boolean;
     deleted_at: string;
     row_version: number;

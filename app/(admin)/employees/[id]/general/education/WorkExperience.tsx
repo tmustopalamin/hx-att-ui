@@ -74,8 +74,9 @@ const EmployeeWorkExperienceDataTable = () => {
         setTableLoading(true);
         setData([])
 
-        fetch(`http://localhost:3050/employees/${id}/work-experience-data`, {
+        fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
             method: "GET",
+            credentials: 'include',
             headers: {
                 "Content-Type": "application/json",
             },
@@ -147,8 +148,9 @@ const EmployeeWorkExperienceDataTable = () => {
         setSelectedId(id);
 
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/work-experience-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
                 method: "DELETE",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -185,8 +187,9 @@ const EmployeeWorkExperienceDataTable = () => {
 
         try {
 
-            const res = await fetch(`http://localhost:3050/employees/${id}/work-experience-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
                 method: "POST",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -224,8 +227,9 @@ const EmployeeWorkExperienceDataTable = () => {
 
         try {
 
-            const res = await fetch(`http://localhost:3050/employees/${id}/work-experience-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
                 method: "PUT",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },

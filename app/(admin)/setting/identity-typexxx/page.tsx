@@ -50,8 +50,9 @@ const IdentityTypeSettingPage = () => {
     const getData = () => {
         setTableLoading(true);
 
-        fetch("http://localhost:3050/identity-type", {
+        fetch("http://localhost:3050/api/identity-type", {
             method: "GET",
+            credentials: 'include',
             headers: {
                 "Content-Type": "application/json",
             },
@@ -105,8 +106,9 @@ const IdentityTypeSettingPage = () => {
     const handleSubmitNew = async (data: { name: string; is_active: boolean }) => {
         try {
 
-            const res = await fetch("http://localhost:3050/identity-type", {
+            const res = await fetch("http://localhost:3050/api/identity-type", {
                 method: "POST",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -133,8 +135,9 @@ const IdentityTypeSettingPage = () => {
     const handleSubmitUpdate = async (data: { name: string; is_active: boolean }) => {
         try {
 
-            const res = await fetch("http://localhost:3050/identity-type", {
+            const res = await fetch("http://localhost:3050/api/identity-type", {
                 method: "PUT",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -163,8 +166,9 @@ const IdentityTypeSettingPage = () => {
 
         try {
 
-            const res = await fetch("http://localhost:3050/identity-type", {
+            const res = await fetch("http://localhost:3050/api/identity-type", {
                 method: "DELETE",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                 },

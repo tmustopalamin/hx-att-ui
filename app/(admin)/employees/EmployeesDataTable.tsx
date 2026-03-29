@@ -8,14 +8,12 @@ import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
 import { FilterMatchMode } from 'primereact/api';
 import { Button } from 'primereact/button';
-import CardTitle from '@/app/_components/CardTitle';
-import { ConfirmDialog } from 'primereact/confirmdialog';
+import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { fetcher } from '@/app/utils/fetcher';
 import LoadingDataTable from '@/app/_components/LoadingDataTable';
 import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
-// import { Checkbox } from 'primereact/checkbox';
 import { Employee } from '@/app/types/employee';
 import { useRouter } from 'next/navigation';
 import { ResponseTypeCreateSuccess, ResponseType } from '@/app/types/response-type';
@@ -27,12 +25,12 @@ import { Controller, useForm } from 'react-hook-form';
 import dayjs from 'dayjs';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
-// import { RootState } from '@/store/store';
 import { ReligionType } from '@/app/types/religion-type';
 import { Gender } from '@/app/types/gender';
 import { MaritalStatus } from '@/app/types/marital-status';
-import { createEmployee } from '@/app/services/employee-service';
+import { createEmployee, deleteEmployee, purgeEmployee, restoreEmployee } from '@/app/services/employee-service';
 import Link from 'next/link';
+import { Checkbox } from 'primereact/checkbox';
 
 
 const EmployeesDataTable = () => {
@@ -43,10 +41,11 @@ const EmployeesDataTable = () => {
   const [filters, setFilters] = useState({
     global: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
-  // const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
 
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [selectedData, setSelectedData] = useState<Employee | null>(null);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
   const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<Employee>();
 
@@ -104,14 +103,14 @@ const EmployeesDataTable = () => {
     </div>
   );
 
-  const { data: EmployeesData, error, isLoading } = useSWR<Employee[]>(`/api/employees/list`, fetcher);
+  const { data: EmployeesData, error, isLoading } = useSWR<Employee[]>(`/api/employees/list?show_all=${isShowDeletedDataChecked}`, fetcher);
   const { data: genderData, error: genderError, isLoading: genderIsLoading } = useSWR<Gender[]>(`/api/gender`, fetcher);
   const { data: religionData, error: religionError, isLoading: religionIsLoading } = useSWR<ReligionType[]>(`/api/religion`, fetcher);
   const { data: maritalStatusData, error: maritalStatusError, isLoading: maritalStatusIsLoading } = useSWR<MaritalStatus[]>(`/api/marital`, fetcher);
 
   if (isLoading) return <LoadingDataTable />;
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/employees?show_all=true' />
+    return <ErrorNotConnectedToApi mutateKey='/api/employees/list?show_all=true' />
   }
 
   const genderActive = genderData?.filter(a => a.is_active);
@@ -121,10 +120,77 @@ const EmployeesDataTable = () => {
     return rowData.first_name + " " + rowData.last_name
   };
 
+  const onClickDelete = (data: Employee) => {
+    confirmDialog({
+      message: 'Do you want to delete this record?',
+      header: 'Delete Confirmation',
+      icon: 'pi pi-info-circle',
+      defaultFocus: 'accept',
+      acceptClassName: "p-button-danger ml-3",
+      accept: () => {
+        setSelectedData(data);
+        handleDelete(data);
+      },
+      reject: () => { },
+      footer: (options) => (
+        <div className="flex gap-3 justify-end">
+          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
+          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
+        </div>
+      )
+    });
+  };
+
+  const onClickRestore = (data: Employee) => {
+    confirmDialog({
+      message: 'Do you want to restore this record?',
+      header: 'Restore Confirmation',
+      icon: 'pi pi-info-circle',
+      defaultFocus: 'accept',
+      accept: () => {
+        setSelectedData(data);
+        handleRestore(data);
+      },
+      reject: () => { },
+      footer: (options) => (
+        <div className="flex gap-3 justify-end">
+          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
+          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
+        </div>
+      )
+    });
+  };
+
+  const onClickPurge = (data: Employee) => {
+    confirmDialog({
+      message: 'Do you want to delete this record forever?',
+      header: 'Delete Confirmation',
+      icon: 'pi pi-info-circle',
+      defaultFocus: 'accept',
+      acceptClassName: "p-button-danger ml-3",
+      accept: () => {
+        handlePurge(data);
+      },
+      reject: () => { },
+      footer: (options) => (
+        <div className="flex gap-3 justify-end">
+          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
+          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
+        </div>
+      )
+    });
+  };
+
 
   const actionColumnBody = (rowData: Employee) => {
     return <>
       <div className="flex gap-2">
+        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />
+
+        {rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
+
+        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />}
+
         <Link href={`/employees/${rowData.id}/general/personal`}>
           <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='edit' rounded severity='help' label="" icon="pi pi-pencil" size="small" />
         </Link>
@@ -149,6 +215,64 @@ const EmployeesDataTable = () => {
 
   const getBody = () => document.body;
 
+  const handleDelete = async (data: Employee) => {
+    try {
+      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployee(data.id, data.row_version);
+      setVisible(false);
+      reset();
+      mutate(`/api/employees/list?show_all=${isShowDeletedDataChecked}`);
+
+
+      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
+      } else if (err instanceof Error) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
+      }
+    }
+  }
+
+  const handlePurge = async (data: Employee) => {
+    try {
+      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployee(data.id);
+      setVisible(false);
+      reset();
+      mutate(`/api/employees/list?show_all=${isShowDeletedDataChecked}`);
+
+
+      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
+      } else if (err instanceof Error) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
+      }
+    }
+  }
+
+  const handleRestore = async (data: Employee) => {
+    try {
+      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreEmployee(data.id, data.row_version);
+      setVisible(false);
+      reset();
+      mutate(`/api/employees/list?show_all=${isShowDeletedDataChecked}`);
+
+
+      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
+      } else if (err instanceof Error) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
+      }
+    }
+  }
+
+  const onShowDeletedDataChecked = () => {
+    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
+  }
+
   return (
     <>
       <ConfirmDialog />
@@ -163,14 +287,27 @@ const EmployeesDataTable = () => {
               </div>
             </div>
 
-            <div className="flex gap-5">
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-              </IconField>
+            <div className="flex items-center justify-between gap-5">
+              <div className="flex items-center">
+                <div className="flex align-items-center pl-5">
+                  <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onShowDeletedDataChecked} checked={isShowDeletedDataChecked} />
+                  <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
+                </div>
+              </div>
 
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+              <> | </>
+
+              <div className="flex gap-5">
+                <IconField iconPosition="left">
+                  <InputIcon className="pi pi-search" />
+                  <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+                </IconField>
+
+                <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+              </div>
             </div>
+
+
           </div>
 
           <DataTable
@@ -183,7 +320,7 @@ const EmployeesDataTable = () => {
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['name']}
+            globalFilterFields={['code', 'name', 'gender_name', 'agency_name', 'branch_name']}
             emptyMessage="No Employees found."
             header={<></>}
             filters={filters}

@@ -26,10 +26,14 @@ type PermissionGroup = {
   group: string
   group_name: string
   permissions: {
-    id: number
     code: string
     label: string
   }[]
+}
+
+type RolePermissionsResponse = {
+  role_id: number,
+  code: string
 }
 
 const RolePermissionsTableData = () => {
@@ -48,10 +52,10 @@ const RolePermissionsTableData = () => {
 
   const onSave = async (data: RolePermissions) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await saveRolePermissions(data.role_id, data)
+      const res: ResponseType<ResponseTypeCreateSuccess> = await saveRolePermissions(data)
       // mutate(`/api/income-component`);
       dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-      reset();
+      // reset();
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
@@ -63,21 +67,13 @@ const RolePermissionsTableData = () => {
 
   const { data, error, isLoading } = useSWR<Role[]>(`/api/roles`, fetcher);
   const { data: dataPermissions, error: errorPermissions, isLoading: isLoadingPermissions } = useSWR<Permissions[]>(`/api/permissions`, fetcher);
-  const { data: dataRolePermissions, error: errRolePermissions, isLoading: isLoadingRolePermissions } = useSWR<RolePermissions[]>(watch('role_id') ? `/api/roles/${watch('role_id')}/permissions` : null, fetcher);
+  const { data: dataRolePermissions, error: errRolePermissions, isLoading: isLoadingRolePermissions } = useSWR<RolePermissionsResponse[]>(watch('role_id') ? `/api/roles/${watch('role_id')}/permissions` : null, fetcher);
 
   useEffect(() => {
     if (!dataRolePermissions || dataRolePermissions.length === 0) return
-
-    const permissions = dataRolePermissions.map(p => String(p.permissions))
-
-    console.log(dataRolePermissions, permissions, 'lalal')
-
-    setValue('permissions', permissions, {
-      // shouldDirty: false,
-      // shouldTouch: false,
-      // shouldValidate: false,
-    })
-  }, [dataRolePermissions, setValue])
+    const permissions = dataRolePermissions.map(p => p.code)
+    setValue('permissions', permissions, {})
+  }, [dataRolePermissions])
 
 
   const groupingPermission = (data: Permissions[]) => {
@@ -93,7 +89,6 @@ const RolePermissionsTableData = () => {
       }
 
       map[p.resource].permissions.push({
-        id: p.id,
         code: p.code,
         label: p.label
       })
@@ -141,11 +136,11 @@ const RolePermissionsTableData = () => {
           <div className="p-3 flex flex-col gap-5">
 
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="role">Role</label>
+              <label htmlFor="role_id">Role</label>
               <Controller
                 name="role_id"
-                rules={{ required: "*required" }}
                 control={control}
+                rules={{ required: "role is required" }}
                 render={({ field, fieldState }) => (
                   <>
                     <Dropdown
@@ -155,11 +150,11 @@ const RolePermissionsTableData = () => {
                       options={data}
                       loading={isLoading}
                       onChange={(e) => {
+                        reset()
                         field.onChange(e.value ?? null);
                       }}
                       optionLabel="name"
-                      optionValue="id"
-                      showClear={true}
+                      optionValue="code"
                       placeholder={
                         isLoading ? "Loading roles..." : "Select a role"
                       }
@@ -172,11 +167,11 @@ const RolePermissionsTableData = () => {
               />
             </div>
 
-            {watch('role_id') > 0 && dataPermissionsGroupped.map(group => (
-              <div key={group.group} className="border rounded-lg p-4">
+            {watch('role_id') !== 0 && dataPermissionsGroupped.map(group => (
+              <div key={group.group} className="border rounded-lg p-4 border-gray-300">
                 <div className="flex items-center mb-3 gap-2">
                   <h2 className="font-semibold text-gray-700">
-                    {group.group_name}
+                    {String(group.group_name).toLocaleUpperCase()}
                   </h2>
                   <div className="flex items-center">
                     <Controller
@@ -186,13 +181,12 @@ const RolePermissionsTableData = () => {
                         const value = field.value ?? []
 
                         // semua permission code di group ini
-                        const groupCodes = group.permissions.map(p => String(p.code))
+                        const groupCodes = group.permissions.map(p => p.code)
 
                         // apakah semua permission group sudah tercentang
                         const isAllChecked = groupCodes.every(code =>
-                          value.includes(String(code))
+                          value.includes(code)
                         )
-
                         return (
                           <div className="flex items-center gap-2">
                             <Checkbox
@@ -206,7 +200,7 @@ const RolePermissionsTableData = () => {
                                   field.onChange(merged)
                                 } else {
                                   field.onChange(
-                                    value.filter(code => !groupCodes.includes(String(code)))
+                                    value.filter(code => !groupCodes.includes(code))
                                   )
                                 }
                               }}
@@ -224,28 +218,28 @@ const RolePermissionsTableData = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {group.permissions.map(p => (
                     <Controller
-                      key={String(p.id)}
+                      key={p.code}
                       name="permissions"
                       control={control}
                       render={({ field }) => {
                         const value = field.value ?? []
-                        const checked = value.includes(String(p.id))
+                        const checked = value.includes(p.code)
                         return (
                           <div className="flex items-center">
                             <Checkbox
-                              inputId={String(p.id)}
+                              inputId={p.code}
                               checked={checked}
                               onChange={(e) => {
                                 if (e.checked) {
-                                  field.onChange([...field.value, String(p.id)])
+                                  field.onChange([...field.value, p.code])
                                 } else {
                                   field.onChange(
-                                    field.value.filter(v => v !== String(p.id))
+                                    field.value.filter(v => v !== p.code)
                                   )
                                 }
                               }}
                             />
-                            <label htmlFor={String(p.id)} className="ml-2">
+                            <label htmlFor={p.code} className="ml-2">
                               {p.label}
                             </label>
                           </div>
@@ -254,10 +248,11 @@ const RolePermissionsTableData = () => {
                     />
                   ))}
                 </div>
+
               </div>
             ))}
 
-            {watch('role_id') > 0 && (
+            {watch('role_id') !== 0 && (
               <div className="flex justify-end">
                 <Button label="Save" icon="pi pi-check" size="small" type='submit' />
               </div>

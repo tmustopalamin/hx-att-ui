@@ -66,7 +66,7 @@ const EmployeeEmergencyContactDataTable = () => {
 
     const getData = () => {
         setTableLoading(true);
-        fetch(`http://localhost:3050/employees/${id}/emergency-contact-data`)
+        fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, { credentials: 'include' })
             .then((res) => res.json())
             .then((data) => {
                 setData(data);
@@ -122,7 +122,8 @@ const EmployeeEmergencyContactDataTable = () => {
 
     const handleSubmitDelete = async (id: number) => {
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/emergency-contact-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, {
+                credentials: 'include',
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id }),
@@ -156,7 +157,8 @@ const EmployeeEmergencyContactDataTable = () => {
             phone: data.phone,
         };
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/emergency-contact-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, {
+                credentials: 'include',
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newData),
@@ -179,7 +181,8 @@ const EmployeeEmergencyContactDataTable = () => {
             phone: data.phone,
         };
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/emergency-contact-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, {
+                credentials: 'include',
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),

@@ -1,10 +1,10 @@
 import { ResponseTypeError } from "../types/response-type";
-import { Role } from "../types/role";
-import { RolePermissions } from "../types/role-permissions";
+import dayjs from "dayjs";
+import { SalaryComponent } from "../types/salary_component";
 
-const API_URL = '/api/roles';
+const API_URL = '/api/salary-component';
 
-export const createRole = async (data: Role) => {
+export const createSalaryComponent = async (data: SalaryComponent) => {
   const res = await fetch(API_URL, {
     method: 'POST',
     credentials: 'include',
@@ -41,23 +41,7 @@ export const createRole = async (data: Role) => {
   return res.json();
 }
 
-export const saveRolePermissions = async (data: RolePermissions) => {
-  const res = await fetch(`${API_URL}/permissions`, {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data)
-  });
-  if (!res.ok) {
-    const errorData: ResponseTypeError = await res.json();
-    throw errorData;
-  }
-  return res.json();
-}
-
-export const updateRole = async (id: number, rowVersion: number, data: Role) => {
+export const updateSalaryComponent = async (id: number, rowVersion: number, data: SalaryComponent) => {
   if (rowVersion <= -1)
     throw new Error('rowVersion is required');
 
@@ -77,7 +61,7 @@ export const updateRole = async (id: number, rowVersion: number, data: Role) => 
   return res.json();
 }
 
-export const deleteRole = async (id: number, rowVersion: number) => {
+export const deleteSalaryComponent = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1)
     throw new Error('rowVersion is required');
 
@@ -96,7 +80,7 @@ export const deleteRole = async (id: number, rowVersion: number) => {
   return res.json();
 }
 
-export const purgeRole = async (id: number) => {
+export const purgeSalaryComponent = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
     method: 'DELETE',
     credentials: 'include',
@@ -111,7 +95,7 @@ export const purgeRole = async (id: number) => {
   return res.json();
 }
 
-export const restoreRole = async (id: number, rowVersion: number) => {
+export const restoreSalaryComponent = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
     method: 'POST',
     credentials: 'include',

@@ -61,6 +61,7 @@ const RoleTableData = () => {
     setPopupHeaderTitle("New Role");
     reset({
       id: 0,
+      code: '',
       name: '',
       description: '',
       is_active: true,
@@ -326,6 +327,7 @@ const RoleTableData = () => {
             loading={isLoading}
           >
             <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
+            <Column field="code" header="Code"></Column>
             <Column field="name" header="Name"></Column>
             <Column field="description" header="Description"></Column>
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
@@ -347,6 +349,29 @@ const RoleTableData = () => {
           }}
         >
           <div className="flex flex-col gap-5">
+            <div className="m-0 flex flex-col gap-2">
+              <label htmlFor="code">Code</label>
+              <Controller
+                name="code"
+                control={control}
+                rules={{ required: "*required", }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <InputText
+                      id="code"
+                      placeholder='example: admin'
+                      disabled={!isAddNew}
+                      {...field}
+                      className={fieldState.invalid ? "p-invalid" : ""}
+                    />
+                    {fieldState.error && (
+                      <small className="font-bold p-error"> {fieldState.error.message} </small>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+
             <div className="m-0 flex flex-col gap-2">
               <label htmlFor="name">Name</label>
               <Controller

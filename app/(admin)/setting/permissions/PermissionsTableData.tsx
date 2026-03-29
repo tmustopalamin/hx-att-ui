@@ -13,7 +13,7 @@ import { Controller, useForm } from 'react-hook-form';
 import CardTitle from '@/app/_components/CardTitle';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import { InputSwitch } from 'primereact/inputswitch';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { fetcher } from '@/app/utils/fetcher';
 import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type';
@@ -41,8 +41,32 @@ const PermissionsTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<Permissions>();
+  const { control, handleSubmit, setFocus, setValue, getValues, formState: { isValid }, reset, clearErrors } = useForm<Permissions>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+
+  const debounce = (func: any, delay: number) => {
+    let timeout: any;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  const debounceUpdateCode = useRef(
+    debounce((resource: string, action: string) => {
+      if (!resource) {
+        setValue("code", "");
+        return;
+      }
+
+      if (!action) {
+        setValue("code", resource);
+        return;
+      }
+
+      setValue("code", `${resource}.${action}`);
+    }, 500)
+  ).current;
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -320,7 +344,7 @@ const PermissionsTableData = () => {
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['name']}
+            globalFilterFields={['code', 'label', 'resource', 'action']}
             emptyMessage="No Permissions found."
             header={<></>}
             filters={filters}
@@ -352,6 +376,7 @@ const PermissionsTableData = () => {
           }}
         >
           <div className="flex flex-col gap-5">
+
             <div className="m-0 flex flex-col gap-2">
               <label htmlFor="code">Code</label>
               <Controller
@@ -369,6 +394,7 @@ const PermissionsTableData = () => {
                       placeholder='example: employee.read'
                       {...field}
                       className={fieldState.invalid ? "p-invalid" : ""}
+                      disabled={true}
                     />
                     {fieldState.error && (
                       <small className="font-bold p-error"> {fieldState.error.message} </small>
@@ -388,8 +414,19 @@ const PermissionsTableData = () => {
                   <>
                     <InputText
                       id="resource"
-                      placeholder='example: employee'
-                      {...field}
+                      placeholder="example: employee"
+                      value={field.value}
+                      onChange={(e) => {
+                        let value = e.target.value;
+
+                        // hapus spasi
+                        value = value.replace(/\s/g, "").toLowerCase();
+
+                        field.onChange(value);
+
+                        const action = getValues("action");
+                        debounceUpdateCode(value, action);
+                      }}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && (
@@ -410,8 +447,19 @@ const PermissionsTableData = () => {
                   <>
                     <InputText
                       id="action"
-                      placeholder='example: read'
-                      {...field}
+                      placeholder="example: read"
+                      value={field.value}
+                      onChange={(e) => {
+                        let value = e.target.value;
+
+                        // hapus spasi
+                        value = value.replace(/\s/g, "").toLowerCase();
+
+                        field.onChange(value);
+
+                        const resource = getValues("resource");
+                        debounceUpdateCode(resource, value);
+                      }}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && (

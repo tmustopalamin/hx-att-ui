@@ -88,8 +88,9 @@ const EmployeeInformalEducationDataTable = () => {
         setTableLoading(true);
         setData([])
 
-        fetch(`http://localhost:3050/employees/${id}/education-data/informal`, {
+        fetch(`http://localhost:3050/api/employees/${id}/education-data/informal`, {
             method: "GET",
+            credentials: 'include',
             headers: {
                 "Content-Type": "application/json",
             },
@@ -167,8 +168,9 @@ const EmployeeInformalEducationDataTable = () => {
         setSelectedId(id);
 
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/education-data/informal`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/education-data/informal`, {
                 method: "DELETE",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -211,8 +213,9 @@ const EmployeeInformalEducationDataTable = () => {
 
         try {
 
-            const res = await fetch(`http://localhost:3050/employees/${id}/education-data/informal`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/education-data/informal`, {
                 method: "POST",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },
@@ -256,8 +259,9 @@ const EmployeeInformalEducationDataTable = () => {
 
         try {
 
-            const res = await fetch(`http://localhost:3050/employees/${id}/education-data/informal`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/education-data/informal`, {
                 method: "PUT",
+                credentials: 'include',
                 headers: {
                     "Content-Type": "application/json",
                 },

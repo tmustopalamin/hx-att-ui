@@ -23,7 +23,7 @@ import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages
 import { showToast } from '@/store/ToastSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { Tag } from 'primereact/tag';
-import { Checkbox } from 'primereact/checkbox';
+import { Checkbox, CheckboxChangeEvent } from 'primereact/checkbox';
 import { RootState } from '@/store/store';
 import { hasRole } from '@/app/utils/role-utils';
 import { Dropdown } from 'primereact/dropdown';
@@ -31,12 +31,7 @@ import { User } from '@/app/types/User';
 import { createUser, updateUser, deleteUser, purgeUser, restoreUser } from '@/app/services/user-service';
 import { Password } from 'primereact/password';
 import { Employee } from '@/app/types/employee';
-
-const roleList = [
-  { id: 'superadmin', description: 'Super Admin' },
-  { id: 'admin', description: 'Admin' },
-  { id: 'user', description: 'User' },
-]
+import { Role } from '@/app/types/role';
 
 const UserTableData = () => {
   const dispatch = useDispatch();
@@ -46,10 +41,11 @@ const UserTableData = () => {
   const [filters, setFilters] = useState({
     global: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
+  const [employeeDataFiltered, setEmployeeDataFiltered] = useState<Employee[]>([]);
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<User>();
+  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors, setValue } = useForm<User>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,11 +69,13 @@ const UserTableData = () => {
       email: '',
       username: '',
       password: '',
-      role: '',
+      role: [],
       is_active: true,
       deleted_at: '',
       row_version: 0,
     });
+
+    removeAlreadyAssignEmployeeFromList()
   }
 
   const footerContent = (
@@ -87,10 +85,28 @@ const UserTableData = () => {
     </div>
   );
 
-  const { data: UserData, error, isLoading } = useSWR<User[]>(`/api/user?show_all=${isShowDeletedDataChecked}`, fetcher);
+  const { data: userData, error, isLoading } = useSWR<User[]>(`/api/user?show_all=${isShowDeletedDataChecked}`, fetcher);
   const { data: employeeData, error: employeeError, isLoading: employeeIsLoading } = useSWR<Employee[]>(`/api/employees`, fetcher);
-  // const activeState = employeeData?.filter(a => a.is_active);
-  const activeState = employeeData;
+  const { data: roleData, error: roleError, isLoading: roleIsLoading } = useSWR<Role[]>(`/api/roles`, fetcher);
+  const activeEmployee = employeeData;
+  const activeRole = roleData?.filter(a => a.is_active);
+
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const onRoleChange = (e: CheckboxChangeEvent) => {
+    let _selectedRoles = [...selectedRoles];
+
+    if (e.checked) {
+      _selectedRoles.push(e.value.toString());
+    } else {
+      _selectedRoles = _selectedRoles.filter(role => role !== e.value);
+    }
+
+    setSelectedRoles(_selectedRoles);
+    setValue('role', _selectedRoles);
+
+    console.log(_selectedRoles, 'huhuy', e)
+  };
+
 
   if (isLoading) return <LoadingDataTable />;
   if (error) {
@@ -192,10 +208,13 @@ const UserTableData = () => {
     }
   }
 
-  const onSubmit = (data: User) => {
-    if (!isValid)
-      return;
+  const removeAlreadyAssignEmployeeFromList = () => {
+    const alreadyAssignIds = [...userData ?? []].map(item => item.employee_id);
+    const filteredData = [...employeeData ?? []].filter(item => !alreadyAssignIds.includes(item.id));
+    setEmployeeDataFiltered(filteredData);
+  }
 
+  const onSubmit = (data: User) => {
     if (isAddNew) {
       handleSubmitNew(data);
       return;
@@ -213,7 +232,11 @@ const UserTableData = () => {
 
     reset(data)
     setSelectedData(data);
-    console.log(data, 'hahaha')
+    setSelectedRoles(data.role);
+    setValue('role', data.role);
+
+    const filteredData = [...employeeData ?? []].filter(item => item.id === data.employee_id)
+    setEmployeeDataFiltered(filteredData);
   }
 
 
@@ -225,11 +248,15 @@ const UserTableData = () => {
     );
   };
 
+  const renderColumnRole = (rowData: User) => {
+    return rowData.role.join(", ");
+  };
+
 
   const actionColumnBody = (rowData: User) => {
     return <>
       <div className="flex gap-2">
-        {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
+        {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' disabled={profileState.employee_id === rowData.employee_id} rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
 
         {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
 
@@ -322,7 +349,7 @@ const UserTableData = () => {
           </div>
 
           <DataTable
-            value={UserData}
+            value={userData}
             tableStyle={{ minWidth: "50rem" }}
             stripedRows
             paginator
@@ -340,10 +367,11 @@ const UserTableData = () => {
             loading={isLoading}
           >
             <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
-            <Column field="full_name" header="Full Code"></Column>
-            <Column field="username" header="username"></Column>
-            <Column field="email" header="email"></Column>
-            <Column field="role" header="role"></Column>
+            <Column field="employee_code" header="Employee ID"></Column>
+            <Column field="full_name" header="Full Name"></Column>
+            <Column field="username" header="Username"></Column>
+            <Column field="email" header="Email"></Column>
+            <Column field="role" header="Role" body={renderColumnRole}></Column>
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
             <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
           </DataTable>
@@ -362,54 +390,6 @@ const UserTableData = () => {
           }}
         >
           <div className="flex flex-col gap-5">
-            {/* <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
-              <Controller
-                name="code"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="code"
-                      placeholder='example: User_abc'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div> */}
-
-            {/* <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="name"
-                      placeholder='example: User abc'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div> */}
-
             <div className="m-0 flex flex-col gap-2">
               <label htmlFor="employee_id">Employee</label>
               <Controller
@@ -422,7 +402,7 @@ const UserTableData = () => {
                       id="employee_id"
                       appendTo={() => document.body}
                       value={field.value}
-                      options={activeState}
+                      options={employeeDataFiltered}
                       loading={isLoading}
                       disabled={employeeIsLoading || !!employeeError}
                       onChange={(e) => field.onChange(e.value)}
@@ -476,6 +456,7 @@ const UserTableData = () => {
                       placeholder='example: User abc'
                       {...field}
                       className={fieldState.invalid ? "p-invalid" : ""}
+                      disabled={!isAddNew}
                     />
                     {fieldState.error && (
                       <small className="font-bold p-error"> {fieldState.error.message} </small>
@@ -490,7 +471,7 @@ const UserTableData = () => {
               <Controller
                 name="password"
                 control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
+                rules={{ maxLength: { value: 50, message: 'maximum 50 character' } }}
                 render={({ field, fieldState }) => (
                   <>
                     <Password
@@ -515,26 +496,19 @@ const UserTableData = () => {
               <Controller
                 name="role"
                 control={control}
-                rules={{ required: "Role is required" }}
+                rules={{ required: "role is required" }}
                 render={({ field, fieldState }) => (
                   <>
-                    <Dropdown
-                      id="role"
-                      appendTo={() => document.body}
-                      value={field.value}
-                      options={roleList}
-                      loading={isLoading}
-                      disabled={employeeIsLoading || !!employeeError}
-                      onChange={(e) => field.onChange(e.value)}
-                      optionLabel="description"
-                      optionValue="id"
-                      placeholder={
-                        isLoading ? "Loading roles..." : "Select a role"
-                      }
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
+                    {roleData?.map((role: Role) => {
+                      return <div key={role.code}>
+                        <Checkbox inputId={role.code.toString()} name="role" value={role.code} onChange={onRoleChange} checked={selectedRoles.some((item: string) => item === role.code.toString())} />
+                        <label htmlFor={role.code.toString()} className="ml-2">
+                          {role.description}
+                        </label>
+                      </div>
+                    })}
                     {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                    {employeeError && (<small className="p-error font-bold">We couldn’t load the list of roles. Please try again</small>)}
+                    {roleError && (<small className="p-error font-bold">We couldn’t load the list of roles. Please try again</small>)}
                   </>
                 )}
               />

@@ -4,10 +4,8 @@ import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import Image from "next/image";
 import Link from "next/link";
-import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import { FormDataLogin } from "@/app/types/form-data-login";
-import { Me } from "@/app/types/me";
 import { useDispatch } from "react-redux";
 import { showToast } from "@/store/ToastSlice";
 import { InputText } from "primereact/inputtext";
@@ -50,6 +48,7 @@ const LoginForm = () => {
                 router.push("/dashboard");
             }, 1000);
         } catch (err: unknown) {
+            setSubmitting(false)
             console.error(err);
 
             const errorMessage =

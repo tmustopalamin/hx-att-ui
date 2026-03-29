@@ -3,5 +3,6 @@ export interface Me {
     email: string;
     name: string;
     role: string[];
+    permissions: string[];
     photo_url: string;
 }

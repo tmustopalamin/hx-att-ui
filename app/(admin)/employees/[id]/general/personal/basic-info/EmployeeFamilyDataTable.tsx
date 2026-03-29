@@ -84,7 +84,7 @@ const EmployeeFamilyDataTable = () => {
 
     const getData = () => {
         setTableLoading(true);
-        fetch(`http://localhost:3050/employees/${id}/family-data`)
+        fetch(`http://localhost:3050/api/employees/${id}/family-data`, { credentials: 'include' })
             .then((res) => res.json())
             .then((data) => {
                 setData(data);
@@ -168,8 +168,9 @@ const EmployeeFamilyDataTable = () => {
 
     const handleSubmitDelete = async (id: number) => {
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/family-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/family-data`, {
                 method: "DELETE",
+                credentials: 'include',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id }),
             });
@@ -200,8 +201,9 @@ const EmployeeFamilyDataTable = () => {
             phone2: data.phone2,
         };
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/family-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/family-data`, {
                 method: "POST",
+                credentials: 'include',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newData),
             });
@@ -228,8 +230,9 @@ const EmployeeFamilyDataTable = () => {
             phone2: data.phone2,
         };
         try {
-            const res = await fetch(`http://localhost:3050/employees/${id}/family-data`, {
+            const res = await fetch(`http://localhost:3050/api/employees/${id}/family-data`, {
                 method: "PUT",
+                credentials: 'include',
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),
             });

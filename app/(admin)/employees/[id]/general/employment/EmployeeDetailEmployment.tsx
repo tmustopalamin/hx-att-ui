@@ -89,32 +89,32 @@ const EmployeeDetailEmployment = () => {
   const [listEmploymentStatus, setListEmploymentStatus] = React.useState<EmploymentStatusType[]>([]);
 
   const getListDepartment = async () => {
-    const response = await fetch('http://localhost:3050/department');
+    const response = await fetch('http://localhost:3050/api/department', { credentials: 'include' });
     const data = await response.json();
     setListDepartment(data);
   }
 
   const getListAgency = async () => {
-    const response = await fetch('http://localhost:3050/agency');
+    const response = await fetch('http://localhost:3050/api/agency', { credentials: 'include' });
     const data = await response.json();
     setListAgency(data);
   }
 
   const getListBranch = async () => {
-    const response = await fetch('http://localhost:3050/branch');
+    const response = await fetch('http://localhost:3050/api/branch', { credentials: 'include' });
     const data = await response.json();
     setListBranch(data);
   }
 
   const getListPosition = async () => {
-    const response = await fetch('http://localhost:3050/position');
+    const response = await fetch('http://localhost:3050/api/position', { credentials: 'include' });
     const data = await response.json();
     setListPosition(data);
     setListPositionFiltered(data);
   }
 
   const getListEmploymentStatus = async () => {
-    const response = await fetch('http://localhost:3050/employment-status');
+    const response = await fetch('http://localhost:3050/api/employment-status', { credentials: 'include' });
     const data = await response.json();
     setListEmploymentStatus(data);
   }
@@ -122,7 +122,7 @@ const EmployeeDetailEmployment = () => {
   const getEmploymentData = async () => {
     console.clear()
 
-    const response = await fetch(`http://localhost:3050/employees/${id}/employment-data`);
+    const response = await fetch(`http://localhost:3050/api/employees/${id}/employment-data`, { credentials: 'include' });
     const data = await response.json();
 
     setValue('code', data.code);
@@ -163,8 +163,9 @@ const EmployeeDetailEmployment = () => {
 
     try {
 
-      const res = await fetch(`http://localhost:3050/employees/${id}/employment-data`, {
+      const res = await fetch(`http://localhost:3050/api/employees/${id}/employment-data`, {
         method: "PUT",
+        credentials: 'include',
         headers: {
           "Content-Type": "application/json",
         },

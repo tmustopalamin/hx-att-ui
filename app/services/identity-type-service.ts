@@ -7,10 +7,10 @@ export const createIdentityType = async (data: IdentityType) => {
   const res = await fetch(API_URL, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data)
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -54,8 +54,8 @@ export const updateIdentityType = async (id: number, rowVersion: number, data: I
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -67,14 +67,14 @@ export const deleteIdentityType = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(rowVersion),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -83,13 +83,13 @@ export const purgeIdentityType = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -98,7 +98,7 @@ export const restoreIdentityType = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(rowVersion),
     },

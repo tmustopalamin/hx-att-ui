@@ -17,4 +17,5 @@ export interface AttendanceLog {
     employee_name: string;
     machine_name: string;
     processed: boolean;
+    status: string;
 }

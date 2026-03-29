@@ -31,6 +31,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
     lastPath.current = pathname
 
     const bootstrapAuth = async () => {
+      console.log("apifecth")
       try {
         await apiFetch('/api/auth/me')
       } catch {

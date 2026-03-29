@@ -6,6 +6,7 @@ export interface ProfileState {
     email: string,
     name: string,
     role: string[],
+    permissions: string[],
     photo_url: string,
 }
 
@@ -14,6 +15,7 @@ const initialState: ProfileState = {
     email: '',
     name: '',
     role: [],
+    permissions: [],
     photo_url: ''
 }
 
@@ -26,6 +28,7 @@ export const ProfileSlice = createSlice({
             state.email = action.payload.email;
             state.name = action.payload.name;
             state.role = action.payload.role;
+            state.permissions = action.payload.permissions;
             state.photo_url = action.payload.photo_url;
         },
         clearProfile: () => {

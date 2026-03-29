@@ -395,7 +395,6 @@ const EmployeeFingerprintTableData = () => {
 
           <DataTable
             value={EmployeeFingerprintData}
-            tableStyle={{ minWidth: "50rem" }}
             stripedRows
             paginator
             scrollable
@@ -410,15 +409,17 @@ const EmployeeFingerprintTableData = () => {
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
           >
-            <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1} />
-            <Column field="fp_device_name" header="Fingerprint Scanner" />
-            <Column field="fp_pin" header="User ID" />
+            <Column style={{ width: '1rem' }} header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1} />
+            <Column style={{ width: '8rem' }} field="fp_device_name" header="Fingerprint Scanner" />
+            <Column style={{ width: '8rem' }} field="fp_pin" header="User ID" />
             <Column
               headerClassName="bg-white"
               className="bg-white"
               header="Action"
               body={(rowData) => actionColumnBody(rowData)}
               frozen={true}
+              style={{ width: '8rem' }}
+              headerStyle={{ width: '8rem' }}
               alignFrozen="right"
             />
           </DataTable>

@@ -42,6 +42,8 @@ const FingerprintScannerTableData = () => {
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
   const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<FingerprintScanner>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [checkLoading, setCheckloading] = useState(false);
+
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -203,7 +205,6 @@ const FingerprintScannerTableData = () => {
     setSelectedData(data);
   }
 
-  const [checkLoading, setCheckloading] = useState(false);
   const onClickCheckConnection = async (data: FingerprintScanner) => {
     setCheckloading(true)
 

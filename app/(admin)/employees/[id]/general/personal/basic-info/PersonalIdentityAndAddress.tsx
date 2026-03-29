@@ -40,7 +40,7 @@ const PersonalIdentityAndAddress = () => {
   const [isPageEdit, setIsPageEdit] = React.useState<boolean>(false);
 
   const getIdentityData = async () => {
-    const response = await fetch(`http://localhost:3050/employees/${id}/identity-address-data`);
+    const response = await fetch(`http://localhost:3050/api/employees/${id}/identity-address-data`, { credentials: 'include' });
     const data = await response.json();
 
     setValue('identity_type', data.identity_type_id);
@@ -67,7 +67,8 @@ const PersonalIdentityAndAddress = () => {
       is_permanent: data.is_permanent,
     }
 
-    const res = await fetch(`http://localhost:3050/employees/${id}/identity-address-data`, {
+    const res = await fetch(`http://localhost:3050/api/employees/${id}/identity-address-data`, {
+      credentials: 'include',
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -85,7 +86,7 @@ const PersonalIdentityAndAddress = () => {
   };
 
   const getListIdentityType = async () => {
-    const response = await fetch('http://localhost:3050/identity-type');
+    const response = await fetch('http://localhost:3050/api/identity-type', { credentials: 'include' });
     const data = await response.json();
     setListIdentityType(data);
   }

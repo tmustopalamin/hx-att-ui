@@ -31,7 +31,7 @@ const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
     >
       <Avatar
         label={`${data?.first_name[0]}${data?.last_name[0]}`}
-        image={data?.photo_url ? `http://localhost:3050/public/images/uploads/${data?.photo_url}` : undefined}
+        image={data?.photo_url ? `http://localhost:3050/api/public/images/uploads/${data?.photo_url}` : undefined}
         shape="circle"
         style={{ width: '7rem', height: '7rem', fontSize: '3rem' }}
       />
