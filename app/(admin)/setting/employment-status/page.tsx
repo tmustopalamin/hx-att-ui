@@ -50,7 +50,7 @@ const EmploymentStatusSettingPage = () => {
     const getData = () => {
         setTableLoading(true);
 
-        fetch("http://localhost:3050/employment-status", {
+        fetch("http://localhost:3050/api/employment-status", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -105,7 +105,7 @@ const EmploymentStatusSettingPage = () => {
     const handleSubmitNew = async (data: { name: string; is_active: boolean }) => {
         try {
 
-            const res = await fetch("http://localhost:3050/employment-status", {
+            const res = await fetch("http://localhost:3050/api/employment-status", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -133,7 +133,7 @@ const EmploymentStatusSettingPage = () => {
     const handleSubmitUpdate = async (data: { name: string; is_active: boolean }) => {
         try {
 
-            const res = await fetch("http://localhost:3050/employment-status", {
+            const res = await fetch("http://localhost:3050/api/employment-status", {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -163,7 +163,7 @@ const EmploymentStatusSettingPage = () => {
 
         try {
 
-            const res = await fetch("http://localhost:3050/employment-status", {
+            const res = await fetch("http://localhost:3050/api/employment-status", {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",

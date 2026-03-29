@@ -130,140 +130,154 @@ const RolePermissionsTableData = () => {
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Role Permission' url='' />}>
 
-        <form onSubmit={handleSubmit(onSave)}>
-          <div className="p-3 flex flex-col gap-5">
+      <Card>
+        <div className="p-4 flex flex-col gap-4">
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="role_id">Role</label>
-              <Controller
-                name="role_id"
-                control={control}
-                rules={{ required: "role is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="role_id"
-                      appendTo={() => document.body}
-                      value={field.value}
-                      options={data}
-                      loading={isLoading}
-                      onChange={(e) => {
-                        reset()
-                        field.onChange(e.value ?? null);
-                      }}
-                      optionLabel="name"
-                      optionValue="code"
-                      placeholder={
-                        isLoading ? "Loading roles..." : "Select a role"
-                      }
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                    {error && (<small className="p-error font-bold">We couldn’t load the list of roles. Please try again</small>)}
-                  </>
-                )}
-              />
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
+            <div>
+              <div className="text-2xl font-semibold">Role Permission</div>
+              <div className="text-sm text-gray-500">
+                Assign permissions to roles
+              </div>
             </div>
-
-            {watch('role_id') !== 0 && dataPermissionsGroupped.map(group => (
-              <div key={group.group} className="border rounded-lg p-4 border-gray-300">
-                <div className="flex items-center mb-3 gap-2">
-                  <h2 className="font-semibold text-gray-700">
-                    {String(group.group_name).toLocaleUpperCase()}
-                  </h2>
-                  <div className="flex items-center">
-                    <Controller
-                      name="permissions"
-                      control={control}
-                      render={({ field }) => {
-                        const value = field.value ?? []
-
-                        // semua permission code di group ini
-                        const groupCodes = group.permissions.map(p => p.code)
-
-                        // apakah semua permission group sudah tercentang
-                        const isAllChecked = groupCodes.every(code =>
-                          value.includes(code)
-                        )
-                        return (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              inputId={group.group}
-                              checked={isAllChecked}
-                              onChange={(e) => {
-                                if (e.checked) {
-                                  const merged = Array.from(
-                                    new Set([...value, ...groupCodes])
-                                  )
-                                  field.onChange(merged)
-                                } else {
-                                  field.onChange(
-                                    value.filter(code => !groupCodes.includes(code))
-                                  )
-                                }
-                              }}
-                            />
-                            <label htmlFor={group.group} className="font-medium">
-                              Select All
-                            </label>
-                          </div>
-                        )
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {group.permissions.map(p => (
-                    <Controller
-                      key={p.code}
-                      name="permissions"
-                      control={control}
-                      render={({ field }) => {
-                        const value = field.value ?? []
-                        const checked = value.includes(p.code)
-                        return (
-                          <div className="flex items-center">
-                            <Checkbox
-                              inputId={p.code}
-                              checked={checked}
-                              onChange={(e) => {
-                                if (e.checked) {
-                                  field.onChange([...field.value, p.code])
-                                } else {
-                                  field.onChange(
-                                    field.value.filter(v => v !== p.code)
-                                  )
-                                }
-                              }}
-                            />
-                            <label htmlFor={p.code} className="ml-2">
-                              {p.label}
-                            </label>
-                          </div>
-                        )
-                      }}
-                    />
-                  ))}
-                </div>
-
-              </div>
-            ))}
-
-            {watch('role_id') !== 0 && (
-              <div className="flex justify-end">
-                <Button label="Save" icon="pi pi-check" size="small" type='submit' />
-              </div>
-            )}
-
-            {watch('role_id') === 0 && (
-              <h3>please select a role</h3>
-            )}
           </div>
-        </form>
-      </Card >
+
+          <form onSubmit={handleSubmit(onSave)}>
+            <div className="p-3 flex flex-col gap-5">
+
+              <div className="m-0 flex flex-col gap-2">
+                <label htmlFor="role_id">Role</label>
+                <Controller
+                  name="role_id"
+                  control={control}
+                  rules={{ required: "role is required" }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="role_id"
+                        appendTo={() => document.body}
+                        value={field.value}
+                        options={data}
+                        loading={isLoading}
+                        onChange={(e) => {
+                          reset()
+                          field.onChange(e.value ?? null);
+                        }}
+                        optionLabel="name"
+                        optionValue="code"
+                        placeholder={
+                          isLoading ? "Loading roles..." : "Select a role"
+                        }
+                        className={fieldState.invalid ? "p-invalid" : ""}
+                      />
+                      {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
+                      {error && (<small className="p-error font-bold">We couldn’t load the list of roles. Please try again</small>)}
+                    </>
+                  )}
+                />
+              </div>
+
+              {watch('role_id') !== 0 && dataPermissionsGroupped.map(group => (
+                <div key={group.group} className="border rounded-lg p-4 border-gray-300">
+                  <div className="flex items-center mb-3 gap-2">
+                    <h2 className="font-semibold text-gray-700">
+                      {String(group.group_name).toLocaleUpperCase()}
+                    </h2>
+                    <div className="flex items-center">
+                      <Controller
+                        name="permissions"
+                        control={control}
+                        render={({ field }) => {
+                          const value = field.value ?? []
+
+                          // semua permission code di group ini
+                          const groupCodes = group.permissions.map(p => p.code)
+
+                          // apakah semua permission group sudah tercentang
+                          const isAllChecked = groupCodes.every(code =>
+                            value.includes(code)
+                          )
+                          return (
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                inputId={group.group}
+                                checked={isAllChecked}
+                                onChange={(e) => {
+                                  if (e.checked) {
+                                    const merged = Array.from(
+                                      new Set([...value, ...groupCodes])
+                                    )
+                                    field.onChange(merged)
+                                  } else {
+                                    field.onChange(
+                                      value.filter(code => !groupCodes.includes(code))
+                                    )
+                                  }
+                                }}
+                              />
+                              <label htmlFor={group.group} className="font-medium">
+                                Select All
+                              </label>
+                            </div>
+                          )
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {group.permissions.map(p => (
+                      <Controller
+                        key={p.code}
+                        name="permissions"
+                        control={control}
+                        render={({ field }) => {
+                          const value = field.value ?? []
+                          const checked = value.includes(p.code)
+                          return (
+                            <div className="flex items-center">
+                              <Checkbox
+                                inputId={p.code}
+                                checked={checked}
+                                onChange={(e) => {
+                                  if (e.checked) {
+                                    field.onChange([...field.value, p.code])
+                                  } else {
+                                    field.onChange(
+                                      field.value.filter(v => v !== p.code)
+                                    )
+                                  }
+                                }}
+                              />
+                              <label htmlFor={p.code} className="ml-2">
+                                {p.label}
+                              </label>
+                            </div>
+                          )
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                </div>
+              ))}
+
+              {watch('role_id') !== 0 && (
+                <div className="flex justify-end">
+                  <Button label="Save" icon="pi pi-check" size="small" type='submit' />
+                </div>
+              )}
+
+              {watch('role_id') === 0 && (
+                <h3>please select a role</h3>
+              )}
+            </div>
+          </form>
+
+        </div>
+      </Card>
     </>
   )
 }

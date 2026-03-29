@@ -84,7 +84,7 @@ export default function Sidebar() {
                   activeClassName="bg-gray-200"
                   exact={false}
                 >
-                  <i className="mr-[.5rem] pi pi-marker text-blue-700"></i>
+                  <i className="mr-[.5rem] pi pi-map-marker text-blue-700"></i>
                   <span className="text-[.830rem]">Remote Attendance</span>
                 </ActiveLink>
               </li>
@@ -124,7 +124,7 @@ export default function Sidebar() {
                     activeClassName="bg-gray-200"
                     exact={false}
                   >
-                    <i className="mr-[.5rem] pi pi-calendar text-blue-700"></i>
+                    <i className="mr-[.5rem] pi pi-calculator text-blue-700"></i>
                     <span className="text-[.830rem]">Run Payroll</span>
                   </ActiveLink>
                 </li>
@@ -372,7 +372,7 @@ export default function Sidebar() {
                     onClick={() => toggleSubMenu("org")}
                   >
                     <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                      <i className="mr-[.5rem] pi pi-building text-blue-700"></i>
                       <span className="text-[.830rem]">Organization</span>
                     </div>
                     <i
@@ -419,7 +419,7 @@ export default function Sidebar() {
                     onClick={() => toggleSubMenu("attendance")}
                   >
                     <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                      <i className="mr-[.5rem] pi pi-clock text-blue-700"></i>
                       <span className="text-[.830rem]">Time & Attendance</span>
                     </div>
                     <i
@@ -440,7 +440,8 @@ export default function Sidebar() {
                   `}
                   >
                     {[
-                      { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi pi-calendar-times" },
+                      { href: "/setting/shift", label: "Shift", icon: "pi pi-calendar" },
+                      { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi pi-list" },
                       { href: "/setting/employee-shift-assignment", label: "Employee Shift Assignment", icon: "pi pi-calendar-plus" },
                     ]
                       .map((item) => (
@@ -464,7 +465,7 @@ export default function Sidebar() {
                     onClick={() => toggleSubMenu("fp")}
                   >
                     <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                      <i className="mr-[.5rem] pi pi-id-card text-blue-700"></i>
                       <span className="text-[.830rem]">Fingerprint</span>
                     </div>
                     <i
@@ -508,7 +509,7 @@ export default function Sidebar() {
                     onClick={() => toggleSubMenu("payroll")}
                   >
                     <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                      <i className="mr-[.5rem] pi pi-calculator text-blue-700"></i>
                       <span className="text-[.830rem]">Payroll Configuration</span>
                     </div>
                     <i
@@ -555,7 +556,7 @@ export default function Sidebar() {
                     onClick={() => toggleSubMenu("user")}
                   >
                     <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
+                      <i className="mr-[.5rem] pi pi-users text-blue-700"></i>
                       <span className="text-[.830rem]">User Management</span>
                     </div>
                     <i
@@ -577,9 +578,9 @@ export default function Sidebar() {
                   >
                     {[
                       { href: "/setting/user", label: "Users", icon: "pi pi-user" },
-                      { href: "/setting/role", label: "Roles", icon: "pi pi-user" },
-                      { href: "/setting/permissions", label: "Permissions", icon: "pi pi-user" },
-                      { href: "/setting/role-permissions", label: "Role Permissions", icon: "pi pi-user" },
+                      { href: "/setting/role", label: "Roles", icon: "pi pi-users" },
+                      { href: "/setting/permissions", label: "Permissions", icon: "pi pi-lock" },
+                      { href: "/setting/role-permissions", label: "Role Permissions", icon: "pi pi-key" },
                     ]
                       .map((item) => (
                         <li key={item.href}>

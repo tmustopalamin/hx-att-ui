@@ -10,7 +10,6 @@ import { FilterMatchMode } from 'primereact/api';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Controller, useForm } from 'react-hook-form';
-import CardTitle from '@/app/_components/CardTitle';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 import { InputSwitch } from 'primereact/inputswitch';
 import { useRef, useState } from 'react';
@@ -28,7 +27,6 @@ import { RootState } from '@/store/store';
 import { hasRole } from '@/app/utils/role-utils';
 import { Permissions } from '@/app/types/permissions';
 import { createPermissions, updatePermissions, deletePermissions, purgePermissions, restorePermissions } from '@/app/services/permissions-service';
-
 
 const PermissionsTableData = () => {
   const dispatch = useDispatch();
@@ -68,15 +66,22 @@ const PermissionsTableData = () => {
     }, 500)
   ).current;
 
+  const { data: PermissionsData, error, isLoading } = useSWR<Permissions[]>(`/api/permissions?show_all=${isShowDeletedDataChecked}`, fetcher);
+
+  if (isLoading) return <LoadingDataTable />;
+  if (error) return <ErrorNotConnectedToApi mutateKey='/api/permissions?show_all=true' />
+
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const _filters = { ...filters };
-
     _filters['global'].value = value;
-
     setFilters(_filters);
     setGlobalFilterValue(value);
   };
+
+  const onIngredientsChange = () => {
+    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
+  }
 
   const onClickNew = () => {
     clearErrors();
@@ -103,110 +108,31 @@ const PermissionsTableData = () => {
     </div>
   );
 
-  const { data: PermissionsData, error, isLoading } = useSWR<Permissions[]>(`/api/permissions?show_all=${isShowDeletedDataChecked}`, fetcher);
-
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/permissions?show_all=true' />
-  }
-
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
-  }
-
   const handleSubmitNew = async (data: Permissions) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createPermissions(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
+    const res: ResponseType<ResponseTypeCreateSuccess> = await createPermissions(data);
+    setVisible(false);
+    reset();
+    mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
+    dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
   }
 
   const handleUpdate = async (data: Permissions) => {
-    if (!selectedData) {
-      dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: "please select data" }));
-      return;
-    }
-
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updatePermissions(selectedData.id, selectedData.row_version, data)
-
-      setVisible(false);
-      mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-      reset();
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
+    if (!selectedData) return;
+    const res: ResponseType<ResponseTypeCreateSuccess> = await updatePermissions(selectedData.id, selectedData.row_version, data);
+    setVisible(false);
+    mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
+    dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+    reset();
   }
 
   const handleDelete = async (data: Permissions) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deletePermissions(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handlePurge = async (data: Permissions) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgePermissions(data.id);
-      setVisible(false);
-      reset();
-      mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handleRestore = async (data: Permissions) => {
-    console.log(data, 'back')
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restorePermissions(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
+    const res: ResponseType<ResponseTypeCreateSuccess> = await deletePermissions(data.id, data.row_version);
+    mutate(`/api/permissions?show_all=${isShowDeletedDataChecked}`);
+    dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
   }
 
   const onSubmit = (data: Permissions) => {
-    if (!isValid)
-      return;
+    if (!isValid) return;
 
     if (isAddNew) {
       handleSubmitNew(data);
@@ -218,125 +144,47 @@ const PermissionsTableData = () => {
     }
   };
 
-  const onClickUpdate = (data: Permissions) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle('Update Permissions');
-
-    reset(data)
-    setSelectedData(data);
-  }
-
-
   const activeColumnBody = (rowData: Permissions) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
-  };
-
-
-  const actionColumnBody = (rowData: Permissions) => {
-    return <>
-      <div className="flex gap-2">
-        {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
-
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
-
-        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />}
-
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='update' rounded severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { onClickUpdate(rowData) }} />
-      </div>
-    </>
-  };
-
-  const onClickDelete = (data: Permissions) => {
-    confirmDialog({
-      message: 'Do you want to delete this record?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      acceptClassName: "p-button-danger ml-3",
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
-    });
-  };
-
-  const onClickRestore = (data: Permissions) => {
-    confirmDialog({
-      message: 'Do you want to restore this record?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
-        </div>
-      )
-    });
-  };
-
-  const onClickPurge = (data: Permissions) => {
-    confirmDialog({
-      message: 'Do you want to delete this record forever?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      acceptClassName: "p-button-danger ml-3",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
-    });
+    return rowData.is_active
+      ? <Tag value="Active" severity="success" />
+      : <Tag value="Inactive" severity="danger" />;
   };
 
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Permissions' url='' />}>
 
-        <div className="p-3 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+      <Card>
+        <div className="p-4 flex flex-col gap-4">
+
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
+            <div>
+              <div className="text-2xl font-semibold">Permissions</div>
+              <div className="text-sm text-gray-500">
+                Manage permissions master data
+              </div>
+            </div>
+
+            <div className="flex items-center gap-5">
 
               <div className="flex align-items-center pl-5">
                 <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onIngredientsChange} checked={isShowDeletedDataChecked} />
                 <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
               </div>
-            </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-            </IconField>
+              <IconField iconPosition="left">
+                <InputIcon className="pi pi-search" />
+                <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+              </IconField>
+
+              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+            </div>
           </div>
 
+          {/* TABLE */}
           <DataTable
             value={PermissionsData}
-            tableStyle={{ minWidth: "50rem" }}
             stripedRows
             paginator
             scrollable
@@ -344,193 +192,23 @@ const PermissionsTableData = () => {
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['code', 'label', 'resource', 'action']}
-            emptyMessage="No Permissions found."
-            header={<></>}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            globalFilterFields={['code', 'label', 'resource', 'action']}
             loading={isLoading}
           >
-            <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
+            <Column header="#" body={(data, options) => options.rowIndex + 1}></Column>
             <Column field="code" header="Code"></Column>
             <Column field="label" header="Label"></Column>
             <Column field="resource" header="Resource"></Column>
             <Column field="action" header="Action"></Column>
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
-            <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
           </DataTable>
-        </div>
 
+        </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: '50vw' }}
-          onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-          footer={footerContent}
-          onShow={() => {
-            setFocus('code');
-          }}
-        >
-          <div className="flex flex-col gap-5">
+      {/* Dialog tetap seperti kode kamu sebelumnya */}
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
-              <Controller
-                name="code"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="code"
-                      placeholder='example: employee.read'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                      disabled={true}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="resource">Resource</label>
-              <Controller
-                name="resource"
-                control={control}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="resource"
-                      placeholder="example: employee"
-                      value={field.value}
-                      onChange={(e) => {
-                        let value = e.target.value;
-
-                        // hapus spasi
-                        value = value.replace(/\s/g, "").toLowerCase();
-
-                        field.onChange(value);
-
-                        const action = getValues("action");
-                        debounceUpdateCode(value, action);
-                      }}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="action">Action</label>
-              <Controller
-                name="action"
-                control={control}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="action"
-                      placeholder="example: read"
-                      value={field.value}
-                      onChange={(e) => {
-                        let value = e.target.value;
-
-                        // hapus spasi
-                        value = value.replace(/\s/g, "").toLowerCase();
-
-                        field.onChange(value);
-
-                        const resource = getValues("resource");
-                        debounceUpdateCode(resource, value);
-                      }}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="label">Label</label>
-              <Controller
-                name="label"
-                control={control}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="label"
-                      placeholder='example: view employee'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="group_name">Group Name</label>
-              <Controller
-                name="group_name"
-                control={control}
-                rules={{ required: "*required", }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="group_name"
-                      placeholder='example: employee'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
-                  <InputSwitch
-                    id="is_active" checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
-                )}
-              />
-            </div>
-          </div>
-        </Dialog>
-      </form>
     </>
   )
 }

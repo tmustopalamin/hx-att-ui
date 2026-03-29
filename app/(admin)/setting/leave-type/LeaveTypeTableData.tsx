@@ -311,25 +311,36 @@ const LeaveTypeTableData = () => {
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Leave Type' url='' />}>
 
-        <div className="p-3 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+      <Card>
+        <div className="p-4 flex flex-col gap-4">
+
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
+            <div>
+              <div className="text-2xl font-semibold">Leave Type</div>
+              <div className="text-sm text-gray-500">
+                Manage leave type master data
+              </div>
+            </div>
+
+            <div className="flex items-center gap-5">
 
               <div className="flex align-items-center pl-5">
                 <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onIngredientsChange} checked={isShowDeletedDataChecked} />
                 <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
               </div>
-            </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-            </IconField>
+              <IconField iconPosition="left">
+                <InputIcon className="pi pi-search" />
+                <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+              </IconField>
+
+              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+            </div>
           </div>
 
+          {/* TABLE */}
           <DataTable
             value={LeaveTypeData}
             tableStyle={{ minWidth: "50rem" }}
@@ -359,8 +370,8 @@ const LeaveTypeTableData = () => {
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
             <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
           </DataTable>
-        </div>
 
+        </div>
       </Card>
 
       <form onSubmit={handleSubmit((data) => onSubmit(data))}>

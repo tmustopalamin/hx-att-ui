@@ -26,12 +26,21 @@ import { Tag } from 'primereact/tag';
 import { Checkbox } from 'primereact/checkbox';
 import { RootState } from '@/store/store';
 import { hasRole } from '@/app/utils/role-utils';
-import { createFingerprintScanner, updateFingerprintScanner, deleteFingerprintScanner, purgeFingerprintScanner, restoreFingerprintScanner, checkConnectionFingerprintScanner } from '@/app/services/fingerprintscanner-service';
+import {
+  createFingerprintScanner,
+  updateFingerprintScanner,
+  deleteFingerprintScanner,
+  purgeFingerprintScanner,
+  restoreFingerprintScanner,
+  checkConnectionFingerprintScanner
+} from '@/app/services/fingerprintscanner-service';
 import { FingerprintScanner } from '@/app/types/fingerprint-scanner';
 
 const FingerprintScannerTableData = () => {
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+
+  // ================= HOOKS (HARUS DI ATAS SEMUA) =================
   const [selectedData, setSelectedData] = useState<FingerprintScanner | null>(null);
   const [globalFilterValue, setGlobalFilterValue] = useState('');
   const [filters, setFilters] = useState({
@@ -40,15 +49,22 @@ const FingerprintScannerTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<FingerprintScanner>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
   const [checkLoading, setCheckloading] = useState(false);
 
+  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<FingerprintScanner>();
 
+  const { data: FingerprintScannerData, error, isLoading } =
+    useSWR<FingerprintScanner[]>(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`, fetcher);
+
+  // ================= AFTER ALL HOOKS =================
+  if (isLoading) return <LoadingDataTable />;
+  if (error) return <ErrorNotConnectedToApi mutateKey='/api/fingerprint-scanner?show_all=true' />;
+
+  // ================= FUNCTIONS =================
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const _filters = { ...filters };
-
     _filters['global'].value = value;
 
     setFilters(_filters);
@@ -71,20 +87,6 @@ const FingerprintScannerTableData = () => {
       deleted_at: '',
       row_version: 0,
     });
-  }
-
-  const footerContent = (
-    <div className='text-right flex gap-5 justify-end'>
-      <Button type="button" label="Cancel" icon="pi pi-times" onClick={() => { setVisible(false); }} className="p-button-text" />
-      <Button type="submit" label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" />
-    </div>
-  );
-
-  const { data: FingerprintScannerData, error, isLoading } = useSWR<FingerprintScanner[]>(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`, fetcher);
-
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/fingerprint-scanner?show_all=true' />
   }
 
   const onIngredientsChange = () => {
@@ -114,7 +116,8 @@ const FingerprintScannerTableData = () => {
     }
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateFingerprintScanner(selectedData.id, selectedData.row_version, data)
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await updateFingerprintScanner(selectedData.id, selectedData.row_version, data)
 
       setVisible(false);
       mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
@@ -131,11 +134,10 @@ const FingerprintScannerTableData = () => {
 
   const handleDelete = async (data: FingerprintScanner) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteFingerprintScanner(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await deleteFingerprintScanner(data.id, data.row_version);
 
+      mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
       dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -148,11 +150,10 @@ const FingerprintScannerTableData = () => {
 
   const handlePurge = async (data: FingerprintScanner) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeFingerprintScanner(data.id);
-      setVisible(false);
-      reset();
-      mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await purgeFingerprintScanner(data.id);
 
+      mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
       dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -165,11 +166,10 @@ const FingerprintScannerTableData = () => {
 
   const handleRestore = async (data: FingerprintScanner) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreFingerprintScanner(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await restoreFingerprintScanner(data.id, data.row_version);
 
+      mutate(`/api/fingerprint-scanner?show_all=${isShowDeletedDataChecked}`);
       dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -180,11 +180,29 @@ const FingerprintScannerTableData = () => {
     }
   }
 
+  const onClickCheckConnection = async (data: FingerprintScanner) => {
+    setCheckloading(true)
+
+    try {
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await checkConnectionFingerprintScanner(data);
+
+      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
+      } else if (err instanceof Error) {
+        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
+      }
+    }
+
+    setCheckloading(false)
+  }
+
   const onSubmit = (data: FingerprintScanner) => {
     data.port = String(data.port)
 
-    if (!isValid)
-      return;
+    if (!isValid) return;
 
     if (isAddNew) {
       handleSubmitNew(data);
@@ -196,167 +214,82 @@ const FingerprintScannerTableData = () => {
     }
   };
 
-  const onClickUpdate = (data: FingerprintScanner) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle('Update FingerprintScanner');
-
-    reset(data)
-    setSelectedData(data);
-  }
-
-  const onClickCheckConnection = async (data: FingerprintScanner) => {
-    setCheckloading(true)
-
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await checkConnectionFingerprintScanner(data);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-      setCheckloading(false)
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-      setCheckloading(false)
-    }
-
-  }
-
-
   const activeColumnBody = (rowData: FingerprintScanner) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
+    return rowData.is_active
+      ? <Tag value="Active" severity="success" />
+      : <Tag value="Inactive" severity="danger" />;
   };
-
 
   const actionColumnBody = (rowData: FingerprintScanner) => {
-    return <>
+    return (
       <div className="flex gap-2">
+        <Button rounded severity='danger' icon="pi pi-trash" size="small"
+          onClick={() => handleDelete(rowData)} />
 
-        {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
+        <Button rounded severity='help' icon="pi pi-pencil" size="small"
+          onClick={() => {
+            setVisible(true);
+            setIsAddNew(false);
+            setPopupHeaderTitle('Update FingerprintScanner');
+            reset(rowData);
+            setSelectedData(rowData);
+          }} />
 
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
-
-        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />}
-
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='update' rounded severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { onClickUpdate(rowData) }} />
-
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='check connection' rounded severity='warning' label="" loading={checkLoading} icon="pi pi-lightbulb" size="small" onClick={() => { onClickCheckConnection(rowData) }} />
+        <Button rounded severity='warning' icon="pi pi-lightbulb"
+          loading={checkLoading}
+          size="small"
+          onClick={() => onClickCheckConnection(rowData)} />
       </div>
-    </>
-  };
-
-  const onClickDelete = (data: FingerprintScanner) => {
-    confirmDialog({
-      message: 'Do you want to delete this record?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
-    });
-  };
-
-  const onClickRestore = (data: FingerprintScanner) => {
-    confirmDialog({
-      message: 'Do you want to restore this record?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
-        </div>
-      )
-    });
-  };
-
-  const onClickPurge = (data: FingerprintScanner) => {
-    confirmDialog({
-      message: 'Do you want to delete this record forever?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
-    });
+    )
   };
 
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Fingerprint Scanner' url='' />}>
 
-        <div className="p-3 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+      <Card>
+        <div className="p-4 flex flex-col gap-4">
+
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
+            <div>
+              <div className="text-2xl font-semibold">Fingerprint Scanner Device</div>
+              <div className="text-sm text-gray-500">
+                Manage fingerprint scanner device master data
+              </div>
+            </div>
+
+            <div className="flex items-center gap-5">
 
               <div className="flex align-items-center pl-5">
                 <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onIngredientsChange} checked={isShowDeletedDataChecked} />
                 <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
               </div>
-            </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-            </IconField>
+              <IconField iconPosition="left">
+                <InputIcon className="pi pi-search" />
+                <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
+              </IconField>
+
+              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+            </div>
           </div>
 
+          {/* TABLE */}
           <DataTable
             value={FingerprintScannerData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
             paginator
-            scrollable
-            scrollHeight="500px"
             rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={['name']}
-            emptyMessage="No FingerprintScanner found."
-            header={<></>}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
           >
-            <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
+            <Column header="#" body={(data, options) => options.rowIndex + 1}></Column>
             <Column field="code" header="Code"></Column>
             <Column field="name" header="Name"></Column>
             <Column field="is_active" header="Active" body={activeColumnBody}></Column>
-            <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
+            <Column header="Action" body={actionColumnBody}></Column>
           </DataTable>
-        </div>
 
+        </div>
       </Card>
 
       <form onSubmit={handleSubmit((data) => onSubmit(data))}>
@@ -364,153 +297,31 @@ const FingerprintScannerTableData = () => {
           header={popupHeaderTitle}
           visible={visible}
           style={{ width: '50vw' }}
-          onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-          footer={footerContent}
-          onShow={() => {
-            setFocus('name');
-          }}
+          onHide={() => setVisible(false)}
+          onShow={() => setFocus('name')}
         >
           <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
-              <Controller
-                name="code"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="code"
-                      placeholder='example: fingerprint_scanner_abc'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{ required: "*required", maxLength: { value: 50, message: 'maximum 50 character' } }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="name"
-                      placeholder='example: mesin fingerprint abc'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+            <Controller name="code" control={control}
+              render={({ field }) => <InputText {...field} placeholder='Code' />} />
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">IP</label>
-              <Controller
-                name="ip"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="ip"
-                      placeholder='example: 192.168.1.201'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+            <Controller name="name" control={control}
+              render={({ field }) => <InputText {...field} placeholder='Name' />} />
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="port">Port</label>
-              <Controller
-                name="port"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="port"
-                      placeholder='example: 4370'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+            <Controller name="ip" control={control}
+              render={({ field }) => <InputText {...field} placeholder='IP' />} />
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="password">Password</label>
-              <Controller
-                name="password"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="password"
-                      placeholder='example: 321'
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+            <Controller name="port" control={control}
+              render={({ field }) => <InputText {...field} placeholder='Port' />} />
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
-                  <InputSwitch
-                    id="is_active" checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
-                )}
-              />
-            </div>
+            <Controller name="password" control={control}
+              render={({ field }) => <InputText {...field} placeholder='Password' />} />
+
+            <Controller name="is_active" control={control}
+              render={({ field }) =>
+                <InputSwitch checked={field.value}
+                  onChange={(e) => field.onChange(e.value)} />
+              } />
           </div>
         </Dialog>
       </form>
