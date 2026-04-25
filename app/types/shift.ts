@@ -14,4 +14,5 @@ export interface Shift {
     is_active: boolean;
     deleted_at: string;
     row_version: number;
+    is_day_off: boolean;
 }

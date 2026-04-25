@@ -8,10 +8,21 @@ export interface EmployeeShiftAssignmentBulkObj {
 export interface EmployeeShiftAssignment {
     id: number;
     employee_id: number | null;
+    employee_name: string | null;
     shift_id: number | null;
+    shift_name: string | null;
     shift_date: Date | null;
     deleted_at: string;
     row_version: number;
     is_bulk: boolean;
+    is_day_off: boolean;
+    is_holiday: boolean;
     bulk_data: EmployeeShiftAssignmentBulkObj[] | null
+}
+
+export interface NewEmployeeShiftAssignment {
+    employee_ids: number[];
+    date_from: string;
+    date_to: string | null;
+    row_version: number;
 }

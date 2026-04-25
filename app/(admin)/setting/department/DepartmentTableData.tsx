@@ -426,16 +426,16 @@ const DepartmentTableData = () => {
                       options={activeState}
                       loading={isLoading}
                       disabled={stateIsLoading || !!stateError}
+                      className={fieldState.invalid ? "p-invalid" : ""}
+                      showClear={true}
+                      placeholder={
+                        isLoading ? "Loading departments..." : "Select a department"
+                      }
                       onChange={(e) => {
                         field.onChange(e.value ?? null);
                       }}
                       optionLabel="name"
                       optionValue="id"
-                      showClear={true}
-                      placeholder={
-                        isLoading ? "Loading departments..." : "Select a department"
-                      }
-                      className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
                     {stateError && (<small className="p-error font-bold">We couldn’t load the list of departments. Please try again</small>)}

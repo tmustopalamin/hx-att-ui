@@ -1,96 +1,133 @@
-"use client"
+"use client";
 
-import React, { useEffect, useRef, useState } from "react"
-import AuthProvider from "../(auth)/auth-provider"
-import Breadcrumb from "../_components/Breadcrumb"
-import BProgressProvider from "../utils/providers/BProgressProvider"
-import AvatarWithSidebar from "./AvatarWithSidebar"
-import SidebarMenu from "./SidebarMenu"
-import SidebarProfileMenu from "./SidebarProfileMenu"
-import { Sidebar } from "primereact/sidebar"
-import { useMediaQuery } from "react-responsive"
-import { apiFetch } from "../services/api-fetch"
-import { usePathname } from "next/navigation"
-// import Notification from "../_components/top-menu/Notification"
+import { useEffect, useState } from "react";
+import { Sidebar } from "primereact/sidebar";
+import { usePathname } from "next/navigation";
+
+import AuthProvider from "../(auth)/auth-provider";
+import Breadcrumb from "../_components/Breadcrumb";
+import BProgressProvider from "../utils/providers/BProgressProvider";
+import AvatarWithSidebar from "./AvatarWithSidebar";
+import SidebarMenu from "./SidebarMenu";
+import { apiFetch } from "../services/api-fetch";
 
 const AppMain = ({ children }: { children: React.ReactNode }) => {
-  const [isUILoaded, setIsUILoaded] = useState(false)
-  const [sidebarVisible, setSidebarVisible] = useState(false)
-  const isDesktop = useMediaQuery({ minWidth: 768 }); // md ke atas
-  const isMobile = useMediaQuery({ maxWidth: 767 });  // md ke bawah
+  const pathname = usePathname();
 
-  const pathname = usePathname()
-  const lastPath = useRef<string | null>(null)
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+
+  const getBody = () => document.body;
 
   useEffect(() => {
-    setIsUILoaded(true);
+    const bootstrapAuth = async () => {
+      try {
+        await apiFetch("/api/auth/me");
+      } catch {
+        // redirect / handling tetap dari apiFetch
+      }
+    };
+
+    bootstrapAuth();
   }, []);
 
   useEffect(() => {
-    if (lastPath.current === pathname) return
-    lastPath.current = pathname
+    const syncViewport = () => {
+      const isMobile = window.innerWidth < 768;
+      setIsMobileViewport(isMobile);
 
-    const bootstrapAuth = async () => {
-      console.log("apifecth")
-      try {
-        await apiFetch('/api/auth/me')
-      } catch {
-        // redirect ditangani apiFetch
+      if (!isMobile) {
+        setIsMobileSidebarOpen(false);
       }
-    }
+    };
 
-    bootstrapAuth()
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+
+    return () => {
+      window.removeEventListener("resize", syncViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
   }, [pathname]);
 
+  const handleToggleSidebar = () => {
+    if (isMobileViewport) {
+      setIsMobileSidebarOpen((prev) => !prev);
+      return;
+    }
+
+    setIsDesktopSidebarCollapsed((prev) => !prev);
+  };
+
+  const currentSidebarVisible = isMobileViewport
+    ? isMobileSidebarOpen
+    : !isDesktopSidebarCollapsed;
+
   return (
-    <main className="w-full flex h-screen bg-[#EFF3F8]">
-      {/* Sidebar kiri - tampil hanya di desktop */}
-      {isUILoaded && isDesktop && !sidebarVisible && <>
-        <div className="hidden md:flex flex-none w-[16rem] bg-white shadow-xl">
+    <main className="flex h-screen w-full overflow-hidden bg-slate-100">
+      {/* Desktop sidebar */}
+      <aside
+        className={`hidden h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out md:block ${isDesktopSidebarCollapsed
+            ? "w-0 border-r-0 opacity-0"
+            : "w-[17rem] border-r border-slate-200 opacity-100"
+          }`}
+      >
+        <div className="h-full bg-white">
           <SidebarMenu />
         </div>
-      </>}
+      </aside>
 
-      {/* Konten utama */}
-      <div className="flex-1 flex flex-col pt-6 pr-6 pl-6 md:pl-10 overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-5 font-bold">
-            {/* Tombol buka sidebar saat mobile */}
-            <Breadcrumb sidebarVisible={sidebarVisible} onClickSidebar={setSidebarVisible} />
+      {/* Main content */}
+      <div className="min-w-0 flex-1">
+        <div className="flex h-full flex-col overflow-hidden">
+          <div className="shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <Breadcrumb
+                    sidebarVisible={currentSidebarVisible}
+                    onClickSidebar={handleToggleSidebar}
+                  />
+                </div>
+
+                <div className="flex shrink-0 items-center gap-3">
+                  <AvatarWithSidebar />
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-5 font-bold relative">
-            {/* <Notification /> */}
-            <AvatarWithSidebar />
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
+            <div className="w-full">
+              <AuthProvider>
+                <BProgressProvider>{children}</BProgressProvider>
+              </AuthProvider>
+            </div>
           </div>
-
-        </div>
-
-        {/* Konten halaman */}
-        <div className="flex-1 pb-6">
-          <AuthProvider>
-            <BProgressProvider>{children}</BProgressProvider>
-          </AuthProvider>
         </div>
       </div>
 
-      {/* Sidebar mobile (PrimeReact Sidebar) */}
-      {isMobile && <>
-        <Sidebar
-          visible={sidebarVisible}
-          onHide={() => setSidebarVisible(false)}
-          showCloseIcon={false}
-          className="!w-[16rem] md:!hidden"
-          content={<SidebarMenu />}
-        >
-        </Sidebar>
-      </>}
-
-      {/* Sidebar kanan / profile */}
-      <SidebarProfileMenu />
+      {/* Mobile sidebar drawer */}
+      <Sidebar
+        appendTo={getBody}
+        visible={isMobileSidebarOpen}
+        onHide={() => setIsMobileSidebarOpen(false)}
+        showCloseIcon={false}
+        blockScroll
+        position="left"
+        baseZIndex={1200}
+        className="!w-[18rem] !border-none !shadow-2xl md:!hidden"
+      >
+        <div className="h-full bg-white">
+          <SidebarMenu />
+        </div>
+      </Sidebar>
     </main>
-  )
-}
+  );
+};
 
-export default AppMain
+export default AppMain;

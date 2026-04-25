@@ -1,110 +1,197 @@
-"use client"
+"use client";
 
-import { RootState } from "@/store/store";
-import { showToast } from "@/store/ToastSlice";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar } from "primereact/avatar";
 import { Sidebar } from "primereact/sidebar";
-import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
 
 const AvatarWithSidebar = () => {
     const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+
     const profileData = useSelector((state: RootState) => state.profile);
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const getBody = () => document.body;
+    const appendTarget = () => document.body;
+
+    const avatarLabel = useMemo(() => {
+        const name = profileData?.name?.trim();
+
+        if (!name) {
+            return "U";
+        }
+
+        return name.charAt(0).toUpperCase();
+    }, [profileData?.name]);
+
+    const avatarImageUrl = useMemo(() => {
+        if (!profileData?.photo_url) {
+            return undefined;
+        }
+
+        const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+
+        if (!apiBaseUrl) {
+            return `/api/public/images/uploads/${profileData.photo_url}`;
+        }
+
+        return `${apiBaseUrl}/api/public/images/uploads/${profileData.photo_url}`;
+    }, [profileData?.photo_url]);
 
     const onClickLogout = async () => {
-        const res = await fetch("/api/auth/logout", {
-            method: "POST",
-            credentials: "include",
-        });
-        if (!res.ok) {
-            throw new Error("Failed to logout");
+        try {
+            setLoggingOut(true);
+
+            const res = await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+            });
+
+            const responseData = await res.json().catch(() => null);
+
+            if (!res.ok) {
+                const errorMessage =
+                    responseData?.message || "Failed to logout. Please try again.";
+                throw new Error(errorMessage);
+            }
+
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: "success",
+                    summary: "Logout Success",
+                    detail: "Redirecting to login page...",
+                })
+            );
+
+            setIsSidebarVisible(false);
+
+            setTimeout(() => {
+                router.push("/login");
+            }, 800);
+        } catch (err: unknown) {
+            const errorMessage =
+                err instanceof Error
+                    ? err.message
+                    : "Unexpected error occurred. Please try again.";
+
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: "error",
+                    summary: "Logout Failed",
+                    detail: errorMessage,
+                })
+            );
+        } finally {
+            setLoggingOut(false);
         }
-        await res.json();
-
-        dispatch(showToast({
-            visible: true,
-            severity: "success",
-            summary: "Logout Success",
-            detail: "Redirecting to login page...",
-        }));
-
-        setTimeout(() => {
-            router.push("/login");
-        }, 1000);
-    }
+    };
 
     return (
         <>
-            {/* <Avatar
-                size="large"
-                label="R"
-                style={{ backgroundColor: "#9c27b0", color: "#ffffff" }}
-                shape="circle"
+            <button
+                type="button"
                 onClick={() => setIsSidebarVisible(true)}
-            /> */}
+                className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-1.5 py-1.5 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+                aria-label="Open account menu"
+            >
+                <div className="hidden min-w-0 text-right sm:block">
+                    <p className="max-w-[12rem] truncate text-sm font-semibold text-slate-700">
+                        {profileData?.name || "User"}
+                    </p>
+                    <p className="text-xs text-slate-500">Account Menu</p>
+                </div>
 
-            <Avatar
-                size="large"
-                style={{ backgroundColor: "#9c27b0", color: "#ffffff" }}
-                label={`${profileData?.name ? profileData.name[0] : 'U'}`}
-                image={profileData?.photo_url ? `http://localhost:3050/api/public/images/uploads/${profileData?.photo_url}` : undefined}
-                shape="circle"
-                onClick={() => setIsSidebarVisible(true)}
-            />
+                <Avatar
+                    size="large"
+                    style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+                    label={avatarLabel}
+                    image={avatarImageUrl}
+                    shape="circle"
+                />
+            </button>
 
             <Sidebar
-                appendTo={getBody}
+                appendTo={appendTarget}
                 visible={isSidebarVisible}
                 position="right"
                 onHide={() => setIsSidebarVisible(false)}
+                className="!w-full sm:!w-[24rem]"
             >
-                <div className="flex flex-col gap-5">
-                    <div className="flex-column gap-5">
-                        <h3 className="font-bold font-sans">Welcome</h3>
-                        <h4 className="text-md">{profileData.name}</h4>
+                <div className="flex h-full flex-col">
+                    <div className="border-b border-slate-200 pb-6">
+                        <div className="flex items-center gap-4">
+                            <Avatar
+                                size="xlarge"
+                                style={{ backgroundColor: "#2563eb", color: "#ffffff" }}
+                                label={avatarLabel}
+                                image={avatarImageUrl}
+                                shape="circle"
+                            />
+
+                            <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                    Signed in as
+                                </p>
+                                <h3 className="mt-1 truncate text-lg font-semibold text-slate-900">
+                                    {profileData?.name || "User"}
+                                </h3>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Manage your account and current session.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <ul className="list-none m-0 p-0">
-                        <li>
-                            <Link className="cursor-pointer flex mb-3 p-3 items-center border border-gray-200 rounded hover:bg-gray-100 transition-colors duration-150" onClick={() => setIsSidebarVisible(false)} href="/account-settings">
-                                <span>
-                                    <i className="pi pi-user text-xl text-blue-500"></i>
-                                </span>
-                                <div className="ml-3">
-                                    <span className="mb-2 font-semibold">Account Settings</span>
-                                    <p className="text-gray-500 m-0">Change Account details</p>
+                    <div className="flex-1 py-6">
+                        <div className="space-y-3">
+                            <Link
+                                href="/account-settings"
+                                onClick={() => setIsSidebarVisible(false)}
+                                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 transition-colors hover:bg-slate-50"
+                            >
+                                <div className="mt-1 text-blue-600">
+                                    <i className="pi pi-user text-lg" />
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-800">
+                                        Account Settings
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        Change your account details and profile information.
+                                    </p>
                                 </div>
                             </Link>
-                        </li>
-                        {/* <li>
-                    <Link className="cursor-pointer flex mb-3 p-3 items-center border border-gray-200 rounded hover:bg-gray-100 transition-colors duration-150" onClick={() => setIsSidebarVisible(false)} href="/company-settings">
-                        <span>
-                            <i className="pi pi-user text-xl text-blue-500"></i>
-                        </span>
-                        <div className="ml-3">
-                            <span className="mb-2 font-semibold">Company Settings</span>
-                            <p className="text-gray-500 m-0">Change company details</p>
+
+                            <button
+                                type="button"
+                                onClick={onClickLogout}
+                                disabled={loggingOut}
+                                className="flex w-full items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                                <div className="mt-1 text-blue-600">
+                                    <i className="pi pi-power-off text-lg" />
+                                </div>
+
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold text-slate-800">
+                                        {loggingOut ? "Signing Out..." : "Sign Out"}
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        End the current session and return to the login page.
+                                    </p>
+                                </div>
+                            </button>
                         </div>
-                    </Link>
-                </li>              */}
-                        <li>
-                            <Link className="cursor-pointer flex mb-3 p-3 items-center border border-gray-200 rounded hover:bg-gray-100 transition-colors duration-150" onClick={onClickLogout} href="#">
-                                <span>
-                                    <i className="pi pi-power-off text-xl text-blue-500"></i>
-                                </span>
-                                <div className="ml-3">
-                                    <span className="mb-2 font-semibold">Sign Out</span>
-                                    <p className="text-gray-500 m-0">Stop current session</p>
-                                </div>
-                            </Link>
-                        </li>
-                    </ul>
+                    </div>
                 </div>
             </Sidebar>
         </>

@@ -1,30 +1,40 @@
 "use client";
 
-import { ForgotPassword } from '@/app/types/forgot-password';
-import { showToast } from '@/store/ToastSlice';
-import { useRouter } from 'next/navigation';
-import { InputOtp } from 'primereact/inputotp';
-import { InputText } from 'primereact/inputtext';
-import React, { useEffect, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form';
-import { useDispatch } from 'react-redux';
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { InputOtp } from "primereact/inputotp";
+import { InputText } from "primereact/inputtext";
+import { ForgotPassword } from "@/app/types/forgot-password";
+import { showToast } from "@/store/ToastSlice";
 
 const ForgotPasswordPage = () => {
-  const { handleSubmit, control } = useForm<ForgotPassword>();
-  const [submitting, setSubmitting] = useState(false);
-  const [isOtpFormVisible, setOtpFormVisible] = useState(false);
-  // const [isResetPasswordFormVisible, setResetPasswordFormVisible] = useState(false);
-  const [token, setTokens] = useState<string | number | undefined | null>();
   const router = useRouter();
   const dispatch = useDispatch();
 
+  const { handleSubmit, control } = useForm<ForgotPassword>({
+    defaultValues: {
+      email: "",
+    },
+    mode: "onTouched",
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+  const [isOtpFormVisible, setOtpFormVisible] = useState(false);
+  const [otpToken, setOtpToken] = useState<string | number | undefined | null>("");
+  const [formError, setFormError] = useState("");
+
   useEffect(() => {
     document.title = "Reset Password - PT. Hexing Technology";
-  }, [])
+  }, []);
 
   const onSubmit = async (formData: ForgotPassword) => {
     try {
       setSubmitting(true);
+      setFormError("");
 
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
@@ -35,34 +45,39 @@ const ForgotPasswordPage = () => {
       });
 
       const responseData = await res.json();
-      setOtpFormVisible(true)
 
       if (!res.ok) {
         const errorMessage =
-          responseData?.message || `Failed to request. Please try again.`;
+          responseData?.message || "Failed to request reset password. Please try again.";
         throw new Error(errorMessage);
       }
 
-      dispatch(showToast({
-        visible: true,
-        severity: "success",
-        summary: "success",
-        detail: responseData.message,
-      }));
-    } catch (err: unknown) {
-      console.error(err);
+      setOtpFormVisible(true);
 
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: responseData.message,
+        })
+      );
+    } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Unexpected error occurred. Please try again.";
 
-      dispatch(showToast({
-        visible: true,
-        severity: "error",
-        summary: "failed",
-        detail: errorMessage,
-      }));
+      setFormError(errorMessage);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Failed",
+          detail: errorMessage,
+        })
+      );
     } finally {
       setSubmitting(false);
     }
@@ -71,10 +86,17 @@ const ForgotPasswordPage = () => {
   const onClickConfirmResetPassword = async () => {
     try {
       setSubmitting(true);
+      setFormError("");
+
+      const otpValue = String(otpToken || "").trim();
+
+      if (otpValue.length !== 6) {
+        throw new Error("OTP must be 6 digits.");
+      }
 
       const body = {
-        otp: token
-      }
+        otp: otpValue,
+      };
 
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
@@ -88,88 +110,213 @@ const ForgotPasswordPage = () => {
 
       if (!res.ok) {
         const errorMessage =
-          responseData?.message || `Failed to login. Please try again.`;
+          responseData?.message || "Failed to verify OTP. Please try again.";
         throw new Error(errorMessage);
       }
 
-      dispatch(showToast({
-        visible: true,
-        severity: "success",
-        summary: "success",
-        detail: responseData.message,
-      }));
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: responseData.message,
+        })
+      );
 
       router.push("/login");
     } catch (err: unknown) {
-      console.error(err);
-
       const errorMessage =
         err instanceof Error
           ? err.message
           : "Unexpected error occurred. Please try again.";
 
-      dispatch(showToast({
-        visible: true,
-        severity: "error",
-        summary: "failed",
-        detail: errorMessage,
-      }));
+      setFormError(errorMessage);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Failed",
+          detail: errorMessage,
+        })
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const renderFormOTP = () => {
-    return <>
-      <div className="flex flex-col justify-center mb-5 gap-3">
-        <div className="">
-          <h1 className='font-bold'>Input OTP</h1>
-          <p>You can find the OTP code in your email.</p>
+  const renderStepIndicator = () => {
+    return (
+      <div className="mb-6 flex items-center justify-center gap-3">
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${!isOtpFormVisible
+              ? "bg-blue-600 text-white"
+              : "bg-blue-100 text-blue-700"
+              }`}
+          >
+            1
+          </div>
+          <span
+            className={`text-xs font-medium ${!isOtpFormVisible ? "text-slate-700" : "text-slate-500"
+              }`}
+          >
+            Email
+          </span>
         </div>
-        <div className="self-center">
-          <InputOtp disabled={submitting} value={token} onChange={(e) => setTokens(e.value)} length={6} />
+
+        <div className="h-px w-8 bg-slate-300" />
+
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${isOtpFormVisible
+              ? "bg-blue-600 text-white"
+              : "bg-slate-200 text-slate-500"
+              }`}
+          >
+            2
+          </div>
+          <span
+            className={`text-xs font-medium ${isOtpFormVisible ? "text-slate-700" : "text-slate-500"
+              }`}
+          >
+            OTP
+          </span>
         </div>
       </div>
-      <button
-        className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
-        disabled={submitting}
-        onClick={onClickConfirmResetPassword}
-      >
-        {submitting ? "Loading..." : "Confirm"}
-      </button>
-    </>
-  }
+    );
+  };
+
+  const renderErrorBanner = () => {
+    if (!formError) {
+      return null;
+    }
+
+    return (
+      <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+        <div className="flex items-start gap-3">
+          <i className="pi pi-exclamation-circle mt-0.5 text-red-500" />
+          <div>
+            <p className="text-sm font-semibold text-red-700">
+              Process failed
+            </p>
+            <p className="mt-1 text-sm text-red-600">{formError}</p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFormOTP = () => {
+    return (
+      <>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-semibold text-slate-900">Input OTP</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Enter the 6-digit OTP code sent to your email.
+          </p>
+        </div>
+
+        {renderStepIndicator()}
+        {renderErrorBanner()}
+
+        <div className="mb-6 flex flex-col items-center gap-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+            <InputOtp
+              disabled={submitting}
+              value={otpToken}
+              onChange={(e) => setOtpToken(e.value)}
+              length={6}
+              integerOnly
+            />
+          </div>
+
+          <p className="text-center text-xs text-slate-500">
+            Make sure the code is entered correctly before confirming.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            disabled={submitting}
+            onClick={onClickConfirmResetPassword}
+          >
+            {submitting && <i className="pi pi-spin pi-spinner" />}
+            <span>{submitting ? "Confirming..." : "Confirm OTP"}</span>
+          </button>
+
+          <button
+            type="button"
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 disabled:cursor-not-allowed"
+            disabled={submitting}
+            onClick={() => {
+              setOtpFormVisible(false);
+              setOtpToken("");
+              setFormError("");
+            }}
+          >
+            Back
+          </button>
+        </div>
+      </>
+    );
+  };
 
   const renderForgotPassword = () => {
-    return <>
-      <div className="flex flex-col gap-3">
-        <div className="">
-          <h1 className='font-bold'>Reset Password</h1>
-          <p>Enter your registered email address.</p>
+    return (
+      <>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-semibold text-slate-900">Reset Password</h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Enter your registered email address to receive an OTP code.
+          </p>
         </div>
-        <form
-          className="space-y-4 w-full"
-          onSubmit={handleSubmit(onSubmit)}
-        >
-          <div className="flex flex-col gap-2 w-full">
+
+        {renderStepIndicator()}
+        {renderErrorBanner()}
+
+        <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-slate-700"
+            >
+              Email
+            </label>
+
             <Controller
               name="email"
-              defaultValue=""
               control={control}
               rules={{
                 required: "Email is required",
+                pattern: {
+                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message: "Email format is invalid",
+                },
               }}
               render={({ field, fieldState }) => (
                 <>
-                  <InputText
-                    id="email"
-                    {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""
-                      }`}
-                    disabled={submitting}
-                  />
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                      <i className="pi pi-envelope" />
+                    </span>
+
+                    <InputText
+                      id="email"
+                      {...field}
+                      type="email"
+                      placeholder="Enter your registered email"
+                      autoComplete="email"
+                      disabled={submitting}
+                      className={`w-full rounded-xl border-slate-300 py-3 pl-11 pr-4 text-sm shadow-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                    />
+                  </div>
+
                   {fieldState.error && (
-                    <small className="font-bold text-red-500">
+                    <small className="text-sm font-medium text-red-500">
                       {fieldState.error.message}
                     </small>
                   )}
@@ -178,27 +325,54 @@ const ForgotPasswordPage = () => {
             />
           </div>
 
-          <div className="flex w-full flex-col gap-2 text-center">
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
-              disabled={submitting}
-            >
-              {submitting ? "Submitting..." : "Submit"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+            disabled={submitting}
+          >
+            {submitting && <i className="pi pi-spin pi-spinner" />}
+            <span>{submitting ? "Submitting..." : "Send OTP"}</span>
+          </button>
         </form>
-      </div>
-    </>
-  }
+      </>
+    );
+  };
 
   return (
-    <>
-      <div className="bg-white p-10 rounded-lg shadow-md">
-        {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
-      </div>
-    </>
-  );
-}
+    <div className="w-full max-w-md">
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
+        <div className="mb-8 text-center">
+          <div className="mb-5 flex justify-center">
+            <div className="flex h-40 w-40 items-center justify-center rounded-3xl bg-slate-50 shadow-sm ring-1 ring-slate-200">
+              <Image
+                src="/images/logo.png"
+                alt="Company Logo"
+                width={128}
+                height={128}
+                priority
+                className="object-contain"
+              />
+            </div>
+          </div>
 
-export default ForgotPasswordPage
+          <p className="text-sm text-slate-500">
+            PT. Hexing Technology HRIS
+          </p>
+        </div>
+
+        {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
+
+        <div className="mt-6 text-center">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+          >
+            Back to login
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ForgotPasswordPage;

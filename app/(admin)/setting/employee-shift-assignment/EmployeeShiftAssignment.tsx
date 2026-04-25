@@ -1,695 +1,731 @@
 'use client'
 
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import useSWR, { mutate } from 'swr'
+import dayjs from 'dayjs'
+
 import { Card } from 'primereact/card'
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { InputText } from 'primereact/inputtext';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { FilterMatchMode } from 'primereact/api';
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
-import CardTitle from '@/app/_components/CardTitle';
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { useState } from 'react';
-import useSWR, { mutate } from 'swr';
-import { fetcher } from '@/app/utils/fetcher';
-import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type';
-import LoadingDataTable from '@/app/_components/LoadingDataTable';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
-import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages';
-import { showToast } from '@/store/ToastSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { Checkbox } from 'primereact/checkbox';
-import { RootState } from '@/store/store';
-import { hasRole } from '@/app/utils/role-utils';
-import { EmployeeShiftAssignment } from '@/app/types/employee-shift-assignment';
-import { createEmployeeShiftAssignment, updateEmployeeShiftAssignment, deleteEmployeeShiftAssignment, purgeEmployeeShiftAssignment, restoreEmployeeShiftAssignment } from '@/app/services/employee-shift-assignment-service';
-import { Employee } from '@/app/types/employee';
-import { Dropdown } from 'primereact/dropdown';
-import { Shift } from '@/app/types/shift';
-import { Calendar } from 'primereact/calendar';
-import dayjs from 'dayjs';
-import { EmployeeShiftRule } from '@/app/types/employee-shift-rule';
+import { InputText } from 'primereact/inputtext'
+import { Button } from 'primereact/button'
+import { Checkbox } from 'primereact/checkbox'
+import { Calendar } from 'primereact/calendar'
+import { Tag } from 'primereact/tag'
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog'
+import { Divider } from 'primereact/divider'
 
-const EmployeeShiftAssignmentTableData = () => {
-  const dispatch = useDispatch();
-  const profileState = useSelector((state: RootState) => state.profile);
-  const [selectedData, setSelectedData] = useState<EmployeeShiftAssignment | null>(null);
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
-  const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-  });
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors, watch, setValue } = useForm<EmployeeShiftAssignment>();
-  const { fields, append, remove } = useFieldArray({
-    control: control,
-    name: "bulk_data",
-  });
-  const [dataShiftRule, setDataShiftRule] = useState<Record<number, EmployeeShiftRule[]>>({});
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+import { fetcher } from '@/app/utils/fetcher'
+import LoadingDataTable from '@/app/_components/LoadingDataTable'
+import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi'
+import { showToast } from '@/store/ToastSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from '@/store/store'
+import { hasRole } from '@/app/utils/role-utils'
+import { EmployeeShiftAssignment } from '@/app/types/employee-shift-assignment'
+import {
+  deleteEmployeeShiftAssignment,
+  purgeEmployeeShiftAssignment,
+  restoreEmployeeShiftAssignment
+} from '@/app/services/employee-shift-assignment-service'
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
+type QuickRange = 'today' | 'this_week' | 'this_month'
 
-    _filters['global'].value = value;
+type SelectedCell = {
+  employeeId: number | null
+  employeeName: string | null
+  dateKey: string
+  entries: EmployeeShiftAssignment[]
+} | null
 
-    setFilters(_filters);
-    setGlobalFilterValue(value);
-  };
+const EmployeeShiftAssignmentListPage = () => {
+  const dispatch = useDispatch()
+  const router = useRouter()
+  const profileState = useSelector((state: RootState) => state.profile)
 
-  const onClickNew = () => {
-    clearErrors();
-    setIsAddNew(true);
-    setVisible(true);
-    setPopupHeaderTitle("New Employee Shift Assignment");
-    reset({
-      id: 0,
-      employee_id: 0,
-      shift_id: 0,
-      shift_date: null,
-      deleted_at: '',
-      row_version: 0,
-    });
+  const [search, setSearch] = useState('')
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false)
+  const [dateFrom, setDateFrom] = useState<Date | null>(dayjs().startOf('week').toDate())
+  const [dateTo, setDateTo] = useState<Date | null>(dayjs().endOf('week').toDate())
+  const [quickRange, setQuickRange] = useState<QuickRange>('this_week')
+  const [selectedCell, setSelectedCell] = useState<SelectedCell>(null)
+
+  const { data, error, isLoading } = useSWR<EmployeeShiftAssignment[]>(
+    `/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`,
+    fetcher
+  )
+
+  const rows = data ?? []
+
+  const applyQuickRange = (range: QuickRange) => {
+    setQuickRange(range)
+
+    const today = dayjs()
+
+    if (range === 'today') {
+      setDateFrom(today.startOf('day').toDate())
+      setDateTo(today.endOf('day').toDate())
+      return
+    }
+
+    if (range === 'this_week') {
+      setDateFrom(today.startOf('week').toDate())
+      setDateTo(today.endOf('week').toDate())
+      return
+    }
+
+    setDateFrom(today.startOf('month').toDate())
+    setDateTo(today.endOf('month').toDate())
   }
 
-  const footerContent = (
-    <div className='text-right flex gap-5 justify-end'>
-      <Button type="button" label="Cancel" icon="pi pi-times" onClick={() => { setVisible(false); }} className="p-button-text" />
-      <Button type="submit" form='formEmployeeShiftAssignment' label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" />
-    </div>
-  );
+  const filteredData = useMemo(() => {
+    return rows.filter((item) => {
+      const keyword = search.toLowerCase().trim()
+      const shiftDate = item.shift_date ? dayjs(item.shift_date) : null
 
-  const { data: EmployeeShiftAssignmentData, error, isLoading } = useSWR<EmployeeShiftAssignment[]>(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`, fetcher);
+      const matchSearch =
+        !keyword ||
+        (item.employee_name ?? '').toLowerCase().includes(keyword) ||
+        (item.shift_name ?? '').toLowerCase().includes(keyword) ||
+        (item.is_day_off ? 'day off'.includes(keyword) : false) ||
+        (item.is_holiday ? 'holiday'.includes(keyword) : false) ||
+        shiftDate?.format('DD-MM-YYYY').toLowerCase().includes(keyword)
 
-  const { data: shiftData, error: shiftError, isLoading: shiftIsLoading } = useSWR<Shift[]>(`/api/shift`, fetcher);
+      const matchDateFrom =
+        !dateFrom ||
+        (shiftDate !== null &&
+          shiftDate.startOf('day').valueOf() >= dayjs(dateFrom).startOf('day').valueOf())
 
-  const { data: employeeData, error: employeeError, isLoading: employeeIsLoading } = useSWR<Employee[]>(`/api/employees`, fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60_000,
-  });
+      const matchDateTo =
+        !dateTo ||
+        (shiftDate !== null &&
+          shiftDate.endOf('day').valueOf() <= dayjs(dateTo).endOf('day').valueOf())
 
-  // const { data: employeeShiftRuleData, error: employeeShiftRuleError, isLoading: employeeShiftRuleIsLoading } = useSWR<EmployeeShiftRule[]>(watch('employee_id') ? `/api/employees/leave-balance` : null, fetcher);
+      return matchSearch && matchDateFrom && matchDateTo
+    })
+  }, [rows, search, dateFrom, dateTo])
 
-  const employeeActive = employeeData;
-  const shiftActive = shiftData?.filter(s => s.is_active);
-  // const employeeShiftRuleDataActive = employeeShiftRuleData;
+  const visibleDates = useMemo(() => {
+    if (!dateFrom || !dateTo) return []
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/employee-shift-assignment?show_all=true' />
+    const from = dayjs(dateFrom).startOf('day')
+    const to = dayjs(dateTo).startOf('day')
+
+    if (from.valueOf() > to.valueOf()) return []
+
+    const result: string[] = []
+    let current = from
+
+    while (current.valueOf() <= to.valueOf()) {
+      result.push(current.format('YYYY-MM-DD'))
+      current = current.add(1, 'day')
+    }
+
+    return result
+  }, [dateFrom, dateTo])
+
+  const employeeRows = useMemo(() => {
+    const map = new Map<number, { employeeId: number | null; employeeName: string | null }>()
+
+    filteredData.forEach((item) => {
+      if (item.employee_id == null) return
+      if (!map.has(item.employee_id)) {
+        map.set(item.employee_id, {
+          employeeId: item.employee_id,
+          employeeName: item.employee_name
+        })
+      }
+    })
+
+    return Array.from(map.values()).sort((a, b) =>
+      (a.employeeName ?? '').localeCompare(b.employeeName ?? '')
+    )
+  }, [filteredData])
+
+  const scheduleMap = useMemo(() => {
+    const map = new Map<string, EmployeeShiftAssignment[]>()
+
+    filteredData.forEach((item) => {
+      const dateKey = item.shift_date ? dayjs(item.shift_date).format('YYYY-MM-DD') : 'no-date'
+      const key = `${item.employee_id}__${dateKey}`
+
+      if (!map.has(key)) {
+        map.set(key, [])
+      }
+
+      map.get(key)!.push(item)
+    })
+
+    return map
+  }, [filteredData])
+
+  const stats = useMemo(() => {
+    const activeRows = filteredData.filter((item) => !item.deleted_at)
+    const deletedRows = filteredData.filter((item) => !!item.deleted_at)
+    const holidayRows = filteredData.filter((item) => item.is_holiday)
+    const dayOffRows = filteredData.filter((item) => item.is_day_off)
+
+    return {
+      schedules: filteredData.length,
+      employees: employeeRows.length,
+      active: activeRows.length,
+      deleted: deletedRows.length,
+      holidays: holidayRows.length,
+      dayOffs: dayOffRows.length
+    }
+  }, [filteredData, employeeRows])
+
+  const topShifts = useMemo(() => {
+    const countMap = new Map<string, number>()
+
+    filteredData.forEach((item) => {
+      const shiftName = item.shift_name ?? 'Unknown Shift'
+      countMap.set(shiftName, (countMap.get(shiftName) ?? 0) + 1)
+    })
+
+    return Array.from(countMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+  }, [filteredData])
+
+  const hasActiveFilter = !!search || !!dateFrom || !!dateTo
+
+  const clearFilters = () => {
+    setSearch('')
+    setDateFrom(dayjs().startOf('week').toDate())
+    setDateTo(dayjs().endOf('week').toDate())
+    setQuickRange('this_week')
+    setSelectedCell(null)
   }
 
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
-  }
-
-  const handleSubmitNew = async (data: EmployeeShiftAssignment) => {
-    console.log(data, 'hahay')
-
+  const handleDelete = async (row: EmployeeShiftAssignment) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createEmployeeShiftAssignment(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
+      await deleteEmployeeShiftAssignment(row.id, row.row_version)
+      await mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`)
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Schedule deleted'
+        })
+      )
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Error',
+          detail: err.message
+        })
+      )
     }
   }
 
-  const handleUpdate = async (data: EmployeeShiftAssignment) => {
-    if (!selectedData) {
-      dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: "please select data" }));
-      return;
-    }
-
+  const handleRestore = async (row: EmployeeShiftAssignment) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateEmployeeShiftAssignment(selectedData.id, selectedData.row_version, data)
-
-      setVisible(false);
-      mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-      reset();
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
+      await restoreEmployeeShiftAssignment(row.id, row.row_version)
+      await mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`)
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Schedule restored'
+        })
+      )
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Error',
+          detail: err.message
+        })
+      )
     }
   }
 
-  const handleDelete = async (data: EmployeeShiftAssignment) => {
+  const handlePurge = async (row: EmployeeShiftAssignment) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployeeShiftAssignment(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
+      await purgeEmployeeShiftAssignment(row.id)
+      await mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`)
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Schedule deleted permanently'
+        })
+      )
+    } catch (err: any) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Error',
+          detail: err.message
+        })
+      )
     }
   }
 
-  const handlePurge = async (data: EmployeeShiftAssignment) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployeeShiftAssignment(data.id);
-      setVisible(false);
-      reset();
-      mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
+  const renderStatusTag = (row: EmployeeShiftAssignment) => {
+    return row.deleted_at ? (
+      <Tag value="Deleted" severity="danger" />
+    ) : (
+      <Tag value="Active" severity="success" />
+    )
   }
 
-  const handleRestore = async (data: EmployeeShiftAssignment) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreEmployeeShiftAssignment(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const onSubmit = (data: EmployeeShiftAssignment) => {
-    if (!isValid)
-      return;
-
-    console.log(data, 'after')
-
-    if (!data.is_bulk) {
-      data.is_bulk = false
-      data.bulk_data = []
-    } else {
-      if (!data.bulk_data) {
-        dispatch(showToast({ visible: true, severity: "warn", summary: "error", detail: "add atleast one line" }));
-        return
-      }
-    }
-
-    if (isAddNew) {
-      handleSubmitNew(data);
-      return;
-    } else {
-      if (selectedData) {
-        handleUpdate(data);
-      }
-    }
-
-  };
-
-  const onClickUpdate = (data: EmployeeShiftAssignment) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle('Update Employee Shift Assignment');
-
-    const viewData = {
-      ...data,
-      shift_date: dayjs(data.shift_date).toDate(),
-    }
-    reset(viewData)
-    setSelectedData(viewData);
-  }
-
-  const actionColumnBody = (rowData: EmployeeShiftAssignment) => {
-    return <>
-      <div className="flex gap-2">
-        {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
-
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
-
-        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />}
-
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='update' rounded severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { onClickUpdate(rowData) }} />
+  const renderSpecialTags = (row: EmployeeShiftAssignment) => {
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {row.is_holiday && <Tag value="Holiday" severity="warning" />}
+        {row.is_day_off && <Tag value="Day Off" severity="info" />}
       </div>
-    </>
-  };
+    )
+  }
 
-  const shiftDateColumnBody = (rowData: EmployeeShiftAssignment) => {
-    const shift_date = dayjs(rowData.shift_date);
+  const getCellStyle = (entries: EmployeeShiftAssignment[]) => {
+    const hasDeleted = entries.some((entry) => !!entry.deleted_at)
+    const hasHoliday = entries.some((entry) => entry.is_holiday)
+    const hasDayOff = entries.some((entry) => entry.is_day_off)
 
-    return <>
-      {shift_date.isValid() ? shift_date.format('DD-MM-YYYY') : ''}
-    </>
-  };
+    if (hasDeleted) {
+      return 'bg-red-50 border-red-200 text-red-700'
+    }
 
-  const onClickDelete = (data: EmployeeShiftAssignment) => {
-    confirmDialog({
-      message: 'Do you want to delete this record?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
-    });
-  };
+    if (hasHoliday && hasDayOff) {
+      return 'bg-amber-50 border-amber-200 text-amber-700'
+    }
 
-  const onClickRestore = (data: EmployeeShiftAssignment) => {
-    confirmDialog({
-      message: 'Do you want to restore this record?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
-        </div>
-      )
-    });
-  };
+    if (hasHoliday) {
+      return 'bg-yellow-50 border-yellow-200 text-yellow-700'
+    }
 
-  const onClickPurge = (data: EmployeeShiftAssignment) => {
-    confirmDialog({
-      message: 'Do you want to delete this record forever?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
-    });
-  };
+    if (hasDayOff) {
+      return 'bg-sky-50 border-sky-200 text-sky-700'
+    }
+
+    return 'bg-blue-50 border-blue-200 text-blue-700'
+  }
+
+  const renderActionButtons = (row: EmployeeShiftAssignment) => {
+    return (
+      <div className="flex items-center gap-1">
+        {hasRole(profileState.role, ['superadmin']) && (
+          <Button
+            icon="pi pi-times"
+            severity="secondary"
+            rounded
+            text
+            size="small"
+            tooltip="Delete permanently"
+            onClick={() =>
+              confirmDialog({
+                header: 'Delete Permanently',
+                message: 'Do you want to delete this schedule permanently?',
+                accept: () => handlePurge(row)
+              })
+            }
+          />
+        )}
+
+        {row.deleted_at ? (
+          <Button
+            icon="pi pi-refresh"
+            severity="success"
+            rounded
+            text
+            size="small"
+            tooltip="Restore"
+            onClick={() =>
+              confirmDialog({
+                header: 'Restore Schedule',
+                message: 'Do you want to restore this schedule?',
+                accept: () => handleRestore(row)
+              })
+            }
+          />
+        ) : (
+          <Button
+            icon="pi pi-trash"
+            severity="danger"
+            rounded
+            text
+            size="small"
+            tooltip="Delete"
+            onClick={() =>
+              confirmDialog({
+                header: 'Delete Schedule',
+                message: 'Do you want to delete this schedule?',
+                accept: () => handleDelete(row)
+              })
+            }
+          />
+        )}
+      </div>
+    )
+  }
+
+  if (isLoading) return <LoadingDataTable />
+  if (error) return <ErrorNotConnectedToApi mutateKey="/api/employee-shift-assignment?show_all=true" />
 
   return (
     <>
       <ConfirmDialog />
 
-      <Card>
-        <div className="p-4 flex flex-col gap-4">
+      <div className="p-4">
+        <div className="mx-auto max-w-[1600px]">
+          <Card className="shadow-sm">
+            <div className="flex flex-col gap-6">
 
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
-            <div>
-              <div className="text-2xl font-semibold">Employee Shift Assignment</div>
-              <div className="text-sm text-gray-500">
-                Manage employee shift scheduling
-              </div>
-            </div>
-
-            <div className="flex items-center gap-5">
-
-              <div className="flex align-items-center pl-5">
-                <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onIngredientsChange} checked={isShowDeletedDataChecked} />
-                <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
-              </div>
-
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-              </IconField>
-
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
-            </div>
-          </div>
-
-          {/* TABLE */}
-          <DataTable
-            value={EmployeeShiftAssignmentData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={['employee_name', 'shift_name']}
-            emptyMessage="No Employee Shift Assignment found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
-            <Column field="employee_name" header="Employee"></Column>
-            <Column field="shift_name" header="Shift"></Column>
-            <Column header="Shift" body={shiftDateColumnBody}></Column>
-            <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right" style={{ minWidth: '200px' }} ></Column>
-          </DataTable>
-
-        </div>
-      </Card>
-
-      <Dialog
-        header={popupHeaderTitle}
-        visible={visible}
-        style={{ width: watch('is_bulk') ? '70vw' : '50vw' }}
-        onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-        footer={footerContent}
-        onShow={() => {
-          setFocus('employee_id');
-        }}
-      >
-        <form id="formEmployeeShiftAssignment" onSubmit={handleSubmit((data) => onSubmit(data))}>
-          <div className="flex flex-col gap-5">
-
-            {isAddNew && (
-              <>
-
-                <div className="m-0 flex gap-2">
-                  <Controller
-                    name="is_bulk"
-                    control={control}
-                    render={({ field }) => (
-                      <Checkbox
-                        inputId="is_bulk"
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.checked)}
-                      ></Checkbox>
-                    )}
-                  />
-                  <label htmlFor="is_bulk">Bulk Insert Using Rule</label>
+              <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+                <div>
+                  <div className="text-2xl md:text-3xl font-semibold text-gray-900">
+                    Employee Shift Assignment (Schedule)
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    One glance to see who works on which day.
+                  </div>
                 </div>
 
-                {watch('is_bulk') && (
-                  <div className="min-h-60 overflow-y-auto overflow-x-auto border rounded-md">
-                    <table className="min-w-[600px] w-full border-separate border-spacing-x-3 border-spacing-y-2">
-                      <thead className="sticky top-0 bg-gray-100 z-10">
-                        <tr className="font-bold text-gray-600">
-                          <th className="w-20 text-center">Employee</th>
-                          <th className="text-left">Shift Rule</th>
-                          <th className="text-left">Start Date</th>
-                          <th className="text-left">End Date</th>
-                          <th className="w-16 text-center">Action</th>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center rounded-full bg-gray-50 border border-gray-200 px-3 py-2">
+                    <Checkbox
+                      inputId="showDeletedData"
+                      checked={isShowDeletedDataChecked}
+                      onChange={() => setIsShowDeletedDataChecked(!isShowDeletedDataChecked)}
+                    />
+                    <label htmlFor="showDeletedData" className="ml-2 text-sm text-gray-700">
+                      Show deleted
+                    </label>
+                  </div>
+
+                  <Button
+                    label="Generate Schedule"
+                    icon="pi pi-plus"
+                    onClick={() => router.push('/generate')}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4">
+                <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 py-4">
+                  <div className="text-xs text-gray-500">Schedules</div>
+                  <div className="text-2xl font-semibold text-gray-900 mt-1">{stats.schedules}</div>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 px-4 py-4">
+                  <div className="text-xs text-gray-500">Employees</div>
+                  <div className="text-2xl font-semibold text-gray-900 mt-1">{stats.employees}</div>
+                </div>
+
+                <div className="rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-white px-4 py-4">
+                  <div className="text-xs text-green-600">Active</div>
+                  <div className="text-2xl font-semibold text-green-700 mt-1">{stats.active}</div>
+                </div>
+
+                <div className="rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-white px-4 py-4">
+                  <div className="text-xs text-red-600">Deleted</div>
+                  <div className="text-2xl font-semibold text-red-700 mt-1">{stats.deleted}</div>
+                </div>
+
+                <div className="rounded-2xl border border-yellow-200 bg-gradient-to-br from-yellow-50 to-white px-4 py-4">
+                  <div className="text-xs text-yellow-600">Holiday</div>
+                  <div className="text-2xl font-semibold text-yellow-700 mt-1">{stats.holidays}</div>
+                </div>
+
+                <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 to-white px-4 py-4">
+                  <div className="text-xs text-sky-600">Day Off</div>
+                  <div className="text-2xl font-semibold text-sky-700 mt-1">{stats.dayOffs}</div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                    <div className="flex-1">
+                      <InputText
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search employee, shift, day off, or holiday"
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:w-[360px]">
+                      <Calendar
+                        value={dateFrom}
+                        onChange={(e) => {
+                          setDateFrom(e.value as Date)
+                          setQuickRange('this_week')
+                        }}
+                        placeholder="Date From"
+                        dateFormat="dd-mm-yy"
+                        showIcon
+                      />
+
+                      <Calendar
+                        value={dateTo}
+                        onChange={(e) => {
+                          setDateTo(e.value as Date)
+                          setQuickRange('this_week')
+                        }}
+                        placeholder="Date To"
+                        dateFormat="dd-mm-yy"
+                        showIcon
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        label="Today"
+                        size="small"
+                        severity={quickRange === 'today' ? 'info' : 'secondary'}
+                        outlined={quickRange !== 'today'}
+                        onClick={() => applyQuickRange('today')}
+                      />
+                      <Button
+                        label="This Week"
+                        size="small"
+                        severity={quickRange === 'this_week' ? 'info' : 'secondary'}
+                        outlined={quickRange !== 'this_week'}
+                        onClick={() => applyQuickRange('this_week')}
+                      />
+                      <Button
+                        label="This Month"
+                        size="small"
+                        severity={quickRange === 'this_month' ? 'info' : 'secondary'}
+                        outlined={quickRange !== 'this_month'}
+                        onClick={() => applyQuickRange('this_month')}
+                      />
+                    </div>
+
+                    {hasActiveFilter && (
+                      <Button
+                        label="Clear Filter"
+                        severity="secondary"
+                        outlined
+                        onClick={clearFilters}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {topShifts.length > 0 && (
+                <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                  <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Most Used Shifts
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {topShifts.map(([shiftName, count]) => (
+                      <Tag key={shiftName} value={`${shiftName} • ${count}`} severity="info" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Legend
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <Tag value="Workday" severity="info" />
+                  <Tag value="Holiday" severity="warning" />
+                  <Tag value="Day Off" severity="info" />
+                  <Tag value="Deleted" severity="danger" />
+                </div>
+              </div>
+
+              <Divider className="my-0" />
+
+              <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white">
+                {employeeRows.length === 0 || visibleDates.length === 0 ? (
+                  <div className="py-16 text-center text-gray-500">
+                    <div className="text-base font-medium text-gray-700">No schedules found</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Try adjusting the keyword or date range.
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto overflow-y-hidden">
+                    <table className="min-w-[1100px] w-full border-separate border-spacing-0">
+                      <thead>
+                        <tr>
+                          <th className="sticky left-0 top-0 z-30 min-w-[260px] bg-gray-50 border-b border-r border-gray-200 px-4 py-4 text-left">
+                            <div className="text-sm font-semibold text-gray-900">Employee</div>
+                          </th>
+
+                          {visibleDates.map((dateKey) => {
+                            const isToday = dayjs(dateKey).isSame(dayjs(), 'day')
+
+                            return (
+                              <th
+                                key={dateKey}
+                                className={`top-0 z-20 min-w-[120px] border-b border-r border-gray-100 px-3 py-3 text-center ${isToday ? 'bg-blue-50' : 'bg-gray-50'
+                                  }`}
+                              >
+                                <div className="text-xs text-gray-500 uppercase">
+                                  {dayjs(dateKey).format('ddd')}
+                                </div>
+                                <div className={`text-sm font-semibold ${isToday ? 'text-blue-700' : 'text-gray-900'}`}>
+                                  {dayjs(dateKey).format('DD MMM')}
+                                </div>
+                              </th>
+                            )
+                          })}
                         </tr>
                       </thead>
+
                       <tbody>
-                        {fields.map((field, index) => (
-                          <tr key={field.id}>
+                        {employeeRows.map((employee) => (
+                          <tr key={employee.employeeId ?? `emp-${employee.employeeName}`}>
+                            <td className="sticky left-0 z-10 min-w-[260px] border-b border-r border-gray-200 bg-white px-4 py-4 align-top shadow-[6px_0_10px_-10px_rgba(0,0,0,0.12)]">
+                              <div className="text-sm font-semibold text-gray-900 truncate">
+                                {employee.employeeName ?? '-'}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                ID: {employee.employeeId ?? '-'}
+                              </div>
+                            </td>
 
-                            {/* emp */}
-                            <td className="align-top bg-white rounded-md shadow-sm">
-                              <Controller
-                                name={`bulk_data.${index}.employee_id`}
-                                control={control}
-                                rules={{ required: "Employee is required" }}
-                                render={({ field, fieldState }) => (
-                                  <div className="flex flex-col">
-                                    <Dropdown
-                                      appendTo={() => document.body}
-                                      {...field}
-                                      options={employeeData}
-                                      optionLabel="full_name"
-                                      optionValue="id"
-                                      placeholder="Select Employee"
-                                      onChange={async (e) => {
-                                        field.onChange(e.value);
+                            {visibleDates.map((dateKey) => {
+                              const key = `${employee.employeeId}__${dateKey}`
+                              const entries = scheduleMap.get(key) ?? []
+                              const firstEntry = entries[0]
 
-                                        if (e.value) {
-                                          const empShiftRule: EmployeeShiftRule[] = await fetcher(`/api/shift-employee/${e.value}`);
-                                          setValue(`bulk_data.${index}.shift_rule_id`, 0);
-                                          setDataShiftRule((prev) => ({
-                                            ...prev,
-                                            [index]: empShiftRule,
-                                          }));
+                              const isSelected =
+                                selectedCell?.employeeId === employee.employeeId &&
+                                selectedCell?.dateKey === dateKey
 
-                                        }
-                                      }}
-                                      className={`w-full ${fieldState.error ? "p-invalid" : ""
-                                        }`}
-                                    />
-                                    {fieldState.error && (
-                                      <small className="p-error">
-                                        {fieldState.error.message}
-                                      </small>
+                              return (
+                                <td
+                                  key={dateKey}
+                                  className={`min-w-[120px] border-b border-r border-gray-100 px-2 py-2 align-top ${isSelected ? 'bg-blue-50' : 'bg-white'
+                                    }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setSelectedCell({
+                                        employeeId: employee.employeeId,
+                                        employeeName: employee.employeeName,
+                                        dateKey,
+                                        entries
+                                      })
+                                    }
+                                    className="w-full min-h-[96px] text-left"
+                                  >
+                                    {entries.length === 0 ? (
+                                      <div className="h-full flex items-center justify-center text-xs text-gray-300">
+                                        —
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col gap-1">
+                                        {entries.slice(0, 2).map((entry) => (
+                                          <div
+                                            key={entry.id}
+                                            className={`rounded-lg px-2 py-1 text-xs font-medium truncate border ${getCellStyle([entry])}`}
+                                          >
+                                            {entry.shift_name ?? '-'}
+                                          </div>
+                                        ))}
+
+                                        {entries.some((entry) => entry.is_holiday) && (
+                                          <div className="text-[11px] text-yellow-700 font-medium">
+                                            Holiday
+                                          </div>
+                                        )}
+
+                                        {entries.some((entry) => entry.is_day_off) && (
+                                          <div className="text-[11px] text-sky-700 font-medium">
+                                            Day Off
+                                          </div>
+                                        )}
+
+                                        {entries.length > 2 && (
+                                          <div className="text-[11px] text-gray-500">
+                                            +{entries.length - 2} more
+                                          </div>
+                                        )}
+
+                                        {firstEntry && (
+                                          <div className="text-[11px] text-gray-400 mt-1">
+                                            {firstEntry.deleted_at ? 'Deleted' : 'Active'}
+                                          </div>
+                                        )}
+                                      </div>
                                     )}
-                                  </div>
-                                )}
-                              />
-                            </td>
-
-                            {/* Shift */}
-                            <td className="align-top bg-white rounded-md shadow-sm">
-                              <Controller
-                                name={`bulk_data.${index}.shift_rule_id`}
-                                control={control}
-                                rules={{ required: "Shift is required" }}
-                                render={({ field, fieldState }) => (
-                                  <div className="flex flex-col">
-                                    <Dropdown
-                                      appendTo={() => document.body}
-                                      {...field}
-                                      options={dataShiftRule[index] ?? []}
-                                      itemTemplate={(option) => (
-                                        <div>
-                                          {option.base_shift_name} - {option.patterns}
-                                        </div>
-                                      )}
-                                      valueTemplate={(option, props) => {
-                                        if (option) {
-                                          return <span>{option.base_shift_name} - {option.patterns}</span>;
-                                        }
-                                        return <span>{props.placeholder}</span>;
-                                      }}
-                                      optionValue="id"
-                                      placeholder="Select Shift Rule"
-                                      className={`w-full ${fieldState.error ? "p-invalid" : ""
-                                        }`}
-                                    />
-                                    {fieldState.error && (
-                                      <small className="p-error">
-                                        {fieldState.error.message}
-                                      </small>
-                                    )}
-                                  </div>
-                                )}
-                              />
-                            </td>
-
-                            {/* Start Date */}
-                            <td className="align-top bg-white rounded-md shadow-sm">
-                              <Controller
-                                name={`bulk_data.${index}.start_date`}
-                                control={control}
-                                rules={{ required: "start date is required" }}
-                                render={({ field, fieldState }) => (
-                                  <>
-                                    <Calendar
-                                      dateFormat='dd-mm-yy'
-                                      appendTo={() => document.body}
-                                      {...field}
-                                      id="start_date"
-                                      value={field.value}
-                                      onChange={(e) => {
-                                        field.onChange(e.value);
-                                      }}
-                                      hourFormat="24"
-                                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                                    />
-                                    {fieldState.error && (
-                                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                                    )}
-                                  </>
-                                )}
-                              />
-                            </td>
-
-                            {/* End Date */}
-                            <td className="align-top bg-white rounded-md shadow-sm">
-                              <Controller
-                                name={`bulk_data.${index}.end_date`}
-                                control={control}
-                                rules={{ required: "end date is required" }}
-                                render={({ field, fieldState }) => (
-                                  <>
-                                    <Calendar
-                                      dateFormat='dd-mm-yy'
-                                      appendTo={() => document.body}
-                                      {...field}
-                                      id="start_date"
-                                      value={field.value}
-                                      onChange={(e) => {
-                                        field.onChange(e.value);
-                                      }}
-                                      hourFormat="24"
-                                      className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                                    />
-                                    {fieldState.error && (
-                                      <small className="font-bold p-error"> {fieldState.error.message} </small>
-                                    )}
-                                  </>
-                                )}
-                              />
-                            </td>
-
-                            {/* Action */}
-                            <td className="text-center bg-white rounded-md shadow-sm">
-                              <Button
-                                icon="pi pi-trash"
-                                severity="danger"
-                                text
-                                onClick={() => remove(index)}
-                              />
-                            </td>
+                                  </button>
+                                </td>
+                              )
+                            })}
                           </tr>
                         ))}
                       </tbody>
                     </table>
-
-                    <div className="p-5">
-                      <div className="pt-3">
-                        <Button
-                          type="button"
-                          label="Add Line"
-                          icon="pi pi-plus"
-                          onClick={() =>
-                            append({ employee_id: 0, shift_rule_id: 0, start_date: null, end_date: null })
-                          }
-                        />
-                      </div>
-                    </div>
                   </div>
                 )}
-
-              </>
-            )}
-
-            {!watch('is_bulk') && (
-              <div className="m-0 flex flex-col gap-2">
-                <label htmlFor="employee_id">Employee</label>
-                <Controller
-                  name="employee_id"
-                  control={control}
-                  rules={{ required: watch('is_bulk') ? false : "Employee is required" }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="employee_id"
-                        appendTo={() => document.body}
-                        value={field.value}
-                        options={employeeActive}
-                        loading={isLoading}
-                        disabled={employeeIsLoading || !!employeeError}
-                        onChange={(e) => field.onChange(e.value)}
-                        optionLabel="full_name"
-                        optionValue="id"
-                        placeholder={isLoading ? "Loading employees..." : "Select an employee"}
-                        className={fieldState.invalid ? "p-invalid" : ""}
-                      />
-                      {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                      {employeeError && <small className="p-error font-bold">We couldn’t load the list of employees. Please try again</small>}
-                    </>
-                  )}
-                />
               </div>
-            )}
 
-            {!watch('is_bulk') && (
-              <div className="m-0 flex flex-col gap-2">
-                <label htmlFor="shift_id">Shift</label>
-                <Controller
-                  name="shift_id"
-                  control={control}
-                  rules={{ required: watch('is_bulk') ? false : "Shift is required" }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="shift_id"
-                        appendTo={() => document.body}
-                        value={field.value}
-                        options={shiftActive}
-                        loading={shiftIsLoading}
-                        disabled={shiftIsLoading || !!shiftError}
-                        onChange={(e) => field.onChange(e.value)}
-                        optionLabel="name"
-                        optionValue="id"
-                        placeholder={isLoading ? "Loading shifts..." : "Select a shift"}
-                        className={fieldState.invalid ? "p-invalid" : ""}
-                      />
-                      {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                      {shiftError && <small className="p-error font-bold">We couldn’t load the list of shifts. Please try again</small>}
-                    </>
-                  )}
-                />
-              </div>
-            )}
+              {selectedCell && (
+                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                  <div className="px-5 py-4 bg-gray-50 border-b">
+                    <div className="text-base font-semibold text-gray-900">
+                      Schedule Detail
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {selectedCell.employeeName ?? '-'} • {dayjs(selectedCell.dateKey).format('dddd, DD MMM YYYY')}
+                    </div>
+                  </div>
 
-            {!watch('is_bulk') && (
-              <div className="m-0 w-full flex flex-col gap-2">
-                <label htmlFor="shift_date">Shift Date</label>
-                <Controller
-                  name="shift_date"
-                  control={control}
-                  rules={{ required: watch('is_bulk') ? false : "*required", }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        dateFormat='dd-mm-yy'
-                        appendTo={() => document.body}
-                        {...field}
-                        id="shift_date"
-                        value={field.value}
-                        onChange={(e) => {
-                          field.onChange(e.value);
-                        }}
-                        hourFormat="24"
-                        className={fieldState.invalid ? "w-full p-invalid" : "w-full"}
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error"> {fieldState.error.message} </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            )}
+                  <div className="p-5">
+                    {selectedCell.entries.length === 0 ? (
+                      <div className="text-sm text-gray-500">
+                        No schedule on this date.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {selectedCell.entries.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-xl border border-gray-200 px-4 py-3"
+                          >
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                {entry.shift_name ?? '-'}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                Schedule ID: {entry.id}
+                              </div>
+                              <div className="flex flex-wrap gap-2 mt-3">
+                                {renderStatusTag(entry)}
+                                {entry.is_holiday && <Tag value="Holiday" severity="warning" />}
+                                {entry.is_day_off && <Tag value="Day Off" severity="info" />}
+                              </div>
+                            </div>
 
-          </div>
-        </form>
-      </Dialog >
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {renderActionButtons(entry)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </Card>
+        </div>
+      </div>
     </>
   )
 }
 
-export default EmployeeShiftAssignmentTableData
+export default EmployeeShiftAssignmentListPage

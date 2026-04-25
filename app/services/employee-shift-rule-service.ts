@@ -3,14 +3,14 @@ import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = '/api/shift-employee';
 
-export const createEmployeeShiftRule = async (data: EmployeeShiftRule) => {
+export const createEmployeeShiftRule = async (data: any) => {
   const res = await fetch(API_URL, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data)
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -54,8 +54,8 @@ export const updateEmployeeShiftRule = async (id: number, rowVersion: number, da
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -67,14 +67,14 @@ export const deleteEmployeeShiftRule = async (id: number, rowVersion: number) =>
   const res = await fetch(`${API_URL}/${id}`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(rowVersion),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -83,13 +83,13 @@ export const purgeEmployeeShiftRule = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -98,7 +98,7 @@ export const restoreEmployeeShiftRule = async (id: number, rowVersion: number) =
   const res = await fetch(`${API_URL}/${id}/restore`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(rowVersion),
     },

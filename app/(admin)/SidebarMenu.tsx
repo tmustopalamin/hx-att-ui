@@ -1,606 +1,408 @@
 "use client";
 
 import { useState } from "react";
-import ActiveLink from "./ActiveLinkProps";
 import { usePathname } from "next/navigation";
+
+import ActiveLink from "./ActiveLinkProps";
 import AppLogo from "../_components/sidebar-menu/AppLogo";
 import Can from "../_components/CanPermission";
 
-export default function Sidebar() {
+type MenuItem = {
+  href: string;
+  label: string;
+  icon: string;
+};
+
+type MenuSection = {
+  key: string;
+  label: string;
+  permission?: string;
+  items: MenuItem[];
+};
+
+type SettingSubMenu = {
+  key: string;
+  label: string;
+  icon: string;
+  items: MenuItem[];
+};
+
+const myAttendanceItems: MenuItem[] = [
+  {
+    href: "/my-attendance/remote-attendance",
+    label: "Remote Attendance",
+    icon: "pi-map-marker",
+  },
+];
+
+const payrollItems: MenuItem[] = [
+  {
+    href: "/run-payroll",
+    label: "Run Payroll",
+    icon: "pi-calculator",
+  },
+];
+
+const employeeItems: MenuItem[] = [
+  {
+    href: "/employees",
+    label: "Employees",
+    icon: "pi-users",
+  },
+];
+
+const attendanceItems: MenuItem[] = [
+  {
+    href: "/attendance-log",
+    label: "Attendance Log",
+    icon: "pi-clock",
+  },
+  {
+    href: "/attendance-summary",
+    label: "Attendance Summary",
+    icon: "pi-file-check",
+  },
+];
+
+const leaveItems: MenuItem[] = [
+  {
+    href: "/request-leave",
+    label: "Request Leave",
+    icon: "pi-calendar",
+  },
+];
+
+const settingSubMenus: SettingSubMenu[] = [
+  {
+    key: "master",
+    label: "Master Data",
+    icon: "pi-database",
+    items: [
+      { href: "/setting/bank", label: "Bank", icon: "pi-credit-card" },
+      { href: "/setting/city", label: "City", icon: "pi-map-marker" },
+      { href: "/setting/state", label: "Province", icon: "pi-map" },
+      { href: "/setting/country", label: "Country", icon: "pi-globe" },
+      { href: "/setting/document-type", label: "Document Type", icon: "pi-file" },
+      { href: "/setting/employment-status", label: "Employment Status", icon: "pi-id-card" },
+      { href: "/setting/identity-type", label: "Identity Type", icon: "pi-id-card" },
+      { href: "/setting/relationship", label: "Relationship", icon: "pi-heart" },
+    ],
+  },
+  {
+    key: "org",
+    label: "Organization",
+    icon: "pi-building",
+    items: [
+      { href: "/setting/agency", label: "Agency", icon: "pi-building" },
+      { href: "/setting/branch", label: "Branch", icon: "pi-sitemap" },
+      { href: "/setting/department", label: "Department", icon: "pi-briefcase" },
+      { href: "/setting/position", label: "Position", icon: "pi-user" },
+    ],
+  },
+  {
+    key: "attendance",
+    label: "Time & Attendance",
+    icon: "pi-clock",
+    items: [
+      { href: "/setting/shift", label: "Shift", icon: "pi-calendar" },
+      { href: "/setting/shift-rule", label: "Shift Rule", icon: "pi-calendar" },
+      { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi-list" },
+      {
+        href: "/setting/employee-shift-assignment",
+        label: "Employee Shift Assignment",
+        icon: "pi-calendar-plus",
+      },
+    ],
+  },
+  {
+    key: "fp",
+    label: "Fingerprint",
+    icon: "pi-id-card",
+    items: [
+      {
+        href: "/setting/fingerprint-scanner",
+        label: "Fingerprint Scanner",
+        icon: "pi-box",
+      },
+    ],
+  },
+  {
+    key: "payroll",
+    label: "Payroll Configuration",
+    icon: "pi-calculator",
+    items: [
+      {
+        href: "/setting/payroll-formula",
+        label: "Payroll Formula",
+        icon: "pi-calculator",
+      },
+      {
+        href: "/setting/income-component",
+        label: "Income Component",
+        icon: "pi-plus-circle",
+      },
+      {
+        href: "/setting/deduction-component",
+        label: "Deduction Component",
+        icon: "pi-minus-circle",
+      },
+      {
+        href: "/setting/bank",
+        label: "Bank",
+        icon: "pi-credit-card",
+      },
+    ],
+  },
+  {
+    key: "user",
+    label: "User Management",
+    icon: "pi-users",
+    items: [
+      { href: "/setting/user", label: "Users", icon: "pi-user" },
+      { href: "/setting/role", label: "Roles", icon: "pi-users" },
+      { href: "/setting/permissions", label: "Permissions", icon: "pi-lock" },
+      {
+        href: "/setting/role-permissions",
+        label: "Role Permissions",
+        icon: "pi-key",
+      },
+    ],
+  },
+];
+
+const topMenuSections: MenuSection[] = [
+  {
+    key: "my-attendance",
+    label: "My Attendance",
+    items: myAttendanceItems,
+  },
+  {
+    key: "run-payroll",
+    label: "Payroll",
+    permission: "payroll.read",
+    items: payrollItems,
+  },
+  {
+    key: "employees",
+    label: "Manage Employees",
+    permission: "employee.read",
+    items: employeeItems,
+  },
+  {
+    key: "attendance",
+    label: "Manage Attendance",
+    permission: "attendance.manage",
+    items: attendanceItems,
+  },
+  {
+    key: "leave",
+    label: "Leave",
+    permission: "leave.read",
+    items: leaveItems,
+  },
+];
+
+export default function SidebarMenu() {
   const pathname = usePathname();
 
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const [openSubMenu, setOpenSubMenu] = useState<string | null>(null);
+  const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
+  const [openSubMenuKey, setOpenSubMenuKey] = useState<string | null>(null);
 
-  const toggleMenu = (menu: string) => {
-    setOpenMenu(openMenu === menu ? null : menu);
+  const isPathActive = (href: string) => {
+    return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  const toggleSubMenu = (submenu: string) => {
-    setOpenSubMenu(openSubMenu === submenu ? null : submenu);
+  const hasActiveItems = (items: MenuItem[]) => {
+    return items.some((item) => isPathActive(item.href));
   };
+
+  const hasActiveSettingItems = (items: SettingSubMenu[]) => {
+    return items.some((item) => hasActiveItems(item.items));
+  };
+
+  const isTopMenuOpen = (key: string, items: MenuItem[]) => {
+    return openMenuKey === key || hasActiveItems(items);
+  };
+
+  const isSubMenuOpen = (key: string, items: MenuItem[]) => {
+    return openSubMenuKey === key || hasActiveItems(items);
+  };
+
+  const toggleMenu = (key: string) => {
+    setOpenMenuKey((current) => (current === key ? null : key));
+  };
+
+  const toggleSubMenu = (key: string) => {
+    setOpenSubMenuKey((current) => (current === key ? null : key));
+  };
+
+  const topButtonClass = (isOpen: boolean) =>
+    `flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${isOpen
+      ? "bg-slate-100 text-slate-900"
+      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+    }`;
+
+  const submenuButtonClass = (isOpen: boolean) =>
+    `flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isOpen
+      ? "bg-slate-100 text-slate-900"
+      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+    }`;
+
+  const menuLinkClass =
+    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900";
+
+  const menuLinkActiveClass =
+    "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100";
+
+  const childLinkClass =
+    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900";
+
+  const childLinkActiveClass =
+    "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100";
+
+  const renderLinkList = (items: MenuItem[], leftPaddingClass: string) => {
+    return items.map((item) => (
+      <li key={item.href}>
+        <ActiveLink
+          href={item.href}
+          className={`${childLinkClass} ${leftPaddingClass}`}
+          activeClassName={childLinkActiveClass}
+          exact={false}
+        >
+          <i className={`pi ${item.icon} text-sm`} />
+          <span className="truncate">{item.label}</span>
+        </ActiveLink>
+      </li>
+    ));
+  };
+
+  const renderTopSection = (section: MenuSection) => {
+    const isOpen = isTopMenuOpen(section.key, section.items);
+
+    const sectionContent = (
+      <li key={section.key} className="space-y-1">
+        <button
+          type="button"
+          className={topButtonClass(isOpen)}
+          onClick={() => toggleMenu(section.key)}
+        >
+          <span>{section.label}</span>
+          <i
+            className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"
+              } text-xs text-slate-400`}
+          />
+        </button>
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            }`}
+        >
+          <ul className="space-y-1 pl-3">{renderLinkList(section.items, "")}</ul>
+        </div>
+      </li>
+    );
+
+    if (section.permission) {
+      return (
+        <Can key={section.key} allOf={[section.permission]}>
+          {sectionContent}
+        </Can>
+      );
+    }
+
+    return sectionContent;
+  };
+
+  const isSettingOpen =
+    openMenuKey === "setting" || pathname.startsWith("/setting") || hasActiveSettingItems(settingSubMenus);
+
+  const settingContent = (
+    <li className="space-y-1">
+      <button
+        type="button"
+        className={topButtonClass(isSettingOpen)}
+        onClick={() => toggleMenu("setting")}
+      >
+        <span>General Setting</span>
+        <i
+          className={`pi ${isSettingOpen ? "pi-chevron-down" : "pi-chevron-right"
+            } text-xs text-slate-400`}
+        />
+      </button>
+
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingOpen ? "mt-2 max-h-[2200px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+      >
+        <ul className="space-y-1 pl-3">
+          {settingSubMenus.map((submenu) => {
+            const isOpen = isSubMenuOpen(submenu.key, submenu.items);
+
+            return (
+              <li key={submenu.key} className="space-y-1">
+                <button
+                  type="button"
+                  className={submenuButtonClass(isOpen)}
+                  onClick={() => toggleSubMenu(submenu.key)}
+                >
+                  <span className="flex items-center gap-3">
+                    <i className={`pi ${submenu.icon} text-sm`} />
+                    <span>{submenu.label}</span>
+                  </span>
+
+                  <i
+                    className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"
+                      } text-xs text-slate-400`}
+                  />
+                </button>
+
+                <div
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen
+                    ? "mt-2 max-h-[900px] opacity-100"
+                    : "max-h-0 opacity-0"
+                    }`}
+                >
+                  <ul className="space-y-1 pl-4">
+                    {renderLinkList(submenu.items, "")}
+                  </ul>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </li>
+  );
 
   return (
-    <div className="flex flex-col gap-5 h-screen pb-5 w-full">
-      {/* Logo */}
-      <AppLogo />
+    <div className="flex h-full w-full flex-col bg-white">
+      <div className="shrink-0 border-b border-slate-200 px-4 py-4">
+        <AppLogo />
+      </div>
 
-      {/* Menu Items */}
-      <div className="flex-1 overflow-y-auto">
-        <ul className="list-none">
-
-          {/* Summary */}
-          <Can allOf={['dashboard.read']}>
-            <li>
-              <div className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem]">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        <ul className="m-0 list-none space-y-2 p-0">
+          <Can allOf={["dashboard.read"]}>
+            <li className="space-y-2 pb-1">
+              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Summary
-              </div>
-              <ul>
-                <li>
-                  <ActiveLink
-                    href="/dashboard"
-                    className="flex items-center py-[.75rem] px-[2rem] hover:bg-gray-100"
-                    activeClassName="bg-gray-200"
-                    exact={false}
-                  >
-                    <i className="mr-[.5rem] pi pi-home text-blue-700"></i>
-                    <span className="text-[.857rem]">Dashboard</span>
-                  </ActiveLink>
-                </li>
-              </ul>
+              </p>
+
+              <ActiveLink
+                href="/dashboard"
+                className={menuLinkClass}
+                activeClassName={menuLinkActiveClass}
+                exact={false}
+              >
+                <i className="pi pi-home text-sm" />
+                <span>Dashboard</span>
+              </ActiveLink>
             </li>
           </Can>
 
+          {topMenuSections.map((section) => renderTopSection(section))}
 
-          {/* My Attendance */}
-          <li>
-            <div
-              className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem] flex justify-between gap-2 items-center cursor-pointer"
-              onClick={() => toggleMenu("gps-photo-tracker")}
-            >
-              My Attendance
-              <i
-                className={`pi ${openMenu === "gps-photo-tracker" || pathname.startsWith("/gps-photo-tracker")
-                  ? "pi-chevron-down"
-                  : "pi-chevron-right"
-                  } text-gray-500 text-sm`}
-              />
-            </div>
-
-            <ul
-              className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${openMenu === "gps-photo-tracker" ||
-                  pathname.startsWith("/gps-photo-tracker")
-                  ? "max-h-screen opacity-100"
-                  : "max-h-0 opacity-0"
-                }
-              `}
-            >
-              <li>
-                <ActiveLink
-                  href="/my-attendance/remote-attendance"
-                  className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                  activeClassName="bg-gray-200"
-                  exact={false}
-                >
-                  <i className="mr-[.5rem] pi pi-map-marker text-blue-700"></i>
-                  <span className="text-[.830rem]">Remote Attendance</span>
-                </ActiveLink>
-              </li>
-            </ul>
-          </li>
-
-          {/* Manage Payroll */}
-          <Can allOf={['payroll.read']}>
-            <li>
-              <div
-                className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem] flex justify-between gap-2 items-center cursor-pointer"
-                onClick={() => toggleMenu("run-payroll")}
-              >
-                Payroll
-                <i
-                  className={`pi ${openMenu === "run-payroll" || pathname.startsWith("/run-payroll")
-                    ? "pi-chevron-down"
-                    : "pi-chevron-right"
-                    } text-gray-500 text-sm`}
-                />
-              </div>
-
-              <ul
-                className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${openMenu === "run-payroll" ||
-                    pathname.startsWith("/run-payroll")
-                    ? "max-h-screen opacity-100"
-                    : "max-h-0 opacity-0"
-                  }
-              `}
-              >
-                <li>
-                  <ActiveLink
-                    href="/run-payroll"
-                    className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    activeClassName="bg-gray-200"
-                    exact={false}
-                  >
-                    <i className="mr-[.5rem] pi pi-calculator text-blue-700"></i>
-                    <span className="text-[.830rem]">Run Payroll</span>
-                  </ActiveLink>
-                </li>
-              </ul>
-            </li>
-          </Can>
-
-          {/* Manage Employees */}
-          <Can allOf={['employee.read']}>
-            <li>
-              <div
-                className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem] flex justify-between gap-2 items-center cursor-pointer"
-                onClick={() => toggleMenu("employees")}
-              >
-                Manage Employees
-                <i
-                  className={`pi ${openMenu === "employees" || pathname.startsWith("/employees")
-                    ? "pi-chevron-down"
-                    : "pi-chevron-right"
-                    } text-gray-500 text-sm`}
-                />
-              </div>
-
-              <ul
-                className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${openMenu === "employees" ||
-                    pathname.startsWith("/employees")
-                    ? "max-h-screen opacity-100"
-                    : "max-h-0 opacity-0"
-                  }
-              `}
-              >
-                <li>
-                  <ActiveLink
-                    href="/employees"
-                    className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    activeClassName="bg-gray-200"
-                    exact={false}
-                  >
-                    <i className="mr-[.5rem] pi pi-users text-blue-700"></i>
-                    <span className="text-[.830rem]">Employees</span>
-                  </ActiveLink>
-                </li>
-                {/* <li>
-                <ActiveLink
-                  href="/employees/add"
-                  className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                  activeClassName="bg-gray-200"
-                  exact={false}
-                >
-                  <i className="mr-[.5rem] pi pi-user-plus text-blue-700"></i>
-                  <span className="text-[.830rem]">Add Employee</span>
-                </ActiveLink>
-              </li> */}
-              </ul>
-            </li>
-          </Can>
-
-          {/* Manage Attendance */}
-          <Can allOf={['attendance.manage']}>
-            <li>
-              <div
-                className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem] flex justify-between gap-2 items-center cursor-pointer"
-                onClick={() => toggleMenu("attendance-log")}
-              >
-                Manage Attendance
-                <i
-                  className={`pi ${openMenu === "attendance-log" || pathname.startsWith("/attendance-log")
-                    ? "pi-chevron-down"
-                    : "pi-chevron-right"
-                    } text-gray-500 text-sm`}
-                />
-              </div>
-
-              <ul
-                className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${openMenu === "attendance-log" ||
-                    pathname.startsWith("/attendance-log")
-                    ? "max-h-screen opacity-100"
-                    : "max-h-0 opacity-0"
-                  }
-              `}
-              >
-                <li>
-                  <ActiveLink
-                    href="/attendance-log"
-                    className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    activeClassName="bg-gray-200"
-                    exact={false}
-                  >
-                    <i className="mr-[.5rem] pi pi-clock text-blue-700"></i>
-                    <span className="text-[.830rem]">Attendance Log</span>
-                  </ActiveLink>
-                </li>
-                <li>
-                  <ActiveLink
-                    href="/attendance-summary"
-                    className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    activeClassName="bg-gray-200"
-                    exact={false}
-                  >
-                    <i className="mr-[.5rem] pi pi-file-check text-blue-700"></i>
-                    <span className="text-[.830rem]">Attendance Summary</span>
-                  </ActiveLink>
-                </li>
-                {/* <li>
-                <ActiveLink
-                  href="/attendance-log/add"
-                  className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                  activeClassName="bg-gray-200"
-                  exact={false}
-                >
-                  <i className="mr-[.5rem] pi pi-user-plus text-blue-700"></i>
-                  <span className="text-[.830rem]">Add Employee</span>
-                </ActiveLink>
-              </li> */}
-              </ul>
-            </li>
-          </Can>
-
-
-          {/* Manage Leave */}
-          <Can allOf={['leave.read']}>
-            <li>
-              <div
-                className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem] flex justify-between gap-2 items-center cursor-pointer"
-                onClick={() => toggleMenu("request-leave")}
-              >
-                Leave
-                <i
-                  className={`pi ${openMenu === "request-leave" || pathname.startsWith("/request-leave")
-                    ? "pi-chevron-down"
-                    : "pi-chevron-right"
-                    } text-gray-500 text-sm`}
-                />
-              </div>
-
-              <ul
-                className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${openMenu === "request-leave" ||
-                    pathname.startsWith("/request-leave")
-                    ? "max-h-screen opacity-100"
-                    : "max-h-0 opacity-0"
-                  }
-              `}
-              >
-                <li>
-                  <ActiveLink
-                    href="/request-leave"
-                    className="flex items-center py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    activeClassName="bg-gray-200"
-                    exact={false}
-                  >
-                    <i className="mr-[.5rem] pi pi-calendar text-blue-700"></i>
-                    <span className="text-[.830rem]">Request Leave</span>
-                  </ActiveLink>
-                </li>
-              </ul>
-            </li>
-          </Can>
-
-
-          {/* General Setting */}
-          <Can allOf={['setting.read']}>
-            <li>
-              <div
-                className="text-[.850rem] font-bold uppercase text-blue-700 py-[1rem] px-[2rem] flex justify-between gap-2 items-center cursor-pointer"
-                onClick={() => toggleMenu("setting")}
-              >
-                General Setting
-                <i
-                  className={`pi ${openMenu === "setting" || pathname.startsWith("/setting")
-                    ? "pi-chevron-down"
-                    : "pi-chevron-right"
-                    } text-gray-500 text-sm`}
-                />
-              </div>
-              <ul
-                className={`
-                overflow-hidden transition-all duration-300 ease-in-out
-                ${openMenu === "setting" || pathname.startsWith("/setting")
-                    ? "max-h-screen opacity-100"
-                    : "max-h-0 opacity-0"
-                  }
-              `}
-              >
-                {/* Master Data Submenu */}
-                <li>
-                  <div
-                    className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    onClick={() => toggleSubMenu("master")}
-                  >
-                    <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-database text-blue-700"></i>
-                      <span className="text-[.830rem]">Master Data</span>
-                    </div>
-                    <i
-                      className={`pi ${openSubMenu === "master"
-                        ? "pi-chevron-down"
-                        : "pi-chevron-right"
-                        } text-gray-500 text-xs`}
-                    />
-                  </div>
-
-                  <ul
-                    className={`
-                    overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSubMenu === "master"
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                      }
-                  `}
-                  >
-                    {[
-                      { href: "/setting/bank", label: "Bank", icon: "pi pi-credit-card" },
-                      { href: "/setting/city", label: "City", icon: "pi pi-map-marker" },
-                      { href: "/setting/state", label: "Province", icon: "pi pi-map" },
-                      { href: "/setting/country", label: "Country", icon: "pi pi-globe" },
-                      { href: "/setting/document-type", label: "Document Type", icon: "pi pi-file" },
-                      { href: "/setting/employment-status", label: "Employment Status", icon: "pi pi-id-card" },
-                      { href: "/setting/identity-type", label: "Identity Type", icon: "pi pi-id-card" },
-                      { href: "/setting/relationship", label: "Relationship", icon: "pi pi-heart" },
-                    ]
-                      .map((item) => (
-                        <li key={item.href}>
-                          <ActiveLink
-                            href={item.href}
-                            className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                            activeClassName="bg-gray-200"
-                            exact={false}
-                          >
-                            <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                            <span className="text-[.820rem]">{item.label}</span>
-                          </ActiveLink>
-                        </li>
-                      ))}
-                  </ul>
-                </li>
-                <li>
-                  <div
-                    className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    onClick={() => toggleSubMenu("org")}
-                  >
-                    <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-building text-blue-700"></i>
-                      <span className="text-[.830rem]">Organization</span>
-                    </div>
-                    <i
-                      className={`pi ${openSubMenu === "org"
-                        ? "pi-chevron-down"
-                        : "pi-chevron-right"
-                        } text-gray-500 text-xs`}
-                    />
-                  </div>
-
-                  <ul
-                    className={`
-                    overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSubMenu === "org"
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                      }
-                  `}
-                  >
-                    {[
-                      { href: "/setting/agency", label: "Agency", icon: "pi pi-building" },
-                      { href: "/setting/branch", label: "Branch", icon: "pi pi-sitemap" },
-                      { href: "/setting/department", label: "Department", icon: "pi pi-briefcase" },
-                      { href: "/setting/position", label: "Position", icon: "pi pi-user" },
-                    ]
-                      .map((item) => (
-                        <li key={item.href}>
-                          <ActiveLink
-                            href={item.href}
-                            className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                            activeClassName="bg-gray-200"
-                            exact={false}
-                          >
-                            <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                            <span className="text-[.820rem]">{item.label}</span>
-                          </ActiveLink>
-                        </li>
-                      ))}
-                  </ul>
-                </li>
-                <li>
-                  <div
-                    className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    onClick={() => toggleSubMenu("attendance")}
-                  >
-                    <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-clock text-blue-700"></i>
-                      <span className="text-[.830rem]">Time & Attendance</span>
-                    </div>
-                    <i
-                      className={`pi ${openSubMenu === "attendance"
-                        ? "pi-chevron-down"
-                        : "pi-chevron-right"
-                        } text-gray-500 text-xs`}
-                    />
-                  </div>
-
-                  <ul
-                    className={`
-                    overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSubMenu === "attendance"
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                      }
-                  `}
-                  >
-                    {[
-                      { href: "/setting/shift", label: "Shift", icon: "pi pi-calendar" },
-                      { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi pi-list" },
-                      { href: "/setting/employee-shift-assignment", label: "Employee Shift Assignment", icon: "pi pi-calendar-plus" },
-                    ]
-                      .map((item) => (
-                        <li key={item.href}>
-                          <ActiveLink
-                            href={item.href}
-                            className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                            activeClassName="bg-gray-200"
-                            exact={false}
-                          >
-                            <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                            <span className="text-[.820rem]">{item.label}</span>
-                          </ActiveLink>
-                        </li>
-                      ))}
-                  </ul>
-                </li>
-                <li>
-                  <div
-                    className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    onClick={() => toggleSubMenu("fp")}
-                  >
-                    <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-id-card text-blue-700"></i>
-                      <span className="text-[.830rem]">Fingerprint</span>
-                    </div>
-                    <i
-                      className={`pi ${openSubMenu === "fp"
-                        ? "pi-chevron-down"
-                        : "pi-chevron-right"
-                        } text-gray-500 text-xs`}
-                    />
-                  </div>
-
-                  <ul
-                    className={`
-                    overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSubMenu === "fp"
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                      }
-                  `}
-                  >
-                    {[
-                      { href: "/setting/fingerprint-scanner", label: "Fingerprint Scanner", icon: "pi pi-box" },
-                    ]
-                      .map((item) => (
-                        <li key={item.href}>
-                          <ActiveLink
-                            href={item.href}
-                            className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                            activeClassName="bg-gray-200"
-                            exact={false}
-                          >
-                            <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                            <span className="text-[.820rem]">{item.label}</span>
-                          </ActiveLink>
-                        </li>
-                      ))}
-                  </ul>
-                </li>
-                <li>
-                  <div
-                    className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    onClick={() => toggleSubMenu("payroll")}
-                  >
-                    <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-calculator text-blue-700"></i>
-                      <span className="text-[.830rem]">Payroll Configuration</span>
-                    </div>
-                    <i
-                      className={`pi ${openSubMenu === "payroll"
-                        ? "pi-chevron-down"
-                        : "pi-chevron-right"
-                        } text-gray-500 text-xs`}
-                    />
-                  </div>
-
-                  <ul
-                    className={`
-                    overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSubMenu === "payroll"
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                      }
-                  `}
-                  >
-                    {[
-                      { href: "/setting/payroll-formula", label: "Payroll Formula", icon: "pi pi-calculator" },
-                      { href: "/setting/income-component", label: "Income Component", icon: "pi pi-plus-circle" },
-                      { href: "/setting/deduction-component", label: "Deduction Component", icon: "pi pi-minus-circle" },
-                      { href: "/setting/bank", label: "Bank", icon: "pi pi-credit-card" },
-                    ]
-                      .map((item) => (
-                        <li key={item.href}>
-                          <ActiveLink
-                            href={item.href}
-                            className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                            activeClassName="bg-gray-200"
-                            exact={false}
-                          >
-                            <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                            <span className="text-[.820rem]">{item.label}</span>
-                          </ActiveLink>
-                        </li>
-                      ))}
-                  </ul>
-                </li>
-                <li>
-                  <div
-                    className="flex justify-between gap-2 items-center cursor-pointer py-[.5rem] pl-[3rem] pr-[1rem] hover:bg-gray-100"
-                    onClick={() => toggleSubMenu("user")}
-                  >
-                    <div className="flex items-center">
-                      <i className="mr-[.5rem] pi pi-users text-blue-700"></i>
-                      <span className="text-[.830rem]">User Management</span>
-                    </div>
-                    <i
-                      className={`pi ${openSubMenu === "user"
-                        ? "pi-chevron-down"
-                        : "pi-chevron-right"
-                        } text-gray-500 text-xs`}
-                    />
-                  </div>
-
-                  <ul
-                    className={`
-                    overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSubMenu === "user"
-                        ? "max-h-screen opacity-100"
-                        : "max-h-0 opacity-0"
-                      }
-                  `}
-                  >
-                    {[
-                      { href: "/setting/user", label: "Users", icon: "pi pi-user" },
-                      { href: "/setting/role", label: "Roles", icon: "pi pi-users" },
-                      { href: "/setting/permissions", label: "Permissions", icon: "pi pi-lock" },
-                      { href: "/setting/role-permissions", label: "Role Permissions", icon: "pi pi-key" },
-                    ]
-                      .map((item) => (
-                        <li key={item.href}>
-                          <ActiveLink
-                            href={item.href}
-                            className="flex items-center py-[.5rem] pl-[4rem] pr-[1rem] hover:bg-gray-100"
-                            activeClassName="bg-gray-200"
-                            exact={false}
-                          >
-                            <i className={`mr-[.5rem] pi ${item.icon} text-blue-700`}></i>
-                            <span className="text-[.820rem]">{item.label}</span>
-                          </ActiveLink>
-                        </li>
-                      ))}
-                  </ul>
-                </li>
-              </ul>
-            </li>
-          </Can>
-
+          <Can allOf={["setting.read"]}>{settingContent}</Can>
         </ul>
       </div>
     </div>

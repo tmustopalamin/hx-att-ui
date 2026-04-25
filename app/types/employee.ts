@@ -2,6 +2,7 @@ export interface Employee {
     id: number;
     first_name: string;
     last_name: string;
+    full_name: string;
     dob: string;
     gender_id: number;
     religion_id: number;
@@ -12,4 +13,6 @@ export interface Employee {
     deleted_at: string;
     row_version: number;
     agency_name: '';
+    department_name: '';
+    position_name: '';
 }
