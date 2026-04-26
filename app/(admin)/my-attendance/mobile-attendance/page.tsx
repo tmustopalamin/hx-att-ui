@@ -1,14 +1,13 @@
-import React from 'react'
-import GpsPhotoTrackerComponent from './GpsPhotoTrackerComponent'
+import MobileAttendancePage from "./MobileAttendancePage";
 
 export const metadata = {
-  title: 'GPS Photo Tracker - PT. Hexing Technology',
+  title: 'Mobile Attendance - PT. Hexing Technology',
   description: 'Check In and Check Out using GPS and Photo Capture',
 };
 
 const GpsPhotoTrackerPage = () => {
   return (
-    <GpsPhotoTrackerComponent />
+    <MobileAttendancePage />
   )
 }
 

@@ -6,6 +6,6 @@ export interface FingerprintScanner {
     port: string;
     password: string;
     is_active: boolean;
-    deleted_at: string;
+    deleted_at: string | null;
     row_version: number;
 }

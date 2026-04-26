@@ -26,6 +26,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { useDispatch } from "react-redux";
 
 type PositionOption = OptionItem & { department_id?: number | null };
+type BranchOption = OptionItem & { agency_id?: number | null };
 
 type FormData = {
   code: string;
@@ -46,7 +47,7 @@ const EmployeeDetailEmployment = () => {
   const params = useParams();
   const employeeId = Number(params.id);
 
-  const { control, handleSubmit, reset } = useForm<FormData>({
+  const { control, handleSubmit, reset, setValue } = useForm<FormData>({
     defaultValues: {
       code: "",
       agency_id: null,
@@ -65,11 +66,21 @@ const EmployeeDetailEmployment = () => {
   const [positions, setPositions] = useState<PositionOption[]>([]);
   const [employmentStatuses, setEmploymentStatuses] = useState<OptionItem[]>([]);
   const [agencies, setAgencies] = useState<OptionItem[]>([]);
-  const [branches, setBranches] = useState<OptionItem[]>([]);
+  const [branches, setBranches] = useState<BranchOption[]>([]);
 
   const selectedDepartmentId = useWatch({
     control,
     name: "department_id",
+  });
+
+  const selectedAgencyId = useWatch({
+    control,
+    name: "agency_id",
+  });
+
+  const selectedBranchId = useWatch({
+    control,
+    name: "branch_id",
   });
 
   const positionOptions = useMemo(() => {
@@ -81,6 +92,30 @@ const EmployeeDetailEmployment = () => {
         Number(position.department_id) === Number(selectedDepartmentId)
     );
   }, [positions, selectedDepartmentId]);
+
+  const branchOptions = useMemo(() => {
+    if (!selectedAgencyId) return [];
+    return branches.filter(
+      (branch) =>
+        !branch.agency_id ||
+        Number(branch.agency_id) === Number(selectedAgencyId)
+    );
+  }, [branches, selectedAgencyId]);
+
+  useEffect(() => {
+    if (!selectedAgencyId && selectedBranchId) {
+      setValue("branch_id", null);
+      return;
+    }
+
+    if (
+      selectedAgencyId &&
+      selectedBranchId &&
+      !branchOptions.some((branch) => Number(branch.id) === Number(selectedBranchId))
+    ) {
+      setValue("branch_id", null);
+    }
+  }, [selectedAgencyId, selectedBranchId, branchOptions, setValue]);
 
   const loadData = async () => {
     setLoading(true);
@@ -101,13 +136,13 @@ const EmployeeDetailEmployment = () => {
         getBranchOptions(),
       ]);
 
-      setDepartments(departmentList.filter((a) => a.is_active !== false));
+      setDepartments(departmentList);
       setPositions(positionList.filter((a) => a.is_active !== false));
       setEmploymentStatuses(
         employmentStatusList.filter((a) => a.is_active !== false)
       );
-      setAgencies(agencyList.filter((a) => a.is_active !== false));
-      setBranches(branchList.filter((a) => a.is_active !== false));
+      setAgencies(agencyList);
+      setBranches(branchList);
 
       if (employmentData) {
         reset({
@@ -329,13 +364,18 @@ const EmployeeDetailEmployment = () => {
                   disabled={!isPageEdit}
                   value={field.value}
                   options={agencies}
-                  onChange={(e) => field.onChange(e.value)}
+                  onChange={(e) => {
+                    field.onChange(e.value);
+                  }}
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select agency"
                   className="w-full"
                   showClear
                 />
+                <small className="text-slate-500">
+                  Select legal entity / employing company first.
+                </small>
               </div>
             )}
           />
@@ -351,16 +391,21 @@ const EmployeeDetailEmployment = () => {
                 <Dropdown
                   id="branch_id"
                   appendTo={getBody}
-                  disabled={!isPageEdit}
+                  disabled={!isPageEdit || !selectedAgencyId}
                   value={field.value}
-                  options={branches}
+                  options={branchOptions}
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select branch"
+                  placeholder={
+                    selectedAgencyId ? "Select branch" : "Select agency first"
+                  }
                   className="w-full"
                   showClear
                 />
+                <small className="text-slate-500">
+                  Branch list is filtered by selected agency.
+                </small>
               </div>
             )}
           />

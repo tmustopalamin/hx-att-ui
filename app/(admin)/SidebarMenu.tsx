@@ -29,9 +29,14 @@ type SettingSubMenu = {
 
 const myAttendanceItems: MenuItem[] = [
   {
-    href: "/my-attendance/remote-attendance",
-    label: "Remote Attendance",
+    href: "/my-attendance/mobile-attendance",
+    label: "Mobile Attendance",
     icon: "pi-map-marker",
+  },
+  {
+    href: "/my-attendance/attendance-history",
+    label: "Attendance History",
+    icon: "pi-history",
   },
 ];
 
@@ -314,7 +319,9 @@ export default function SidebarMenu() {
   };
 
   const isSettingOpen =
-    openMenuKey === "setting" || pathname.startsWith("/setting") || hasActiveSettingItems(settingSubMenus);
+    openMenuKey === "setting" ||
+    pathname.startsWith("/setting") ||
+    hasActiveSettingItems(settingSubMenus);
 
   const settingContent = (
     <li className="space-y-1">
@@ -357,9 +364,7 @@ export default function SidebarMenu() {
                 </button>
 
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen
-                    ? "mt-2 max-h-[900px] opacity-100"
-                    : "max-h-0 opacity-0"
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[900px] opacity-100" : "max-h-0 opacity-0"
                     }`}
                 >
                   <ul className="space-y-1 pl-4">

@@ -105,15 +105,30 @@ export const getEmploymentStatusOptions = async (): Promise<OptionItem[]> => {
 };
 
 export const getAgencyOptions = async (): Promise<OptionItem[]> => {
-    const res = await fetch("/api/agency", { credentials: "include" });
+    const res = await fetch("/api/agency?show_all=false", { credentials: "include" });
     await ensureOk(res);
-    return res.json();
+    const data = await res.json();
+    return (data ?? []).filter((item: OptionItem & { deleted_at?: string | null; is_active?: boolean }) => {
+        return item.deleted_at == null && item.is_active !== false;
+    });
 };
 
-export const getBranchOptions = async (): Promise<OptionItem[]> => {
-    const res = await fetch("/api/branch", { credentials: "include" });
+export const getBranchOptions = async (): Promise<
+    Array<OptionItem & { agency_id?: number | null; deleted_at?: string | null; is_active?: boolean }>
+> => {
+    const res = await fetch("/api/branch?show_all=false", { credentials: "include" });
     await ensureOk(res);
-    return res.json();
+    const data = await res.json();
+
+    return (data ?? []).filter(
+        (
+            item: OptionItem & {
+                agency_id?: number | null;
+                deleted_at?: string | null;
+                is_active?: boolean;
+            }
+        ) => item.deleted_at == null && item.is_active !== false
+    );
 };
 
 export const getEmployeePersonalData = async (

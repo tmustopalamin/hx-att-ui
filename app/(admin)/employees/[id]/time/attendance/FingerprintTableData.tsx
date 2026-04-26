@@ -1,557 +1,922 @@
-'use client'
+"use client";
 
-import { Card } from 'primereact/card'
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { InputText } from 'primereact/inputtext';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { FilterMatchMode } from 'primereact/api';
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { Controller, useForm } from 'react-hook-form';
-import CardTitle from '@/app/_components/CardTitle';
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { useState } from 'react';
-import useSWR, { mutate } from 'swr';
-import { fetcher } from '@/app/utils/fetcher';
-import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type';
-import LoadingDataTable from '@/app/_components/LoadingDataTable';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
-import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages';
-import { showToast } from '@/store/ToastSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { Checkbox } from 'primereact/checkbox';
-import { RootState } from '@/store/store';
-import { hasRole } from '@/app/utils/role-utils';
-import { Dropdown } from 'primereact/dropdown';
-import { Employee } from '@/app/types/employee';
-import { EmployeeFingerprint } from '@/app/types/employee-fingerprint';
-import { useParams } from 'next/navigation';
-import { createEmployeeFingerprint, updateEmployeeFingerprint, deleteEmployeeFingerprint, purgeEmployeeFingerprint, restoreEmployeeFingerprint, checkPinEmployeeFingerprint } from '@/app/services/employee-fingerprint-data-service';
-import { FingerprintScanner } from '@/app/types/fingerprint-scanner';
+import { useMemo, useState } from "react";
+import useSWR, { mutate } from "swr";
+import { Controller, useForm } from "react-hook-form";
+import { useParams } from "next/navigation";
+import { useDispatch } from "react-redux";
 
+import { fetcher } from "@/app/utils/fetcher";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
+
+import { EmployeeFingerprint } from "@/app/types/employee-fingerprint";
+import { FingerprintScanner } from "@/app/types/fingerprint-scanner";
+import {
+  checkPinEmployeeFingerprint,
+  createEmployeeFingerprint,
+  deleteEmployeeFingerprint,
+  purgeEmployeeFingerprint,
+  restoreEmployeeFingerprint,
+  updateEmployeeFingerprint,
+} from "@/app/services/employee-fingerprint-data-service";
+
+import { FilterMatchMode } from "primereact/api";
+import { Button } from "primereact/button";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputSwitch } from "primereact/inputswitch";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+
+type FormData = EmployeeFingerprint;
+type PinCheckState = "idle" | "checking" | "available" | "exists" | "error";
+
+type CheckPinResponse = {
+  success?: boolean;
+  data?: unknown;
+  message?: string;
+  row?: unknown[];
+};
+
+const getBody = () => document.body;
+
+const emptyForm: EmployeeFingerprint = {
+  id: 0,
+  employee_id: 0,
+  fp_device_id: 0,
+  fp_device_name: "",
+  fp_pin: "",
+  pin_already_exist: false,
+  is_primary: false,
+  deleted_at: null,
+  row_version: 0,
+};
+
+const hasPinInScanner = (result: unknown): boolean => {
+  if (!result || typeof result !== "object") {
+    return false;
+  }
+
+  const record = result as CheckPinResponse;
+
+  if (Array.isArray(record.row)) {
+    return record.row.length > 0;
+  }
+
+  const data = record.data;
+
+  if (data == null) {
+    const message = typeof record.message === "string" ? record.message.toLowerCase() : "";
+
+    if (
+      message.includes("available") ||
+      message.includes("not found") ||
+      message.includes("not exist") ||
+      message.includes("does not exist")
+    ) {
+      return false;
+    }
+
+    return false;
+  }
+
+  if (Array.isArray(data)) {
+    return data.length > 0;
+  }
+
+  if (typeof data === "object" && data !== null) {
+    const nested = data as { row?: unknown[] };
+
+    if (Array.isArray(nested.row)) {
+      return nested.row.length > 0;
+    }
+
+    return true;
+  }
+
+  return true;
+};
 
 const EmployeeFingerprintTableData = () => {
   const params = useParams();
-  const id = params.id;
-
+  const employeeId = Number(params.id);
   const dispatch = useDispatch();
-  const profileState = useSelector((state: RootState) => state.profile);
+
   const [selectedData, setSelectedData] = useState<EmployeeFingerprint | null>(null);
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
-  const [isViewOnly, setIsViewOnly] = useState(false);
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [isPinValid, setIsPinValid] = useState(false);
-  const [isPinAlreadyUsed, setIsPinAlreadyUsed] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors, watch } = useForm<EmployeeFingerprint>();
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [pinCheckState, setPinCheckState] = useState<PinCheckState>("idle");
+  const [pinCheckMessage, setPinCheckMessage] = useState("");
+
+  const {
+    control,
+    handleSubmit,
+    formState: { isValid },
+    reset,
+    clearErrors,
+    setFocus,
+    watch,
+  } = useForm<FormData>({
+    defaultValues: emptyForm,
+    mode: "onChange",
+  });
+
+  const fingerprintKey = `/api/employees/${employeeId}/fingerprint?show_all=${isShowDeletedDataChecked}`;
+
+  const {
+    data: employeeFingerprintData,
+    error,
+    isLoading,
+  } = useSWR<EmployeeFingerprint[]>(fingerprintKey, fetcher);
+
+  const {
+    data: fpData,
+    error: fpError,
+    isLoading: fpIsLoading,
+  } = useSWR<FingerprintScanner[]>(`/api/fingerprint-scanner`, fetcher);
+
+  const fpActive = useMemo(
+    () => fpData?.filter((a) => a.is_active) ?? [],
+    [fpData]
+  );
+
+  const watchedFpDeviceId = watch("fp_device_id");
+  const watchedFpPin = watch("fp_pin");
+  const watchedPinAlreadyExist = watch("pin_already_exist");
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const _filters = { ...filters };
-
-    _filters['global'].value = value;
-
-    setFilters(_filters);
+    setFilters({
+      global: { value, matchMode: FilterMatchMode.CONTAINS },
+    });
     setGlobalFilterValue(value);
   };
 
-  const onClickNew = () => {
-    setIsViewOnly(false);
+  const resetPinCheckState = () => {
+    setPinCheckState("idle");
+    setPinCheckMessage("");
+  };
 
+  const onClickNew = () => {
     clearErrors();
+    setSelectedData(null);
     setIsAddNew(true);
     setVisible(true);
     setPopupHeaderTitle("New Fingerprint");
     reset({
-      id: 0,
-      employee_id: 0,
-      fp_device_id: 0,
-      fp_pin: '',
-      deleted_at: '',
-      row_version: 0,
-      pin_already_exist: false,
+      ...emptyForm,
+      employee_id: employeeId,
     });
-  }
+    resetPinCheckState();
 
-  const footerContent = (
-    <div className='text-right flex gap-5 justify-end'>
-      <Button type="button" label="Cancel" icon="pi pi-times" onClick={() => { setVisible(false); }} className="p-button-text" />
-      <Button type="submit" label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" />
-    </div>
-  );
+    setTimeout(() => {
+      setFocus("fp_device_id");
+    }, 0);
+  };
 
-  const { data: EmployeeFingerprintData, error, isLoading } = useSWR<EmployeeFingerprint[]>(`/api/employees/${id}/fingerprint?show_all=${isShowDeletedDataChecked}`, fetcher);
-  const { data: employeeData, error: employeeError, isLoading: employeeIsLoading } = useSWR<Employee[]>(`/api/employees`, fetcher);
-  const { data: fpData, error: fpError, isLoading: fpIsLoading } = useSWR<FingerprintScanner[]>(`/api/fingerprint-scanner`, fetcher);
-  const employeeActive = employeeData?.filter(a => a.id === Number(id));
-  const leaveTypeActive = fpData;
+  const onClickEdit = (data: EmployeeFingerprint) => {
+    setSelectedData(data);
+    setIsAddNew(false);
+    setVisible(true);
+    setPopupHeaderTitle("Edit Fingerprint");
+    reset({
+      id: data.id,
+      employee_id: data.employee_id,
+      fp_device_id: data.fp_device_id,
+      fp_device_name: data.fp_device_name ?? "",
+      fp_pin: data.fp_pin,
+      pin_already_exist: data.pin_already_exist,
+      is_primary: data.is_primary ?? false,
+      deleted_at: data.deleted_at,
+      row_version: data.row_version,
+    });
+    resetPinCheckState();
+  };
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey={`/api/employees/${id}/fingerprint?show_all=true`} />
-  }
-
-
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
-  }
-
-  const handleSubmitNew = async (data: EmployeeFingerprint) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createEmployeeFingerprint(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/${id}/fingerprint?show_all=${isShowDeletedDataChecked}`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handleUpdate = async (data: EmployeeFingerprint) => {
-    if (!selectedData) {
-      dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: "please select data" }));
+  const onClickCheckPin = async () => {
+    if (!watchedFpDeviceId || !watchedFpPin?.trim()) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "warn",
+          summary: "Warning",
+          detail: "Please select fingerprint scanner and fill PIN first",
+        })
+      );
       return;
     }
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateEmployeeFingerprint(selectedData.id, selectedData.row_version, data)
+      setPinCheckState("checking");
+      setPinCheckMessage("Checking PIN in fingerprint scanner...");
 
-      setVisible(false);
-      mutate(`/api/employees/${id}/fingerprint?show_all=${isShowDeletedDataChecked}`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-      reset();
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
+      const result = await checkPinEmployeeFingerprint(
+        Number(watchedFpDeviceId),
+        watchedFpPin.trim()
+      );
 
-  const handleDelete = async (data: EmployeeFingerprint) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployeeFingerprint(data.id, data);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/${id}/fingerprint?show_all=${isShowDeletedDataChecked}`);
+      const pinExists = hasPinInScanner(result);
 
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handlePurge = async (data: EmployeeFingerprint) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployeeFingerprint(data.id, data);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/${id}/fingerprint?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handleRestore = async (data: EmployeeFingerprint) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreEmployeeFingerprint(data.id, data);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/${id}/fingerprint?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const onclickCheckPin = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-
-    try {
-      const fp_device_id = watch('fp_device_id');
-      const pin = watch('fp_pin');
-
-      const res = await checkPinEmployeeFingerprint(fp_device_id, pin);
-
-      //data ada di mesin
-      if (res.data) {
-        if (watch('pin_already_exist')) {
-          dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: "The PIN is already in the machine" }));
-          setIsPinValid(true);
-          setIsPinAlreadyUsed(false)
-          return;
-        } else {
-          dispatch(showToast({ visible: true, severity: "error", summary: "PIN not available", detail: "" }));
-          setIsPinValid(false);
-          setIsPinAlreadyUsed(false)
-          return;
-        }
-      }
-
-      //data tdk ada di mesin
-      dispatch(showToast({ visible: true, severity: "success", summary: "PIN available", detail: "" }));
-      setIsPinValid(true);
-      setIsPinAlreadyUsed(false)
-
-    } catch (err: unknown) {
-      setIsPinAlreadyUsed(true)
-      setIsPinValid(false)
-
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const onSubmit = (data: EmployeeFingerprint) => {
-    if (watch('pin_already_exist')) {
-      if (isPinAlreadyUsed) {
-        dispatch(showToast({ visible: true, severity: "warn", summary: "warning", detail: "Pin Already in Used with another employee" }));
-        return;
+      if (pinExists) {
+        setPinCheckState("exists");
+        setPinCheckMessage(
+          "PIN already exists in device. Enable 'PIN already exists in device' if you want to reuse this PIN."
+        );
       } else {
-        if (!isPinValid) {
-          dispatch(showToast({ visible: true, severity: "warn", summary: "warning", detail: "check PIN to make sure PIN is available" }));
-          return;
-        }
+        setPinCheckState("available");
+        setPinCheckMessage(
+          "PIN is available in device. Keep 'PIN already exists in device' off if you want the system to insert this PIN into the scanner."
+        );
       }
-    } else {
-      if (!isPinValid) {
-        dispatch(showToast({ visible: true, severity: "warn", summary: "warning", detail: "check PIN to make sure PIN is available" }));
-        return;
+    } catch (err: unknown) {
+      setPinCheckState("error");
+      setPinCheckMessage("Failed to check PIN availability in fingerprint scanner.");
+
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
       }
-    }
-
-    if (!isValid)
-      return;
-
-    if (isAddNew) {
-      handleSubmitNew(data);
-
-      setIsPinValid(false)
-      setIsPinAlreadyUsed(false)
-      return;
-    }
-
-    if (selectedData) {
-      handleUpdate(data);
-
-      setIsPinValid(false)
-      setIsPinAlreadyUsed(false)
     }
   };
 
-  const onClickUpdate = (data: EmployeeFingerprint) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setIsViewOnly(true);
-    setPopupHeaderTitle('View Fingerprint');
+  const validatePinStateBeforeSubmit = () => {
+    if (pinCheckState === "exists" && !watchedPinAlreadyExist) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "warn",
+          summary: "Warning",
+          detail:
+            "PIN already exists in the scanner. Enable 'PIN already exists in device' or change the PIN.",
+        })
+      );
+      return false;
+    }
 
-    reset(data)
-    setSelectedData(data);
-  }
+    if (pinCheckState === "available" && watchedPinAlreadyExist) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "warn",
+          summary: "Warning",
+          detail:
+            "PIN is not found in the scanner. Disable 'PIN already exists in device' if the system should insert the PIN to the device.",
+        })
+      );
+      return false;
+    }
 
-  // const activeColumnBody = (rowData: EmployeeFingerprint) => {
-  //   return rowData.is_active ? (
-  //     <Tag value="Active" severity="success" />
-  //   ) : (
-  //     <Tag value="Inactive" severity="danger" />
-  //   );
-  // };
+    return true;
+  };
 
-  const actionColumnBody = (rowData: EmployeeFingerprint) => {
-    return <>
-      <div className="flex gap-2">
-        {hasRole(profileState.role, ["superadmin"]) && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />}
+  const handleSubmitNew = async (data: EmployeeFingerprint) => {
+    if (!validatePinStateBeforeSubmit()) return;
 
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
+    try {
+      const res = await createEmployeeFingerprint({
+        ...data,
+        employee_id: employeeId,
+        fp_pin: data.fp_pin.trim(),
+      });
 
-        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />}
+      setVisible(false);
+      reset(emptyForm);
+      resetPinCheckState();
+      await mutate(fingerprintKey);
 
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='view' rounded severity='help' label="" icon="pi pi-search" size="small" onClick={() => { onClickUpdate(rowData) }} />
-      </div>
-    </>
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res.message ?? "Fingerprint created successfully",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
+  };
+
+  const handleUpdate = async (data: EmployeeFingerprint) => {
+    if (!selectedData) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: "Please select data",
+        })
+      );
+      return;
+    }
+
+    if (!validatePinStateBeforeSubmit()) return;
+
+    try {
+      const res = await updateEmployeeFingerprint(selectedData.id, selectedData.row_version, {
+        ...data,
+        employee_id: employeeId,
+        fp_pin: data.fp_pin.trim(),
+      });
+
+      setVisible(false);
+      reset(emptyForm);
+      resetPinCheckState();
+      await mutate(fingerprintKey);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res.message ?? "Fingerprint updated successfully",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
+  };
+
+  const handleDelete = async (data: EmployeeFingerprint) => {
+    try {
+      const res = await deleteEmployeeFingerprint(data.id, data);
+      setVisible(false);
+      reset(emptyForm);
+      await mutate(fingerprintKey);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res.message ?? "Fingerprint deleted successfully",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
+  };
+
+  const handlePurge = async (data: EmployeeFingerprint) => {
+    try {
+      const res = await purgeEmployeeFingerprint(data.id, data);
+      setVisible(false);
+      reset(emptyForm);
+      await mutate(fingerprintKey);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res.message ?? "Fingerprint permanently deleted",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
+  };
+
+  const handleRestore = async (data: EmployeeFingerprint) => {
+    try {
+      const res = await restoreEmployeeFingerprint(data.id, data);
+      setVisible(false);
+      reset(emptyForm);
+      await mutate(fingerprintKey);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res.message ?? "Fingerprint restored successfully",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
   };
 
   const onClickDelete = (data: EmployeeFingerprint) => {
     confirmDialog({
-      message: 'Do you want to delete this record?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to delete this fingerprint mapping?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      acceptClassName: "p-button-danger",
       accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
+        void handleDelete(data);
       },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" disabled={isViewOnly} onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
     });
   };
 
   const onClickRestore = (data: EmployeeFingerprint) => {
     confirmDialog({
-      message: 'Do you want to restore this record?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to restore this fingerprint mapping?",
+      header: "Restore Confirmation",
+      icon: "pi pi-info-circle",
+      acceptClassName: "p-button-success",
       accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
+        void handleRestore(data);
       },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
-        </div>
-      )
     });
   };
 
   const onClickPurge = (data: EmployeeFingerprint) => {
     confirmDialog({
-      message: 'Do you want to delete this record forever?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to permanently delete this fingerprint mapping?",
+      header: "Permanent Delete Confirmation",
+      icon: "pi pi-exclamation-triangle",
+      acceptClassName: "p-button-danger",
       accept: () => {
-        handlePurge(data);
+        void handlePurge(data);
       },
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
-        </div>
-      )
     });
   };
+
+  const onShowDeletedDataChecked = () => {
+    setIsShowDeletedDataChecked((prev) => !prev);
+  };
+
+  const primaryBodyTemplate = (rowData: EmployeeFingerprint) => {
+    return rowData.is_primary ? (
+      <Tag value="Primary" severity="success" />
+    ) : (
+      <Tag value="Secondary" severity="secondary" />
+    );
+  };
+
+  const pinSourceBodyTemplate = (rowData: EmployeeFingerprint) => {
+    return rowData.pin_already_exist ? (
+      <Tag value="Existing in Device" severity="info" />
+    ) : (
+      <Tag value="Insert to Device" severity="warning" />
+    );
+  };
+
+  const statusBodyTemplate = (rowData: EmployeeFingerprint) => {
+    return rowData.deleted_at ? (
+      <Tag value="Deleted" severity="danger" />
+    ) : (
+      <Tag value="Active" severity="success" />
+    );
+  };
+
+  const actionColumnBody = (rowData: EmployeeFingerprint) => {
+    if (rowData.deleted_at) {
+      return (
+        <div className="flex gap-2">
+          <Button
+            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+            tooltip="Restore"
+            rounded
+            severity="success"
+            icon="pi pi-refresh"
+            size="small"
+            onClick={() => onClickRestore(rowData)}
+          />
+          <Button
+            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+            tooltip="Delete Forever"
+            rounded
+            severity="secondary"
+            icon="pi pi-times"
+            size="small"
+            onClick={() => onClickPurge(rowData)}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex gap-2">
+        <Button
+          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+          tooltip="Edit"
+          rounded
+          severity="help"
+          icon="pi pi-pencil"
+          size="small"
+          onClick={() => onClickEdit(rowData)}
+        />
+        <Button
+          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+          tooltip="Delete"
+          rounded
+          severity="danger"
+          icon="pi pi-trash"
+          size="small"
+          onClick={() => onClickDelete(rowData)}
+        />
+      </div>
+    );
+  };
+
+  const pinCheckMessageNode = () => {
+    if (pinCheckState === "idle") {
+      return (
+        <small className="text-slate-500">
+          Check PIN availability in the fingerprint scanner before saving.
+        </small>
+      );
+    }
+
+    if (pinCheckState === "checking") {
+      return <small className="text-slate-500">{pinCheckMessage}</small>;
+    }
+
+    if (pinCheckState === "available") {
+      return <small className="text-green-600">{pinCheckMessage}</small>;
+    }
+
+    if (pinCheckState === "exists") {
+      return <small className="text-amber-600">{pinCheckMessage}</small>;
+    }
+
+    return <small className="text-red-600">{pinCheckMessage}</small>;
+  };
+
+  if (isLoading) return <LoadingDataTable />;
+
+  if (error) {
+    return (
+      <ErrorNotConnectedToApi
+        mutateKey={`/api/employees/${employeeId}/fingerprint?show_all=true`}
+      />
+    );
+  }
 
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title='Fingerprint' url='' />}>
-        <div className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => onClickNew()} />
 
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">Show deleted data</label>
-              </div>
+      <Card className="shadow-sm">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h5 className="text-xl font-semibold text-slate-900">
+                Fingerprint Mapping
+              </h5>
+              <p className="mt-1 text-sm text-slate-500">
+                Assign fingerprint scanner PIN to this employee. One employee can have multiple PIN mappings, but only one can be primary.
+              </p>
             </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText
-                className="p-inputtext-sm"
-                value={globalFilterValue}
-                onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
-              />
-            </IconField>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <Checkbox
+                  inputId="showDeletedData"
+                  checked={isShowDeletedDataChecked}
+                  onChange={onShowDeletedDataChecked}
+                />
+                <label
+                  htmlFor="showDeletedData"
+                  className="cursor-pointer text-sm text-slate-700"
+                >
+                  Show deleted data
+                </label>
+              </div>
+
+              <IconField iconPosition="left">
+                <InputIcon className="pi pi-search" />
+                <InputText
+                  className="w-full sm:w-64"
+                  value={globalFilterValue}
+                  onChange={onGlobalFilterChange}
+                  placeholder="Search fingerprint mapping"
+                />
+              </IconField>
+
+              <Button label="New Mapping" icon="pi pi-plus" onClick={onClickNew} />
+            </div>
           </div>
 
           <DataTable
-            value={EmployeeFingerprintData}
+            value={employeeFingerprintData ?? []}
             stripedRows
             paginator
             scrollable
-            scrollHeight="500px"
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['name']}
-            emptyMessage="No data found."
+            globalFilterFields={["fp_device_name", "fp_pin"]}
+            emptyMessage="No fingerprint mapping found."
             filters={filters}
+            loading={isLoading}
+            tableStyle={{ minWidth: "64rem" }}
             currentPageReportTemplate="{first} to {last} of {totalRecords}"
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
           >
-            <Column style={{ width: '1rem' }} header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1} />
-            <Column style={{ width: '8rem' }} field="fp_device_name" header="Fingerprint Scanner" />
-            <Column style={{ width: '8rem' }} field="fp_pin" header="User ID" />
+            <Column
+              header="#"
+              headerStyle={{ width: "3rem" }}
+              body={(_, options) => options.rowIndex + 1}
+            />
+            <Column field="fp_device_name" header="Fingerprint Scanner" style={{ minWidth: "16rem" }} />
+            <Column field="fp_pin" header="PIN / User ID" style={{ minWidth: "12rem" }} />
+            <Column header="Primary" body={primaryBodyTemplate} style={{ minWidth: "10rem" }} />
+            <Column header="PIN Source" body={pinSourceBodyTemplate} style={{ minWidth: "12rem" }} />
+            <Column header="Status" body={statusBodyTemplate} style={{ minWidth: "8rem" }} />
             <Column
               headerClassName="bg-white"
               className="bg-white"
               header="Action"
-              body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
-              style={{ width: '8rem' }}
-              headerStyle={{ width: '8rem' }}
+              body={actionColumnBody}
+              frozen
               alignFrozen="right"
+              style={{ minWidth: "10rem" }}
             />
           </DataTable>
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
+      <form
+        onSubmit={handleSubmit((data) =>
+          isAddNew ? handleSubmitNew(data) : handleUpdate(data)
+        )}
+      >
         <Dialog
           header={popupHeaderTitle}
           visible={visible}
-          className='w-[90%] md:w-[60%] lg:w-[50%] xl:w-[40%]'
-          onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-          footer={footerContent}
-          onShow={() => setFocus('employee_id')}
+          style={{ width: "52rem", maxWidth: "95vw" }}
+          onHide={() => {
+            setVisible(false);
+            resetPinCheckState();
+          }}
+          breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                label="Cancel"
+                icon="pi pi-times"
+                onClick={() => {
+                  setVisible(false);
+                  resetPinCheckState();
+                }}
+                className="p-button-text"
+              />
+              <Button
+                type="submit"
+                label={isAddNew ? "Submit" : "Save"}
+                icon="pi pi-check"
+                disabled={!isValid}
+              />
+            </div>
+          }
         >
-          <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="employee_id">Employee</label>
+          <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
+            <Controller
+              name="fp_device_id"
+              control={control}
+              rules={{
+                required: "Fingerprint scanner is required",
+                validate: (value) => Number(value) > 0 || "Fingerprint scanner is required",
+              }}
+              render={({ field, fieldState }) => (
+                <div>
+                  <label htmlFor="fp_device_id" className="mb-2 block text-sm font-medium text-slate-700">
+                    Fingerprint Scanner
+                  </label>
+                  <Dropdown
+                    id="fp_device_id"
+                    appendTo={getBody}
+                    value={field.value}
+                    options={fpActive}
+                    onChange={(e) => {
+                      field.onChange(e.value);
+                      resetPinCheckState();
+                    }}
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select fingerprint scanner"
+                    loading={fpIsLoading}
+                    disabled={fpIsLoading || !!fpError}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                  {fieldState.error && (
+                    <small className="p-error">{fieldState.error.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <Controller
-                name="employee_id"
+                name="is_primary"
                 control={control}
-                rules={{ required: "Employee is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="employee_id"
-                      appendTo={() => document.body}
-                      value={field.value}
-                      options={employeeActive}
-                      loading={isLoading}
-                      disabled={employeeIsLoading || !!employeeError || isViewOnly}
+                render={({ field }) => (
+                  <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        Primary PIN
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Only one primary PIN can be used for this employee.
+                      </p>
+                    </div>
+                    <InputSwitch
+                      checked={!!field.value}
                       onChange={(e) => field.onChange(e.value)}
-                      optionLabel="full_name"
-                      optionValue="id"
-                      placeholder={isLoading ? "Loading employees..." : "Select an employee"}
-                      className={fieldState.invalid ? "p-invalid" : ""}
                     />
-                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                    {employeeError && <small className="p-error font-bold">We couldn’t load the list of employees. Please try again</small>}
-                  </>
+                  </div>
                 )}
               />
             </div>
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="fp_device_id">Fingerprint Scanner Device</label>
-              <Controller
-                name="fp_device_id"
-                control={control}
-                rules={{ required: "Leave type is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="fp_device_id"
-                      appendTo={() => document.body}
-                      value={field.value}
-                      options={leaveTypeActive}
-                      loading={isLoading}
-                      disabled={fpIsLoading || !!fpError || isViewOnly}
-                      onChange={(e) => field.onChange(e.value)}
-                      optionLabel="name"
-                      optionValue="id"
-                      placeholder={isLoading ? "Loading leave types..." : "Select a leave type"}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                    {fpError && <small className="p-error font-bold">We couldn’t load the list of leave types. Please try again</small>}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2 w-full">
-              <label htmlFor="fp_pin">PIN</label>
+            <div className="md:col-span-2">
               <Controller
                 name="fp_pin"
                 control={control}
                 rules={{
-                  required: "*required",
-                  validate: (value) => !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: 'maximum 50 character' }
+                  required: "PIN is required",
+                  maxLength: { value: 50, message: "Maximum 50 characters" },
                 }}
                 render={({ field, fieldState }) => (
-                  <>
-                    <div className="flex gap-5">
+                  <div>
+                    <label htmlFor="fp_pin" className="mb-2 block text-sm font-medium text-slate-700">
+                      PIN / User ID
+                    </label>
+
+                    <div className="flex flex-col gap-3 md:flex-row">
                       <InputText
                         id="fp_pin"
-                        placeholder='example: pin123'
+                        placeholder="Example: pin123"
                         {...field}
-                        className={fieldState.invalid ? "p-invalid flex-1" : "flex-1"}
+                        className={`flex-1 ${fieldState.invalid ? "p-invalid" : ""}`}
                         onChange={(e) => {
-                          field.onChange(e.target.value)
-                          setIsPinValid(false)
-                          setIsPinAlreadyUsed(false)
+                          field.onChange(e.target.value);
+                          resetPinCheckState();
                         }}
-                        disabled={isViewOnly}
                       />
-                      <Button type="button" label="check PIN" icon="pi pi-search" tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='check available PIN in the fingerprint scanner' onClick={onclickCheckPin} disabled={isViewOnly} />
-                    </div>
-                    <div className="m-0 flex gap-2">
-                      <Controller
-                        name="pin_already_exist"
-                        control={control}
-                        render={({ field }) => (
-                          <Checkbox
-                            disabled={isViewOnly}
-                            // id="pin_already_exist"
-                            inputId="pin_already_exist"
-                            checked={field.value}
-                            onChange={(e) => field.onChange(e.checked)}
-                          ></Checkbox>
-                        )}
+                      <Button
+                        type="button"
+                        label="Check PIN"
+                        icon="pi pi-search"
+                        onClick={onClickCheckPin}
+                        loading={pinCheckState === "checking"}
                       />
-                      <label htmlFor="pin_already_exist">do not insert pin into fingerprint device</label>
                     </div>
+
+                    <div className="mt-2">{pinCheckMessageNode()}</div>
+
                     {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
+                      <small className="p-error">{fieldState.error.message}</small>
                     )}
-                  </>
+                  </div>
                 )}
               />
             </div>
 
-            <div className="m-0 flex flex-col gap-2 w-full">
-              <small>please check manually also into fingerprint device is PIN exist or not</small>
+            <div className="md:col-span-2">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <Controller
+                  name="pin_already_exist"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          PIN already exists in device
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          Turn this on if the PIN already exists in the scanner and should not be inserted again.
+                        </p>
+                      </div>
+                      <InputSwitch
+                        checked={!!field.value}
+                        onChange={(e) => field.onChange(e.value)}
+                      />
+                    </div>
+                  )}
+                />
+              </div>
             </div>
-
           </div>
         </Dialog>
       </form>
     </>
   );
-}
+};
 
-export default EmployeeFingerprintTableData
+export default EmployeeFingerprintTableData;

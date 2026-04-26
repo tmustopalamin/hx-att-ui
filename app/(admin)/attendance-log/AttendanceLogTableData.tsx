@@ -655,7 +655,7 @@ const AttendanceLogTableData = () => {
               <div>
                 <div className="text-xs text-gray-500 mb-2">Photo</div>
                 <img
-                  src={selectedLog.photo_url}
+                  src={`http://localhost:3050/api/public/upload/attendance/${selectedLog.photo_url}`}
                   alt="Attendance"
                   className="w-full max-w-sm rounded-lg border"
                 />

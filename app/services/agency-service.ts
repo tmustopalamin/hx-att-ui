@@ -1,133 +1,106 @@
 import { Agency } from "../types/agency";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/agency';
+const API_URL = "/api/agency";
+
+const parseError = async (res: Response): Promise<ResponseTypeError> => {
+  const contentType = res.headers.get("Content-Type");
+
+  try {
+    if (contentType && contentType.includes("application/json")) {
+      return (await res.json()) as ResponseTypeError;
+    }
+
+    return {
+      success: false,
+      code: String(res.status),
+      message: await res.text(),
+    };
+  } catch {
+    return {
+      success: false,
+      code: String(res.status),
+      message: "Unknown error",
+    };
+  }
+};
+
+const ensureOk = async (res: Response) => {
+  if (!res.ok) {
+    throw await parseError(res);
+  }
+};
 
 export const createAgency = async (data: Agency) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data),
   });
 
-  const contentType = res.headers.get("Content-Type");
-  if (!res.ok) {
-    let errorDetail: ResponseTypeError;
-
-    try {
-      if (contentType && contentType.includes("application/json")) {
-        errorDetail = (await res.json()) as ResponseTypeError;
-      } else {
-        errorDetail = {
-          success: false,
-          code: String(res.status),
-          message: await res.text(),
-        };
-      }
-    } catch {
-      errorDetail = {
-        success: false,
-        code: String(res.status),
-        message: "Unknown error",
-      };
-    }
-    throw errorDetail;
-  }
-
+  await ensureOk(res);
   return res.json();
-}
+};
 
 export const updateAgency = async (id: number, rowVersion: number, data: Agency) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
-  if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
-  }
+
+  await ensureOk(res);
   return res.json();
-}
+};
 
 export const deleteAgency = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
-  if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
-  }
+
+  await ensureOk(res);
   return res.json();
-}
+};
 
 export const purgeAgency = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
   });
-  if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
-  }
+
+  await ensureOk(res);
   return res.json();
-}
+};
 
 export const restoreAgency = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
-  const contentType = res.headers.get("Content-Type");
-  if (!res.ok) {
-    let errorDetail: ResponseTypeError;
-
-    try {
-      if (contentType && contentType.includes("application/json")) {
-        errorDetail = (await res.json()) as ResponseTypeError;
-      } else {
-        errorDetail = {
-          success: false,
-          code: String(res.status),
-          message: await res.text(),
-        };
-      }
-    } catch {
-      errorDetail = {
-        success: false,
-        code: String(res.status),
-        message: "Unknown error",
-      };
-    }
-    throw errorDetail;
-  }
-
+  await ensureOk(res);
   return res.json();
-}
-
+};
