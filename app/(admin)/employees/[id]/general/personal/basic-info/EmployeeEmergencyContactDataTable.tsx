@@ -1,361 +1,445 @@
 "use client";
 
+import {
+    createEmployeeEmergencyContact,
+    deleteEmployeeEmergencyContact,
+    getEmployeeEmergencyContacts,
+    getRelationshipOptions,
+    updateEmployeeEmergencyContact,
+} from "@/app/services/employee-general-service";
+import {
+    EmployeeEmergencyContactRow,
+    OptionItem,
+} from "@/app/types/employee-general";
+import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
 import { useParams } from "next/navigation";
-import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { InputSwitch } from "primereact/inputswitch";
 import { InputText } from "primereact/inputtext";
-import { Toast } from "primereact/toast";
-import React, { useEffect, useRef, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-
-type EmployeeFamily = {
-    id: number;
-    employee_id: number;
-    name: string;
-    relationship_id: number;
-    relationship_name?: string;
-    phone: string;
-};
+import { Tag } from "primereact/tag";
+import React, { useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 
 type FormData = {
-    employee_id: number;
     name: string;
-    relationship: number;
+    relationship_id: number | null;
     phone: string;
+    is_active: boolean;
 };
 
+type EmployeeEmergencyContactPayload = {
+    name: string;
+    relationship_id: number;
+    phone: string;
+    is_active: boolean;
+};
+
+const getBody = () => document.body;
+
+const emptyFormValues: FormData = {
+    name: "",
+    relationship_id: null,
+    phone: "",
+    is_active: true,
+};
+
+const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
+const helperTextClass = "mt-1 text-xs text-slate-500";
+
 const EmployeeEmergencyContactDataTable = () => {
+    const dispatch = useDispatch();
     const params = useParams();
-    const id = params.id;
+    const employeeId = Number(params.id);
 
-    const toast = useRef<Toast>(null!);
-    const [data, setData] = useState<EmployeeFamily[]>([]);
-    const [dataRelationship, setDataRelationship] = useState([]);
-    const [isAddNew, setIsAddNew] = useState(false);
-    const [tableLoading, setTableLoading] = useState(false);
-    const [globalFilterValue, setGlobalFilterValue] = useState("");
-    const [filters, setFilters] = useState({
-        global: { value: "", matchMode: FilterMatchMode.CONTAINS },
-    });
+    const [loading, setLoading] = useState(true);
     const [visible, setVisible] = useState(false);
-    const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-    const { handleSubmit, setFocus, control, reset, setValue } = useForm<FormData>();
-    const [selectedId, setSelectedId] = useState(0);
+    const [isAddMode, setIsAddMode] = useState(true);
+    const [rows, setRows] = useState<EmployeeEmergencyContactRow[]>([]);
+    const [relationships, setRelationships] = useState<OptionItem[]>([]);
+    const [selectedRow, setSelectedRow] =
+        useState<EmployeeEmergencyContactRow | null>(null);
 
-    useEffect(() => {
-        document.title = "Employee Emergency Contact";
-        getDataRelationship();
-        getData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const { control, handleSubmit, reset } = useForm<FormData>({
+        defaultValues: emptyFormValues,
+    });
 
-    const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        const _filters = { ...filters };
-        _filters["global"].value = value;
-        setFilters(_filters);
-        setGlobalFilterValue(value);
-    };
-
-    const getData = () => {
-        setTableLoading(true);
-        fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, { credentials: 'include' })
-            .then((res) => res.json())
-            .then((data) => {
-                setData(data);
-                setTableLoading(false);
-            });
-    };
-
-    const getDataRelationship = () => {
-        fetch("http://localhost:3050/relationship")
-            .then((res) => res.json())
-            .then((data) => setDataRelationship(data));
-    };
-
-    const onClickNew = () => {
-        setIsAddNew(true);
-        setVisible(true);
-        setPopupHeaderTitle("New Data");
-        reset();
-    };
-
-    const onClickUpdate = (rowData: EmployeeFamily) => {
-        setVisible(true);
-        setIsAddNew(false);
-        setPopupHeaderTitle("Update Data");
-        setSelectedId(rowData.id);
-        setValue("name", rowData.name);
-        setValue("relationship", rowData.relationship_id);
-        setValue("phone", rowData.phone);
-    };
-
-    const actionColumnBody = (rowData: EmployeeFamily) => (
-        <div className="flex justify-center gap-2">
-            <Button
-                rounded
-                size="small"
-                tooltip="Delete"
-                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-                severity="danger"
-                icon="pi pi-trash"
-                onClick={() => onClickDelete(rowData)}
-            />
-            <Button
-                rounded
-                size="small"
-                tooltip="Update"
-                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-                severity="help"
-                icon="pi pi-pencil"
-                onClick={() => onClickUpdate(rowData)}
-            />
-        </div>
+    const activeRelationships = useMemo(
+        () => relationships.filter((item) => item.is_active !== false),
+        [relationships]
     );
 
-    const handleSubmitDelete = async (id: number) => {
+    const loadData = async () => {
+        setLoading(true);
         try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, {
-                credentials: 'include',
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
-            });
+            const [contactRows, relationshipList] = await Promise.all([
+                getEmployeeEmergencyContacts(employeeId),
+                getRelationshipOptions(),
+            ]);
 
-            if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
-            getData();
-
-            toast.current?.show({
-                severity: "success",
-                summary: "Success",
-                detail: "Delete success",
-                life: 3000,
-            });
-        } catch (err) {
-            toast.current?.show({
-                severity: "error",
-                summary: "Error",
-                detail: "Failed to delete data. " + err,
-                life: 3000,
-            });
+            setRows(contactRows);
+            setRelationships(relationshipList);
+        } catch (err: unknown) {
+            if (isResponseTypeError(err)) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "Error",
+                        detail: getErrorMessage(err, "message"),
+                    })
+                );
+            }
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSubmitNew = async (data: FormData) => {
-        const newData: EmployeeFamily = {
-            id: 0,
-            employee_id: Number(id),
-            name: data.name,
-            relationship_id: data.relationship,
-            phone: data.phone,
+    useEffect(() => {
+        void loadData();
+    }, [employeeId]);
+
+    const hideDialog = () => {
+        setVisible(false);
+        setSelectedRow(null);
+        reset(emptyFormValues);
+    };
+
+    const openNew = () => {
+        setIsAddMode(true);
+        setSelectedRow(null);
+        reset(emptyFormValues);
+        setVisible(true);
+    };
+
+    const openEdit = (row: EmployeeEmergencyContactRow) => {
+        setIsAddMode(false);
+        setSelectedRow(row);
+        reset({
+            name: row.name,
+            relationship_id: row.relationship_id,
+            phone: row.phone,
+            is_active: row.is_active,
+        });
+        setVisible(true);
+    };
+
+    const onSubmit = async (data: FormData) => {
+        const payload: EmployeeEmergencyContactPayload = {
+            name: data.name.trim(),
+            relationship_id: Number(data.relationship_id),
+            phone: data.phone.trim(),
+            is_active: data.is_active,
         };
+
         try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, {
-                credentials: 'include',
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newData),
-            });
-            if (!res.ok) throw new Error();
-            getData();
-            toast.current?.show({ severity: "success", summary: "Success", detail: "Add success", life: 3000 });
-            setVisible(false);
-        } catch {
-            toast.current?.show({ severity: "error", summary: "Error", detail: "Add failed", life: 3000 });
+            if (isAddMode) {
+                await createEmployeeEmergencyContact(employeeId, payload);
+            } else if (selectedRow) {
+                await updateEmployeeEmergencyContact(
+                    employeeId,
+                    selectedRow.id,
+                    selectedRow.row_version,
+                    payload
+                );
+            }
+
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: "success",
+                    summary: "Success",
+                    detail: isAddMode
+                        ? "Emergency contact created successfully"
+                        : "Emergency contact updated successfully",
+                })
+            );
+
+            hideDialog();
+            await loadData();
+        } catch (err: unknown) {
+            if (isResponseTypeError(err)) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "Error",
+                        detail: getErrorMessage(err, "message"),
+                    })
+                );
+            } else if (err instanceof Error) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "Error",
+                        detail: err.message,
+                    })
+                );
+            }
         }
     };
 
-    const handleSubmitUpdate = async (data: FormData) => {
-        const updatedData: EmployeeFamily = {
-            id: selectedId,
-            employee_id: Number(id),
-            name: data.name,
-            relationship_id: data.relationship,
-            phone: data.phone,
-        };
-        try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/emergency-contact-data`, {
-                credentials: 'include',
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedData),
-            });
-            if (!res.ok) throw new Error();
-            getData();
-            toast.current?.show({ severity: "success", summary: "Success", detail: "update success", life: 3000 });
-            setVisible(false);
-        } catch {
-            toast.current?.show({ severity: "error", summary: "Error", detail: "Update failed", life: 3000 });
-        }
-    };
-
-    const onSubmit = (data: FormData) => (isAddNew ? handleSubmitNew(data) : handleSubmitUpdate(data));
-
-    const onClickDelete = (data: EmployeeFamily) => {
+    const onDelete = (row: EmployeeEmergencyContactRow) => {
         confirmDialog({
-            message: "Do you want to delete this record?",
+            message: "Do you want to delete this emergency contact?",
             header: "Delete Confirmation",
             icon: "pi pi-info-circle",
-            defaultFocus: "reject",
-            acceptLabel: "Yes, Delete",
-            rejectLabel: "Cancel",
-            rejectClassName: "p-button-text",
-            acceptClassName: "p-button-danger ml-3",
-            accept: () => handleSubmitDelete(data.id),
+            acceptClassName: "p-button-danger",
+            accept: async () => {
+                try {
+                    await deleteEmployeeEmergencyContact(
+                        employeeId,
+                        row.id,
+                        row.row_version
+                    );
+                    dispatch(
+                        showToast({
+                            visible: true,
+                            severity: "success",
+                            summary: "Success",
+                            detail: "Emergency contact deleted successfully",
+                        })
+                    );
+                    await loadData();
+                } catch (err: unknown) {
+                    if (isResponseTypeError(err)) {
+                        dispatch(
+                            showToast({
+                                visible: true,
+                                severity: "error",
+                                summary: "Error",
+                                detail: getErrorMessage(err, "message"),
+                            })
+                        );
+                    }
+                }
+            },
         });
     };
 
-    const footerContent = (
-        <div>
-            <Button label="Cancel" icon="pi pi-times" onClick={() => setVisible(false)} className="p-button-text" />
-            <Button label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" type="submit" />
+    const activeBodyTemplate = (row: EmployeeEmergencyContactRow) => {
+        return row.is_active ? (
+            <Tag value="Active" severity="success" />
+        ) : (
+            <Tag value="Inactive" severity="secondary" />
+        );
+    };
+
+    const actionBodyTemplate = (row: EmployeeEmergencyContactRow) => {
+        return (
+            <div className="flex items-center justify-center gap-2">
+                <Button
+                    type="button"
+                    rounded
+                    icon="pi pi-pencil"
+                    severity="help"
+                    onClick={() => openEdit(row)}
+                    tooltip="Edit"
+                    tooltipOptions={{ position: "top" }}
+                />
+                <Button
+                    type="button"
+                    rounded
+                    icon="pi pi-trash"
+                    severity="danger"
+                    onClick={() => onDelete(row)}
+                    tooltip="Delete"
+                    tooltipOptions={{ position: "top" }}
+                />
+            </div>
+        );
+    };
+
+    const dialogFooter = (
+        <div className="flex justify-end gap-2">
+            <Button
+                type="button"
+                label="Cancel"
+                className="p-button-text"
+                onClick={hideDialog}
+            />
+            <Button
+                type="button"
+                label={isAddMode ? "Save" : "Update"}
+                icon="pi pi-check"
+                onClick={() => void handleSubmit(onSubmit)()}
+            />
         </div>
     );
 
-    const getBody = () => document.body;
-
     return (
         <>
-            <Toast ref={toast} position="top-center" />
             <ConfirmDialog />
 
-            <div className="flex flex-col gap-5 p-3">
-                <div className="flex items-center justify-between">
-                    <Button label="New" icon="pi pi-plus" size="small" onClick={onClickNew} />
-                    <IconField iconPosition="left">
-                        <InputIcon className="pi pi-search" />
-                        <InputText
-                            className="p-inputtext-sm"
-                            value={globalFilterValue}
-                            onChange={onGlobalFilterChange}
-                            placeholder="Keyword Search"
-                        />
-                    </IconField>
+            <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <h5 className="text-xl font-semibold text-slate-900">
+                            Emergency Contact
+                        </h5>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Manage people to contact in case of emergency.
+                        </p>
+                    </div>
+
+                    <Button
+                        type="button"
+                        label="New Contact"
+                        icon="pi pi-plus"
+                        onClick={openNew}
+                    />
                 </div>
 
-                {/* ✅ Table now scrollable and frozen column works */}
                 <DataTable
-                    value={data}
+                    value={rows}
+                    dataKey="id"
+                    loading={loading}
                     stripedRows
                     paginator
                     rows={5}
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    dataKey="id"
-                    globalFilterFields={["name"]}
-                    emptyMessage="No data found."
-                    filters={filters}
-                    loading={tableLoading}
+                    rowsPerPageOptions={[5, 10, 25]}
+                    emptyMessage="No emergency contact found."
                     scrollable
-                    scrollHeight="400px"
-                    tableStyle={{ minWidth: "70rem" }}
+                    className="text-sm"
                 >
                     <Column
                         header="#"
-                        body={(data, options) => options.rowIndex + 1}
-                        frozen
-                        alignFrozen="left"
-                        style={{ width: "3rem" }}
+                        body={(_, options) => options.rowIndex + 1}
+                        style={{ width: "60px" }}
                     />
                     <Column field="name" header="Name" />
                     <Column field="relationship_name" header="Relationship" />
-                    <Column field="phone" header="Phone Number" />
+                    <Column field="phone" header="Phone" />
+                    <Column
+                        header="Active"
+                        body={activeBodyTemplate}
+                        style={{ minWidth: "110px" }}
+                    />
                     <Column
                         header="Action"
-                        body={actionColumnBody}
+                        body={actionBodyTemplate}
                         frozen
                         alignFrozen="right"
-                        style={{ width: "120px", textAlign: "center", backgroundColor: "white" }}
+                        className="bg-white"
+                        headerClassName="bg-white"
+                        style={{ minWidth: "140px" }}
                     />
                 </DataTable>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <Dialog
-                    header={popupHeaderTitle}
-                    visible={visible}
-                    style={{ width: "40vw" }}
-                    onHide={() => {
-                        if (!visible) return;
-                        setVisible(false);
-                        reset();
-                    }}
-                    footer={footerContent}
-                    onShow={() => setFocus("name")}
-                >
-                    <div className="flex flex-col gap-5">
-                        {/* Name */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="name">Name</label>
-                            <Controller
-                                name="name"
-                                control={control}
-                                rules={{ required: "Name is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <InputText id="name" {...field} className={fieldState.invalid ? "p-invalid" : ""} />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
+            <Dialog
+                header={isAddMode ? "New Emergency Contact" : "Update Emergency Contact"}
+                visible={visible}
+                style={{ width: "42rem", maxWidth: "95vw" }}
+                onHide={hideDialog}
+                footer={dialogFooter}
+                breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+            >
+                <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
+                    <Controller
+                        name="name"
+                        control={control}
+                        rules={{ required: "Name is required" }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <label htmlFor="emergency_name" className={fieldLabelClass}>
+                                    Name
+                                </label>
+                                <InputText
+                                    id="emergency_name"
+                                    {...field}
+                                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                                    placeholder="Enter full name"
+                                />
+                                {fieldState.error && (
+                                    <small className="p-error">{fieldState.error.message}</small>
                                 )}
-                            />
-                        </div>
+                            </div>
+                        )}
+                    />
 
-                        {/* Relationship */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="relationship">Relationship</label>
+                    <Controller
+                        name="relationship_id"
+                        control={control}
+                        rules={{ required: "Relationship is required" }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <label htmlFor="emergency_relationship" className={fieldLabelClass}>
+                                    Relationship
+                                </label>
+                                <Dropdown
+                                    id="emergency_relationship"
+                                    appendTo={getBody}
+                                    value={field.value}
+                                    options={activeRelationships}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Select relationship"
+                                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                                />
+                                {fieldState.error && (
+                                    <small className="p-error">{fieldState.error.message}</small>
+                                )}
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="phone"
+                        control={control}
+                        rules={{ required: "Phone is required" }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <label htmlFor="emergency_phone" className={fieldLabelClass}>
+                                    Phone
+                                </label>
+                                <InputText
+                                    id="emergency_phone"
+                                    {...field}
+                                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                                    placeholder="Enter phone number"
+                                />
+                                {fieldState.error && (
+                                    <small className="p-error">{fieldState.error.message}</small>
+                                )}
+                            </div>
+                        )}
+                    />
+
+                    <div className="md:col-span-2">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <Controller
-                                name="relationship"
+                                name="is_active"
                                 control={control}
-                                rules={{ required: "Relationship is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <Dropdown
-                                            id="relationship"
-                                            appendTo={getBody}
-                                            value={field.value}
-                                            options={dataRelationship}
+                                render={({ field }) => (
+                                    <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900">
+                                                Active
+                                            </p>
+                                            <p className={helperTextClass}>
+                                                Control whether this emergency contact is still active.
+                                            </p>
+                                        </div>
+                                        <InputSwitch
+                                            checked={!!field.value}
                                             onChange={(e) => field.onChange(e.value)}
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            placeholder="Select a relationship"
-                                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
                                         />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        {/* Phone */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="phone">Phone Number</label>
-                            <Controller
-                                name="phone"
-                                control={control}
-                                rules={{ required: "Phone is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <InputText id="phone" {...field} className={fieldState.invalid ? "p-invalid" : ""} />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
+                                    </div>
                                 )}
                             />
                         </div>
                     </div>
-                </Dialog>
-            </form>
+                </div>
+            </Dialog>
         </>
     );
 };

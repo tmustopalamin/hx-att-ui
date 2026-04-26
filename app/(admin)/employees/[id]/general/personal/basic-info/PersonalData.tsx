@@ -1,403 +1,464 @@
-"use client"
+"use client";
 
-import { RootState } from '@/store/store';
-import { showToast } from '@/store/ToastSlice';
-import dayjs from 'dayjs';
-import { useParams } from 'next/navigation';
-import { Button } from 'primereact/button'
-import { Calendar } from 'primereact/calendar';
-import { ConfirmDialog } from 'primereact/confirmdialog';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
-import { Toast } from 'primereact/toast';
-import React, { useEffect, useRef } from 'react'
-import { Controller, FieldErrors, useForm } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
-
-interface GenderType {
-  id: number;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ReligionType {
-  id: number;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface MaritalStatusType {
-  id: number;
-  name: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import {
+  getCountryOptions,
+  getEmployeePersonalData,
+  getGenderOptions,
+  getMaritalOptions,
+  getReligionOptions,
+  updateEmployeePersonalData,
+} from "@/app/services/employee-general-service";
+import {
+  EmployeePersonalData,
+  OptionItem,
+} from "@/app/types/employee-general";
+import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
+import dayjs from "dayjs";
+import { useParams } from "next/navigation";
+import { Button } from "primereact/button";
+import { Calendar } from "primereact/calendar";
+import { ConfirmDialog } from "primereact/confirmdialog";
+import { Dropdown } from "primereact/dropdown";
+import { InputText } from "primereact/inputtext";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 
 type FormData = {
-  firstName: string;
-  lastName: string;
-  birthplace: string;
-  dob: string;
-  gender: number,
-  religion: number;
-  marital: string;
+  first_name: string;
+  middle_name: string;
+  last_name: string;
+  preferred_name: string;
+  birth_place: string;
+  dob: Date | null;
+  gender_id: number | null;
+  religion_id: number | null;
+  marital_status_id: string;
+  phone_number: string;
+  personal_email: string;
+  work_email: string;
+  nationality_country_id: number | null;
 };
-
 
 const getBody = () => document.body;
 
 const PersonalData = () => {
-  const params = useParams();
-  const id = params.id;
   const dispatch = useDispatch();
-  const profileData = useSelector((state: RootState) => state.profile);
+  const params = useParams();
+  const employeeId = Number(params.id);
 
-  const { control, handleSubmit, setValue } = useForm<FormData>({ mode: "onChange" });
-  const [isPageEdit, setIsPageEdit] = React.useState<boolean>(false);
-  const [listReligion, setListReligion] = React.useState<ReligionType[]>([]);
-  const [listGender, setListGender] = React.useState<GenderType[]>([]);
-  const [listMaritalStatus, setListMaritalStatus] = React.useState<MaritalStatusType[]>([]);
-  const toast = useRef<Toast>(null!);
+  const { control, handleSubmit, reset } = useForm<FormData>({
+    defaultValues: {
+      first_name: "",
+      middle_name: "",
+      last_name: "",
+      preferred_name: "",
+      birth_place: "",
+      dob: null,
+      gender_id: null,
+      religion_id: null,
+      marital_status_id: "",
+      phone_number: "",
+      personal_email: "",
+      work_email: "",
+      nationality_country_id: null,
+    },
+  });
 
-  const getPersonalData = async () => {
+  const [isPageEdit, setIsPageEdit] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [genders, setGenders] = useState<OptionItem[]>([]);
+  const [religions, setReligions] = useState<OptionItem[]>([]);
+  const [maritals, setMaritals] = useState<OptionItem[]>([]);
+  const [countries, setCountries] = useState<OptionItem[]>([]);
 
-    const response = await fetch(`http://localhost:3050/api/employees/${id}/personal-data`, { credentials: "include", });
-    const data = await response.json();
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [
+        personal,
+        genderList,
+        religionList,
+        maritalList,
+        countryList,
+      ] = await Promise.all([
+        getEmployeePersonalData(employeeId),
+        getGenderOptions(),
+        getReligionOptions(),
+        getMaritalOptions(),
+        getCountryOptions(),
+      ]);
 
-    setValue('firstName', data.first_name);
-    setValue('lastName', data.last_name);
-    setValue('dob', data.dob);
-    setValue('gender', data.gender_id);
-    setValue('religion', data.religion_id);
-    setValue('marital', data.marital_status_id);
-    setValue('birthplace', data.birth_place);
-  }
+      setGenders(genderList.filter((a) => a.is_active !== false));
+      setReligions(religionList.filter((a) => a.is_active !== false));
+      setMaritals(maritalList.filter((a) => a.is_active !== false));
+      setCountries(countryList.filter((a) => a.is_active !== false));
+
+      reset({
+        first_name: personal.first_name ?? "",
+        middle_name: personal.middle_name ?? "",
+        last_name: personal.last_name ?? "",
+        preferred_name: personal.preferred_name ?? "",
+        birth_place: personal.birth_place ?? "",
+        dob: personal.dob ? dayjs(personal.dob).toDate() : null,
+        gender_id: personal.gender_id ?? null,
+        religion_id: personal.religion_id ?? null,
+        marital_status_id: personal.marital_status_id ?? "",
+        phone_number: personal.phone_number ?? "",
+        personal_email: personal.personal_email ?? "",
+        work_email: personal.work_email ?? "",
+        nationality_country_id: personal.nationality_country_id ?? null,
+      });
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    getlistReligion();
-    getListGender();
-    getListMaritalStatus();
-  }, []);
-
-  useEffect(() => {
-    getPersonalData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listReligion, listGender, listMaritalStatus]);
-
-  const getlistReligion = async () => {
-    const response = await fetch('http://localhost:3050/api/religion', { credentials: "include", });
-    const data = await response.json();
-    setListReligion(data);
-  }
-
-  const getListGender = async () => {
-    const response = await fetch('http://localhost:3050/api/gender', { credentials: "include", });
-    const data = await response.json();
-    setListGender(data);
-  }
-
-  const getListMaritalStatus = async () => {
-    const response = await fetch('http://localhost:3050/api/marital', { credentials: "include", });
-    const data = await response.json();
-    setListMaritalStatus(data);
-  }
+    void loadData();
+  }, [employeeId]);
 
   const onSubmit = async (data: FormData) => {
-    const putData = {
-      first_name: data.firstName,
-      last_name: data.lastName,
-      birth_place: data.birthplace,
-      dob: dayjs(data.dob).format("YYYY-MM-DD"),
-      gender_id: data.gender,
-      religion_id: data.religion,
-      marital_status_id: data.marital,
-      photo_url: profileData.photo_url,
+    const payload: EmployeePersonalData = {
+      first_name: data.first_name,
+      middle_name: data.middle_name || null,
+      last_name: data.last_name,
+      preferred_name: data.preferred_name || null,
+      birth_place: data.birth_place,
+      dob: data.dob ? dayjs(data.dob).format("YYYY-MM-DD") : "",
+      gender_id: Number(data.gender_id),
+      religion_id: Number(data.religion_id),
+      marital_status_id: data.marital_status_id,
+      photo_url: null,
+      phone_number: data.phone_number || null,
+      personal_email: data.personal_email || null,
+      work_email: data.work_email || null,
+      nationality_country_id: data.nationality_country_id
+        ? Number(data.nationality_country_id)
+        : null,
+    };
+
+    try {
+      await updateEmployeePersonalData(employeeId, payload);
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "success",
+          detail: "Personal data updated successfully",
+        })
+      );
+      setIsPageEdit(false);
+      await loadData();
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: err.message,
+          })
+        );
+      }
     }
-
-    const res = await fetch(`http://localhost:3050/api/employees/${id}/personal-data`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(putData),
-    });
-
-    const result = await res.json();
-    if (result) {
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: "update personal data success" }));
-      setIsPageEdit(false)
-    }
-
-    getPersonalData();
   };
 
-  const onInvalid = (errors: FieldErrors<FormData>) => {
-    console.log("❌ Form is invalid:", errors);
-  };
+  if (loading) {
+    return <div className="py-8 text-sm text-slate-500">Loading personal data...</div>;
+  }
 
   return (
     <>
-      <Toast ref={toast} position="top-center" />
       <ConfirmDialog />
-      <form onSubmit={handleSubmit((data: FormData) => onSubmit(data), onInvalid)}>
-        <div className="m-0">
-          <div className="flex flex-col gap-5">
-            <div className="header flex justify-between">
-              <div className="title flex flex-col">
-                <h5 className="text-xl">Personal Data</h5>
-                <h5 className="text-sm">Your personal data information</h5>
-              </div>
-
-              {isPageEdit && <>
-                <div className="m-0 flex flex-row gap-2 items-center justify-end">
-                  <Button label="Cancel" icon="pi pi-times" className="p-button-text" onClick={() => setIsPageEdit(false)} />
-                  <Button label='Save' icon="pi pi-check" type='submit' />
-                </div>
-              </>}
-
-              {!isPageEdit && <>
-                <Button icon="pi pi-pencil" label=" Edit" severity="help" text onClick={() => setIsPageEdit(true)} />
-              </>}
-
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h5 className="text-xl font-semibold text-slate-900">Personal Data</h5>
+              <p className="text-sm text-slate-500">
+                Basic employee identity, contacts, and nationality
+              </p>
             </div>
-            <div className="flex flex-col">
-              <div className="flex flex-col gap-5">
 
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="name">Full Name</label>
-                  </div>
-                  <div className="w-4/5 flex flex-row gap-5">
-                    <Controller
-                      name="firstName"
-                      defaultValue=""
-                      control={control}
-                      rules={{
-                        required: "name is required",
-                        maxLength: {
-                          value: 50,
-                          message: "maximum 50 character",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <div className="flex flex-col w-full">
-                            <InputText
-                              disabled={!isPageEdit}
-                              id="firstName"
-                              {...field}
-                              placeholder='First Name'
-                              className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                            />
-                            {fieldState.error && (
-                              <small className="font-bold p-error">
-                                {fieldState.error.message}
-                              </small>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    />
-
-                    <Controller
-                      name="lastName"
-                      defaultValue=""
-                      control={control}
-                      rules={{
-                        required: "last name is required",
-                        maxLength: {
-                          value: 50,
-                          message: "maximum 50 character",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <div className="flex flex-col w-full">
-                            <InputText
-                              disabled={!isPageEdit}
-                              id="lastName"
-                              {...field}
-                              placeholder='Last Name'
-                              className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                            />
-                            {fieldState.error && (
-                              <small className="font-bold p-error">
-                                {fieldState.error.message}
-                              </small>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="birthplace">Place Of Birth</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="birthplace"
-                      defaultValue=""
-                      control={control}
-                      rules={{
-                        required: "place of birth is required",
-                        maxLength: {
-                          value: 50,
-                          message: "maximum 50 character",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <InputText
-                            disabled={!isPageEdit}
-                            id="birthplace"
-                            {...field}
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && (
-                            <small className="font-bold p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="dob">Birth Date</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="dob"
-                      control={control}
-                      rules={{ required: "birth date is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Calendar
-                            disabled={!isPageEdit}
-                            appendTo={getBody}
-                            {...field}
-                            id="dob"
-                            dateFormat='dd-mm-yy'
-                            showIcon
-                            value={field.value ? dayjs(field.value, "DD-MM-YYYY").toDate() : null}
-                            onChange={(e) => field.onChange(e.value)}
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="gender">Gender</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="gender"
-                      control={control}
-                      rules={{ required: "gender is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Dropdown
-                            id="gender"
-                            disabled={!isPageEdit}
-                            appendTo={getBody}
-                            value={field.value}
-                            options={listGender}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Gender"
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="religion">Religion</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="religion"
-                      control={control}
-                      rules={{ required: "religion is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Dropdown
-                            id="religion"
-                            disabled={!isPageEdit}
-                            appendTo={getBody}
-                            value={field.value}
-                            options={listReligion}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Religion"
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="marital">Marital Status</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="marital"
-                      control={control}
-                      rules={{ required: "marital status is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Dropdown
-                            id="marital"
-                            disabled={!isPageEdit}
-                            appendTo={getBody}
-                            value={field.value}
-                            options={listMaritalStatus}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Marital Status"
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
+            <div className="flex gap-2">
+              {isPageEdit ? (
+                <>
+                  <Button
+                    type="button"
+                    label="Cancel"
+                    icon="pi pi-times"
+                    className="p-button-text"
+                    onClick={() => {
+                      setIsPageEdit(false);
+                      void loadData();
+                    }}
+                  />
+                  <Button type="submit" label="Save" icon="pi pi-check" />
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  icon="pi pi-pencil"
+                  label="Edit"
+                  severity="help"
+                  text
+                  onClick={() => setIsPageEdit(true)}
+                />
+              )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <Controller
+              name="first_name"
+              control={control}
+              rules={{ required: "First name is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="first_name">First Name</label>
+                  <InputText
+                    id="first_name"
+                    {...field}
+                    disabled={!isPageEdit}
+                    className={fieldState.invalid ? "p-invalid" : ""}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="middle_name"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="middle_name">Middle Name</label>
+                  <InputText id="middle_name" {...field} disabled={!isPageEdit} />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="last_name"
+              control={control}
+              rules={{ required: "Last name is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="last_name">Last Name</label>
+                  <InputText
+                    id="last_name"
+                    {...field}
+                    disabled={!isPageEdit}
+                    className={fieldState.invalid ? "p-invalid" : ""}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="preferred_name"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="preferred_name">Preferred Name</label>
+                  <InputText id="preferred_name" {...field} disabled={!isPageEdit} />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="birth_place"
+              control={control}
+              rules={{ required: "Birth place is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="birth_place">Place of Birth</label>
+                  <InputText
+                    id="birth_place"
+                    {...field}
+                    disabled={!isPageEdit}
+                    className={fieldState.invalid ? "p-invalid" : ""}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="dob"
+              control={control}
+              rules={{ required: "Birth date is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="dob">Birth Date</label>
+                  <Calendar
+                    id="dob"
+                    appendTo={getBody}
+                    disabled={!isPageEdit}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.value)}
+                    className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="gender_id"
+              control={control}
+              rules={{ required: "Gender is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="gender_id">Gender</label>
+                  <Dropdown
+                    id="gender_id"
+                    appendTo={getBody}
+                    disabled={!isPageEdit}
+                    value={field.value}
+                    options={genders}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select gender"
+                    className={fieldState.invalid ? "p-invalid" : ""}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="religion_id"
+              control={control}
+              rules={{ required: "Religion is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="religion_id">Religion</label>
+                  <Dropdown
+                    id="religion_id"
+                    appendTo={getBody}
+                    disabled={!isPageEdit}
+                    value={field.value}
+                    options={religions}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select religion"
+                    className={fieldState.invalid ? "p-invalid" : ""}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="marital_status_id"
+              control={control}
+              rules={{ required: "Marital status is required" }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="marital_status_id">Marital Status</label>
+                  <Dropdown
+                    id="marital_status_id"
+                    appendTo={getBody}
+                    disabled={!isPageEdit}
+                    value={field.value}
+                    options={maritals}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select marital status"
+                    className={fieldState.invalid ? "p-invalid" : ""}
+                  />
+                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="phone_number"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="phone_number">Phone Number</label>
+                  <InputText id="phone_number" {...field} disabled={!isPageEdit} />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="personal_email"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="personal_email">Personal Email</label>
+                  <InputText id="personal_email" {...field} disabled={!isPageEdit} />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="work_email"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="work_email">Work Email</label>
+                  <InputText id="work_email" {...field} disabled={!isPageEdit} />
+                </div>
+              )}
+            />
+
+            <Controller
+              name="nationality_country_id"
+              control={control}
+              render={({ field }) => (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="nationality_country_id">Nationality</label>
+                  <Dropdown
+                    id="nationality_country_id"
+                    appendTo={getBody}
+                    disabled={!isPageEdit}
+                    value={field.value}
+                    options={countries}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    placeholder="Select nationality"
+                  />
+                </div>
+              )}
+            />
           </div>
         </div>
       </form>
     </>
   );
-}
+};
 
-export default PersonalData
+export default PersonalData;

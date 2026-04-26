@@ -1,584 +1,851 @@
-'use client'
+"use client";
 
-import { Card } from 'primereact/card'
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { InputText } from 'primereact/inputtext';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { FilterMatchMode } from 'primereact/api';
-import { Button } from 'primereact/button';
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { useState } from 'react';
-import useSWR, { mutate } from 'swr';
-import { fetcher } from '@/app/utils/fetcher';
-import LoadingDataTable from '@/app/_components/LoadingDataTable';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
-import { Employee } from '@/app/types/employee';
-import { useRouter } from 'next/navigation';
-import { ResponseTypeCreateSuccess, ResponseType } from '@/app/types/response-type';
-import { useDispatch } from 'react-redux';
-import { getErrorMessage, isResponseTypeError } from '@/app/utils/error-messages';
-import { showToast } from '@/store/ToastSlice';
-import { Dialog } from 'primereact/dialog';
-import { Controller, useForm } from 'react-hook-form';
-import dayjs from 'dayjs';
-import { Calendar } from 'primereact/calendar';
-import { Dropdown } from 'primereact/dropdown';
-import { ReligionType } from '@/app/types/religion-type';
-import { Gender } from '@/app/types/gender';
-import { MaritalStatus } from '@/app/types/marital-status';
-import { createEmployee, deleteEmployee, purgeEmployee, restoreEmployee } from '@/app/services/employee-service';
-import Link from 'next/link';
-import { Checkbox } from 'primereact/checkbox';
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import dayjs from "dayjs";
+import useSWR, { mutate } from "swr";
+import { useDispatch } from "react-redux";
+import { Controller, useForm } from "react-hook-form";
 
+import { Card } from "primereact/card";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+import { InputText } from "primereact/inputtext";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { FilterMatchMode } from "primereact/api";
+import { Button } from "primereact/button";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { Dialog } from "primereact/dialog";
+import { Calendar } from "primereact/calendar";
+import { Dropdown } from "primereact/dropdown";
+import { Checkbox } from "primereact/checkbox";
+import { Tag } from "primereact/tag";
+
+import { fetcher } from "@/app/utils/fetcher";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+
+import { Employee } from "@/app/types/employee";
+import { ReligionType } from "@/app/types/religion-type";
+import { Gender } from "@/app/types/gender";
+import { MaritalStatus } from "@/app/types/marital-status";
+import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
+import {
+  createEmployee,
+  deleteEmployee,
+  purgeEmployee,
+  restoreEmployee,
+} from "@/app/services/employee-service";
+
+type EmployeeForm = {
+  first_name: string;
+  last_name: string;
+  birth_place: string;
+  dob: Date | null;
+  gender_id: number | null;
+  religion_id: number | null;
+  marital_status_id: string;
+};
+
+const EMPLOYEE_LIST_KEY = (showAll: boolean) =>
+  `/api/employees/list?show_all=${showAll}`;
+
+const getBody = () => document.body;
+
+const emptyForm: EmployeeForm = {
+  first_name: "",
+  last_name: "",
+  birth_place: "",
+  dob: null,
+  gender_id: null,
+  religion_id: null,
+  marital_status_id: "",
+};
 
 const EmployeesDataTable = () => {
-  const router = useRouter();
   const dispatch = useDispatch();
-  // const profileState = useSelector((state: RootState) => state.profile);
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
+
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
-
-  const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [selectedData, setSelectedData] = useState<Employee | null>(null);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-  const { control, handleSubmit, setFocus, formState: { isValid }, reset, clearErrors } = useForm<Employee>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    clearErrors,
+    setFocus,
+    formState: { errors, isValid },
+  } = useForm<EmployeeForm>({
+    defaultValues: emptyForm,
+    mode: "onChange",
+  });
+
+  const {
+    data: employeesData,
+    error,
+    isLoading,
+  } = useSWR<Employee[]>(EMPLOYEE_LIST_KEY(isShowDeletedDataChecked), fetcher);
+
+  const {
+    data: genderData,
+    error: genderError,
+    isLoading: genderIsLoading,
+  } = useSWR<Gender[]>("/api/gender", fetcher);
+
+  const {
+    data: religionData,
+    error: religionError,
+    isLoading: religionIsLoading,
+  } = useSWR<ReligionType[]>("/api/religion", fetcher);
+
+  const {
+    data: maritalStatusData,
+    error: maritalStatusError,
+    isLoading: maritalStatusIsLoading,
+  } = useSWR<MaritalStatus[]>("/api/marital", fetcher);
+
+  const genderActive = useMemo(
+    () => genderData?.filter((item) => item.is_active) ?? [],
+    [genderData]
+  );
+
+  const religionActive = useMemo(
+    () => religionData?.filter((item) => item.is_active) ?? [],
+    [religionData]
+  );
+
+  const maritalStatusActive = useMemo(
+    () => maritalStatusData?.filter((item) => item.is_active) ?? [],
+    [maritalStatusData]
+  );
+
+  const refreshList = async () => {
+    await mutate(EMPLOYEE_LIST_KEY(isShowDeletedDataChecked));
+  };
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    const _filters = { ...filters };
-
-    _filters['global'].value = value;
-
-    setFilters(_filters);
     setGlobalFilterValue(value);
+    setFilters({
+      global: { value, matchMode: FilterMatchMode.CONTAINS },
+    });
   };
 
-  const onClickNew = () => {
+  const openNew = () => {
     clearErrors();
-    setIsAddNew(true);
+    reset(emptyForm);
     setVisible(true);
-    setPopupHeaderTitle("New Employee");
-    reset({
-      id: 0,
-      first_name: '',
-      last_name: '',
-      dob: '',
-      gender_id: 0,
-      religion_id: 0,
-      birth_place: '',
-      marital_status_id: '',
-      photo_url: '',
-      is_active: false,
-      deleted_at: '',
-      row_version: 0,
-    });
-  }
 
-  const handleSubmitNew = async (data: Employee) => {
+    setTimeout(() => {
+      setFocus("first_name");
+    }, 0);
+  };
+
+  const hideDialog = () => {
+    setVisible(false);
+    reset(emptyForm);
+  };
+
+  const buildEmployeePayload = (form: EmployeeForm): Employee => {
+    const firstName = form.first_name.trim();
+    const lastName = form.last_name.trim();
+    const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+    return {
+      id: 0,
+      first_name: firstName,
+      middle_name: null,
+      last_name: lastName,
+      preferred_name: null,
+      full_name: fullName,
+      dob: form.dob ? dayjs(form.dob).format("YYYY-MM-DD") : "",
+      gender_id: Number(form.gender_id),
+      religion_id: Number(form.religion_id),
+      birth_place: form.birth_place.trim(),
+      marital_status_id: form.marital_status_id,
+      photo_url: null,
+      phone_number: null,
+      personal_email: null,
+      work_email: null,
+      nationality_country_id: null,
+      deleted_at: null,
+      row_version: 0,
+      agency_name: null,
+      branch_name: null,
+      department_name: null,
+      position_name: null,
+      code: null,
+    };
+  };
+
+  const handleSubmitNew = async (form: EmployeeForm) => {
+    if (!isValid) return;
+
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createEmployee(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/list`);
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
+      setIsSubmitting(true);
+
+      const payload = buildEmployeePayload(form);
+      const res = await createEmployee(payload);
+
+      hideDialog();
+      await refreshList();
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res?.message ?? "Employee created successfully",
+        })
+      );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
       } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (data: Employee) => {
+    try {
+      const res = await deleteEmployee(data.id, data.row_version);
+      await refreshList();
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res?.message ?? "Employee deleted successfully",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
       }
     }
-  }
+  };
 
-  const footerContent = (
-    <div className='text-right flex gap-5 justify-end'>
-      <Button type="button" label="Cancel" icon="pi pi-times" onClick={() => { setVisible(false); }} className="p-button-text" />
-      <Button type="submit" label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" />
-    </div>
-  );
+  const handleRestore = async (data: Employee) => {
+    try {
+      const res = await restoreEmployee(data.id, data.row_version);
+      await refreshList();
 
-  const { data: EmployeesData, error, isLoading } = useSWR<Employee[]>(`/api/employees/list?show_all=${isShowDeletedDataChecked}`, fetcher);
-  const { data: genderData, error: genderError, isLoading: genderIsLoading } = useSWR<Gender[]>(`/api/gender`, fetcher);
-  const { data: religionData, error: religionError, isLoading: religionIsLoading } = useSWR<ReligionType[]>(`/api/religion`, fetcher);
-  const { data: maritalStatusData, error: maritalStatusError, isLoading: maritalStatusIsLoading } = useSWR<MaritalStatus[]>(`/api/marital`, fetcher);
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res?.message ?? "Employee restored successfully",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
+  };
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/employees/list?show_all=true' />
-  }
+  const handlePurge = async (data: Employee) => {
+    try {
+      const res = await purgeEmployee(data.id);
+      await refreshList();
 
-  const genderActive = genderData?.filter(a => a.is_active);
-  const religionActive = religionData?.filter(a => a.is_active);
-  const maritalStatusActive = maritalStatusData?.filter(a => a.is_active);
-  const nameColumnBody = (rowData: Employee) => {
-    return rowData.first_name + " " + rowData.last_name
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res?.message ?? "Employee permanently deleted",
+        })
+      );
+    } catch (err: unknown) {
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: err.message,
+          })
+        );
+      }
+    }
   };
 
   const onClickDelete = (data: Employee) => {
     confirmDialog({
-      message: 'Do you want to delete this record?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      acceptClassName: "p-button-danger ml-3",
+      message: "Do you want to delete this employee?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      acceptClassName: "p-button-danger",
       accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
+        void handleDelete(data);
       },
-      reject: () => { },
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
+        <div className="flex justify-end gap-3">
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes"
+            icon="pi pi-check"
+            onClick={options.accept}
+            className="p-button-danger"
+          />
         </div>
-      )
+      ),
     });
   };
 
   const onClickRestore = (data: Employee) => {
     confirmDialog({
-      message: 'Do you want to restore this record?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to restore this employee?",
+      header: "Restore Confirmation",
+      icon: "pi pi-info-circle",
+      acceptClassName: "p-button-success",
       accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
+        void handleRestore(data);
       },
-      reject: () => { },
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
+        <div className="flex justify-end gap-3">
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes"
+            icon="pi pi-check"
+            onClick={options.accept}
+            className="p-button-success"
+          />
         </div>
-      )
+      ),
     });
   };
 
   const onClickPurge = (data: Employee) => {
     confirmDialog({
-      message: 'Do you want to delete this record forever?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      acceptClassName: "p-button-danger ml-3",
+      message: "Do you want to permanently delete this employee?",
+      header: "Permanent Delete Confirmation",
+      icon: "pi pi-exclamation-triangle",
+      acceptClassName: "p-button-danger",
       accept: () => {
-        handlePurge(data);
+        void handlePurge(data);
       },
-      reject: () => { },
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
+        <div className="flex justify-end gap-3">
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes"
+            icon="pi pi-check"
+            onClick={options.accept}
+            className="p-button-danger"
+          />
         </div>
-      )
+      ),
     });
   };
 
+  const fullNameBody = (rowData: Employee) => {
+    if (rowData.full_name?.trim()) return rowData.full_name;
+
+    return [
+      rowData.first_name,
+      rowData.middle_name,
+      rowData.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  const statusBody = (rowData: Employee) => {
+    return rowData.deleted_at ? (
+      <Tag value="Deleted" severity="danger" />
+    ) : (
+      <Tag value="Active" severity="success" />
+    );
+  };
+
+  const deletedAtBody = (rowData: Employee) => {
+    if (!rowData.deleted_at) return "-";
+    return dayjs(rowData.deleted_at).format("DD MMM YYYY HH:mm");
+  };
 
   const actionColumnBody = (rowData: Employee) => {
-    return <>
+    const isDeleted = !!rowData.deleted_at;
+
+    return (
       <div className="flex gap-2">
-        <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete forever' rounded severity='secondary' label="" icon="pi pi-times" size="small" onClick={() => { onClickPurge(rowData) }} />
+        {!isDeleted && (
+          <>
+            <Button
+              tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+              tooltip="Delete"
+              rounded
+              severity="danger"
+              icon="pi pi-trash"
+              size="small"
+              onClick={() => onClickDelete(rowData)}
+            />
+            <Link href={`/employees/${rowData.id}/general/personal`}>
+              <Button
+                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+                tooltip="Detail"
+                rounded
+                severity="help"
+                icon="pi pi-pencil"
+                size="small"
+              />
+            </Link>
+          </>
+        )}
 
-        {rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='restore' rounded severity='success' label="" icon="pi pi-refresh" size="small" onClick={() => { onClickRestore(rowData) }} />}
-
-        {!rowData.deleted_at && <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='delete' rounded severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData) }} />}
-
-        <Link href={`/employees/${rowData.id}/general/personal`}>
-          <Button tooltipOptions={{ appendTo: () => document.body, position: 'top' }} tooltip='edit' rounded severity='help' label="" icon="pi pi-pencil" size="small" />
-        </Link>
+        {isDeleted && (
+          <>
+            <Button
+              tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+              tooltip="Restore"
+              rounded
+              severity="success"
+              icon="pi pi-refresh"
+              size="small"
+              onClick={() => onClickRestore(rowData)}
+            />
+            <Button
+              tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+              tooltip="Delete Forever"
+              rounded
+              severity="secondary"
+              icon="pi pi-times"
+              size="small"
+              onClick={() => onClickPurge(rowData)}
+            />
+          </>
+        )}
       </div>
-    </>
+    );
   };
 
-  const onClickUpdate = (data: Employee) => {
-    router.push(`/employees/${data.id}/general/personal`);
-  }
+  if (isLoading) return <LoadingDataTable />;
 
-  const onSubmit = (data: Employee) => {
-    if (!isValid)
-      return;
-
-    if (isAddNew) {
-      handleSubmitNew(data);
-      return;
-    }
-
-  };
-
-  const getBody = () => document.body;
-
-  const handleDelete = async (data: Employee) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployee(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/list?show_all=${isShowDeletedDataChecked}`);
-
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handlePurge = async (data: Employee) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployee(data.id);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/list?show_all=${isShowDeletedDataChecked}`);
-
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const handleRestore = async (data: Employee) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreEmployee(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/employees/list?show_all=${isShowDeletedDataChecked}`);
-
-
-      dispatch(showToast({ visible: true, severity: "success", summary: "success", detail: res.message }));
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: getErrorMessage(err, 'message') }));
-      } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: "error", summary: "error", detail: err.message }));
-      }
-    }
-  }
-
-  const onShowDeletedDataChecked = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={EMPLOYEE_LIST_KEY(true)} />;
   }
 
   return (
     <>
       <ConfirmDialog />
-      <Card>
-        <div className="pt-0 pr-3 pb-3 pl-3">
 
-          <div className="flex items-center justify-between pb-5">
-            <div className="flex">
-              <div className="flex flex-col">
-                <p className="text-2xl font-bold">Employees</p>
-                <p className="text-md">Manage your employee records and branches</p>
-              </div>
+      <Card className="shadow-sm">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900">Employees</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                Manage employee master data and continue to employee detail.
+              </p>
             </div>
 
-            <div className="flex items-center justify-between gap-5">
-              <div className="flex items-center">
-                <div className="flex align-items-center pl-5">
-                  <Checkbox inputId="showDeletedData" name="showDeletedData" value="yes" onChange={onShowDeletedDataChecked} checked={isShowDeletedDataChecked} />
-                  <label htmlFor="showDeletedData" className="ml-2">show deleted data</label>
-                </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <Checkbox
+                  inputId="showDeletedData"
+                  checked={isShowDeletedDataChecked}
+                  onChange={(e) => setIsShowDeletedDataChecked(!!e.checked)}
+                />
+                <label
+                  htmlFor="showDeletedData"
+                  className="cursor-pointer text-sm text-slate-700"
+                >
+                  Show deleted data
+                </label>
               </div>
 
-              <> | </>
+              <IconField iconPosition="left">
+                <InputIcon className="pi pi-search" />
+                <InputText
+                  value={globalFilterValue}
+                  onChange={onGlobalFilterChange}
+                  placeholder="Search employee"
+                  className="w-full sm:w-64"
+                />
+              </IconField>
 
-              <div className="flex gap-5">
-                <IconField iconPosition="left">
-                  <InputIcon className="pi pi-search" />
-                  <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-                </IconField>
-
-                <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
-              </div>
+              <Button
+                label="New Employee"
+                icon="pi pi-plus"
+                onClick={openNew}
+              />
             </div>
-
-
           </div>
 
           <DataTable
-            value={EmployeesData}
-            tableStyle={{ minWidth: "50rem" }}
+            value={employeesData ?? []}
             stripedRows
             paginator
-            scrollable
-            scrollHeight="500px"
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['code', 'name', 'gender_name', 'agency_name', 'branch_name']}
-            emptyMessage="No Employees found."
-            header={<></>}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
+            globalFilterFields={[
+              "code",
+              "first_name",
+              "middle_name",
+              "last_name",
+              "full_name",
+              "gender_name",
+              "agency_name",
+              "branch_name",
+              "department_name",
+              "position_name",
+            ]}
+            emptyMessage="No employees found."
+            scrollable
+            tableStyle={{ minWidth: "72rem" }}
           >
-            <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
-            <Column field="code" header="Employee ID"></Column>
-            <Column field="name" header="Name" body={nameColumnBody}></Column>
-            <Column field="gender_name" header="Gender"></Column>
-            <Column field="agency_name" header="Agency"></Column>
-            <Column field="branch_name" header="Branch"></Column>
-            <Column headerClassName='bg-white' className='bg-white' header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen="right"></Column>
+            <Column
+              header="#"
+              body={(_, options) => options.rowIndex + 1}
+              style={{ width: "60px" }}
+            />
+            <Column field="code" header="Code" style={{ minWidth: "100px" }} />
+            <Column
+              header="Full Name"
+              body={fullNameBody}
+              style={{ minWidth: "220px" }}
+            />
+            <Column
+              field="gender_name"
+              header="Gender"
+              style={{ minWidth: "120px" }}
+            />
+            <Column
+              field="agency_name"
+              header="Agency"
+              style={{ minWidth: "140px" }}
+            />
+            <Column
+              field="branch_name"
+              header="Branch"
+              style={{ minWidth: "140px" }}
+            />
+            <Column
+              field="department_name"
+              header="Department"
+              style={{ minWidth: "160px" }}
+            />
+            <Column
+              field="position_name"
+              header="Position"
+              style={{ minWidth: "160px" }}
+            />
+            <Column
+              header="Status"
+              body={statusBody}
+              style={{ minWidth: "110px" }}
+            />
+            <Column
+              header="Deleted At"
+              body={deletedAtBody}
+              style={{ minWidth: "170px" }}
+            />
+            <Column
+              header="Action"
+              body={actionColumnBody}
+              frozen
+              alignFrozen="right"
+              className="bg-white"
+              headerClassName="bg-white"
+              style={{ minWidth: "140px" }}
+            />
           </DataTable>
-
-          <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-            <Dialog
-              header={popupHeaderTitle}
-              visible={visible}
-              style={{ width: '50vw' }}
-              onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-              footer={footerContent}
-              onShow={() => {
-                setFocus('first_name');
-              }}
-            >
-              <div className="flex flex-col gap-5">
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="name">Full Name</label>
-                  </div>
-                  <div className="w-4/5 flex flex-row gap-5">
-                    <Controller
-                      name="first_name"
-                      defaultValue=""
-                      control={control}
-                      rules={{
-                        required: "name is required",
-                        maxLength: {
-                          value: 50,
-                          message: "maximum 50 character",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <div className="flex flex-col w-full">
-                            <InputText
-                              id="first_name"
-                              {...field}
-                              placeholder='First Name'
-                              className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                            />
-                            {fieldState.error && (
-                              <small className="font-bold p-error">
-                                {fieldState.error.message}
-                              </small>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    />
-
-                    <Controller
-                      name="last_name"
-                      defaultValue=""
-                      control={control}
-                      rules={{
-                        required: "last name is required",
-                        maxLength: {
-                          value: 50,
-                          message: "maximum 50 character",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <div className="flex flex-col w-full">
-                            <InputText
-                              id="last_name"
-                              {...field}
-                              placeholder='Last Name'
-                              className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                            />
-                            {fieldState.error && (
-                              <small className="font-bold p-error">
-                                {fieldState.error.message}
-                              </small>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="birth_place">Place Of Birth</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="birth_place"
-                      defaultValue=""
-                      control={control}
-                      rules={{
-                        required: "place of birth is required",
-                        maxLength: {
-                          value: 50,
-                          message: "maximum 50 character",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <InputText
-                            id="birth_place"
-                            {...field}
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && (
-                            <small className="font-bold p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="dob">Birth Date</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="dob"
-                      control={control}
-                      rules={{ required: "birth date is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Calendar
-                            appendTo={getBody}
-                            {...field}
-                            id="dob"
-                            dateFormat='dd-mm-yy'
-                            showIcon
-                            value={field.value ? dayjs(field.value, "DD-MM-YYYY").toDate() : null}
-                            onChange={(e) => field.onChange(e.value)}
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="gender_id">Gender</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="gender_id"
-                      control={control}
-                      rules={{ required: "gender_id is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Dropdown
-                            id="gender_id"
-                            appendTo={getBody}
-                            value={field.value}
-                            options={genderActive}
-                            loading={genderIsLoading}
-                            disabled={genderIsLoading || !!genderError}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Gender"
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="religion_id">Religion</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="religion_id"
-                      control={control}
-                      rules={{ required: "religion is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Dropdown
-                            id="religion_id"
-                            appendTo={getBody}
-                            value={field.value}
-                            options={religionActive}
-                            loading={religionIsLoading}
-                            disabled={religionIsLoading || !!religionError}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Religion"
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                <div className="m-0 flex flex-row gap-2 items-center">
-                  <div className="w-1/5">
-                    <label htmlFor="marital_status_id">Marital Status</label>
-                  </div>
-                  <div className="w-4/5">
-                    <Controller
-                      name="marital_status_id"
-                      control={control}
-                      rules={{ required: "marital status is required" }}
-                      render={({ field, fieldState }) => (
-                        <>
-                          <Dropdown
-                            id="marital_status_id"
-                            appendTo={getBody}
-                            value={field.value}
-                            options={maritalStatusActive}
-                            disabled={maritalStatusIsLoading || !!maritalStatusError}
-                            loading={maritalStatusIsLoading}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select a Marital Status"
-                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                          />
-                          {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                        </>
-                      )}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Dialog>
-          </form>
         </div>
-
       </Card>
-    </>
-  )
-}
 
-export default EmployeesDataTable
+      <form onSubmit={handleSubmit(handleSubmitNew)}>
+        <Dialog
+          header="New Employee"
+          visible={visible}
+          style={{ width: "52rem", maxWidth: "95vw" }}
+          onHide={hideDialog}
+          breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={hideDialog}
+              />
+              <Button
+                type="submit"
+                label={isSubmitting ? "Saving..." : "Save"}
+                icon="pi pi-check"
+                disabled={isSubmitting}
+              />
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
+            <Controller
+              name="first_name"
+              control={control}
+              rules={{ required: "First name is required" }}
+              render={({ field }) => (
+                <div>
+                  <label htmlFor="first_name" className="mb-2 block text-sm font-medium text-slate-700">
+                    First Name
+                  </label>
+                  <InputText
+                    id="first_name"
+                    {...field}
+                    className={`w-full ${errors.first_name ? "p-invalid" : ""}`}
+                    placeholder="Enter first name"
+                  />
+                  {errors.first_name && (
+                    <small className="p-error">{errors.first_name.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="last_name"
+              control={control}
+              rules={{ required: "Last name is required" }}
+              render={({ field }) => (
+                <div>
+                  <label htmlFor="last_name" className="mb-2 block text-sm font-medium text-slate-700">
+                    Last Name
+                  </label>
+                  <InputText
+                    id="last_name"
+                    {...field}
+                    className={`w-full ${errors.last_name ? "p-invalid" : ""}`}
+                    placeholder="Enter last name"
+                  />
+                  {errors.last_name && (
+                    <small className="p-error">{errors.last_name.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="birth_place"
+              control={control}
+              rules={{ required: "Birth place is required" }}
+              render={({ field }) => (
+                <div>
+                  <label htmlFor="birth_place" className="mb-2 block text-sm font-medium text-slate-700">
+                    Birth Place
+                  </label>
+                  <InputText
+                    id="birth_place"
+                    {...field}
+                    className={`w-full ${errors.birth_place ? "p-invalid" : ""}`}
+                    placeholder="Enter birth place"
+                  />
+                  {errors.birth_place && (
+                    <small className="p-error">{errors.birth_place.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="dob"
+              control={control}
+              rules={{ required: "Date of birth is required" }}
+              render={({ field }) => (
+                <div>
+                  <label htmlFor="dob" className="mb-2 block text-sm font-medium text-slate-700">
+                    Date of Birth
+                  </label>
+                  <Calendar
+                    id="dob"
+                    appendTo={getBody}
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.value)}
+                    className={`w-full ${errors.dob ? "p-invalid" : ""}`}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                  />
+                  {errors.dob && (
+                    <small className="p-error">{errors.dob.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="gender_id"
+              control={control}
+              rules={{ required: "Gender is required" }}
+              render={({ field }) => (
+                <div>
+                  <label htmlFor="gender_id" className="mb-2 block text-sm font-medium text-slate-700">
+                    Gender
+                  </label>
+                  <Dropdown
+                    id="gender_id"
+                    appendTo={getBody}
+                    value={field.value}
+                    options={genderActive}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    loading={genderIsLoading}
+                    disabled={genderIsLoading || !!genderError}
+                    placeholder="Select gender"
+                    className={`w-full ${errors.gender_id ? "p-invalid" : ""}`}
+                  />
+                  {errors.gender_id && (
+                    <small className="p-error">{errors.gender_id.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="religion_id"
+              control={control}
+              rules={{ required: "Religion is required" }}
+              render={({ field }) => (
+                <div>
+                  <label htmlFor="religion_id" className="mb-2 block text-sm font-medium text-slate-700">
+                    Religion
+                  </label>
+                  <Dropdown
+                    id="religion_id"
+                    appendTo={getBody}
+                    value={field.value}
+                    options={religionActive}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    loading={religionIsLoading}
+                    disabled={religionIsLoading || !!religionError}
+                    placeholder="Select religion"
+                    className={`w-full ${errors.religion_id ? "p-invalid" : ""}`}
+                  />
+                  {errors.religion_id && (
+                    <small className="p-error">{errors.religion_id.message}</small>
+                  )}
+                </div>
+              )}
+            />
+
+            <Controller
+              name="marital_status_id"
+              control={control}
+              rules={{ required: "Marital status is required" }}
+              render={({ field }) => (
+                <div className="md:col-span-2">
+                  <label htmlFor="marital_status_id" className="mb-2 block text-sm font-medium text-slate-700">
+                    Marital Status
+                  </label>
+                  <Dropdown
+                    id="marital_status_id"
+                    appendTo={getBody}
+                    value={field.value}
+                    options={maritalStatusActive}
+                    onChange={(e) => field.onChange(e.value)}
+                    optionLabel="name"
+                    optionValue="id"
+                    loading={maritalStatusIsLoading}
+                    disabled={maritalStatusIsLoading || !!maritalStatusError}
+                    placeholder="Select marital status"
+                    className={`w-full ${errors.marital_status_id ? "p-invalid" : ""}`}
+                  />
+                  {errors.marital_status_id && (
+                    <small className="p-error">{errors.marital_status_id.message}</small>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+        </Dialog>
+      </form>
+    </>
+  );
+};
+
+export default EmployeesDataTable;

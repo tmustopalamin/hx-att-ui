@@ -1,72 +1,109 @@
 "use client";
 
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import { TabView, TabPanel, TabViewTabChangeEvent } from "primereact/tabview";
-import React, { lazy, Suspense, useState } from "react";
+import React, { Suspense, lazy, useMemo, useState } from "react";
+import { Button } from "primereact/button";
+
+type TabKey = "formal" | "informal" | "work-experience";
+
+const FormalEducation = lazy(() => import("./FormalEducation"));
+const InformalEducation = lazy(() => import("./InformalEducation"));
+const WorkExperience = lazy(() => import("./WorkExperience"));
+
+const tabs: Array<{
+  key: TabKey;
+  label: string;
+  icon: string;
+  description: string;
+}> = [
+    {
+      key: "formal",
+      label: "Formal Education",
+      icon: "pi pi-building-columns",
+      description: "School, diploma, bachelor, master, and other formal records.",
+    },
+    {
+      key: "informal",
+      label: "Informal Education",
+      icon: "pi pi-book",
+      description: "Course, workshop, training, and certification records.",
+    },
+    {
+      key: "work-experience",
+      label: "Work Experience",
+      icon: "pi pi-briefcase",
+      description: "Previous company and professional experience records.",
+    },
+  ];
 
 const EmployeeDetailEducationWorkExpTab = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [mountedTabs, setMountedTabs] = useState([true, false, false]);
+  const [activeTab, setActiveTab] = useState<TabKey>("formal");
 
-  const handleTabChange = (e: TabViewTabChangeEvent) => {
-    setActiveIndex(e.index);
-    setMountedTabs(() => {
-      const updated = [false, false, false]
-      updated[e.index] = true;
-      return updated;
-    });
-  };
+  const activeTabMeta = useMemo(
+    () => tabs.find((tab) => tab.key === activeTab) ?? tabs[0],
+    [activeTab]
+  );
 
-  const renderFormalEducation = () => {
-    const FormalEducation = lazy(() => import("./FormalEducation"));
-
-    return (
-      <Suspense fallback={<LoadingDataTable />}>
-        <div className="flex flex-col gap-10">
-          <FormalEducation />
-        </div>
-      </Suspense>
-    );
-  };
-
-  const renderInformalEducation = () => {
-    const InformalEducation = lazy(() => import("./InformalEducation"));
-
-    return (
-      <Suspense fallback={<LoadingDataTable />}>
-        <div className="flex flex-col gap-10">
-          <InformalEducation />
-        </div>
-      </Suspense>
-    );
-  };
-
-  const renderWorkExperience = () => {
-    const WorkExperience = lazy(() => import("./WorkExperience"));
-
-    return (
-      <Suspense fallback={<LoadingDataTable />}>
-        <div className="flex flex-col gap-10">
-          <WorkExperience />
-        </div>
-      </Suspense>
-    );
+  const renderContent = () => {
+    switch (activeTab) {
+      case "formal":
+        return <FormalEducation />;
+      case "informal":
+        return <InformalEducation />;
+      case "work-experience":
+        return <WorkExperience />;
+      default:
+        return <FormalEducation />;
+    }
   };
 
   return (
-    <>
-      <TabView activeIndex={activeIndex} onTabChange={handleTabChange}>
-        <TabPanel header="Formal Education">
-          {mountedTabs[0] && renderFormalEducation()}
-        </TabPanel>
-        <TabPanel header="Informal Education">
-          {mountedTabs[1] && renderInformalEducation()}
-        </TabPanel>
-        <TabPanel header="Working Experience">
-          {mountedTabs[2] && renderWorkExperience()}
-        </TabPanel>
-      </TabView>
-    </>
+    <div className="flex flex-col gap-5">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 md:flex-row md:flex-wrap">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.key;
+
+              return (
+                <Button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`justify-start rounded-xl border px-4 py-3 text-left shadow-none transition ${isActive
+                      ? "border-blue-200 bg-blue-600 text-white hover:bg-blue-700"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`${tab.icon} text-sm`} />
+                    <span className="text-sm font-semibold">{tab.label}</span>
+                  </div>
+                </Button>
+              );
+            })}
+          </div>
+
+          <div className="rounded-xl bg-white px-4 py-3">
+            <div className="flex items-start gap-3">
+              <span className={`${activeTabMeta.icon} mt-0.5 text-blue-600`} />
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  {activeTabMeta.label}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  {activeTabMeta.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Suspense fallback={<LoadingDataTable />}>
+        <div className="flex flex-col gap-5">{renderContent()}</div>
+      </Suspense>
+    </div>
   );
 };
 

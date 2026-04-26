@@ -1,73 +1,114 @@
-"use client"
+"use client";
 
-import { Card } from 'primereact/card';
-import { Divider } from 'primereact/divider';
-import React, { Suspense } from 'react'
-import EmployeeProfilePicture from './EmployeeProfilePicture';
-import VerticalTabview from './VerticalTabView';
-import useSWR from 'swr';
-import { Employee } from '@/app/types/employee';
-import { fetcher } from '@/app/utils/fetcher';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
-import { useParams } from 'next/navigation';
-import { EmploymentData } from '@/app/types/employment-data';
+import React, { Suspense, useMemo } from "react";
+import useSWR from "swr";
+import { useParams, usePathname } from "next/navigation";
+
+import EmployeeProfilePicture from "./EmployeeProfilePicture";
+import VerticalTabview from "./VerticalTabView";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import { Employee } from "@/app/types/employee";
+import { EmploymentData } from "@/app/types/employment-data";
+import { fetcher } from "@/app/utils/fetcher";
 
 interface EmployeeLayoutProps {
   children: React.ReactNode;
-  params: Promise<{ id: string; }>;
 }
 
-const EmployeeDetailLayout = ({ children, params }: EmployeeLayoutProps) => {
-  const paramsPath = useParams();
-  const id = paramsPath.id;
+const pageTitleMap: Record<string, string> = {
+  personal: "Personal",
+  employment: "Employment",
+  education: "Education & Experience",
+  attendance: "Attendance",
+  overtime: "Overtime",
+  leave: "Leave",
+  "income-component": "Income Component",
+  "deduction-component": "Deduction Component",
+};
 
-  const [titlePage, setTitlePage] = React.useState('');
-  const { data, error } = useSWR<Employee>(`/api/employees/${id}/personal-data`, fetcher, {});
-  const { data: employmentData } = useSWR<EmploymentData>(`/api/employees/${id}/employment-data`, fetcher, {
-  });
+const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
+  const params = useParams<{ id: string }>();
+  const pathname = usePathname();
+  const id = params?.id;
 
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey={`/api/employees/${id}/personal-data`} />
+  const { data, error } = useSWR<Employee>(
+    id ? `/api/employees/${id}/personal-data` : null,
+    fetcher
+  );
+
+  const { data: employmentData } = useSWR<EmploymentData>(
+    id ? `/api/employees/${id}/employment-data` : null,
+    fetcher
+  );
+
+  const pageTitle = useMemo(() => {
+    const segments = pathname?.split("/").filter(Boolean) ?? [];
+    const lastSegment = segments[segments.length - 1] ?? "";
+    return pageTitleMap[lastSegment] ?? "Employee Detail";
+  }, [pathname]);
+
+  const employeeName = useMemo(() => {
+    if (!data) return "Employee";
+
+    if (data.full_name && data.full_name.trim().length > 0) {
+      return data.full_name;
+    }
+
+    return [data.first_name, data.middle_name, data.last_name]
+      .filter(Boolean)
+      .join(" ");
+  }, [data]);
+
+  if (error && id) {
+    return (
+      <ErrorNotConnectedToApi mutateKey={`/api/employees/${id}/personal-data`} />
+    );
   }
 
-  const changeTitlePage = (title: string) => {
-    setTitlePage(title);
-  }
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col items-center gap-3">
+                <EmployeeProfilePicture data={data} />
 
-  return <>
-    <Card title={<p className="text-xl font-semibold pb-5"></p>}>
+                <div className="min-w-0 text-center">
+                  <h2 className="truncate text-xl font-semibold text-slate-900">
+                    {employeeName}
+                  </h2>
+                  <p className="mt-1 truncate text-sm text-slate-500">
+                    {employmentData?.position_name || "-"}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-      <div className="w-full flex flex-row">
-        <div className="flex w-64 flex-shrink-0 flex-col items-center gap-5">
-          <div className="flex flex-col gap-3 items-center">
-            <EmployeeProfilePicture data={data} />
-            <div className="flex flex-col">
-              <h5 className="text-xl font-semibold text-center">{`${data?.first_name} ${data?.last_name}`}</h5>
-              <h5 className="text-sm text-center">{`${employmentData?.position_name}`}</h5>
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+              <VerticalTabview />
             </div>
           </div>
+        </aside>
 
-          <div className="w-full">
-            <VerticalTabview params={params} />
+        <section className="min-w-0">
+          <div className="min-w-0 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+            <div className="mb-5 flex min-w-0 items-center gap-2 overflow-hidden border-b border-slate-200 pb-3 text-sm text-slate-500">
+              <span className="shrink-0 font-medium text-slate-700">
+                Employee Detail
+              </span>
+              <i className="pi pi-angle-right shrink-0 text-xs" />
+              <span className="truncate">{pageTitle}</span>
+            </div>
+
+            <div className="min-w-0 overflow-x-auto">
+              <Suspense fallback={<p>Loading...</p>}>{children}</Suspense>
+            </div>
           </div>
-        </div>
-
-        <Divider layout="vertical" className="mx-5" />
-
-        <div className="flex flex-col w-full gap-5 overflow-auto">
-
-          <p className="text-2xl font-semibold">{titlePage}</p>
-
-          <div className="pb-5">
-            <Suspense fallback={<p>Loading...</p>}>
-              {children}
-            </Suspense>
-          </div>
-
-        </div>
+        </section>
       </div>
-    </Card>
-  </>
-}
+    </div>
+  );
+};
 
-export default EmployeeDetailLayout
+export default EmployeeDetailLayout;

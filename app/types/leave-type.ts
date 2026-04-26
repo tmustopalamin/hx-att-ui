@@ -5,9 +5,13 @@ export interface LeaveType {
     description: string;
     is_paid: boolean;
     is_deductible: boolean;
-    max_days: number;
+    max_days: number | null;
     carry_forward: boolean;
     is_active: boolean;
-    deleted_at: string;
+    deleted_at: string | null;
     row_version: number;
+
+    requires_attachment: boolean;
+    requires_reason: boolean;
+    requires_approval: boolean;
 }

@@ -1,174 +1,150 @@
 "use client";
 
-import React, { use, useEffect, useState } from "react";
-import { PanelMenu } from "primereact/panelmenu";
-import { MenuItem, MenuItemOptions } from "primereact/menuitem";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React, { useMemo } from "react";
+import { useParams, usePathname } from "next/navigation";
 
-interface Params {
-  id: string
-}
+type MenuItem = {
+  label: string;
+  href: string;
+};
 
-interface Props {
-  params: Promise<Params>;
-}
+type MenuSection = {
+  key: string;
+  label: string;
+  icon: string;
+  items: MenuItem[];
+};
 
-const VerticalTabview = ({ params }: Props) => {
-  const resolvedParams = use(params)
+const VerticalTabview = () => {
+  const params = useParams<{ id: string }>();
   const pathname = usePathname();
-  const [expandedKeys, setExpandedKeys] = useState<any>({});
+  const employeeId = params?.id ?? "";
 
-  useEffect(() => {
-    if (pathname) {
-      const segments = pathname.split('/').filter(Boolean)
-
-      if (segments[2] === 'general') {
-        setExpandedKeys({});
-        setExpandedKeys({ general: true, time: false, payroll: false });
-        return;
-      }
-
-      if (segments[2] === 'time') {
-        setExpandedKeys({});
-        setExpandedKeys({ general: false, time: true, payroll: false });
-        return;
-      }
-
-      if (segments[2] === 'payroll') {
-        setExpandedKeys({});
-        setExpandedKeys({ general: false, time: false, payroll: true });
-        return;
-      }
-    }
+  const activeGroup = useMemo(() => {
+    const segments = pathname?.split("/").filter(Boolean) ?? [];
+    return segments[2] ?? "general";
   }, [pathname]);
 
-  const itemRenderer = (item: MenuItem, options: MenuItemOptions) => {
-    // @ts-expect-error: rightIcon is used for custom rendering, not part of MenuItem
-    const rightIcon = item.rightIcon;
-
-    return (
-      <>
-        {item.url && (
-          <>
-            <Link href={item.url}>
-              <div
-                className="flex align-items-center justify-between px-3 py-2 cursor-pointer"
-                onClick={options.onClick}
-              >
-                <div className="gap-2">
-                  <span className={`${item.icon} text-primary`} />
-                  <span className={`mx-2 ${item.items && "font-semibold"}`}>
-                    {item.label}
-                  </span>
-                </div>
-                {rightIcon && (
-                  <span className={`${rightIcon} text-primary justify-self-end`} />
-                )}
-              </div>
-            </Link>
-          </>
-        )}
-
-        {!item.url && (
-          <>
-            <div
-              className="flex align-items-center justify-between px-3 py-2 cursor-pointer"
-              onClick={options.onClick}
-            >
-              <div className="gap-2">
-                <span className={`${item.icon} text-primary`} />
-                <span className={`mx-2 ${item.items && "font-semibold"}`}>
-                  {item.label}
-                </span>
-              </div>
-              {rightIcon && (
-                <span className={`${rightIcon} text-primary justify-self-end`} />
-              )}
-            </div>
-
-          </>
-        )}
-      </>
-    );
-  };
-
-
-  const items = [
+  const sections: MenuSection[] = [
     {
-      key: 'general',
-      label: 'General',
-      icon: 'pi pi-user',
-      rightIcon: 'pi pi-angle-down',
-      template: itemRenderer,
+      key: "general",
+      label: "General",
+      icon: "pi pi-user",
       items: [
         {
-          label: 'Personal',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/general/personal`,
+          label: "Personal",
+          href: `/employees/${employeeId}/general/personal`,
         },
         {
-          label: 'Employment',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/general/employment`,
+          label: "Employment",
+          href: `/employees/${employeeId}/general/employment`,
         },
         {
-          label: 'Education & Experience',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/general/education`,
+          label: "Education & Experience",
+          href: `/employees/${employeeId}/general/education`,
         },
-      ]
+      ],
     },
     {
-      key: 'time',
-      label: 'Time Management',
-      icon: 'pi pi-calendar-clock',
-      rightIcon: 'pi pi-angle-down',
-      template: itemRenderer,
+      key: "time",
+      label: "Time Management",
+      icon: "pi pi-calendar-clock",
       items: [
         {
-          label: 'Attendance',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/time/attendance`,
+          label: "Attendance",
+          href: `/employees/${employeeId}/time/attendance`,
         },
         {
-          label: 'Overtime',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/time/overtime`,
+          label: "Overtime",
+          href: `/employees/${employeeId}/time/overtime`,
         },
         {
-          label: 'Leave',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/time/leave`,
-        }
-      ]
+          label: "Leave",
+          href: `/employees/${employeeId}/time/leave`,
+        },
+      ],
     },
     {
-      key: 'payroll',
-      label: 'Payroll',
-      icon: 'pi pi-money-bill',
-      rightIcon: 'pi pi-angle-down',
-      template: itemRenderer,
+      key: "payroll",
+      label: "Payroll",
+      icon: "pi pi-money-bill",
       items: [
         {
-          label: 'Income Component',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/payroll/income-component`,
+          label: "Income Component",
+          href: `/employees/${employeeId}/payroll/income-component`,
         },
         {
-          label: 'Deduction Component',
-          template: itemRenderer,
-          url: `/employees/${resolvedParams.id}/payroll/deduction-component`,
+          label: "Deduction Component",
+          href: `/employees/${employeeId}/payroll/deduction-component`,
         },
-      ]
-    }
+      ],
+    },
   ];
 
   return (
-    <div className="card flex justify-content-center">
-      <PanelMenu model={items} className="w-full md:w-20rem" expandedKeys={expandedKeys} onExpandedKeysChange={setExpandedKeys} />
-    </div>
+    <nav className="flex min-w-0 flex-col gap-4" aria-label="Employee detail navigation">
+      {sections.map((section) => {
+        const isSectionActive = activeGroup === section.key;
+
+        return (
+          <section
+            key={section.key}
+            className={`rounded-2xl border p-3 transition ${isSectionActive
+              ? "border-blue-200 bg-blue-50/50"
+              : "border-slate-200 bg-slate-50/70"
+              }`}
+          >
+            <div className="mb-2 flex items-center gap-2 px-1">
+              <span
+                className={`${section.icon} ${isSectionActive ? "text-blue-600" : "text-slate-500"
+                  }`}
+              />
+              <h3 className="text-sm font-semibold text-slate-900">
+                {section.label}
+              </h3>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              {section.items.map((item) => {
+                const isActive = pathname === item.href;
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`group relative flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${isActive
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-700 hover:bg-white hover:text-slate-900"
+                      }`}
+                  >
+                    <span
+                      className={`shrink-0 rounded-full ${isActive
+                        ? "h-2 w-2 bg-white"
+                        : "h-1.5 w-1.5 bg-slate-300 group-hover:bg-slate-400"
+                        }`}
+                    />
+
+                    <span
+                      className={`min-w-0 break-words ${isActive ? "font-semibold" : "font-medium"
+                        }`}
+                    >
+                      {item.label}
+                    </span>
+
+                    {isActive && (
+                      <span className="ml-auto shrink-0 pi pi-angle-right text-xs text-white" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </nav>
   );
-}
+};
 
 export default VerticalTabview;

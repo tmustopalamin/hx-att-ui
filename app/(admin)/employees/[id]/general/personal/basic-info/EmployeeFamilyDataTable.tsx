@@ -1,511 +1,516 @@
 "use client";
 
+import {
+    createEmployeeFamily,
+    deleteEmployeeFamily,
+    EmployeeFamilyPayload,
+    getEmployeeFamilies,
+    getGenderOptions,
+    getMaritalOptions,
+    getRelationshipOptions,
+    updateEmployeeFamily,
+} from "@/app/services/employee-general-service";
+import {
+    EmployeeFamilyRow,
+    OptionItem,
+} from "@/app/types/employee-general";
+import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
-import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
+import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
-import { Toast } from "primereact/toast";
-import React, { useEffect, useRef, useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-
-type EmployeeFamily = {
-    id: number;
-    employee_id: number;
-    name: string;
-    relationship_id: number;
-    dob: string;
-    marital_status: string;
-    gender_id: number;
-    job: string;
-    phone1: string;
-    phone2: string;
-    relationship_name?: string;
-    marital_name?: string;
-    gender_name?: string;
-};
+import React, { useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 
 type FormData = {
-    employee_id: number;
     name: string;
-    relationship: number;
-    dob: string;
+    relationship_id: number | null;
+    dob: Date | null;
     marital_status: string;
-    gender: number;
+    gender_id: number | null;
     job: string;
     phone1: string;
     phone2: string;
+    is_active: boolean;
 };
 
-const EmployeeFamilyDataTable = () => {
-    const params = useParams();
-    const id = params.id;
+const getBody = () => document.body;
 
-    const toast = useRef<Toast>(null!);
-    const [data, setData] = useState<EmployeeFamily[]>([]);
-    const [dataRelationship, setDataRelationship] = useState([]);
-    const [dataGender, setDataGender] = useState([]);
-    const [dataMarital, setDataMarital] = useState([]);
-    const [isAddNew, setIsAddNew] = useState(false);
-    const [tableLoading, setTableLoading] = useState(false);
-    const [globalFilterValue, setGlobalFilterValue] = useState("");
-    const [filter, setFilter] = useState({
-        global: { value: "", matchMode: FilterMatchMode.CONTAINS },
-    });
+const EmployeeFamilyDataTable = () => {
+    const dispatch = useDispatch();
+    const params = useParams();
+    const employeeId = Number(params.id);
+
+    const [loading, setLoading] = useState(true);
     const [visible, setVisible] = useState(false);
-    const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-    const { handleSubmit, setFocus, control, reset, setValue } = useForm<FormData>();
-    const [selectedId, setSelectedId] = useState(0);
+    const [isAddMode, setIsAddMode] = useState(true);
+    const [rows, setRows] = useState<EmployeeFamilyRow[]>([]);
+    const [selectedRow, setSelectedRow] = useState<EmployeeFamilyRow | null>(null);
+
+    const [relationships, setRelationships] = useState<OptionItem[]>([]);
+    const [genders, setGenders] = useState<OptionItem[]>([]);
+    const [maritals, setMaritals] = useState<OptionItem[]>([]);
+
+    const { control, handleSubmit, reset, setValue } = useForm<FormData>({
+        defaultValues: {
+            name: "",
+            relationship_id: null,
+            dob: null,
+            marital_status: "",
+            gender_id: null,
+            job: "",
+            phone1: "",
+            phone2: "",
+            is_active: true,
+        },
+    });
+
+    const activeRelationships = useMemo(
+        () => relationships.filter((item) => item.is_active !== false),
+        [relationships]
+    );
+
+    const activeGenders = useMemo(
+        () => genders.filter((item) => item.is_active !== false),
+        [genders]
+    );
+
+    const activeMaritals = useMemo(
+        () => maritals.filter((item) => item.is_active !== false),
+        [maritals]
+    );
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [familyRows, relationshipList, genderList, maritalList] =
+                await Promise.all([
+                    getEmployeeFamilies(employeeId),
+                    getRelationshipOptions(),
+                    getGenderOptions(),
+                    getMaritalOptions(),
+                ]);
+
+            setRows(familyRows);
+            setRelationships(relationshipList);
+            setGenders(genderList);
+            setMaritals(maritalList);
+        } catch (err: unknown) {
+            if (isResponseTypeError(err)) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "error",
+                        detail: getErrorMessage(err, "message"),
+                    })
+                );
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        document.title = "Family Data";
-        getDataRelationship();
-        getDataGender();
-        getDataMarital();
-        getData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        void loadData();
+    }, [employeeId]);
 
-    const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        const _filters = { ...filter };
-        _filters["global"].value = value;
-        setFilter(_filters);
-        setGlobalFilterValue(value);
-    };
-
-    const getData = () => {
-        setTableLoading(true);
-        fetch(`http://localhost:3050/api/employees/${id}/family-data`, { credentials: 'include' })
-            .then((res) => res.json())
-            .then((data) => {
-                setData(data);
-                setTableLoading(false);
-            });
-    };
-
-    const getDataRelationship = () => {
-        fetch("http://localhost:3050/relationship")
-            .then((res) => res.json())
-            .then((data) => setDataRelationship(data));
-    };
-
-    const getDataGender = () => {
-        fetch("http://localhost:3050/gender")
-            .then((res) => res.json())
-            .then((data) => setDataGender(data));
-    };
-
-    const getDataMarital = () => {
-        fetch("http://localhost:3050/marital")
-            .then((res) => res.json())
-            .then((data) => setDataMarital(data));
-    };
-
-    const onClickNew = () => {
-        setIsAddNew(true);
+    const openNew = () => {
+        setIsAddMode(true);
+        setSelectedRow(null);
+        reset({
+            name: "",
+            relationship_id: null,
+            dob: null,
+            marital_status: "",
+            gender_id: null,
+            job: "",
+            phone1: "",
+            phone2: "",
+            is_active: true,
+        });
         setVisible(true);
-        setPopupHeaderTitle("New Data");
-        reset();
     };
 
-    const onClickUpdate = (rowData: EmployeeFamily) => {
+    const openEdit = (row: EmployeeFamilyRow) => {
+        setIsAddMode(false);
+        setSelectedRow(row);
+        setValue("name", row.name);
+        setValue("relationship_id", row.relationship_id);
+        setValue("dob", row.dob ? dayjs(row.dob).toDate() : null);
+        setValue("marital_status", row.marital_status);
+        setValue("gender_id", row.gender_id);
+        setValue("job", row.job ?? "");
+        setValue("phone1", row.phone1 ?? "");
+        setValue("phone2", row.phone2 ?? "");
+        setValue("is_active", row.is_active);
         setVisible(true);
-        setIsAddNew(false);
-        setPopupHeaderTitle("Update Data");
-        setSelectedId(rowData.id);
-        setValue("name", rowData.name);
-        setValue("relationship", rowData.relationship_id);
-        setValue("dob", dayjs(rowData.dob).format("DD-MM-YYYY"));
-        setValue("marital_status", rowData.marital_status);
-        setValue("gender", rowData.gender_id);
-        setValue("job", rowData.job);
-        setValue("phone1", rowData.phone1);
-        setValue("phone2", rowData.phone2);
     };
 
-    const actionColumnBody = (rowData: EmployeeFamily) => (
+    const onSubmit = async (data: FormData) => {
+        const payload: EmployeeFamilyPayload = {
+            name: data.name,
+            relationship_id: Number(data.relationship_id),
+            dob: data.dob ? dayjs(data.dob).format("YYYY-MM-DD") : "",
+            marital_status: data.marital_status,
+            gender_id: Number(data.gender_id),
+            job: data.job || null,
+            phone1: data.phone1 || null,
+            phone2: data.phone2 || null,
+            is_active: data.is_active,
+        };
+
+        try {
+            if (isAddMode) {
+                await createEmployeeFamily(employeeId, payload);
+            } else if (selectedRow) {
+                await updateEmployeeFamily(
+                    employeeId,
+                    selectedRow.id,
+                    selectedRow.row_version,
+                    payload
+                );
+            }
+
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: "success",
+                    summary: "success",
+                    detail: isAddMode
+                        ? "Family data created successfully"
+                        : "Family data updated successfully",
+                })
+            );
+
+            setVisible(false);
+            reset();
+            await loadData();
+        } catch (err: unknown) {
+            if (isResponseTypeError(err)) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "error",
+                        detail: getErrorMessage(err, "message"),
+                    })
+                );
+            } else if (err instanceof Error) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "error",
+                        detail: err.message,
+                    })
+                );
+            }
+        }
+    };
+
+    const onDelete = (row: EmployeeFamilyRow) => {
+        confirmDialog({
+            message: "Do you want to delete this family record?",
+            header: "Delete Confirmation",
+            icon: "pi pi-info-circle",
+            acceptClassName: "p-button-danger",
+            accept: async () => {
+                try {
+                    await deleteEmployeeFamily(employeeId, row.id, row.row_version);
+                    dispatch(
+                        showToast({
+                            visible: true,
+                            severity: "success",
+                            summary: "success",
+                            detail: "Family data deleted successfully",
+                        })
+                    );
+                    await loadData();
+                } catch (err: unknown) {
+                    if (isResponseTypeError(err)) {
+                        dispatch(
+                            showToast({
+                                visible: true,
+                                severity: "error",
+                                summary: "error",
+                                detail: getErrorMessage(err, "message"),
+                            })
+                        );
+                    }
+                }
+            },
+        });
+    };
+
+    const actionBody = (row: EmployeeFamilyRow) => (
         <div className="flex justify-center gap-2">
             <Button
                 rounded
                 size="small"
-                tooltip="Delete"
-                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-                severity="danger"
-                icon="pi pi-trash"
-                onClick={() => onClickDelete(rowData)}
+                icon="pi pi-pencil"
+                severity="help"
+                onClick={() => openEdit(row)}
             />
             <Button
                 rounded
                 size="small"
-                tooltip="Update"
-                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-                severity="help"
-                icon="pi pi-pencil"
-                onClick={() => onClickUpdate(rowData)}
+                icon="pi pi-trash"
+                severity="danger"
+                onClick={() => onDelete(row)}
             />
         </div>
     );
 
-    const onClickDelete = (data: EmployeeFamily) => {
-        confirmDialog({
-            message: "Do you want to delete this record?",
-            header: "Delete Confirmation",
-            icon: "pi pi-info-circle",
-            defaultFocus: "reject",
-            acceptClassName: "p-button-danger ml-3",
-            accept: () => handleSubmitDelete(data.id),
-        });
-    };
-
-    const handleSubmitDelete = async (id: number) => {
-        try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/family-data`, {
-                method: "DELETE",
-                credentials: 'include',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id }),
-            });
-            if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
-            getData();
-            toast.current?.show({ severity: "success", summary: "Success", detail: "delete success", life: 3000 });
-        } catch (err) {
-            toast.current?.show({
-                severity: "error",
-                summary: "Error",
-                detail: "Failed to delete the record.",
-                life: 3000,
-            });
-        }
-    };
-
-    const handleSubmitNew = async (data: FormData) => {
-        const newData: EmployeeFamily = {
-            id: 0,
-            employee_id: Number(id),
-            name: data.name,
-            relationship_id: data.relationship,
-            dob: dayjs(data.dob).format("YYYY-MM-DD"),
-            marital_status: data.marital_status,
-            gender_id: data.gender,
-            job: data.job,
-            phone1: data.phone1,
-            phone2: data.phone2,
-        };
-        try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/family-data`, {
-                method: "POST",
-                credentials: 'include',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(newData),
-            });
-            if (!res.ok) throw new Error();
-            getData();
-            toast.current?.show({ severity: "success", summary: "Success", detail: "Add success", life: 3000 });
-            setVisible(false);
-        } catch {
-            toast.current?.show({ severity: "error", summary: "Error", detail: "Add failed", life: 3000 });
-        }
-    };
-
-    const handleSubmitUpdate = async (data: FormData) => {
-        const updatedData = {
-            id: selectedId,
-            employee_id: Number(id),
-            name: data.name,
-            relationship_id: data.relationship,
-            dob: dayjs(data.dob).format("YYYY-MM-DD"),
-            marital_status: data.marital_status,
-            gender_id: data.gender,
-            job: data.job,
-            phone1: data.phone1,
-            phone2: data.phone2,
-        };
-        try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/family-data`, {
-                method: "PUT",
-                credentials: 'include',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(updatedData),
-            });
-            if (!res.ok) throw new Error();
-            getData();
-            toast.current?.show({ severity: "success", summary: "Success", detail: "update success", life: 3000 });
-            setVisible(false);
-        } catch {
-            toast.current?.show({ severity: "error", summary: "Error", detail: "Update failed", life: 3000 });
-        }
-    };
-
-    const onSubmit = (data: FormData) => (isAddNew ? handleSubmitNew(data) : handleSubmitUpdate(data));
-
-    const footerContent = (
-        <div>
-            <Button label="Cancel" icon="pi pi-times" onClick={() => setVisible(false)} className="p-button-text" />
-            <Button label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" type="submit" />
-        </div>
-    );
-
-    const getBody = () => document.body;
-
-    const renderTableHeader = () => {
-        return (
-            <></>
-        );
-    };
-    const header = renderTableHeader();
-
     return (
         <>
-            <Toast ref={toast} position="top-center" />
             <ConfirmDialog />
-            <div className="flex flex-col gap-5 p-3">
-                <div className="flex items-center justify-between">
-                    <Button label="New" icon="pi pi-plus" size="small" onClick={onClickNew} />
-                    <IconField iconPosition="left">
-                        <InputIcon className="pi pi-search" />
-                        <InputText
-                            className="p-inputtext-sm"
-                            value={globalFilterValue}
-                            onChange={onGlobalFilterChange}
-                            placeholder="Keyword Search"
-                        />
-                    </IconField>
+
+            <div className="flex flex-col gap-6">
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h5 className="text-xl font-semibold text-slate-900">Family</h5>
+                        <p className="text-sm text-slate-500">
+                            Manage employee spouse, child, or family information
+                        </p>
+                    </div>
+
+                    <Button
+                        type="button"
+                        label="New Family"
+                        icon="pi pi-plus"
+                        onClick={openNew}
+                    />
                 </div>
 
-                {/* ✅ DataTable Section */}
                 <DataTable
-                    value={data}
+                    value={rows}
+                    dataKey="id"
+                    loading={loading}
                     stripedRows
                     paginator
                     rows={5}
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    dataKey="id"
-                    globalFilterFields={["name"]}
-                    emptyMessage="No data found."
-                    filters={filter}
-                    loading={tableLoading}
+                    rowsPerPageOptions={[5, 10, 25]}
+                    emptyMessage="No family data found."
                     scrollable
-                    header={header}
-                    scrollHeight="400px"
-                    tableStyle={{ minWidth: "80rem" }}
-                    currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 >
                     <Column
                         header="#"
-                        body={(data, options) => options.rowIndex + 1}
-                        frozen
-                        alignFrozen="left"
-                        style={{ width: "3rem" }}
+                        body={(_, options) => options.rowIndex + 1}
+                        style={{ width: "56px" }}
                     />
                     <Column field="name" header="Name" />
                     <Column field="relationship_name" header="Relationship" />
-                    <Column field="dob" header="Birthday" />
-                    <Column field="marital_name" header="Marital Status" />
+                    <Column
+                        header="Birth Date"
+                        body={(row: EmployeeFamilyRow) =>
+                            row.dob ? dayjs(row.dob).format("DD-MM-YYYY") : "-"
+                        }
+                    />
                     <Column field="gender_name" header="Gender" />
+                    <Column field="marital_name" header="Marital Status" />
                     <Column field="job" header="Job" />
-                    <Column field="phone1" header="Phone Number 1" />
-                    <Column field="phone2" header="Phone Number 2" />
+                    <Column field="phone1" header="Phone 1" />
+                    <Column field="phone2" header="Phone 2" />
+                    <Column
+                        field="is_active"
+                        header="Active"
+                        body={(row: EmployeeFamilyRow) => (row.is_active ? "Yes" : "No")}
+                    />
                     <Column
                         header="Action"
-                        body={actionColumnBody}
+                        body={actionBody}
                         frozen
                         alignFrozen="right"
-                        style={{ width: "120px", textAlign: "center", backgroundColor: "white" }}
+                        className="bg-white"
+                        headerClassName="bg-white"
                     />
                 </DataTable>
             </div>
 
-            {/* ✅ Dialog Form Section */}
-            <form onSubmit={handleSubmit(onSubmit)}>
-                <Dialog
-                    header={popupHeaderTitle}
-                    visible={visible}
-                    style={{ width: "50vw" }}
-                    onHide={() => {
-                        if (!visible) return;
-                        setVisible(false);
-                        reset();
-                    }}
-                    footer={footerContent}
-                    onShow={() => setFocus("name")}
-                >
-                    <div className="flex flex-col gap-5">
-                        {/* --- Name --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="name">Name</label>
-                            <Controller
-                                name="name"
-                                control={control}
-                                rules={{ required: "Name is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <InputText id="name" {...field} className={fieldState.invalid ? "p-invalid" : ""} />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        {/* --- Relationship --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="relationship">Relationship</label>
-                            <Controller
-                                name="relationship"
-                                control={control}
-                                rules={{ required: "Relationship is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <Dropdown
-                                            id="relationship"
-                                            appendTo={getBody}
-                                            value={field.value}
-                                            options={dataRelationship}
-                                            onChange={(e) => field.onChange(e.value)}
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            placeholder="Select a relationship"
-                                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                                        />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        {/* --- DOB --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="dob">Date Of Birth</label>
-                            <Controller
-                                name="dob"
-                                control={control}
-                                rules={{ required: "Birth Date is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <Calendar
-                                            id="dob"
-                                            dateFormat="dd-mm-yy"
-                                            showIcon
-                                            appendTo={() => document.body}
-                                            {...field}
-                                            value={field.value ? dayjs(field.value, "DD-MM-YYYY").toDate() : null}
-                                            onChange={(e) => field.onChange(e.value)}
-                                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                                        />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        {/* --- Marital --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="marital_status">Marital Status</label>
-                            <Controller
-                                name="marital_status"
-                                control={control}
-                                rules={{ required: "Marital Status is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <Dropdown
-                                            id="marital_status"
-                                            appendTo={getBody}
-                                            value={field.value}
-                                            options={dataMarital}
-                                            onChange={(e) => field.onChange(e.value)}
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            placeholder="Select marital status"
-                                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                                        />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        {/* --- Gender --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="gender">Gender</label>
-                            <Controller
-                                name="gender"
-                                control={control}
-                                rules={{ required: "Gender is required" }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <Dropdown
-                                            id="gender"
-                                            appendTo={getBody}
-                                            value={field.value}
-                                            options={dataGender}
-                                            onChange={(e) => field.onChange(e.value)}
-                                            optionLabel="name"
-                                            optionValue="id"
-                                            placeholder="Select gender"
-                                            className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                                        />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        {/* --- Job --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="job">Job</label>
-                            <Controller
-                                name="job"
-                                control={control}
-                                render={({ field }) => (
-                                    <InputText id="job" {...field} placeholder="Enter job" className="w-full" />
-                                )}
-                            />
-                        </div>
-
-                        {/* --- Phone --- */}
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="phone1">Phone 1</label>
-                            <Controller
-                                name="phone1"
-                                control={control}
-                                render={({ field }) => (
-                                    <InputText id="phone1" {...field} placeholder="Enter phone 1" className="w-full" />
-                                )}
-                            />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="phone2">Phone 2</label>
-                            <Controller
-                                name="phone2"
-                                control={control}
-                                render={({ field }) => (
-                                    <InputText id="phone2" {...field} placeholder="Enter phone 2" className="w-full" />
-                                )}
-                            />
-                        </div>
+            <Dialog
+                header={isAddMode ? "New Family Data" : "Edit Family Data"}
+                visible={visible}
+                style={{ width: "42rem" }}
+                onHide={() => setVisible(false)}
+                footer={
+                    <div className="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            className="p-button-text"
+                            onClick={() => setVisible(false)}
+                        />
+                        <Button
+                            type="button"
+                            label={isAddMode ? "Submit" : "Save"}
+                            icon="pi pi-check"
+                            onClick={handleSubmit(onSubmit)}
+                        />
                     </div>
-                </Dialog>
-            </form>
+                }
+            >
+                <div className="grid grid-cols-1 gap-4 pt-2">
+                    <Controller
+                        name="name"
+                        control={control}
+                        rules={{ required: "Name is required" }}
+                        render={({ field, fieldState }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_name">Name</label>
+                                <InputText
+                                    id="family_name"
+                                    {...field}
+                                    className={fieldState.invalid ? "p-invalid" : ""}
+                                />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="relationship_id"
+                        control={control}
+                        rules={{ required: "Relationship is required" }}
+                        render={({ field, fieldState }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="relationship_id">Relationship</label>
+                                <Dropdown
+                                    id="relationship_id"
+                                    appendTo={getBody}
+                                    value={field.value}
+                                    options={activeRelationships}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Select relationship"
+                                    className={fieldState.invalid ? "p-invalid" : ""}
+                                />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="dob"
+                        control={control}
+                        rules={{ required: "Birth date is required" }}
+                        render={({ field, fieldState }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_dob">Birth Date</label>
+                                <Calendar
+                                    id="family_dob"
+                                    appendTo={getBody}
+                                    dateFormat="dd-mm-yy"
+                                    showIcon
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
+                                />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="gender_id"
+                        control={control}
+                        rules={{ required: "Gender is required" }}
+                        render={({ field, fieldState }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_gender_id">Gender</label>
+                                <Dropdown
+                                    id="family_gender_id"
+                                    appendTo={getBody}
+                                    value={field.value}
+                                    options={activeGenders}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Select gender"
+                                    className={fieldState.invalid ? "p-invalid" : ""}
+                                />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="marital_status"
+                        control={control}
+                        rules={{ required: "Marital status is required" }}
+                        render={({ field, fieldState }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_marital_status">Marital Status</label>
+                                <Dropdown
+                                    id="family_marital_status"
+                                    appendTo={getBody}
+                                    value={field.value}
+                                    options={activeMaritals}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Select marital status"
+                                    className={fieldState.invalid ? "p-invalid" : ""}
+                                />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="job"
+                        control={control}
+                        render={({ field }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_job">Job</label>
+                                <InputText id="family_job" {...field} />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="phone1"
+                        control={control}
+                        render={({ field }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_phone1">Phone 1</label>
+                                <InputText id="family_phone1" {...field} />
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="phone2"
+                        control={control}
+                        render={({ field }) => (
+                            <div className="flex flex-col gap-2">
+                                <label htmlFor="family_phone2">Phone 2</label>
+                                <InputText id="family_phone2" {...field} />
+                            </div>
+                        )}
+                    />
+
+                    <div className="flex items-center gap-2">
+                        <Controller
+                            name="is_active"
+                            control={control}
+                            render={({ field }) => (
+                                <Checkbox
+                                    inputId="family_is_active"
+                                    checked={field.value}
+                                    onChange={(e) => field.onChange(!!e.checked)}
+                                />
+                            )}
+                        />
+                        <label htmlFor="family_is_active">Active</label>
+                    </div>
+                </div>
+            </Dialog>
         </>
     );
 };

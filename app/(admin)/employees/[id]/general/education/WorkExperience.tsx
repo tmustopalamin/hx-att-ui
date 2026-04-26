@@ -1,459 +1,474 @@
-"use client"
+"use client";
 
-import dayjs from 'dayjs'
-import { useParams } from 'next/navigation'
-import { FilterMatchMode } from 'primereact/api'
-import { Button } from 'primereact/button'
-import { Calendar } from 'primereact/calendar'
-import { Column } from 'primereact/column'
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog'
-import { DataTable } from 'primereact/datatable'
-import { Dialog } from 'primereact/dialog'
-import { IconField } from 'primereact/iconfield'
-import { InputIcon } from 'primereact/inputicon'
-import { InputSwitch } from 'primereact/inputswitch'
-import { InputText } from 'primereact/inputtext'
-import { Toast } from 'primereact/toast'
-import React, { useEffect, useRef, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-
-export type FormalEducationType = {
-    id: number;
-    employee_id: number;
-    company: string;
-    position: string;
-    start_date: string
-    end_date: string;
-    is_active: boolean;
-}
+import {
+    createEmployeeWorkExperience,
+    deleteEmployeeWorkExperience,
+    getEmployeeWorkExperiences,
+    updateEmployeeWorkExperience,
+} from "@/app/services/employee-general-service";
+import {
+    EmployeeWorkExperienceRow,
+} from "@/app/types/employee-general";
+import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
+import dayjs from "dayjs";
+import { useParams } from "next/navigation";
+import { Button } from "primereact/button";
+import { Calendar } from "primereact/calendar";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { InputSwitch } from "primereact/inputswitch";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
 
 type FormData = {
-    employee_id: number;
     company: string;
     position: string;
-    start_date: string
-    end_date: string;
+    start_date: Date | null;
+    end_date: Date | null;
     is_active: boolean;
 };
 
-const EmployeeWorkExperienceDataTable = () => {
-    const params = useParams();
-    const id = params.id;
+type EmployeeWorkExperiencePayload = {
+    company: string;
+    position: string;
+    start_date: string;
+    end_date?: string | null;
+    is_active: boolean;
+};
 
-    const toast = useRef<Toast>(null!);
-    const [data, setData] = useState([]);
-    const [isAddNew, setIsAddNew] = useState(false);
-    const [tableLoading, setTableLoading] = useState(false);
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
-    const [filters, setFilters] = useState({
-        global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    });
+const getBody = () => document.body;
+
+const emptyFormValues: FormData = {
+    company: "",
+    position: "",
+    start_date: null,
+    end_date: null,
+    is_active: true,
+};
+
+const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
+const helperTextClass = "mt-1 text-xs text-slate-500";
+
+const WorkExperience = () => {
+    const dispatch = useDispatch();
+    const params = useParams();
+    const employeeId = Number(params.id);
+
+    const [loading, setLoading] = useState(true);
     const [visible, setVisible] = useState(false);
-    const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-    const { handleSubmit, setFocus, control, reset, setValue } = useForm<FormData>()
-    const [selectedId, setSelectedId] = useState(0);
+    const [isAddMode, setIsAddMode] = useState(true);
+    const [rows, setRows] = useState<EmployeeWorkExperienceRow[]>([]);
+    const [selectedRow, setSelectedRow] =
+        useState<EmployeeWorkExperienceRow | null>(null);
+
+    const { control, handleSubmit, reset } = useForm<FormData>({
+        defaultValues: emptyFormValues,
+    });
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const result = await getEmployeeWorkExperiences(employeeId);
+            setRows(result);
+        } catch (err: unknown) {
+            if (isResponseTypeError(err)) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "Error",
+                        detail: getErrorMessage(err, "message"),
+                    })
+                );
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        document.title = 'Employee Work Experience';
+        void loadData();
+    }, [employeeId]);
 
-        getData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        const _filters = { ...filters };
-
-        _filters['global'].value = value;
-
-        setFilters(_filters);
-        setGlobalFilterValue(value);
+    const hideDialog = () => {
+        setVisible(false);
+        setSelectedRow(null);
+        reset(emptyFormValues);
     };
 
-    const getData = () => {
-        setTableLoading(true);
-        setData([])
-
-        fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
-            method: "GET",
-            credentials: 'include',
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setData(data);
-                setTableLoading(false);
-            });
-    };
-
-    const renderTableHeader = () => {
-        return (
-            <></>
-        );
-    };
-    const header = renderTableHeader();
-
-    const onClickNew = () => {
-        setIsAddNew(true);
+    const openNew = () => {
+        setIsAddMode(true);
+        setSelectedRow(null);
+        reset(emptyFormValues);
         setVisible(true);
-        setPopupHeaderTitle("New Data");
-    }
+    };
 
-    const footerContent = (
-        <div>
-            <Button label="Cancel" icon="pi pi-times" onClick={() => setVisible(false)} className="p-button-text" />
-            <Button label={isAddNew ? 'Submit' : 'Save'} icon="pi pi-check" type='submit' />
-        </div>
-    );
+    const openEdit = (row: EmployeeWorkExperienceRow) => {
+        setIsAddMode(false);
+        setSelectedRow(row);
 
-    const onClickUpdate = (rowData: FormalEducationType) => {
+        reset({
+            company: row.company,
+            position: row.position,
+            start_date: row.start_date ? dayjs(row.start_date).toDate() : null,
+            end_date: row.end_date ? dayjs(row.end_date).toDate() : null,
+            is_active: row.is_active,
+        });
+
         setVisible(true);
-        setIsAddNew(false);
-        setPopupHeaderTitle('Update Data');
+    };
 
-        setSelectedId(rowData.id);
-        setValue('company', rowData.company)
-        setValue('position', rowData.position)
-        setValue('start_date', rowData.start_date)
-        setValue('end_date', rowData.end_date)
-        setValue('is_active', rowData.is_active)
-    }
-
-    const actionColumnBody = (rowData: FormalEducationType) => (
-        <div className="flex justify-center gap-2">
-            <Button
-                rounded
-                size="small"
-                tooltip="Delete"
-                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-                severity="danger"
-                icon="pi pi-trash"
-                onClick={() => onClickDelete(rowData)}
-            />
-            <Button
-                rounded
-                size="small"
-                tooltip="Update"
-                tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-                severity="help"
-                icon="pi pi-pencil"
-                onClick={() => onClickUpdate(rowData)}
-            />
-        </div>
-    );
-
-    const handleSubmitDelete = async (id: number) => {
-        setSelectedId(id);
-
-        try {
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
-                method: "DELETE",
-                credentials: 'include',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ id: id }),
-            });
-
-            if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
-            const data_res = await res.json();
-            console.log('Deleted:', data_res);
-
-            setVisible(false);
-            reset();
-            getData();
-
-            toast.current?.show({ severity: 'success', summary: 'success', detail: 'delete success', life: 3000 });
-
-        } catch (err: unknown) {
-
-            toast.current?.show({ severity: 'error', summary: 'error', detail: 'Failed to delete the form. Please try again later' + err, life: 3000 });
-
-        }
-    }
-
-    const handleSubmitNew = async (data: FormData) => {
-        const newData: FormalEducationType = {
-            id: 0,
-            employee_id: Number(id),
-            company: data.company,
-            position: data.position,
-            start_date: dayjs(data.start_date).format("YYYY-MM-DD"),
-            end_date: dayjs(data.end_date).format("YYYY-MM-DD"),
+    const onSubmit = async (data: FormData) => {
+        const payload: EmployeeWorkExperiencePayload = {
+            company: data.company.trim(),
+            position: data.position.trim(),
+            start_date: data.start_date ? dayjs(data.start_date).format("YYYY-MM-DD") : "",
+            end_date: data.end_date ? dayjs(data.end_date).format("YYYY-MM-DD") : null,
             is_active: data.is_active,
-        }
+        };
 
         try {
-
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
-                method: "POST",
-                credentials: 'include',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(newData),
-            });
-
-            if (!res.ok) {
-                throw new Error(`HTTP error! Status: ${res.status}`);
+            if (isAddMode) {
+                await createEmployeeWorkExperience(employeeId, payload);
+            } else if (selectedRow) {
+                await updateEmployeeWorkExperience(
+                    employeeId,
+                    selectedRow.id,
+                    selectedRow.row_version,
+                    payload
+                );
             }
 
-            setVisible(false);
-            reset();
-            getData();
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: "success",
+                    summary: "Success",
+                    detail: isAddMode
+                        ? "Work experience created successfully"
+                        : "Work experience updated successfully",
+                })
+            );
 
-            toast.current?.show({ severity: 'success', summary: 'success', detail: 'add success', life: 3000 });
-
+            hideDialog();
+            await loadData();
         } catch (err: unknown) {
-
-            toast.current?.show({ severity: 'error', summary: 'error', detail: 'Failed to submit the form. Please try again later' + err, life: 3000 });
-
+            if (isResponseTypeError(err)) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "Error",
+                        detail: getErrorMessage(err, "message"),
+                    })
+                );
+            } else if (err instanceof Error) {
+                dispatch(
+                    showToast({
+                        visible: true,
+                        severity: "error",
+                        summary: "Error",
+                        detail: err.message,
+                    })
+                );
+            }
         }
-    }
-
-    const handleSubmitUpdate = async (data: FormData) => {
-
-        const updatedData: FormalEducationType = {
-            id: selectedId,
-            employee_id: Number(id),
-            company: data.company,
-            position: data.position,
-            start_date: dayjs(data.start_date).format("YYYY-MM-DD"),
-            end_date: dayjs(data.end_date).format("YYYY-MM-DD"),
-            is_active: data.is_active,
-        }
-
-        try {
-
-            const res = await fetch(`http://localhost:3050/api/employees/${id}/work-experience-data`, {
-                method: "PUT",
-                credentials: 'include',
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(updatedData),
-            });
-
-            if (!res.ok) throw new Error(`Failed to update: ${res.status}`);
-            const data_res = await res.json();
-            console.log('Updated:', data_res);
-
-            setVisible(false);
-            reset();
-            getData();
-
-            toast.current?.show({ severity: 'success', summary: 'success', detail: 'update success', life: 3000 });
-
-        } catch (err: unknown) {
-
-            toast.current?.show({ severity: 'error', summary: 'error', detail: 'Failed to update the form. Please try again later' + err, life: 3000 });
-
-        }
-    }
-
-    const onSubmit = (data: FormData) => {
-        console.log(data, 'hjasda');
-
-        if (isAddNew) {
-            handleSubmitNew(data);
-            return;
-        }
-
-        handleSubmitUpdate(data);
     };
 
-    const onClickDelete = (data: FormalEducationType) => {
+    const onDelete = (row: EmployeeWorkExperienceRow) => {
         confirmDialog({
-            message: 'Do you want to delete this record?',
-            header: 'Delete Confirmation',
-            icon: 'pi pi-info-circle',
-            defaultFocus: 'reject',
-            acceptClassName: "p-button-danger ml-3",
-            accept: () => {
-                handleSubmitDelete(data.id);
+            message: "Do you want to delete this work experience record?",
+            header: "Delete Confirmation",
+            icon: "pi pi-info-circle",
+            acceptClassName: "p-button-danger",
+            accept: async () => {
+                try {
+                    await deleteEmployeeWorkExperience(
+                        employeeId,
+                        row.id,
+                        row.row_version
+                    );
+                    dispatch(
+                        showToast({
+                            visible: true,
+                            severity: "success",
+                            summary: "Success",
+                            detail: "Work experience deleted successfully",
+                        })
+                    );
+                    await loadData();
+                } catch (err: unknown) {
+                    if (isResponseTypeError(err)) {
+                        dispatch(
+                            showToast({
+                                visible: true,
+                                severity: "error",
+                                summary: "Error",
+                                detail: getErrorMessage(err, "message"),
+                            })
+                        );
+                    }
+                }
             },
-            reject: () => { },
         });
     };
 
+    const periodBodyTemplate = (row: EmployeeWorkExperienceRow) => {
+        const start = row.start_date
+            ? dayjs(row.start_date).format("DD MMM YYYY")
+            : "-";
+        const end = row.end_date ? dayjs(row.end_date).format("DD MMM YYYY") : "-";
+
+        return `${start} - ${end}`;
+    };
+
+    const activeBodyTemplate = (row: EmployeeWorkExperienceRow) => {
+        return row.is_active ? (
+            <Tag value="Active" severity="success" />
+        ) : (
+            <Tag value="Inactive" severity="secondary" />
+        );
+    };
+
+    const actionBodyTemplate = (row: EmployeeWorkExperienceRow) => {
+        return (
+            <div className="flex items-center justify-center gap-2">
+                <Button
+                    type="button"
+                    rounded
+                    icon="pi pi-pencil"
+                    severity="help"
+                    onClick={() => openEdit(row)}
+                    tooltip="Edit"
+                    tooltipOptions={{ position: "top" }}
+                />
+                <Button
+                    type="button"
+                    rounded
+                    icon="pi pi-trash"
+                    severity="danger"
+                    onClick={() => onDelete(row)}
+                    tooltip="Delete"
+                    tooltipOptions={{ position: "top" }}
+                />
+            </div>
+        );
+    };
+
+    const dialogFooter = (
+        <div className="flex justify-end gap-2">
+            <Button
+                type="button"
+                label="Cancel"
+                className="p-button-text"
+                onClick={hideDialog}
+            />
+            <Button
+                type="button"
+                label={isAddMode ? "Save" : "Update"}
+                icon="pi pi-check"
+                onClick={() => void handleSubmit(onSubmit)()}
+            />
+        </div>
+    );
+
     return (
         <>
-            <Toast ref={toast} position="top-center" />
             <ConfirmDialog />
-            <div className="flex flex-col gap-5 p-3">
-                <div className="flex items-center justify-between">
-                    <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
 
-                    <IconField iconPosition="left">
-                        <InputIcon className="pi pi-search" />
-                        <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-                    </IconField>
+            <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <h5 className="text-xl font-semibold text-slate-900">
+                            Work Experience
+                        </h5>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Manage previous company and professional experience records.
+                        </p>
+                    </div>
+
+                    <Button
+                        type="button"
+                        label="New"
+                        icon="pi pi-plus"
+                        onClick={openNew}
+                    />
                 </div>
 
                 <DataTable
-                    value={data}
-                    tableStyle={{ minWidth: "50rem" }}
+                    value={rows}
+                    dataKey="id"
+                    loading={loading}
                     stripedRows
                     paginator
                     rows={5}
-                    rowsPerPageOptions={[5, 10, 25, 50]}
-                    dataKey="id"
-                    globalFilterFields={['name']}
-                    emptyMessage="No data found."
-                    header={header}
-                    filters={filters}
+                    rowsPerPageOptions={[5, 10, 25]}
+                    emptyMessage="No work experience found."
                     scrollable
-                    currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                    loading={tableLoading}
+                    className="text-sm"
                 >
-                    <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
-                    <Column field="company" header="Company Name"></Column>
-                    <Column field="position" header="Position"></Column>
-                    <Column field="start_date" header="Start Date"></Column>
-                    <Column field="end_date" header="End Date"></Column>
-                    <Column header="Action" body={(rowData) => actionColumnBody(rowData)} frozen={true} alignFrozen='right' style={{ width: "120px", textAlign: "center", backgroundColor: "white" }}></Column>
+                    <Column
+                        header="#"
+                        body={(_, options) => options.rowIndex + 1}
+                        style={{ width: "60px" }}
+                    />
+                    <Column field="company" header="Company" />
+                    <Column field="position" header="Position" />
+                    <Column
+                        header="Period"
+                        body={periodBodyTemplate}
+                        style={{ minWidth: "180px" }}
+                    />
+                    <Column
+                        header="Active"
+                        body={activeBodyTemplate}
+                        style={{ minWidth: "110px" }}
+                    />
+                    <Column
+                        header="Action"
+                        body={actionBodyTemplate}
+                        frozen
+                        alignFrozen="right"
+                        className="bg-white"
+                        headerClassName="bg-white"
+                        style={{ minWidth: "140px" }}
+                    />
                 </DataTable>
             </div>
 
-            <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-                <Dialog
-                    header={popupHeaderTitle}
-                    visible={visible}
-                    style={{ width: '50vw' }}
-                    onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-                    footer={footerContent}
-                    onShow={() => {
-                        setFocus('company');
-                    }}
-                >
-                    <div className="flex flex-col gap-5">
-                        <div className="m-0 flex flex-col gap-2">
-                            <label htmlFor="company">Company</label>
-                            <Controller
-                                name="company"
-                                defaultValue=''
-                                control={control}
-                                rules={{
-                                    required: "company is required",
-                                    maxLength: { value: 50, message: "maximum 50 character" }
-                                }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <InputText
-                                            id="company"
-                                            {...field}
-                                            className={fieldState.invalid ? "p-invalid" : ""}
-                                        />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        <div className="m-0 flex flex-col gap-2">
-                            <label htmlFor="position">Position</label>
-                            <Controller
-                                name="position"
-                                defaultValue=''
-                                control={control}
-                                rules={{
-                                    required: "position is required",
-                                    maxLength: { value: 50, message: "maximum 50 character" }
-                                }}
-                                render={({ field, fieldState }) => (
-                                    <>
-                                        <InputText
-                                            id="position"
-                                            {...field}
-                                            className={fieldState.invalid ? "p-invalid" : ""}
-                                        />
-                                        {fieldState.error && (
-                                            <small className="font-bold p-error">{fieldState.error.message}</small>
-                                        )}
-                                    </>
-                                )}
-                            />
-                        </div>
-
-                        <div className="m-0 flex flex-col gap-2">
-                            <label htmlFor="start_date">Period</label>
-                            <div className="w-full flex flex-row gap-5">
-                                <Controller
-                                    name="start_date"
-                                    defaultValue=""
-                                    control={control}
-                                    rules={{
-                                        required: "start date is required",
-                                    }}
-                                    render={({ field, fieldState }) => (
-                                        <>
-                                            <Calendar
-                                                id="exp_date"
-                                                dateFormat='dd-mm-yy'
-                                                showIcon
-                                                appendTo={() => document.body}
-                                                {...field}
-                                                value={field.value ? dayjs(field.value, "DD-MM-YYYY").toDate() : null}
-                                                onChange={(e) => field.onChange(e.value)}
-                                                className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                                            />
-                                            {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                                        </>
-                                    )}
+            <Dialog
+                header={isAddMode ? "New Work Experience" : "Update Work Experience"}
+                visible={visible}
+                style={{ width: "48rem", maxWidth: "95vw" }}
+                onHide={hideDialog}
+                footer={dialogFooter}
+                breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+            >
+                <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
+                    <Controller
+                        name="company"
+                        control={control}
+                        rules={{ required: "Company is required" }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <label htmlFor="work_company" className={fieldLabelClass}>
+                                    Company
+                                </label>
+                                <InputText
+                                    id="work_company"
+                                    {...field}
+                                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                                    placeholder="Enter company name"
                                 />
+                                {fieldState.error && (
+                                    <small className="p-error">{fieldState.error.message}</small>
+                                )}
+                            </div>
+                        )}
+                    />
 
-                                <Controller
-                                    name="end_date"
-                                    defaultValue=""
-                                    control={control}
-                                    rules={{
-                                        required: "end date is required",
-                                    }}
-                                    render={({ field, fieldState }) => (
-                                        <>
-                                            <Calendar
-                                                id="end_date"
-                                                dateFormat='dd-mm-yy'
-                                                showIcon
-                                                appendTo={() => document.body}
-                                                {...field}
-                                                value={field.value ? dayjs(field.value, "DD-MM-YYYY").toDate() : null}
-                                                onChange={(e) => field.onChange(e.value)}
-                                                className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
-                                            />
-                                            {fieldState.error && <small className="font-bold">{fieldState.error.message}</small>}
-                                        </>
-                                    )}
+                    <Controller
+                        name="position"
+                        control={control}
+                        rules={{ required: "Position is required" }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <label htmlFor="work_position" className={fieldLabelClass}>
+                                    Position
+                                </label>
+                                <InputText
+                                    id="work_position"
+                                    {...field}
+                                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                                    placeholder="Enter position"
+                                />
+                                {fieldState.error && (
+                                    <small className="p-error">{fieldState.error.message}</small>
+                                )}
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="start_date"
+                        control={control}
+                        rules={{ required: "Start date is required" }}
+                        render={({ field, fieldState }) => (
+                            <div>
+                                <label htmlFor="work_start_date" className={fieldLabelClass}>
+                                    Start Date
+                                </label>
+                                <Calendar
+                                    id="work_start_date"
+                                    appendTo={getBody}
+                                    dateFormat="dd-mm-yy"
+                                    showIcon
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                                />
+                                {fieldState.error && (
+                                    <small className="p-error">{fieldState.error.message}</small>
+                                )}
+                            </div>
+                        )}
+                    />
+
+                    <Controller
+                        name="end_date"
+                        control={control}
+                        render={({ field }) => (
+                            <div>
+                                <label htmlFor="work_end_date" className={fieldLabelClass}>
+                                    End Date
+                                </label>
+                                <Calendar
+                                    id="work_end_date"
+                                    appendTo={getBody}
+                                    dateFormat="dd-mm-yy"
+                                    showIcon
+                                    value={field.value}
+                                    onChange={(e) => field.onChange(e.value)}
+                                    className="w-full"
                                 />
                             </div>
-                        </div>
+                        )}
+                    />
 
-                        <div className="m-0 flex flex-col gap-2">
-                            <label htmlFor="is_active">Active</label>
+                    <div className="md:col-span-2">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <Controller
                                 name="is_active"
                                 control={control}
-                                defaultValue={true}
                                 render={({ field }) => (
-                                    <InputSwitch
-                                        id="is_active"
-                                        checked={field.value}
-                                        onChange={(e) => field.onChange(e.value)}
-                                    />
+                                    <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-900">
+                                                Active
+                                            </p>
+                                            <p className={helperTextClass}>
+                                                Control whether this work experience record is still active.
+                                            </p>
+                                        </div>
+                                        <InputSwitch
+                                            checked={!!field.value}
+                                            onChange={(e) => field.onChange(e.value)}
+                                        />
+                                    </div>
                                 )}
                             />
                         </div>
-
                     </div>
-                </Dialog>
-            </form>
+                </div>
+            </Dialog>
         </>
-    )
-}
+    );
+};
 
-export default EmployeeWorkExperienceDataTable
+export default WorkExperience;
