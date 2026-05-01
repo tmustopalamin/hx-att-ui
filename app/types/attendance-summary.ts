@@ -45,6 +45,16 @@ export interface AttendanceSummary {
     leave_id: number | null;
     overtime_request_id: number | null;
 
+    is_overtime: boolean;
+    overtime_start_time: string | null;
+    overtime_end_time: string | null;
+
+    leave_name: string | null;
+    leave_status: string | null;
+    leave_request_no: string | null;
+
+    overtime_status: string | null;
+
     created_at: string | null;
     updated_at: string | null;
     row_version: number;

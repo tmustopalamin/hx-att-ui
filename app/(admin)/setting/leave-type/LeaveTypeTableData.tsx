@@ -648,7 +648,7 @@ const LeaveTypeTableData = () => {
                       required: '*required',
                       validate: (value) =>
                         !/\s/.test(value) || 'must not contain spaces.',
-                      maxLength: { value: 20, message: 'maximum 20 character' },
+                      maxLength: { value: 50, message: 'maximum 50 character' },
                     }}
                     render={({ field, fieldState }) => (
                       <>

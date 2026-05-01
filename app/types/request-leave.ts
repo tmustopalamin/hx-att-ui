@@ -25,6 +25,10 @@ export interface RequestLeave {
     deleted_by?: number | null;
 
     row_version: number;
+
+    // tambahan untuk attachment request leave
+    requires_attachment?: boolean;
+    attachment_count?: number;
 }
 
 export interface RequestLeaveForm {
@@ -38,6 +42,9 @@ export interface RequestLeaveForm {
     reason: string;
     total_days: number;
 
+    // tambahan untuk upload file attachment
+    attachment_file: File | null;
+
     deleted_at: string | null;
     row_version: number;
 }
@@ -50,6 +57,7 @@ export const defaultRequestLeaveFormValue: RequestLeaveForm = {
     end_date: null,
     reason: "",
     total_days: 0,
+    attachment_file: null,
     deleted_at: null,
     row_version: 0,
 };

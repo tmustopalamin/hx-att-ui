@@ -11,11 +11,13 @@ type MenuItem = {
   href: string;
   label: string;
   icon: string;
+  permission?: string;
 };
 
 type MenuSection = {
   key: string;
   label: string;
+  icon: string;
   permission?: string;
   items: MenuItem[];
 };
@@ -24,10 +26,11 @@ type SettingSubMenu = {
   key: string;
   label: string;
   icon: string;
+  permission?: string;
   items: MenuItem[];
 };
 
-const myAttendanceItems: MenuItem[] = [
+const selfServiceItems: MenuItem[] = [
   {
     href: "/my-attendance/mobile-attendance",
     label: "Mobile Attendance",
@@ -38,13 +41,17 @@ const myAttendanceItems: MenuItem[] = [
     label: "Attendance History",
     icon: "pi-history",
   },
-];
-
-const payrollItems: MenuItem[] = [
   {
-    href: "/run-payroll",
-    label: "Run Payroll",
-    icon: "pi-calculator",
+    href: "/request-leave",
+    label: "Request Leave",
+    icon: "pi-calendar",
+    // permission: "leave.read",
+  },
+  {
+    href: "/overtime/request",
+    label: "Overtime Request",
+    icon: "pi-clock",
+    // permission: "overtime.read",
   },
 ];
 
@@ -53,65 +60,129 @@ const employeeItems: MenuItem[] = [
     href: "/employees",
     label: "Employees",
     icon: "pi-users",
+    // permission: "employee.read",
   },
 ];
 
-const attendanceItems: MenuItem[] = [
+const timeManagementItems: MenuItem[] = [
   {
     href: "/attendance-log",
     label: "Attendance Log",
     icon: "pi-clock",
+    // permission: "attendance.manage",
   },
   {
     href: "/attendance-summary",
     label: "Attendance Summary",
     icon: "pi-file-check",
+    // permission: "attendance.manage",
   },
 ];
 
-const leaveItems: MenuItem[] = [
+const payrollItems: MenuItem[] = [
   {
-    href: "/request-leave",
-    label: "Request Leave",
-    icon: "pi-calendar",
+    href: "/run-payroll",
+    label: "Run Payroll",
+    icon: "pi-calculator",
+    // permission: "payroll.read",
   },
 ];
 
 const settingSubMenus: SettingSubMenu[] = [
   {
+    key: "organization",
+    label: "Organization",
+    icon: "pi-building",
+    items: [
+      {
+        href: "/setting/agency",
+        label: "Agency",
+        icon: "pi-building",
+      },
+      {
+        href: "/setting/branch",
+        label: "Branch",
+        icon: "pi-sitemap",
+      },
+      {
+        href: "/setting/department",
+        label: "Department",
+        icon: "pi-briefcase",
+      },
+      {
+        href: "/setting/position",
+        label: "Position",
+        icon: "pi-user",
+      },
+    ],
+  },
+  {
     key: "master",
     label: "Master Data",
     icon: "pi-database",
     items: [
-      { href: "/setting/bank", label: "Bank", icon: "pi-credit-card" },
-      { href: "/setting/city", label: "City", icon: "pi-map-marker" },
-      { href: "/setting/state", label: "Province", icon: "pi-map" },
-      { href: "/setting/country", label: "Country", icon: "pi-globe" },
-      { href: "/setting/document-type", label: "Document Type", icon: "pi-file" },
-      { href: "/setting/employment-status", label: "Employment Status", icon: "pi-id-card" },
-      { href: "/setting/identity-type", label: "Identity Type", icon: "pi-id-card" },
-      { href: "/setting/relationship", label: "Relationship", icon: "pi-heart" },
+      {
+        href: "/setting/country",
+        label: "Country",
+        icon: "pi-globe",
+      },
+      {
+        href: "/setting/state",
+        label: "Province",
+        icon: "pi-map",
+      },
+      {
+        href: "/setting/city",
+        label: "City",
+        icon: "pi-map-marker",
+      },
+      {
+        href: "/setting/bank",
+        label: "Bank",
+        icon: "pi-credit-card",
+      },
+      {
+        href: "/setting/document-type",
+        label: "Document Type",
+        icon: "pi-file",
+      },
+      {
+        href: "/setting/employment-status",
+        label: "Employment Status",
+        icon: "pi-id-card",
+      },
+      {
+        href: "/setting/identity-type",
+        label: "Identity Type",
+        icon: "pi-id-card",
+      },
+      {
+        href: "/setting/relationship",
+        label: "Relationship",
+        icon: "pi-heart",
+      },
     ],
   },
   {
-    key: "org",
-    label: "Organization",
-    icon: "pi-building",
+    key: "time-attendance-setup",
+    label: "Time & Attendance Setup",
+    icon: "pi-calendar-clock",
     items: [
-      { href: "/setting/agency", label: "Agency", icon: "pi-building" },
-      { href: "/setting/branch", label: "Branch", icon: "pi-sitemap" },
-      { href: "/setting/department", label: "Department", icon: "pi-briefcase" },
-      { href: "/setting/position", label: "Position", icon: "pi-user" },
-    ],
-  },
-  {
-    key: "attendance",
-    label: "Time & Attendance",
-    icon: "pi-clock",
-    items: [
-      { href: "/setting/shift", label: "Shift", icon: "pi-calendar" },
-      { href: "/setting/shift-rule", label: "Shift Rule", icon: "pi-calendar" },
-      { href: "/setting/employee-shift-rule", label: "Employee Shift Rule", icon: "pi-list" },
+      {
+        href: "/setting/shift",
+        label: "Shift",
+        icon: "pi-calendar",
+      },
+      {
+        href: "/setting/shift-rule",
+        label: "Shift Rule",
+        icon: "pi-calendar",
+      },
+      {
+        href: "/setting/employee-shift-rule",
+        label: "Employee Shift Rule",
+        icon: "pi-list",
+      },
       {
         href: "/setting/employee-shift-assignment",
         label: "Employee Shift Assignment",
@@ -120,7 +191,7 @@ const settingSubMenus: SettingSubMenu[] = [
     ],
   },
   {
-    key: "fp",
+    key: "fingerprint",
     label: "Fingerprint",
     icon: "pi-id-card",
     items: [
@@ -132,7 +203,19 @@ const settingSubMenus: SettingSubMenu[] = [
     ],
   },
   {
-    key: "payroll",
+    key: "leave-setup",
+    label: "Leave Setup",
+    icon: "pi-calendar",
+    items: [
+      {
+        href: "/setting/leave-type",
+        label: "Leave Type",
+        icon: "pi-calendar",
+      },
+    ],
+  },
+  {
+    key: "payroll-configuration",
     label: "Payroll Configuration",
     icon: "pi-calculator",
     items: [
@@ -151,21 +234,28 @@ const settingSubMenus: SettingSubMenu[] = [
         label: "Deduction Component",
         icon: "pi-minus-circle",
       },
-      {
-        href: "/setting/bank",
-        label: "Bank",
-        icon: "pi-credit-card",
-      },
     ],
   },
   {
-    key: "user",
+    key: "user-management",
     label: "User Management",
     icon: "pi-users",
     items: [
-      { href: "/setting/user", label: "Users", icon: "pi-user" },
-      { href: "/setting/role", label: "Roles", icon: "pi-users" },
-      { href: "/setting/permissions", label: "Permissions", icon: "pi-lock" },
+      {
+        href: "/setting/user",
+        label: "Users",
+        icon: "pi-user",
+      },
+      {
+        href: "/setting/role",
+        label: "Roles",
+        icon: "pi-users",
+      },
+      {
+        href: "/setting/permissions",
+        label: "Permissions",
+        icon: "pi-lock",
+      },
       {
         href: "/setting/role-permissions",
         label: "Role Permissions",
@@ -177,33 +267,28 @@ const settingSubMenus: SettingSubMenu[] = [
 
 const topMenuSections: MenuSection[] = [
   {
-    key: "my-attendance",
-    label: "My Attendance",
-    items: myAttendanceItems,
+    key: "self-service",
+    label: "Self Service",
+    icon: "pi-user",
+    items: selfServiceItems,
   },
   {
-    key: "run-payroll",
-    label: "Payroll",
-    permission: "payroll.read",
-    items: payrollItems,
-  },
-  {
-    key: "employees",
-    label: "Manage Employees",
-    permission: "employee.read",
+    key: "employee-management",
+    label: "Employee Management",
+    icon: "pi-users",
     items: employeeItems,
   },
   {
-    key: "attendance",
-    label: "Manage Attendance",
-    permission: "attendance.manage",
-    items: attendanceItems,
+    key: "time-management",
+    label: "Time Management",
+    icon: "pi-calendar-clock",
+    items: timeManagementItems,
   },
   {
-    key: "leave",
-    label: "Leave",
-    permission: "leave.read",
-    items: leaveItems,
+    key: "payroll",
+    label: "Payroll",
+    icon: "pi-calculator",
+    items: payrollItems,
   },
 ];
 
@@ -265,12 +350,12 @@ export default function SidebarMenu() {
   const childLinkActiveClass =
     "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100";
 
-  const renderLinkList = (items: MenuItem[], leftPaddingClass: string) => {
-    return items.map((item) => (
+  const renderLinkItem = (item: MenuItem) => {
+    const linkContent = (
       <li key={item.href}>
         <ActiveLink
           href={item.href}
-          className={`${childLinkClass} ${leftPaddingClass}`}
+          className={childLinkClass}
           activeClassName={childLinkActiveClass}
           exact={false}
         >
@@ -278,7 +363,21 @@ export default function SidebarMenu() {
           <span className="truncate">{item.label}</span>
         </ActiveLink>
       </li>
-    ));
+    );
+
+    if (item.permission) {
+      return (
+        <Can key={item.href} allOf={[item.permission]}>
+          {linkContent}
+        </Can>
+      );
+    }
+
+    return linkContent;
+  };
+
+  const renderLinkList = (items: MenuItem[]) => {
+    return items.map((item) => renderLinkItem(item));
   };
 
   const renderTopSection = (section: MenuSection) => {
@@ -291,7 +390,11 @@ export default function SidebarMenu() {
           className={topButtonClass(isOpen)}
           onClick={() => toggleMenu(section.key)}
         >
-          <span>{section.label}</span>
+          <span className="flex items-center gap-3">
+            <i className={`pi ${section.icon} text-sm`} />
+            <span>{section.label}</span>
+          </span>
+
           <i
             className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"
               } text-xs text-slate-400`}
@@ -299,10 +402,10 @@ export default function SidebarMenu() {
         </button>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[700px] opacity-100" : "max-h-0 opacity-0"
             }`}
         >
-          <ul className="space-y-1 pl-3">{renderLinkList(section.items, "")}</ul>
+          <ul className="space-y-1 pl-3">{renderLinkList(section.items)}</ul>
         </div>
       </li>
     );
@@ -330,7 +433,11 @@ export default function SidebarMenu() {
         className={topButtonClass(isSettingOpen)}
         onClick={() => toggleMenu("setting")}
       >
-        <span>General Setting</span>
+        <span className="flex items-center gap-3">
+          <i className="pi pi-cog text-sm" />
+          <span>Settings</span>
+        </span>
+
         <i
           className={`pi ${isSettingOpen ? "pi-chevron-down" : "pi-chevron-right"
             } text-xs text-slate-400`}
@@ -338,14 +445,14 @@ export default function SidebarMenu() {
       </button>
 
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingOpen ? "mt-2 max-h-[2200px] opacity-100" : "max-h-0 opacity-0"
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingOpen ? "mt-2 max-h-[2600px] opacity-100" : "max-h-0 opacity-0"
           }`}
       >
         <ul className="space-y-1 pl-3">
           {settingSubMenus.map((submenu) => {
             const isOpen = isSubMenuOpen(submenu.key, submenu.items);
 
-            return (
+            const submenuContent = (
               <li key={submenu.key} className="space-y-1">
                 <button
                   type="button"
@@ -364,15 +471,27 @@ export default function SidebarMenu() {
                 </button>
 
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[900px] opacity-100" : "max-h-0 opacity-0"
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen
+                    ? "mt-2 max-h-[1000px] opacity-100"
+                    : "max-h-0 opacity-0"
                     }`}
                 >
                   <ul className="space-y-1 pl-4">
-                    {renderLinkList(submenu.items, "")}
+                    {renderLinkList(submenu.items)}
                   </ul>
                 </div>
               </li>
             );
+
+            if (submenu.permission) {
+              return (
+                <Can key={submenu.key} allOf={[submenu.permission]}>
+                  {submenuContent}
+                </Can>
+              );
+            }
+
+            return submenuContent;
           })}
         </ul>
       </div>
@@ -405,7 +524,19 @@ export default function SidebarMenu() {
             </li>
           </Can>
 
+          <li className="pt-1">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Main Menu
+            </p>
+          </li>
+
           {topMenuSections.map((section) => renderTopSection(section))}
+
+          <li className="pt-2">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              Configuration
+            </p>
+          </li>
 
           <Can allOf={["setting.read"]}>{settingContent}</Can>
         </ul>

@@ -5,6 +5,19 @@ import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/request-leave";
 
+type PreviewLeaveDaysResponse = {
+  success: boolean;
+  data: {
+    start_date: string;
+    end_date: string;
+    calendar_days: number;
+    weekend_days: number;
+    holiday_days: number;
+    total_days: number;
+  };
+  message: string;
+};
+
 const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
@@ -27,32 +40,6 @@ const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => 
   }
 };
 
-const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
-  if (!startDate || !endDate) {
-    return 0;
-  }
-
-  const start = dayjs(startDate).startOf("day");
-  const end = dayjs(endDate).startOf("day");
-
-  if (end.isBefore(start, "day")) {
-    return 0;
-  }
-
-  let totalDays = 0;
-  let current = start;
-
-  while (current.isBefore(end, "day") || current.isSame(end, "day")) {
-    const day = current.day(); // 0 sunday, 6 saturday
-    if (day !== 0 && day !== 6) {
-      totalDays += 1;
-    }
-    current = current.add(1, "day");
-  }
-
-  return totalDays;
-};
-
 const buildPayload = (data: RequestLeaveForm) => {
   return {
     leave_type_id: Number(data.leave_type_id),
@@ -71,6 +58,50 @@ const validateRowVersion = (rowVersion: number) => {
   if (rowVersion < 0 || Number.isNaN(rowVersion)) {
     throw new Error("rowVersion is required");
   }
+};
+
+export const previewRequestLeaveDays = async (
+  startDate: Date | null,
+  endDate: Date | null
+) => {
+  if (!startDate || !endDate) {
+    return {
+      start_date: null,
+      end_date: null,
+      calendar_days: 0,
+      weekend_days: 0,
+      holiday_days: 0,
+      total_days: 0,
+    };
+  }
+
+  const res = await fetch(`${API_URL}/preview-days`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      start_date: dayjs(startDate).format("YYYY-MM-DD"),
+      end_date: dayjs(endDate).format("YYYY-MM-DD"),
+    }),
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  const response = (await res.json()) as PreviewLeaveDaysResponse;
+
+  return response.data;
+};
+
+export const getPreviewWorkingDays = async (
+  startDate: Date | null,
+  endDate: Date | null
+) => {
+  const result = await previewRequestLeaveDays(startDate, endDate);
+  return result.total_days;
 };
 
 export const createRequestLeave = async (data: RequestLeaveForm) => {
@@ -208,11 +239,4 @@ export const rejectRequestLeave = async (id: number, rowVersion: number) => {
   }
 
   return res.json();
-};
-
-export const getPreviewWorkingDays = (
-  startDate: Date | null,
-  endDate: Date | null
-) => {
-  return calculateWorkingDays(startDate, endDate);
 };

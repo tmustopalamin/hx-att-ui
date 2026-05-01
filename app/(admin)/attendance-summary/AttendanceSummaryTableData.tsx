@@ -218,12 +218,16 @@ const AttendanceSummaryTableData = () => {
         const employee = item.employee_name ?? `Employee #${item.employee_id}`
         const shift = item.shift_name ?? ''
         const dateText = dayjs(item.summary_date).format('DD-MM-YYYY')
+        const leaveText = item.leave_name ?? ''
+        const overtimeText = item.overtime_status ?? ''
 
         const matchKeyword =
           !search ||
           employee.toLowerCase().includes(search) ||
           shift.toLowerCase().includes(search) ||
           item.status.toLowerCase().includes(search) ||
+          leaveText.toLowerCase().includes(search) ||
+          overtimeText.toLowerCase().includes(search) ||
           dateText.includes(search)
 
         const matchStatus = !statusFilter || item.status === statusFilter
@@ -284,6 +288,12 @@ const AttendanceSummaryTableData = () => {
     return parsed.isValid() ? parsed.format('DD MMM YYYY HH:mm:ss') : '-'
   }
 
+  const formatTimeOnly = (value: string | null) => {
+    if (!value) return '-'
+    const parsed = dayjs(value)
+    return parsed.isValid() ? parsed.format('HH:mm') : '-'
+  }
+
   const formatSeconds = (seconds: number | null | undefined) => {
     const totalSeconds = seconds ?? 0
     const hour = Math.floor(totalSeconds / 3600)
@@ -311,12 +321,70 @@ const AttendanceSummaryTableData = () => {
   const renderCompactFlags = (rowData: AttendanceSummaryRowView) => {
     const flags: JSX.Element[] = []
 
-    if (rowData.is_missing_check_in) flags.push(<Tag key="missing-in" value="Missing In" severity="danger" />)
-    if (rowData.is_missing_check_out) flags.push(<Tag key="missing-out" value="Missing Out" severity="danger" />)
-    if (rowData.is_late) flags.push(<Tag key="late" value="Late" severity="warning" />)
-    if (rowData.is_early_co) flags.push(<Tag key="early" value="Early Out" severity="warning" />)
-    if (rowData.is_holiday) flags.push(<Tag key="holiday" value="Holiday" severity="info" />)
-    if (rowData.is_weekend) flags.push(<Tag key="weekend" value="Weekend" severity="info" />)
+    if (rowData.is_leave || rowData.leave_id) {
+      flags.push(
+        <Tag
+          key="leave"
+          value={rowData.leave_name ? `Leave: ${rowData.leave_name}` : 'Leave'}
+          severity="warning"
+        />
+      )
+    }
+
+    if (rowData.is_overtime || rowData.overtime_request_id || rowData.overtime_seconds > 0) {
+      const overtimeDuration = formatSeconds(rowData.overtime_seconds)
+
+      const overtimeTime =
+        rowData.overtime_start_time && rowData.overtime_end_time
+          ? `${formatTimeOnly(rowData.overtime_start_time)} - ${formatTimeOnly(
+            rowData.overtime_end_time
+          )}`
+          : null
+
+      flags.push(
+        <Tag
+          key="overtime"
+          value={
+            overtimeTime
+              ? `Overtime: ${overtimeDuration} (${overtimeTime})`
+              : `Overtime: ${overtimeDuration}`
+          }
+          severity="info"
+        />
+      )
+    }
+
+    if (rowData.is_missing_check_in) {
+      flags.push(<Tag key="missing-in" value="Missing In" severity="danger" />)
+    }
+
+    if (rowData.is_missing_check_out) {
+      flags.push(<Tag key="missing-out" value="Missing Out" severity="danger" />)
+    }
+
+    if (rowData.is_late) {
+      flags.push(<Tag key="late" value="Late" severity="warning" />)
+    }
+
+    if (rowData.is_early_co) {
+      flags.push(<Tag key="early" value="Early Out" severity="warning" />)
+    }
+
+    if (rowData.is_holiday) {
+      flags.push(<Tag key="holiday" value="Holiday" severity="info" />)
+    }
+
+    if (rowData.is_weekend) {
+      flags.push(<Tag key="weekend" value="Weekend" severity="info" />)
+    }
+
+    if (rowData.is_absent) {
+      flags.push(<Tag key="absent" value="Absent" severity="danger" />)
+    }
+
+    if (rowData.is_unscheduled) {
+      flags.push(<Tag key="unscheduled" value="Unscheduled" severity="secondary" />)
+    }
 
     if (!flags.length) {
       return <span className="text-sm text-slate-400">No flags</span>
@@ -717,7 +785,7 @@ const AttendanceSummaryTableData = () => {
                     <InputText
                       {...field}
                       value={field.value}
-                      placeholder="Search employee, shift, status, date"
+                      placeholder="Search employee, shift, status, leave, overtime, date"
                     />
                   )}
                 />
@@ -821,7 +889,7 @@ const AttendanceSummaryTableData = () => {
                     <Column header="Scan" body={renderScanSummary} style={{ minWidth: '12rem' }} />
                     <Column header="Worked" body={renderWorkSummary} style={{ minWidth: '9rem' }} />
                     <Column header="Exceptions" body={renderExceptionSummary} style={{ minWidth: '11rem' }} />
-                    <Column header="Flags" body={renderCompactFlags} style={{ minWidth: '15rem' }} />
+                    <Column header="Flags" body={renderCompactFlags} style={{ minWidth: '18rem' }} />
                   </DataTable>
                 </div>
               ))}
