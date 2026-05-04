@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
+
 import { showToast } from "@/store/ToastSlice";
 import { FormDataLogin } from "@/app/types/form-data-login";
 
@@ -18,6 +19,7 @@ const LoginForm = () => {
     const {
         handleSubmit,
         control,
+        formState: { errors },
     } = useForm<FormDataLogin>({
         defaultValues: {
             email: "",
@@ -39,7 +41,10 @@ const LoginForm = () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    email: formData.email.trim().toLowerCase(),
+                    password: formData.password,
+                }),
             });
 
             const responseData = await res.json();
@@ -47,6 +52,7 @@ const LoginForm = () => {
             if (!res.ok) {
                 const errorMessage =
                     responseData?.message || "Failed to login. Please try again.";
+
                 throw new Error(errorMessage);
             }
 
@@ -60,8 +66,8 @@ const LoginForm = () => {
             );
 
             setTimeout(() => {
-                router.push("/dashboard");
-            }, 800);
+                router.replace("/dashboard");
+            }, 500);
         } catch (err: unknown) {
             const errorMessage =
                 err instanceof Error
@@ -82,171 +88,206 @@ const LoginForm = () => {
         }
     };
 
+    const inputBaseClass =
+        "h-12 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-800 shadow-sm transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50";
+
+    const inputErrorClass =
+        "border-red-300 focus:border-red-500 focus:ring-red-100";
+
     return (
-        <div className="w-full max-w-md">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
-                <div className="mb-8 text-center">
-                    <div className="mb-5 flex justify-center">
-                        <div className="flex h-44 w-44 items-center justify-center rounded-3xl bg-slate-50 shadow-sm ring-1 ring-slate-200">
-                            <Image
-                                src="/images/logo.png"
-                                alt="Company Logo"
-                                width={140}
-                                height={140}
-                                priority
-                                className="object-contain"
-                            />
-                        </div>
-                    </div>
+        <main className="fixed inset-0 flex min-h-screen w-screen items-center justify-center overflow-hidden bg-slate-100 px-4 py-8">
+            <div className="pointer-events-none absolute -left-28 -top-28 h-72 w-72 rounded-full bg-blue-200/50 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-sky-200/60 blur-3xl" />
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40 blur-3xl" />
 
-                    <h1 className="text-2xl font-semibold text-slate-900">
-                        Welcome back
-                    </h1>
-                    <p className="mt-2 text-sm leading-6 text-slate-500">
-                        Sign in to access your HRIS dashboard
-                    </p>
-                </div>
-
-                {formError && (
-                    <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                        <div className="flex items-start gap-3">
-                            <i className="pi pi-exclamation-circle mt-0.5 text-red-500" />
-                            <div>
-                                <p className="text-sm font-semibold text-red-700">
-                                    Login failed
-                                </p>
-                                <p className="mt-1 text-sm text-red-600">
-                                    {formError}
-                                </p>
+            <section className="relative w-full max-w-[420px]">
+                <div className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-2xl shadow-slate-300/60 backdrop-blur md:p-8">
+                    <div className="mb-7 text-center">
+                        <div className="mb-5 flex justify-center">
+                            <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm md:h-32 md:w-32">
+                                <Image
+                                    src="/images/logo.png"
+                                    alt="PT. Hexing Technology"
+                                    width={104}
+                                    height={104}
+                                    priority
+                                    className="object-contain"
+                                />
                             </div>
                         </div>
-                    </div>
-                )}
 
-                <form
-                    className="space-y-5"
-                    onSubmit={handleSubmit(onSubmit)}
-                >
-                    <div className="flex flex-col gap-2">
-                        <label
-                            htmlFor="email"
-                            className="text-sm font-medium text-slate-700"
-                        >
-                            Email
-                        </label>
+                        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">
+                            HRIS System
+                        </p>
 
-                        <Controller
-                            name="email"
-                            control={control}
-                            rules={{
-                                required: "Email is required",
-                            }}
-                            render={({ field, fieldState }) => (
-                                <>
-                                    <div className="relative">
-                                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                            <i className="pi pi-envelope" />
-                                        </span>
+                        <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+                            Welcome back
+                        </h1>
 
-                                        <InputText
-                                            id="email"
-                                            {...field}
-                                            type="email"
-                                            placeholder="Enter your email"
-                                            autoComplete="email"
-                                            disabled={submitting}
-                                            className={`w-full rounded-xl border-slate-300 py-3 pl-11 pr-4 text-sm shadow-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldState.invalid ? "p-invalid" : ""
-                                                }`}
-                                        />
-                                    </div>
-
-                                    {fieldState.error && (
-                                        <small className="text-sm font-medium text-red-500">
-                                            {fieldState.error.message}
-                                        </small>
-                                    )}
-                                </>
-                            )}
-                        />
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                            Sign in to continue to your dashboard.
+                        </p>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                        <label
-                            htmlFor="password"
-                            className="text-sm font-medium text-slate-700"
-                        >
-                            Password
-                        </label>
+                    {formError && (
+                        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+                                    <i className="pi pi-exclamation-circle text-sm" />
+                                </div>
 
-                        <Controller
-                            name="password"
-                            control={control}
-                            rules={{
-                                required: "Password is required",
-                            }}
-                            render={({ field, fieldState }) => (
-                                <>
-                                    <div className="relative">
-                                        <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
-                                            <i className="pi pi-lock" />
-                                        </span>
+                                <div>
+                                    <p className="text-sm font-semibold text-red-700">
+                                        Login failed
+                                    </p>
+                                    <p className="mt-1 text-sm leading-5 text-red-600">
+                                        {formError}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                                        <Password
-                                            id="password"
-                                            {...field}
-                                            toggleMask
-                                            feedback={false}
-                                            disabled={submitting}
-                                            placeholder="Enter your password"
-                                            inputClassName="w-full rounded-xl py-3 pl-11 pr-10 text-sm"
-                                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""
-                                                }`}
-                                            pt={{
-                                                root: {
-                                                    className: "w-full",
-                                                },
-                                                input: {
-                                                    className: "w-full",
-                                                },
-                                                iconField: {
+                    <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="email"
+                                className="text-sm font-semibold text-slate-700"
+                            >
+                                Email
+                            </label>
+
+                            <Controller
+                                name="email"
+                                control={control}
+                                rules={{
+                                    required: "Email is required",
+                                    pattern: {
+                                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                        message: "Please enter a valid email address",
+                                    },
+                                }}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <div className="relative">
+                                            <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+                                                <i className="pi pi-envelope text-sm" />
+                                            </span>
+
+                                            <InputText
+                                                id="email"
+                                                {...field}
+                                                type="email"
+                                                placeholder="name@company.com"
+                                                autoComplete="email"
+                                                disabled={submitting}
+                                                className={`${inputBaseClass} pl-11 pr-4 ${fieldState.invalid ? inputErrorClass : ""
+                                                    }`}
+                                            />
+                                        </div>
+
+                                        {fieldState.error && (
+                                            <p className="text-xs font-medium text-red-500">
+                                                {fieldState.error.message}
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="password"
+                                className="text-sm font-semibold text-slate-700"
+                            >
+                                Password
+                            </label>
+
+                            <Controller
+                                name="password"
+                                control={control}
+                                rules={{
+                                    required: "Password is required",
+                                }}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <div className="relative">
+                                            <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+                                                <i className="pi pi-lock text-sm" />
+                                            </span>
+
+                                            <Password
+                                                id="password"
+                                                {...field}
+                                                toggleMask
+                                                feedback={false}
+                                                disabled={submitting}
+                                                placeholder="Enter your password"
+                                                className="w-full"
+                                                inputClassName={`${inputBaseClass} pl-11 pr-11 ${fieldState.invalid ? inputErrorClass : ""
+                                                    }`}
+                                                pt={{
                                                     root: {
                                                         className: "w-full",
                                                     },
-                                                },
-                                            }}
-                                        />
-                                    </div>
+                                                    input: {
+                                                        className: "w-full",
+                                                    },
+                                                    iconField: {
+                                                        root: {
+                                                            className: "w-full",
+                                                        },
+                                                    },
+                                                    hideIcon: {
+                                                        className: "right-4 text-slate-400",
+                                                    },
+                                                    showIcon: {
+                                                        className: "right-4 text-slate-400",
+                                                    },
+                                                }}
+                                            />
+                                        </div>
 
-                                    {fieldState.error && (
-                                        <small className="text-sm font-medium text-red-500">
-                                            {fieldState.error.message}
-                                        </small>
-                                    )}
-                                </>
-                            )}
-                        />
-                    </div>
+                                        {fieldState.error && (
+                                            <p className="text-xs font-medium text-red-500">
+                                                {fieldState.error.message}
+                                            </p>
+                                        )}
+                                    </>
+                                )}
+                            />
+                        </div>
 
-                    <div className="flex items-center justify-end">
-                        <Link
-                            href="/forgot-password"
-                            className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+                        <div className="flex items-center justify-between">
+                            <div className="text-xs text-slate-500">
+                                Secure employee access
+                            </div>
+
+                            <Link
+                                href="/forgot-password"
+                                className="text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+                            >
+                                Forgot password?
+                            </Link>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={submitting}
+                            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
                         >
-                            Forgot your password?
-                        </Link>
-                    </div>
+                            {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
+                            <span>{submitting ? "Signing in..." : "Sign in"}</span>
+                        </button>
+                    </form>
+                </div>
 
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                    >
-                        {submitting && <i className="pi pi-spin pi-spinner" />}
-                        <span>{submitting ? "Logging in..." : "Login"}</span>
-                    </button>
-                </form>
-            </div>
-        </div>
+                <p className="mt-5 text-center text-xs text-slate-500">
+                    © {new Date().getFullYear()} PT. Hexing Technology. All rights reserved.
+                </p>
+            </section>
+        </main>
     );
 };
 

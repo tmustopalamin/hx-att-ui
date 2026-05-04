@@ -29,6 +29,7 @@ export type EmployeeEmploymentData = {
     department_id: number;
     position_id: number;
     employment_status_id: number;
+    supervisor_employee_id?: number | null;
     position_name?: string | null;
     agency_id?: number | null;
     agency_name?: string | null;

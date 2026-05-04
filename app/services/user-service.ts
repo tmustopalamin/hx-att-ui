@@ -109,7 +109,7 @@ export const createUser = async (data: User) => {
 };
 
 export const updateUser = async (id: number, rowVersion: number, data: User) => {
-  if (rowVersion <= 0) {
+  if (rowVersion === null || rowVersion === undefined || Number.isNaN(Number(rowVersion))) {
     throw new Error("rowVersion is required");
   }
 
@@ -133,7 +133,7 @@ export const updateUser = async (id: number, rowVersion: number, data: User) => 
 };
 
 export const deleteUser = async (id: number, rowVersion: number) => {
-  if (rowVersion <= 0) {
+  if (rowVersion === null || rowVersion === undefined || Number.isNaN(Number(rowVersion))) {
     throw new Error("rowVersion is required");
   }
 
@@ -170,7 +170,7 @@ export const purgeUser = async (id: number) => {
 };
 
 export const restoreUser = async (id: number, rowVersion: number) => {
-  if (rowVersion <= 0) {
+  if (rowVersion === null || rowVersion === undefined || Number.isNaN(Number(rowVersion))) {
     throw new Error("rowVersion is required");
   }
 
@@ -181,6 +181,31 @@ export const restoreUser = async (id: number, rowVersion: number) => {
       "Content-Type": "application/json",
       "If-Match": String(rowVersion),
     },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return res.json();
+};
+
+export type ChangePasswordPayload = {
+  current_password: string;
+  new_password: string;
+};
+
+export const changePassword = async (data: ChangePasswordPayload) => {
+  const res = await fetch(`${API_URL}/change-password`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      current_password: data.current_password,
+      new_password: data.new_password,
+    }),
   });
 
   if (!res.ok) {

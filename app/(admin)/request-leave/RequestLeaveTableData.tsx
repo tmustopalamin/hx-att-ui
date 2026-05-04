@@ -42,12 +42,10 @@ import {
 import { RequestLeaveAttachment } from '@/app/types/request-leave-attachment';
 
 import {
-  approveRequestLeave,
   createRequestLeave,
   deleteRequestLeave,
   getPreviewWorkingDays,
   purgeRequestLeave,
-  rejectRequestLeave,
   restoreRequestLeave,
   updateRequestLeave,
 } from '@/app/services/request-leave-service';
@@ -791,82 +789,6 @@ const RequestLeaveTableData = () => {
     }
   };
 
-  const handleApprove = async (data: RequestLeave) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await approveRequestLeave(data.id, data.row_version);
-
-      await refreshData();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'Leave request approved successfully.',
-        })
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-    }
-  };
-
-  const handleReject = async (data: RequestLeave) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await rejectRequestLeave(data.id, data.row_version);
-
-      await refreshData();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: 'warn',
-          summary: 'Rejected',
-          detail: res.message || 'Leave request rejected successfully.',
-        })
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-    }
-  };
-
   const handleDeleteAttachment = async (item: RequestLeaveAttachment) => {
     if (!attachmentRequestLeave) {
       return;
@@ -1095,60 +1017,6 @@ const RequestLeaveTableData = () => {
     });
   };
 
-  const onClickApprove = (data: RequestLeave) => {
-    confirmDialog({
-      message: 'Approve this leave request?',
-      header: 'Approve Confirmation',
-      icon: 'pi pi-check-circle',
-      defaultFocus: 'accept',
-      accept: () => handleApprove(data),
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex justify-end gap-3">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Approve"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-success"
-          />
-        </div>
-      ),
-    });
-  };
-
-  const onClickReject = (data: RequestLeave) => {
-    confirmDialog({
-      message: 'Reject this leave request?',
-      header: 'Reject Confirmation',
-      icon: 'pi pi-times-circle',
-      defaultFocus: 'accept',
-      accept: () => handleReject(data),
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex justify-end gap-3">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Reject"
-            icon="pi pi-times"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
-  };
-
   const leaveTypeBody = (rowData: RequestLeave) => {
     return rowData.leave_name || leaveTypeNameMap.get(rowData.leave_type_id) || '-';
   };
@@ -1207,8 +1075,6 @@ const RequestLeaveTableData = () => {
     const isPending =
       rowData.status?.toUpperCase() === 'PENDING' && !rowData.deleted_at;
 
-    const canAdminAction = hasRole(profileState.role, ['admin', 'superadmin']);
-
     const isFinalStatus =
       rowData.status?.toUpperCase() === 'APPROVED' ||
       rowData.status?.toUpperCase() === 'REJECTED' ||
@@ -1216,28 +1082,15 @@ const RequestLeaveTableData = () => {
 
     return (
       <div className="flex flex-wrap gap-2">
-        {canAdminAction && isPending && (
-          <>
-            <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
-              tooltip="approve"
-              rounded
-              severity="success"
-              icon="pi pi-check"
-              size="small"
-              onClick={() => onClickApprove(rowData)}
-            />
-            <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
-              tooltip="reject"
-              rounded
-              severity="warning"
-              icon="pi pi-times"
-              size="small"
-              onClick={() => onClickReject(rowData)}
-            />
-          </>
-        )}
+        <Button
+          tooltipOptions={{ appendTo: getBody, position: 'top' }}
+          tooltip="attachments"
+          rounded
+          severity="info"
+          icon="pi pi-paperclip"
+          size="small"
+          onClick={() => onClickViewAttachments(rowData)}
+        />
 
         {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
           <Button
@@ -1265,17 +1118,6 @@ const RequestLeaveTableData = () => {
 
         {!rowData.deleted_at && (
           <>
-            <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
-              tooltip="view attachment"
-              rounded
-              severity="info"
-              icon="pi pi-paperclip"
-              size="small"
-              disabled={(rowData.attachment_count ?? 0) <= 0}
-              onClick={() => onClickViewAttachments(rowData)}
-            />
-
             <Button
               tooltipOptions={{ appendTo: getBody, position: 'top' }}
               tooltip="delete"
@@ -1361,314 +1203,331 @@ const RequestLeaveTableData = () => {
 
         <Card>
           <div className="text-sm text-slate-500">Rejected Requests</div>
-          <div className="mt-2 text-3xl font-semibold text-red-500">
+          <div className="mt-2 text-3xl font-semibold text-red-600">
             {requestSummary.rejected}
           </div>
         </Card>
       </div>
 
       <Card>
-        <div className="flex flex-col gap-5 p-4 md:p-5">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-5 p-4">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="text-2xl font-semibold text-slate-800">
                 Request Leave
               </div>
               <div className="mt-1 text-sm text-slate-500">
-                Submit, review, and monitor your leave requests in one place.
+                Submit and manage your own leave requests. Approval is handled from Approval Inbox.
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label
-                  htmlFor="showDeletedData"
-                  className="text-sm text-slate-600"
-                >
-                  Show deleted data
-                </label>
-              </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {hasRole(profileState.role, ['superadmin']) && (
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    checked={isShowDeletedDataChecked}
+                    onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
+                  />
+                  <label
+                    htmlFor="showDeletedData"
+                    className="cursor-pointer text-sm text-slate-700"
+                  >
+                    Show deleted data
+                  </label>
+                </div>
+              )}
 
               <IconField iconPosition="left">
                 <InputIcon className="pi pi-search" />
                 <InputText
-                  className="w-full sm:w-[18rem]"
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Search leave type, reason, or status"
+                  placeholder="Search request leave"
+                  className="w-full sm:w-64"
                 />
               </IconField>
 
               <Button
-                label="New Request Leave"
+                label="New Request"
                 icon="pi pi-plus"
                 onClick={onClickNew}
               />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <DataTable
-              value={requestRows}
-              tableStyle={{ minWidth: '116rem' }}
-              stripedRows
-              paginator
-              scrollable
-              scrollHeight="500px"
-              rows={10}
-              rowsPerPageOptions={[10, 25, 50]}
-              dataKey="id"
-              globalFilterFields={[
-                'leave_name',
-                'reason',
-                'status',
-                'approved_by_name',
-              ]}
-              emptyMessage="No leave request found."
-              filters={filters}
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
-              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-              loading={isLoading}
-            >
-              <Column
-                header="#"
-                headerStyle={{ width: '4rem', minWidth: '4rem' }}
-                bodyStyle={{ minWidth: '4rem' }}
-                body={(_, options) => options.rowIndex + 1}
-              />
+          <DataTable
+            value={requestRows}
+            stripedRows
+            paginator
+            rows={10}
+            rowsPerPageOptions={[10, 25, 50]}
+            dataKey="id"
+            filters={filters}
+            globalFilterFields={[
+              'leave_name',
+              'reason',
+              'status',
+              'approved_by_name',
+            ]}
+            emptyMessage="No request leave found."
+            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            loading={isLoading}
+            scrollable
+            tableStyle={{ minWidth: '110rem' }}
+          >
+            <Column
+              header="#"
+              headerStyle={{ width: '3rem' }}
+              body={(_, options) => options.rowIndex + 1}
+            />
 
-              <Column
-                header="Leave Type"
-                body={leaveTypeBody}
-                style={{ minWidth: '14rem' }}
-              />
+            <Column
+              header="Leave Type"
+              body={leaveTypeBody}
+              style={{ minWidth: '14rem' }}
+            />
 
-              <Column
-                header="Date Range"
-                body={dateRangeBody}
-                style={{ minWidth: '18rem' }}
-              />
+            <Column
+              header="Date Range"
+              body={dateRangeBody}
+              style={{ minWidth: '18rem' }}
+            />
 
-              <Column
-                field="total_days"
-                header="Days"
-                style={{ minWidth: '6rem' }}
-              />
+            <Column
+              field="total_days"
+              header="Days"
+              style={{ minWidth: '8rem' }}
+            />
 
-              <Column
-                header="Attachment"
-                body={attachmentBody}
-                style={{ minWidth: '10rem' }}
-              />
+            <Column
+              field="reason"
+              header="Reason"
+              style={{ minWidth: '24rem' }}
+            />
 
-              <Column
-                field="reason"
-                header="Reason"
-                style={{ minWidth: '20rem' }}
-              />
+            <Column
+              header="Attachment"
+              body={attachmentBody}
+              style={{ minWidth: '10rem' }}
+            />
 
-              <Column
-                field="approved_by_name"
-                header="Processed By"
-                body={(rowData) => rowData.approved_by_name ?? '-'}
-                style={{ minWidth: '12rem' }}
-              />
+            <Column
+              header="Status"
+              body={statusBody}
+              style={{ minWidth: '10rem' }}
+            />
 
-              <Column
-                header="Processed At"
-                body={processedAtBody}
-                style={{ minWidth: '12rem' }}
-              />
+            <Column
+              field="approved_by_name"
+              header="Processed By"
+              body={(rowData: RequestLeave) => rowData.approved_by_name || '-'}
+              style={{ minWidth: '14rem' }}
+            />
 
-              <Column
-                field="status"
-                header="Status"
-                body={statusBody}
-                style={{ minWidth: '9rem' }}
-              />
+            <Column
+              header="Processed At"
+              body={processedAtBody}
+              style={{ minWidth: '14rem' }}
+            />
 
-              <Column
-                header="Action"
-                body={actionColumnBody}
-                frozen
-                alignFrozen="right"
-                style={{ minWidth: '14rem' }}
-                headerStyle={{
-                  minWidth: '14rem',
-                  background: '#ffffff',
-                  zIndex: 1,
-                }}
-                bodyStyle={{
-                  minWidth: '14rem',
-                  background: '#ffffff',
-                }}
-              />
-            </DataTable>
-          </div>
+            <Column
+              header="Action"
+              body={actionColumnBody}
+              frozen
+              alignFrozen="right"
+              style={{ minWidth: '13rem' }}
+              headerStyle={{
+                minWidth: '13rem',
+                background: '#ffffff',
+                zIndex: 1,
+              }}
+              bodyStyle={{
+                minWidth: '13rem',
+                background: '#ffffff',
+              }}
+            />
+          </DataTable>
         </div>
       </Card>
 
       <Dialog
-        header={`Attachments${attachmentRequestLeave ? ` - ${attachmentRequestLeave.leave_name ?? ''}` : ''}`}
+        header="Leave Attachments"
         visible={attachmentDialogVisible}
-        style={{ width: '95vw', maxWidth: '960px' }}
+        style={{ width: '95vw', maxWidth: '920px' }}
+        breakpoints={{ '960px': '95vw' }}
         onHide={handleAttachmentDialogHide}
         modal
         draggable={false}
         resizable={false}
       >
-        {previewFileUrl && (
-          <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="text-sm font-semibold text-slate-800">
-                  Preview
+        <div className="flex flex-col gap-5">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            {attachmentRequestLeave ? (
+              <>
+                <span className="font-semibold">Request:</span>{' '}
+                {leaveTypeBody(attachmentRequestLeave)} |{' '}
+                {dateRangeBody(attachmentRequestLeave)}
+              </>
+            ) : (
+              'Attachment list'
+            )}
+          </div>
+
+          <DataTable
+            value={attachmentRows}
+            loading={attachmentLoading}
+            emptyMessage="No attachment found."
+            dataKey="id"
+            tableStyle={{ minWidth: '55rem' }}
+          >
+            <Column
+              header="#"
+              headerStyle={{ width: '3rem' }}
+              body={(_, options) => options.rowIndex + 1}
+            />
+
+            <Column
+              field="original_file_name"
+              header="File Name"
+              style={{ minWidth: '20rem' }}
+            />
+
+            <Column
+              field="content_type"
+              header="Type"
+              style={{ minWidth: '12rem' }}
+            />
+
+            <Column
+              header="Size"
+              body={(rowData: RequestLeaveAttachment) =>
+                `${(rowData.file_size / 1024).toFixed(1)} KB`
+              }
+              style={{ minWidth: '8rem' }}
+            />
+
+            <Column
+              header="Uploaded At"
+              body={(rowData: RequestLeaveAttachment) =>
+                dayjs(rowData.created_at).format('DD MMM YYYY HH:mm')
+              }
+              style={{ minWidth: '14rem' }}
+            />
+
+            <Column
+              header="Action"
+              style={{ minWidth: '12rem' }}
+              body={(rowData: RequestLeaveAttachment) => (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                    tooltip="Preview"
+                    rounded
+                    severity="info"
+                    icon={
+                      openingAttachmentId === rowData.id
+                        ? 'pi pi-spin pi-spinner'
+                        : 'pi pi-eye'
+                    }
+                    size="small"
+                    disabled={openingAttachmentId === rowData.id}
+                    onClick={() => previewAttachmentSecurely(rowData)}
+                  />
+
+                  <Button
+                    tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                    tooltip="Download"
+                    rounded
+                    severity="secondary"
+                    icon={
+                      downloadingAttachmentId === rowData.id
+                        ? 'pi pi-spin pi-spinner'
+                        : 'pi pi-download'
+                    }
+                    size="small"
+                    disabled={downloadingAttachmentId === rowData.id}
+                    onClick={() => downloadAttachmentSecurely(rowData)}
+                  />
+
+                  {attachmentRequestLeave?.status?.toUpperCase() === 'PENDING' && (
+                    <Button
+                      tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                      tooltip="Delete"
+                      rounded
+                      severity="danger"
+                      icon="pi pi-trash"
+                      size="small"
+                      onClick={() => onClickDeleteAttachment(rowData)}
+                    />
+                  )}
                 </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  {previewFileName}
-                  {previewFileContentType ? ` • ${previewFileContentType}` : ''}
+              )}
+            />
+          </DataTable>
+
+          {previewFileUrl && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="font-semibold text-slate-800">
+                    {previewFileName}
+                  </div>
+                  <div className="text-sm text-slate-500">
+                    {previewFileContentType}
+                  </div>
                 </div>
+
+                <Button
+                  type="button"
+                  label="Close Preview"
+                  icon="pi pi-times"
+                  className="p-button-text"
+                  onClick={clearPreviewFile}
+                />
               </div>
 
-              <Button
-                type="button"
-                label="Close Preview"
-                icon="pi pi-times"
-                size="small"
-                severity="secondary"
-                onClick={clearPreviewFile}
-              />
-            </div>
-
-            <div className="max-h-[70vh] overflow-auto rounded-lg border border-slate-200 bg-white p-2">
               {previewFileContentType.startsWith('image/') ? (
-                <img
-                  src={previewFileUrl}
-                  alt={previewFileName || 'Leave attachment preview'}
-                  className="mx-auto max-h-[65vh] max-w-full rounded-lg object-contain"
-                />
+                <div className="flex justify-center rounded-xl bg-white p-3">
+                  <img
+                    src={previewFileUrl}
+                    alt={previewFileName}
+                    className="max-h-[70vh] max-w-full rounded-lg object-contain"
+                  />
+                </div>
               ) : (
                 <iframe
                   src={previewFileUrl}
-                  title={previewFileName || 'Leave attachment PDF preview'}
-                  className="h-[65vh] w-full rounded-lg border-0"
+                  title={previewFileName}
+                  className="h-[70vh] w-full rounded-xl border border-slate-200 bg-white"
                 />
               )}
             </div>
-          </div>
-        )}
-
-        {attachmentLoading ? (
-          <LoadingDataTable />
-        ) : attachmentRows.length <= 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-            No attachment found.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {attachmentRows.map((item) => {
-              const isPending =
-                attachmentRequestLeave?.status?.toUpperCase() === 'PENDING' &&
-                !attachmentRequestLeave?.deleted_at;
-
-              return (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <i
-                        className={`${item.content_type === 'application/pdf'
-                          ? 'pi pi-file-pdf'
-                          : 'pi pi-image'
-                          } text-slate-500`}
-                      />
-                      <p className="truncate text-sm font-semibold text-slate-800">
-                        {item.original_file_name}
-                      </p>
-                    </div>
-
-                    <div className="mt-1 text-xs text-slate-500">
-                      {item.content_type} • {(item.file_size / 1024).toFixed(1)} KB
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      label="View"
-                      icon={
-                        openingAttachmentId === item.id
-                          ? 'pi pi-spin pi-spinner'
-                          : 'pi pi-eye'
-                      }
-                      size="small"
-                      disabled={openingAttachmentId === item.id}
-                      onClick={() => previewAttachmentSecurely(item)}
-                    />
-
-                    <Button
-                      type="button"
-                      label="Download"
-                      icon={
-                        downloadingAttachmentId === item.id
-                          ? 'pi pi-spin pi-spinner'
-                          : 'pi pi-download'
-                      }
-                      size="small"
-                      severity="secondary"
-                      disabled={downloadingAttachmentId === item.id}
-                      onClick={() => downloadAttachmentSecurely(item)}
-                    />
-
-                    {isPending && (
-                      <Button
-                        type="button"
-                        label="Delete"
-                        icon="pi pi-trash"
-                        size="small"
-                        severity="danger"
-                        onClick={() => onClickDeleteAttachment(item)}
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+          )}
+        </div>
       </Dialog>
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Dialog
           header={popupHeaderTitle}
           visible={visible}
-          style={{ width: '95vw', maxWidth: '920px' }}
+          style={{ width: '95vw', maxWidth: '980px' }}
           breakpoints={{ '960px': '95vw' }}
           onHide={handleDialogHide}
           footer={footerContent}
-          onShow={() => {
-            setFocus('leave_type_id');
-          }}
           modal
           draggable={false}
           resizable={false}
         >
           <div className="flex flex-col gap-5">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-slate-800">
-                  Leave Information
+                  Leave Request Detail
                 </h3>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Choose the leave type, balance period, requested date range, and attachment if required.
+                  Fill leave type, balance period, date range, reason, and attachment if required.
                 </p>
               </div>
 
@@ -1836,9 +1695,9 @@ const RequestLeaveTableData = () => {
                         }
 
                         if (selectedBalance) {
+                          const selected = dayjs(value);
                           const min = dayjs(selectedBalance.period_start);
                           const max = dayjs(selectedBalance.period_end);
-                          const selected = dayjs(value);
 
                           if (selected.isBefore(min, 'day') || selected.isAfter(max, 'day')) {
                             return 'End date must be within selected leave balance period';
@@ -1881,19 +1740,21 @@ const RequestLeaveTableData = () => {
                     name="reason"
                     control={control}
                     rules={{
-                      required: 'Reason is required',
-                      maxLength: {
-                        value: 1000,
-                        message: 'Maximum 1000 characters',
+                      validate: (value) => {
+                        if (selectedLeaveType?.requires_reason && !value.trim()) {
+                          return 'Reason is required';
+                        }
+
+                        return true;
                       },
                     }}
                     render={({ field, fieldState }) => (
                       <>
                         <InputTextarea
                           id="reason"
-                          placeholder="Explain your leave reason"
                           {...field}
                           rows={4}
+                          placeholder="Enter leave reason"
                           className={fieldState.invalid ? 'p-invalid' : ''}
                           disabled={isSaving}
                         />
@@ -1908,22 +1769,22 @@ const RequestLeaveTableData = () => {
                 </div>
 
                 <div className="flex flex-col gap-2 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="attachment_file"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Attachment
-                    {selectedLeaveType?.requires_attachment && (
-                      <span className="ml-1 text-red-500">*</span>
-                    )}
                   </label>
-
                   <Controller
                     name="attachment_file"
                     control={control}
                     rules={{
                       validate: (value) => {
-                        const isRequired = !!selectedLeaveType?.requires_attachment;
-                        const existingAttachmentCount = selectedData?.attachment_count ?? 0;
-
-                        if (isRequired && existingAttachmentCount <= 0 && !value) {
+                        if (
+                          selectedLeaveType?.requires_attachment &&
+                          isAddNew &&
+                          !value
+                        ) {
                           return 'Attachment is required for this leave type';
                         }
 
@@ -1941,6 +1802,7 @@ const RequestLeaveTableData = () => {
                     render={({ field, fieldState }) => (
                       <>
                         <input
+                          id="attachment_file"
                           type="file"
                           accept={allowedAttachmentAccept}
                           disabled={isSaving}

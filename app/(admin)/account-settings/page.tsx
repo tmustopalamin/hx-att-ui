@@ -1,82 +1,97 @@
 "use client";
 
-import CardTitle from '@/app/_components/CardTitle';
-import { FormChangePassword } from '@/app/types/form-change-password';
-import { RootState } from '@/store/store';
-import { Card } from 'primereact/card';
-import { Password } from 'primereact/password';
-import { TabView, TabPanel } from 'primereact/tabview';
-import React, { useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
-import ChangeProfilePicture from './ChangeProfilePicture';
-import { showToast } from '@/store/ToastSlice';
+import CardTitle from "@/app/_components/CardTitle";
+import { FormChangePassword } from "@/app/types/form-change-password";
+import { isResponseTypeError, getErrorMessage } from "@/app/utils/error-messages";
+import { changePassword } from "@/app/services/user-service";
+import { showToast } from "@/store/ToastSlice";
+import { Card } from "primereact/card";
+import { Password } from "primereact/password";
+import { TabPanel, TabView } from "primereact/tabview";
+import React, { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { useDispatch } from "react-redux";
+import ChangeProfilePicture from "./ChangeProfilePicture";
 
 const AccountSettingsPage = () => {
-  const { handleSubmit, control, getValues } = useForm<FormChangePassword>();
-  const [submitting, setSubmitting] = useState(false);
   const dispatch = useDispatch();
-  const profileState = useSelector((state: RootState) => state.profile);
+  const [submitting, setSubmitting] = useState(false);
+
+  const {
+    handleSubmit,
+    control,
+    getValues,
+    reset,
+    formState: { isValid },
+  } = useForm<FormChangePassword>({
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      newPasswordRetype: "",
+    },
+    mode: "onTouched",
+  });
 
   useEffect(() => {
     document.title = "Account Settings";
   }, []);
 
   const onSubmit = async (formData: FormChangePassword) => {
+    if (!isValid || submitting) {
+      return;
+    }
+
     try {
       setSubmitting(true);
 
-      const body = {
-        email: profileState.email,
+      await changePassword({
         current_password: formData.currentPassword,
         new_password: formData.newPassword,
-      }
-
-      const res = await fetch("/api/user/change-password", {
-        method: "POST",
-        credentials: 'include',
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
       });
 
-      const responseData = await res.json();
-
-      if (!res.ok) {
-        const errorMessage =
-          responseData?.message || `Please try again.`;
-        throw new Error(errorMessage);
-      }
+      reset({
+        currentPassword: "",
+        newPassword: "",
+        newPasswordRetype: "",
+      });
 
       dispatch(
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
-          detail: "Change Password Success",
+          summary: "Success",
+          detail: "Password changed successfully.",
         })
       );
-
-      setTimeout(() => {
-        // router.push("/dashboard");
-      }, 1000);
     } catch (err: unknown) {
-      console.error(err);
-
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Unexpected error occurred. Please try again.";
-
-      dispatch(
-        showToast({
-          visible: false,
-          severity: "error",
-          summary: "failed",
-          detail: errorMessage,
-        })
-      );
+      if (isResponseTypeError(err)) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Failed",
+            detail: getErrorMessage(err, "message"),
+          })
+        );
+      } else if (err instanceof Error) {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Failed",
+            detail: err.message,
+          })
+        );
+      } else {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Failed",
+            detail: "Unexpected error occurred. Please try again.",
+          })
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -88,55 +103,54 @@ const AccountSettingsPage = () => {
         <TabPanel header="Change Profile Picture">
           <ChangeProfilePicture />
         </TabPanel>
-        <TabPanel header="Change Password">
-          <div className="w-94">
-            <form
-              className="space-y-4 w-full"
-              onSubmit={handleSubmit(onSubmit)}
-            >
-              <div className="flex flex-col gap-2 w-full">
-                <div className="mb-6">
-                  <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-                    Change Password
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Protect your account by using a strong password
-                  </p>
-                </div>
 
+        <TabPanel header="Change Password">
+          <div className="w-full max-w-xl">
+            <form className="w-full space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              <div className="mb-6">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                  Change Password
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Protect your account by using a strong password.
+                </p>
+              </div>
+
+              <div className="flex w-full flex-col gap-2">
                 <label htmlFor="currentPassword">Current Password</label>
+
                 <Controller
                   name="currentPassword"
-                  defaultValue=""
                   control={control}
                   rules={{
-                    required: "Current Password is required",
+                    required: "Current password is required",
                   }}
                   render={({ field, fieldState }) => (
                     <>
                       <Password
-                        toggleMask
-                        pt={{
-                          iconField: {
-                            root: {
-                              style: { width: "100%" },
-                            },
-                          },
-                          input: {
-                            style: { width: "100%" },
-                          },
-                          root: {
-                            style: { width: "100%" },
-                          },
-                        }}
                         id="currentPassword"
                         {...field}
+                        toggleMask
                         feedback={false}
                         inputClassName="w-full"
                         className={`w-full ${fieldState.invalid ? "p-invalid" : ""
                           }`}
+                        pt={{
+                          iconField: {
+                            root: {
+                              style: { width: "100%" },
+                            },
+                          },
+                          input: {
+                            style: { width: "100%" },
+                          },
+                          root: {
+                            style: { width: "100%" },
+                          },
+                        }}
                         disabled={submitting}
                       />
+
                       {fieldState.error && (
                         <small className="font-bold text-red-500">
                           {fieldState.error.message}
@@ -147,66 +161,38 @@ const AccountSettingsPage = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-2 w-full">
+              <div className="flex w-full flex-col gap-2">
                 <label htmlFor="newPassword">New Password</label>
+
                 <Controller
                   name="newPassword"
-                  defaultValue=""
                   control={control}
                   rules={{
-                    required: "New Password is required",
+                    required: "New password is required",
+                    minLength: {
+                      value: 8,
+                      message: "New password must be at least 8 characters",
+                    },
+                    validate: (value) => {
+                      const currentPassword = getValues("currentPassword");
+
+                      if (value === currentPassword) {
+                        return "New password must be different from current password";
+                      }
+
+                      return true;
+                    },
                   }}
                   render={({ field, fieldState }) => (
                     <>
                       <Password
-                        toggleMask
-                        pt={{
-                          iconField: {
-                            root: {
-                              style: { width: "100%" },
-                            },
-                          },
-                          input: {
-                            style: { width: "100%" },
-                          },
-                          root: {
-                            style: { width: "100%" },
-                          },
-                        }}
                         id="newPassword"
                         {...field}
-                        feedback={false}
+                        toggleMask
+                        feedback
                         inputClassName="w-full"
                         className={`w-full ${fieldState.invalid ? "p-invalid" : ""
                           }`}
-                        disabled={submitting}
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 w-full">
-                <label htmlFor="newPasswordRetype">
-                  New Password (Re-Type)
-                </label>
-                <Controller
-                  name="newPasswordRetype"
-                  defaultValue=""
-                  control={control}
-                  rules={{
-                    required: "New Password is required",
-                    validate: (value) => value === getValues("newPassword") || "Passwords do not match",
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Password
-                        toggleMask
                         pt={{
                           iconField: {
                             root: {
@@ -220,14 +206,9 @@ const AccountSettingsPage = () => {
                             style: { width: "100%" },
                           },
                         }}
-                        id="newPasswordRetype"
-                        {...field}
-                        feedback={false}
-                        inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
-                          }`}
                         disabled={submitting}
                       />
+
                       {fieldState.error && (
                         <small className="font-bold text-red-500">
                           {fieldState.error.message}
@@ -238,13 +219,63 @@ const AccountSettingsPage = () => {
                 />
               </div>
 
-              <div className="flex w-full flex-col gap-2 text-center">
+              <div className="flex w-full flex-col gap-2">
+                <label htmlFor="newPasswordRetype">
+                  New Password Confirmation
+                </label>
+
+                <Controller
+                  name="newPasswordRetype"
+                  control={control}
+                  rules={{
+                    required: "New password confirmation is required",
+                    validate: (value) =>
+                      value === getValues("newPassword") ||
+                      "Passwords do not match",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Password
+                        id="newPasswordRetype"
+                        {...field}
+                        toggleMask
+                        feedback={false}
+                        inputClassName="w-full"
+                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                        pt={{
+                          iconField: {
+                            root: {
+                              style: { width: "100%" },
+                            },
+                          },
+                          input: {
+                            style: { width: "100%" },
+                          },
+                          root: {
+                            style: { width: "100%" },
+                          },
+                        }}
+                        disabled={submitting}
+                      />
+
+                      {fieldState.error && (
+                        <small className="font-bold text-red-500">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex w-full flex-col gap-2 pt-2 text-center">
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed"
+                  className="w-full rounded-md bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                   disabled={submitting}
                 >
-                  {submitting ? "Loading..." : "Change Password"}
+                  {submitting ? "Saving..." : "Change Password"}
                 </button>
               </div>
             </form>

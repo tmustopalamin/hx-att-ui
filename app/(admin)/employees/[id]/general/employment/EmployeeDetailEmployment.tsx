@@ -5,6 +5,7 @@ import {
   getBranchOptions,
   getDepartmentOptions,
   getEmployeeEmploymentData,
+  getEmployeeOptions,
   getEmploymentStatusOptions,
   getPositionOptions,
   updateEmployeeEmploymentData,
@@ -25,8 +26,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { useDispatch } from "react-redux";
 
-type PositionOption = OptionItem & { department_id?: number | null };
-type BranchOption = OptionItem & { agency_id?: number | null };
+type PositionOption = OptionItem & {
+  department_id?: number | null;
+};
+
+type BranchOption = OptionItem & {
+  agency_id?: number | null;
+};
+
+type EmployeeOption = OptionItem & {
+  is_active?: boolean;
+};
 
 type FormData = {
   code: string;
@@ -35,11 +45,13 @@ type FormData = {
   department_id: number | null;
   position_id: number | null;
   employment_status_id: number | null;
+  supervisor_employee_id: number | null;
   join_date: Date | null;
   end_date: Date | null;
 };
 
 const getBody = () => document.body;
+
 const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 
 const EmployeeDetailEmployment = () => {
@@ -55,6 +67,7 @@ const EmployeeDetailEmployment = () => {
       department_id: null,
       position_id: null,
       employment_status_id: null,
+      supervisor_employee_id: null,
       join_date: null,
       end_date: null,
     },
@@ -62,11 +75,13 @@ const EmployeeDetailEmployment = () => {
 
   const [isPageEdit, setIsPageEdit] = useState(false);
   const [loading, setLoading] = useState(true);
+
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
   const [employmentStatuses, setEmploymentStatuses] = useState<OptionItem[]>([]);
   const [agencies, setAgencies] = useState<OptionItem[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
 
   const selectedDepartmentId = useWatch({
     control,
@@ -84,7 +99,9 @@ const EmployeeDetailEmployment = () => {
   });
 
   const positionOptions = useMemo(() => {
-    if (!selectedDepartmentId) return positions;
+    if (!selectedDepartmentId) {
+      return positions;
+    }
 
     return positions.filter(
       (position) =>
@@ -94,13 +111,22 @@ const EmployeeDetailEmployment = () => {
   }, [positions, selectedDepartmentId]);
 
   const branchOptions = useMemo(() => {
-    if (!selectedAgencyId) return [];
+    if (!selectedAgencyId) {
+      return [];
+    }
+
     return branches.filter(
       (branch) =>
         !branch.agency_id ||
         Number(branch.agency_id) === Number(selectedAgencyId)
     );
   }, [branches, selectedAgencyId]);
+
+  const supervisorOptions = useMemo(() => {
+    return employees
+      .filter((employee) => Number(employee.id) !== Number(employeeId))
+      .filter((employee) => employee.is_active !== false);
+  }, [employees, employeeId]);
 
   useEffect(() => {
     if (!selectedAgencyId && selectedBranchId) {
@@ -111,7 +137,9 @@ const EmployeeDetailEmployment = () => {
     if (
       selectedAgencyId &&
       selectedBranchId &&
-      !branchOptions.some((branch) => Number(branch.id) === Number(selectedBranchId))
+      !branchOptions.some(
+        (branch) => Number(branch.id) === Number(selectedBranchId)
+      )
     ) {
       setValue("branch_id", null);
     }
@@ -119,6 +147,7 @@ const EmployeeDetailEmployment = () => {
 
   const loadData = async () => {
     setLoading(true);
+
     try {
       const [
         employmentData,
@@ -127,6 +156,7 @@ const EmployeeDetailEmployment = () => {
         employmentStatusList,
         agencyList,
         branchList,
+        employeeList,
       ] = await Promise.all([
         getEmployeeEmploymentData(employeeId),
         getDepartmentOptions(),
@@ -134,15 +164,17 @@ const EmployeeDetailEmployment = () => {
         getEmploymentStatusOptions(),
         getAgencyOptions(),
         getBranchOptions(),
+        getEmployeeOptions(),
       ]);
 
       setDepartments(departmentList);
-      setPositions(positionList.filter((a) => a.is_active !== false));
+      setPositions(positionList.filter((item) => item.is_active !== false));
       setEmploymentStatuses(
-        employmentStatusList.filter((a) => a.is_active !== false)
+        employmentStatusList.filter((item) => item.is_active !== false)
       );
       setAgencies(agencyList);
       setBranches(branchList);
+      setEmployees(employeeList);
 
       if (employmentData) {
         reset({
@@ -152,6 +184,8 @@ const EmployeeDetailEmployment = () => {
           department_id: employmentData.department_id ?? null,
           position_id: employmentData.position_id ?? null,
           employment_status_id: employmentData.employment_status_id ?? null,
+          supervisor_employee_id:
+            employmentData.supervisor_employee_id ?? null,
           join_date: employmentData.join_date
             ? dayjs(employmentData.join_date).toDate()
             : null,
@@ -167,6 +201,7 @@ const EmployeeDetailEmployment = () => {
           department_id: null,
           position_id: null,
           employment_status_id: null,
+          supervisor_employee_id: null,
           join_date: null,
           end_date: null,
         });
@@ -197,10 +232,29 @@ const EmployeeDetailEmployment = () => {
   };
 
   useEffect(() => {
+    if (!employeeId || Number.isNaN(employeeId)) {
+      return;
+    }
+
     void loadData();
   }, [employeeId]);
 
   const onSubmit = async (data: FormData) => {
+    if (
+      data.supervisor_employee_id &&
+      Number(data.supervisor_employee_id) === Number(employeeId)
+    ) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: "Supervisor cannot be the same as the employee.",
+        })
+      );
+      return;
+    }
+
     const payload: EmployeeEmploymentData = {
       employee_id: employeeId,
       code: data.code.trim() || null,
@@ -213,6 +267,9 @@ const EmployeeDetailEmployment = () => {
       department_id: Number(data.department_id),
       position_id: Number(data.position_id),
       employment_status_id: Number(data.employment_status_id),
+      supervisor_employee_id: data.supervisor_employee_id
+        ? Number(data.supervisor_employee_id)
+        : null,
       agency_id: data.agency_id ? Number(data.agency_id) : null,
       branch_id: data.branch_id ? Number(data.branch_id) : null,
     };
@@ -225,7 +282,7 @@ const EmployeeDetailEmployment = () => {
           visible: true,
           severity: "success",
           summary: "Success",
-          detail: "Employment data updated successfully",
+          detail: "Employment data updated successfully.",
         })
       );
 
@@ -255,7 +312,11 @@ const EmployeeDetailEmployment = () => {
   };
 
   if (loading) {
-    return <div className="py-8 text-sm text-slate-500">Loading employment data...</div>;
+    return (
+      <div className="py-8 text-sm text-slate-500">
+        Loading employment data...
+      </div>
+    );
   }
 
   return (
@@ -267,7 +328,8 @@ const EmployeeDetailEmployment = () => {
               Employment Data
             </h5>
             <p className="mt-1 text-sm text-slate-500">
-              Manage current employment assignment and organization placement.
+              Manage current employment assignment, organization placement, and
+              direct supervisor.
             </p>
           </div>
 
@@ -364,14 +426,13 @@ const EmployeeDetailEmployment = () => {
                   disabled={!isPageEdit}
                   value={field.value}
                   options={agencies}
-                  onChange={(e) => {
-                    field.onChange(e.value);
-                  }}
+                  onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select agency"
                   className="w-full"
                   showClear
+                  filter
                 />
                 <small className="text-slate-500">
                   Select legal entity / employing company first.
@@ -402,6 +463,7 @@ const EmployeeDetailEmployment = () => {
                   }
                   className="w-full"
                   showClear
+                  filter
                 />
                 <small className="text-slate-500">
                   Branch list is filtered by selected agency.
@@ -425,13 +487,12 @@ const EmployeeDetailEmployment = () => {
                   disabled={!isPageEdit}
                   value={field.value}
                   options={departments}
-                  onChange={(e) => {
-                    field.onChange(e.value);
-                  }}
+                  onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select department"
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  filter
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -460,10 +521,43 @@ const EmployeeDetailEmployment = () => {
                   optionValue="id"
                   placeholder="Select position"
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  filter
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
                 )}
+              </div>
+            )}
+          />
+
+          <Controller
+            name="supervisor_employee_id"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label
+                  htmlFor="supervisor_employee_id"
+                  className={fieldLabelClass}
+                >
+                  Supervisor / Direct Manager
+                </label>
+                <Dropdown
+                  id="supervisor_employee_id"
+                  appendTo={getBody}
+                  disabled={!isPageEdit}
+                  value={field.value}
+                  options={supervisorOptions}
+                  onChange={(e) => field.onChange(e.value)}
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select supervisor"
+                  className="w-full"
+                  showClear
+                  filter
+                />
+                <small className="text-slate-500">
+                  Used by approval engine to route leave and overtime requests.
+                </small>
               </div>
             )}
           />

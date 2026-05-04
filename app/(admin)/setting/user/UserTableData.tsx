@@ -41,16 +41,35 @@ import {
   restoreUser,
 } from '@/app/services/user-service';
 
-const defaultFormValue: User = {
+type UserForm = User & {
+  confirm_password: string;
+};
+
+const defaultFormValue: UserForm = {
   id: 0,
   employee_id: 0,
   email: '',
   username: '',
   password: '',
+  confirm_password: '',
   role: [],
   is_active: true,
   deleted_at: null,
   row_version: 0,
+};
+
+const passwordPassThrough = {
+  root: {
+    style: { width: '100%' },
+  },
+  iconField: {
+    root: {
+      style: { width: '100%' },
+    },
+  },
+  input: {
+    style: { width: '100%' },
+  },
 };
 
 const UserTableData = () => {
@@ -74,8 +93,8 @@ const UserTableData = () => {
     reset,
     setFocus,
     watch,
-    formState: { errors },
-  } = useForm<User>({
+    getValues,
+  } = useForm<UserForm>({
     defaultValues: defaultFormValue,
     mode: 'onTouched',
   });
@@ -88,11 +107,19 @@ const UserTableData = () => {
 
   const { data: userData, error, isLoading } = useSWR<User[]>(currentUserKey, fetcher);
   const { data: allUserData } = useSWR<User[]>(allUserKey, fetcher);
-  const { data: employeeData, error: employeeError, isLoading: employeeIsLoading } = useSWR<Employee[]>(`/api/employees`, fetcher);
-  const { data: roleData, error: roleError, isLoading: roleIsLoading } = useSWR<Role[]>(`/api/roles`, fetcher);
+  const {
+    data: employeeData,
+    error: employeeError,
+    isLoading: employeeIsLoading,
+  } = useSWR<Employee[]>(`/api/employees`, fetcher);
+  const {
+    data: roleData,
+    error: roleError,
+    isLoading: roleIsLoading,
+  } = useSWR<Role[]>(`/api/roles`, fetcher);
 
   const activeRole = useMemo(() => {
-    return (roleData ?? []).filter((item) => item.is_active);
+    return (roleData ?? []).filter((item) => item.is_active && !item.deleted_at);
   }, [roleData]);
 
   const employeeDataFiltered = useMemo(() => {
@@ -112,12 +139,8 @@ const UserTableData = () => {
       return allEmployees.filter((item) => !assignedEmployeeIds.includes(item.id));
     }
 
-    if (selectedData) {
-      return allEmployees.filter((item) => item.id === selectedData.employee_id);
-    }
-
     return allEmployees;
-  }, [employeeData, allUserData, visible, isAddNew, selectedData]);
+  }, [employeeData, allUserData, visible, isAddNew]);
 
   const refreshUserData = async () => {
     await Promise.all([
@@ -135,9 +158,11 @@ const UserTableData = () => {
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
+
     setFilters({
       global: { value, matchMode: FilterMatchMode.CONTAINS },
     });
+
     setGlobalFilterValue(value);
   };
 
@@ -153,17 +178,30 @@ const UserTableData = () => {
     setSelectedData(data);
     setIsAddNew(false);
     setPopupHeaderTitle('Update User');
+
     reset({
       ...data,
       password: '',
+      confirm_password: '',
     });
+
     setVisible(true);
   };
 
-  const handleSubmitNew = async (data: User) => {
+  const buildSubmitPayload = (data: UserForm): User => {
+    return {
+      ...data,
+      password: data.password?.trim() ?? '',
+      employee_id: isAddNew ? data.employee_id : selectedData?.employee_id ?? data.employee_id,
+    };
+  };
+
+  const handleSubmitNew = async (data: UserForm) => {
     try {
       setIsSaving(true);
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createUser(data);
+
+      const payload = buildSubmitPayload(data);
+      const res: ResponseType<ResponseTypeCreateSuccess> = await createUser(payload);
 
       await refreshUserData();
       handleDialogHide();
@@ -201,7 +239,7 @@ const UserTableData = () => {
     }
   };
 
-  const handleUpdate = async (data: User) => {
+  const handleUpdate = async (data: UserForm) => {
     if (!selectedData) {
       dispatch(
         showToast({
@@ -214,13 +252,35 @@ const UserTableData = () => {
       return;
     }
 
+    if (
+      selectedData.row_version === null ||
+      selectedData.row_version === undefined ||
+      Number.isNaN(Number(selectedData.row_version))
+    ) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Row version is missing. Please refresh the page and try again.',
+        })
+      );
+      return;
+    }
+
     try {
       setIsSaving(true);
+
+      const payload: User = {
+        ...buildSubmitPayload(data),
+        employee_id: selectedData.employee_id,
+        row_version: selectedData.row_version,
+      };
 
       const res: ResponseType<ResponseTypeCreateSuccess> = await updateUser(
         selectedData.id,
         selectedData.row_version,
-        data
+        payload
       );
 
       await refreshUserData();
@@ -261,7 +321,10 @@ const UserTableData = () => {
 
   const handleDelete = async (data: User) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteUser(data.id, data.row_version);
+      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteUser(
+        data.id,
+        data.row_version
+      );
 
       await refreshUserData();
 
@@ -335,7 +398,10 @@ const UserTableData = () => {
 
   const handleRestore = async (data: User) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreUser(data.id, data.row_version);
+      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreUser(
+        data.id,
+        data.row_version
+      );
 
       await refreshUserData();
 
@@ -370,7 +436,11 @@ const UserTableData = () => {
     }
   };
 
-  const onSubmit = async (data: User) => {
+  const onSubmit = async (data: UserForm) => {
+    if (isSaving) {
+      return;
+    }
+
     if (isAddNew) {
       await handleSubmitNew(data);
       return;
@@ -474,7 +544,9 @@ const UserTableData = () => {
     let nextValue = [...currentValue];
 
     if (e.checked) {
-      nextValue.push(String(e.value));
+      if (!nextValue.includes(String(e.value))) {
+        nextValue.push(String(e.value));
+      }
     } else {
       nextValue = nextValue.filter((item) => item !== String(e.value));
     }
@@ -581,14 +653,24 @@ const UserTableData = () => {
       />
       <Button
         type="submit"
-        label={isSaving ? (isAddNew ? 'Submitting...' : 'Saving...') : (isAddNew ? 'Submit' : 'Save')}
+        label={
+          isSaving
+            ? isAddNew
+              ? 'Submitting...'
+              : 'Saving...'
+            : isAddNew
+              ? 'Submit'
+              : 'Save'
+        }
         icon={isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
         disabled={isSaving}
       />
     </div>
   );
 
-  if (isLoading) return <LoadingDataTable />;
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
 
   if (error) {
     return <ErrorNotConnectedToApi mutateKey={currentUserKey} />;
@@ -723,66 +805,114 @@ const UserTableData = () => {
           modal
           draggable={false}
           resizable={false}
-          style={{ width: '95vw', maxWidth: '760px' }}
+          style={{ width: '95vw', maxWidth: '860px' }}
           breakpoints={{ '960px': '95vw' }}
           onHide={handleDialogHide}
           footer={footerContent}
           onShow={() => {
-            setFocus('employee_id');
+            if (isAddNew) {
+              setFocus('employee_id');
+            } else {
+              setFocus('email');
+            }
           }}
         >
           <div className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div className="flex flex-col gap-2 md:col-span-2">
-                <label htmlFor="employee_id" className="text-sm font-medium text-slate-700">
-                  Employee
-                </label>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-sm font-semibold text-slate-800">
+                {isAddNew ? 'Create New User Account' : 'Update User Account'}
+              </div>
+              <div className="mt-1 text-sm leading-6 text-slate-500">
+                {isAddNew
+                  ? 'Select an employee, then create login credentials and assign role access.'
+                  : 'Employee assignment is locked. You can update login credentials, roles, and account status only.'}
+              </div>
+            </div>
 
-                <Controller
-                  name="employee_id"
-                  control={control}
-                  rules={{ required: 'Employee is required' }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="employee_id"
-                        appendTo={() => document.body}
-                        value={field.value}
-                        options={employeeDataFiltered}
-                        loading={employeeIsLoading}
-                        disabled={employeeIsLoading || !!employeeError || isSaving}
-                        onChange={(e) => field.onChange(e.value)}
-                        optionLabel="full_name"
-                        optionValue="id"
-                        placeholder={
-                          employeeIsLoading
-                            ? 'Loading employees...'
-                            : 'Select employee'
-                        }
-                        className={fieldState.invalid ? 'p-invalid' : ''}
-                        filter
-                        showClear
-                      />
-                      {fieldState.error && (
-                        <small className="font-medium text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                      {employeeError && (
-                        <small className="font-medium text-red-500">
-                          We couldn’t load the employee list. Please try again.
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Employee Assignment
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  One employee can only have one user account.
+                </p>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label htmlFor="email" className="text-sm font-medium text-slate-700">
-                  Email
-                </label>
+              <Controller
+                name="employee_id"
+                control={control}
+                rules={{
+                  required: 'Employee is required',
+                  validate: (value) => Number(value) > 0 || 'Employee is required',
+                }}
+                render={({ field, fieldState }) => (
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="employee_id" className="text-sm font-medium text-slate-700">
+                      Employee
+                    </label>
 
+                    <Dropdown
+                      id="employee_id"
+                      appendTo={() => document.body}
+                      value={field.value}
+                      options={employeeDataFiltered}
+                      loading={employeeIsLoading}
+                      disabled={!isAddNew || employeeIsLoading || !!employeeError || isSaving}
+                      onChange={(e) => field.onChange(e.value)}
+                      optionLabel="full_name"
+                      optionValue="id"
+                      placeholder={
+                        employeeIsLoading
+                          ? 'Loading employees...'
+                          : isAddNew
+                            ? 'Select employee'
+                            : 'Employee cannot be changed'
+                      }
+                      className={`w-full ${fieldState.invalid ? 'p-invalid' : ''}`}
+                      filter={isAddNew}
+                      showClear={isAddNew}
+                    />
+
+                    {fieldState.error && (
+                      <small className="font-medium text-red-500">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+
+                    {employeeError && (
+                      <small className="font-medium text-red-500">
+                        We couldn’t load the employee list. Please try again.
+                      </small>
+                    )}
+
+                    {!isAddNew && (
+                      <small className="text-slate-500">
+                        Employee assignment cannot be changed after user creation.
+                      </small>
+                    )}
+
+                    {isAddNew && (
+                      <small className="text-slate-500">
+                        Only employees without an existing user account are shown.
+                      </small>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Login Information
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Username and email are used for login and account identification.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Controller
                   name="email"
                   control={control}
@@ -795,29 +925,29 @@ const UserTableData = () => {
                     },
                   }}
                   render={({ field, fieldState }) => (
-                    <>
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                        Email
+                      </label>
+
                       <InputText
                         id="email"
                         type="email"
                         placeholder="example: hello@gmail.com"
-                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value)}
                         className={fieldState.invalid ? 'p-invalid' : ''}
                         disabled={isSaving}
                       />
+
                       {fieldState.error && (
                         <small className="font-medium text-red-500">
                           {fieldState.error.message}
                         </small>
                       )}
-                    </>
+                    </div>
                   )}
                 />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label htmlFor="username" className="text-sm font-medium text-slate-700">
-                  Username
-                </label>
 
                 <Controller
                   name="username"
@@ -827,39 +957,45 @@ const UserTableData = () => {
                     maxLength: { value: 100, message: 'Maximum 100 characters' },
                   }}
                   render={({ field, fieldState }) => (
-                    <>
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="username" className="text-sm font-medium text-slate-700">
+                        Username
+                      </label>
+
                       <InputText
                         id="username"
                         placeholder="example: user.abc"
-                        {...field}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value)}
                         className={fieldState.invalid ? 'p-invalid' : ''}
                         disabled={isSaving}
                       />
+
                       {fieldState.error && (
                         <small className="font-medium text-red-500">
                           {fieldState.error.message}
                         </small>
                       )}
-                    </>
+                    </div>
                   )}
                 />
-              </div>
-
-              <div className="flex flex-col gap-2 md:col-span-2">
-                <label htmlFor="password" className="text-sm font-medium text-slate-700">
-                  Password
-                </label>
 
                 <Controller
                   name="password"
                   control={control}
                   rules={{
                     validate: (value) => {
-                      if (isAddNew && !value?.trim()) {
+                      const passwordValue = value?.trim() ?? '';
+
+                      if (isAddNew && !passwordValue) {
                         return 'Password is required for new user';
                       }
 
-                      if (value && value.length > 50) {
+                      if (passwordValue && passwordValue.length < 8) {
+                        return 'Password must be at least 8 characters';
+                      }
+
+                      if (passwordValue && passwordValue.length > 50) {
                         return 'Maximum 50 characters';
                       }
 
@@ -867,113 +1003,240 @@ const UserTableData = () => {
                     },
                   }}
                   render={({ field, fieldState }) => (
-                    <>
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                        Password
+                      </label>
+
                       <Password
                         id="password"
-                        placeholder={isAddNew ? 'Enter password' : 'Leave blank to keep current password'}
-                        {...field}
+                        placeholder={
+                          isAddNew
+                            ? 'Enter password'
+                            : 'Leave blank to keep current password'
+                        }
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        feedback={isAddNew}
+                        toggleMask
+                        inputClassName="w-full"
+                        className={`w-full ${fieldState.invalid ? 'p-invalid' : ''}`}
+                        disabled={isSaving}
+                        pt={passwordPassThrough}
+                      />
+
+                      {fieldState.error && (
+                        <small className="font-medium text-red-500">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+
+                      {!isAddNew && !fieldState.error && (
+                        <small className="text-slate-500">
+                          Leave password blank if you do not want to change it.
+                        </small>
+                      )}
+                    </div>
+                  )}
+                />
+
+                <Controller
+                  name="confirm_password"
+                  control={control}
+                  rules={{
+                    validate: (value) => {
+                      const passwordValue = getValues('password')?.trim() ?? '';
+                      const confirmValue = value?.trim() ?? '';
+
+                      if (isAddNew && !confirmValue) {
+                        return 'Confirm password is required for new user';
+                      }
+
+                      if (!isAddNew && passwordValue && !confirmValue) {
+                        return 'Confirm password is required when changing password';
+                      }
+
+                      if (passwordValue && confirmValue !== passwordValue) {
+                        return 'Password and confirm password must be the same';
+                      }
+
+                      return true;
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <div className="flex flex-col gap-2">
+                      <label htmlFor="confirm_password" className="text-sm font-medium text-slate-700">
+                        Confirm Password
+                      </label>
+
+                      <Password
+                        id="confirm_password"
+                        placeholder={
+                          isAddNew
+                            ? 'Retype password'
+                            : 'Retype new password'
+                        }
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value)}
                         feedback={false}
                         toggleMask
                         inputClassName="w-full"
                         className={`w-full ${fieldState.invalid ? 'p-invalid' : ''}`}
                         disabled={isSaving}
+                        pt={passwordPassThrough}
                       />
+
                       {fieldState.error && (
                         <small className="font-medium text-red-500">
                           {fieldState.error.message}
                         </small>
                       )}
+
                       {!isAddNew && !fieldState.error && (
                         <small className="text-slate-500">
-                          Leave this blank if you do not want to change the current password.
+                          Required only if you fill the password field.
                         </small>
                       )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 md:col-span-2">
-                <label htmlFor="role" className="text-sm font-medium text-slate-700">
-                  Role
-                </label>
-
-                <Controller
-                  name="role"
-                  control={control}
-                  rules={{ required: 'Role is required' }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
-                        {roleIsLoading && (
-                          <small className="text-slate-500">Loading roles...</small>
-                        )}
-
-                        {!roleIsLoading && activeRole.map((role: Role) => (
-                          <div key={role.code} className="flex items-start gap-2">
-                            <Checkbox
-                              inputId={role.code.toString()}
-                              name="role"
-                              value={role.code}
-                              onChange={(e) => onRoleChange(e, field.value ?? [], field.onChange)}
-                              checked={(field.value ?? []).some((item: string) => item === role.code.toString())}
-                              disabled={isSaving}
-                            />
-                            <label htmlFor={role.code.toString()} className="cursor-pointer text-sm text-slate-700">
-                              {role.description}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-
-                      {!!selectedRoles.length && (
-                        <div className="flex flex-wrap gap-2">
-                          {selectedRoles.map((item) => (
-                            <Tag key={item} value={item} severity="info" />
-                          ))}
-                        </div>
-                      )}
-
-                      {fieldState.error && (
-                        <small className="font-medium text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-
-                      {roleError && (
-                        <small className="font-medium text-red-500">
-                          We couldn’t load the role list. Please try again.
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 md:col-span-2">
-                <label htmlFor="is_active" className="text-sm font-medium text-slate-700">
-                  Active
-                </label>
-
-                <Controller
-                  name="is_active"
-                  control={control}
-                  defaultValue={true}
-                  render={({ field }) => (
-                    <div className="flex items-center gap-3">
-                      <InputSwitch
-                        id="is_active"
-                        checked={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        disabled={isSaving}
-                      />
-                      <span className="text-sm text-slate-600">
-                        {field.value ? 'Account is active' : 'Account is inactive'}
-                      </span>
                     </div>
                   )}
                 />
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Role Access
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Assign one or more roles to determine what this user can access.
+                </p>
+              </div>
+
+              <Controller
+                name="role"
+                control={control}
+                rules={{
+                  validate: (value) =>
+                    value && value.length > 0 ? true : 'Role is required',
+                }}
+                render={({ field, fieldState }) => (
+                  <div className="flex flex-col gap-3">
+                    <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+                      {roleIsLoading && (
+                        <small className="text-slate-500">Loading roles...</small>
+                      )}
+
+                      {!roleIsLoading && activeRole.length === 0 && (
+                        <small className="text-slate-500">No active role found.</small>
+                      )}
+
+                      {!roleIsLoading &&
+                        activeRole.map((role: Role) => {
+                          const checked = (field.value ?? []).some(
+                            (item: string) => item === role.code.toString()
+                          );
+
+                          return (
+                            <div
+                              key={role.code}
+                              className={`rounded-xl border bg-white p-3 transition ${checked
+                                ? 'border-blue-300 ring-1 ring-blue-200'
+                                : 'border-slate-200'
+                                }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <Checkbox
+                                  inputId={role.code.toString()}
+                                  name="role"
+                                  value={role.code}
+                                  onChange={(e) =>
+                                    onRoleChange(e, field.value ?? [], field.onChange)
+                                  }
+                                  checked={checked}
+                                  disabled={isSaving}
+                                />
+
+                                <label
+                                  htmlFor={role.code.toString()}
+                                  className="cursor-pointer"
+                                >
+                                  <div className="text-sm font-semibold text-slate-800">
+                                    {role.name || role.code}
+                                  </div>
+                                  <div className="mt-1 text-xs text-slate-500">
+                                    {role.description || role.code}
+                                  </div>
+                                  <div className="mt-2">
+                                    <Tag value={role.code} severity="info" />
+                                  </div>
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {!!selectedRoles.length && (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedRoles.map((item) => (
+                          <Tag key={item} value={item} severity="info" />
+                        ))}
+                      </div>
+                    )}
+
+                    {fieldState.error && (
+                      <small className="font-medium text-red-500">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+
+                    {roleError && (
+                      <small className="font-medium text-red-500">
+                        We couldn’t load the role list. Please try again.
+                      </small>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-slate-800">
+                  Account Status
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Inactive users cannot use the system.
+                </p>
+              </div>
+
+              <Controller
+                name="is_active"
+                control={control}
+                defaultValue={true}
+                render={({ field }) => (
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div>
+                      <div className="text-sm font-medium text-slate-800">
+                        {field.value ? 'Account is active' : 'Account is inactive'}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {field.value
+                          ? 'This user can login and access permitted menus.'
+                          : 'This user cannot login until reactivated.'}
+                      </div>
+                    </div>
+
+                    <InputSwitch
+                      id="is_active"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.value)}
+                      disabled={isSaving}
+                    />
+                  </div>
+                )}
+              />
             </div>
           </div>
         </Dialog>

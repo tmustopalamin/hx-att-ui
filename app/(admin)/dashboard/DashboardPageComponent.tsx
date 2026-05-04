@@ -16,29 +16,22 @@ import { AdminDashboardResponse } from "@/app/types/admin-dashboard";
 
 type DashboardCard = {
   label: string;
-  value: number;
+  value: number | string;
   icon: string;
   iconBg: string;
   iconColor: string;
   note: string;
+  info: string;
+  href?: string;
+  permission?: string;
+};
+
+type QuickAccessItem = {
+  label: string;
+  icon: string;
   href: string;
+  permission?: string;
 };
-
-const getGreeting = (name: string) => {
-  const hour = new Date().getHours();
-
-  if (hour < 12) return `Good morning, ${name}`;
-  if (hour < 18) return `Good afternoon, ${name}`;
-  if (hour < 21) return `Good evening, ${name}`;
-  return `Good night, ${name}`;
-};
-
-const getTodayDate = () => {
-  return dayjs().format("dddd, DD MMMM YYYY");
-};
-
-const clickableCardClass =
-  "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md";
 
 const chartColors = {
   blue: "#3B82F6",
@@ -63,118 +56,228 @@ const fallbackDepartmentColors = [
   chartColors.emerald,
 ];
 
+const getGreeting = (name: string) => {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return `Good morning, ${name}`;
+  if (hour < 18) return `Good afternoon, ${name}`;
+  if (hour < 21) return `Good evening, ${name}`;
+  return `Good night, ${name}`;
+};
+
+const getTodayDate = () => {
+  return dayjs().format("dddd, DD MMMM YYYY");
+};
+
+const getProfilePermissions = (profileState: unknown): string[] => {
+  const profile = profileState as { permissions?: unknown };
+
+  if (!Array.isArray(profile.permissions)) {
+    return [];
+  }
+
+  return profile.permissions.filter(
+    (permission): permission is string => typeof permission === "string"
+  );
+};
+
+const formatNumber = (value: number | string) => {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return value.toLocaleString("id-ID");
+};
+
+const formatPercent = (value: number) => {
+  if (!Number.isFinite(value)) {
+    return "0%";
+  }
+
+  return `${Math.round(value)}%`;
+};
+
+const getRate = (value: number, total: number) => {
+  if (total <= 0) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, (value / total) * 100));
+};
+
+const InfoHint = ({ text }: { text: string }) => {
+  return (
+    <span
+      className="group relative inline-flex"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <i className="pi pi-info-circle cursor-help text-xs text-slate-400 transition-colors hover:text-blue-500" />
+
+      <span className="pointer-events-none absolute right-0 top-6 z-50 hidden w-64 rounded-xl bg-slate-900 px-3 py-2 text-left text-xs font-normal leading-5 text-white shadow-xl group-hover:block">
+        {text}
+      </span>
+    </span>
+  );
+};
+
 const DashboardPageComponent = () => {
   const router = useRouter();
   const profileState = useSelector((state: RootState) => state.profile);
 
-  const {
-    data,
-    error,
-    isLoading,
-    mutate,
-  } = useSWR<AdminDashboardResponse>("/api/dashboard/admin", getAdminDashboard);
+  const { data, error, isLoading } = useSWR<AdminDashboardResponse>(
+    "/api/dashboard/admin",
+    getAdminDashboard
+  );
 
-  const todayOverview: DashboardCard[] = useMemo(() => {
+  const profile = profileState as {
+    name?: string | null;
+    permissions?: unknown;
+  };
+
+  const adminName = String(profile.name ?? "Admin").trim() || "Admin";
+
+  const permissionSet = useMemo(() => {
+    return new Set(getProfilePermissions(profileState));
+  }, [profileState]);
+
+  const hasPermission = (permission?: string) => {
+    if (!permission) {
+      return true;
+    }
+
+    return permissionSet.has(permission);
+  };
+
+  const activeEmployees = data?.today_overview.active_employees ?? 0;
+  const presentToday = data?.today_overview.present_today ?? 0;
+  const absentToday = data?.today_overview.absent_today ?? 0;
+  const lateToday = data?.today_overview.late_today ?? 0;
+  const onLeaveToday = data?.today_overview.on_leave_today ?? 0;
+
+  const attendanceRate = getRate(presentToday, activeEmployees);
+  const absenceRate = getRate(absentToday, activeEmployees);
+  const lateRate = getRate(lateToday, activeEmployees);
+  const leaveRate = getRate(onLeaveToday, activeEmployees);
+
+  const quickAccessItems: QuickAccessItem[] = [
+    {
+      label: "Attendance Summary",
+      icon: "pi-file-check",
+      href: "/attendance-summary",
+      permission: "attendance-summary.read",
+    },
+    {
+      label: "Attendance Log",
+      icon: "pi-clock",
+      href: "/attendance-log",
+      permission: "attendance-log.read",
+    },
+    {
+      label: "Employees",
+      icon: "pi-users",
+      href: "/employees",
+      permission: "employee.read",
+    },
+    {
+      label: "Leave Management",
+      icon: "pi-calendar-minus",
+      href: "/leave-management",
+      permission: "leave-management.read",
+    },
+    {
+      label: "Overtime Management",
+      icon: "pi-stopwatch",
+      href: "/overtime-management",
+      permission: "overtime-management.read",
+    },
+  ];
+
+  const visibleQuickAccessItems = quickAccessItems.filter((item) =>
+    hasPermission(item.permission)
+  );
+
+  const todayCards: DashboardCard[] = useMemo(() => {
     return [
       {
+        label: "Attendance Rate",
+        value: formatPercent(attendanceRate),
+        icon: "pi-chart-line",
+        iconBg: "bg-blue-50",
+        iconColor: "text-blue-600",
+        note: `${presentToday} present from ${activeEmployees} active employees`,
+        info: "Percentage of active employees who are marked present today. This is calculated from Present Today divided by Active Employees.",
+        href: "/attendance-summary",
+        permission: "attendance-summary.read",
+      },
+      {
         label: "Present Today",
-        value: data?.today_overview.present_today ?? 0,
+        value: presentToday,
         icon: "pi-check-circle",
         iconBg: "bg-emerald-50",
         iconColor: "text-emerald-600",
         note: "Employees marked present today",
+        info: "Number of employees whose attendance summary status is present for today.",
         href: "/attendance-summary",
+        permission: "attendance-summary.read",
       },
       {
         label: "Absent Today",
-        value: data?.today_overview.absent_today ?? 0,
+        value: absentToday,
         icon: "pi-times-circle",
         iconBg: "bg-red-50",
         iconColor: "text-red-600",
-        note: "Employees not present today",
+        note: `${formatPercent(absenceRate)} of active employees`,
+        info: "Number of employees marked absent today from attendance summary.",
         href: "/attendance-summary",
+        permission: "attendance-summary.read",
       },
       {
         label: "Late Today",
-        value: data?.today_overview.late_today ?? 0,
+        value: lateToday,
         icon: "pi-clock",
         iconBg: "bg-amber-50",
         iconColor: "text-amber-600",
-        note: "Arrived after shift start",
+        note: `${formatPercent(lateRate)} of active employees`,
+        info: "Number of employees marked late today based on attendance summary.",
         href: "/attendance-summary",
+        permission: "attendance-summary.read",
       },
       {
         label: "On Leave Today",
-        value: data?.today_overview.on_leave_today ?? 0,
+        value: onLeaveToday,
         icon: "pi-calendar-minus",
         iconBg: "bg-violet-50",
         iconColor: "text-violet-600",
-        note: "Employees on approved leave",
-        href: "/request-leave",
+        note: `${formatPercent(leaveRate)} of active employees`,
+        info: "Number of employees marked as leave today in attendance summary after attendance processing.",
+        href: "/leave-management",
+        permission: "leave-management.read",
       },
       {
         label: "Active Employees",
-        value: data?.today_overview.active_employees ?? 0,
+        value: activeEmployees,
         icon: "pi-users",
-        iconBg: "bg-blue-50",
-        iconColor: "text-blue-600",
+        iconBg: "bg-sky-50",
+        iconColor: "text-sky-600",
         note: "Current active workforce",
+        info: "Total active employees currently available in employee master data.",
         href: "/employees",
-      },
-      {
-        label: "Attendance Exceptions",
-        value: data?.today_overview.attendance_exceptions ?? 0,
-        icon: "pi-exclamation-triangle",
-        iconBg: "bg-orange-50",
-        iconColor: "text-orange-600",
-        note: "Logs or summaries needing review",
-        href: "/attendance-log",
+        permission: "employee.read",
       },
     ];
-  }, [data]);
+  }, [
+    activeEmployees,
+    attendanceRate,
+    absenceRate,
+    lateRate,
+    leaveRate,
+    presentToday,
+    absentToday,
+    lateToday,
+    onLeaveToday,
+  ]);
 
-  const needsAttention: DashboardCard[] = useMemo(() => {
-    return [
-      {
-        label: "Unprocessed Attendance Logs",
-        value: data?.needs_attention.unprocessed_attendance_logs ?? 0,
-        icon: "pi-inbox",
-        iconBg: "bg-amber-50",
-        iconColor: "text-amber-600",
-        note: "Logs not processed into summary",
-        href: "/attendance-log",
-      },
-      {
-        label: "Unmapped Attendance Logs",
-        value: data?.needs_attention.unmapped_attendance_logs ?? 0,
-        icon: "pi-link-slash",
-        iconBg: "bg-red-50",
-        iconColor: "text-red-600",
-        note: "Logs without employee mapping",
-        href: "/attendance-log",
-      },
-      {
-        label: "Missing Shift Assignment",
-        value: data?.needs_attention.missing_shift_assignment ?? 0,
-        icon: "pi-calendar-times",
-        iconBg: "bg-yellow-50",
-        iconColor: "text-yellow-700",
-        note: "Employees without shift setup today",
-        href: "/setting/employee-shift-assignment",
-      },
-      {
-        label: "Incomplete Attendance",
-        value: data?.needs_attention.incomplete_attendance ?? 0,
-        icon: "pi-info-circle",
-        iconBg: "bg-orange-50",
-        iconColor: "text-orange-600",
-        note: "Missing check pair or incomplete summary",
-        href: "/attendance-summary",
-      },
-    ];
-  }, [data]);
-
-  const organizationSummary: DashboardCard[] = useMemo(() => {
+  const organizationCards: DashboardCard[] = useMemo(() => {
     return [
       {
         label: "Total Employees",
@@ -183,7 +286,9 @@ const DashboardPageComponent = () => {
         iconBg: "bg-blue-50",
         iconColor: "text-blue-600",
         note: "All registered employees",
+        info: "Total employees from employee master data.",
         href: "/employees",
+        permission: "employee.read",
       },
       {
         label: "Departments",
@@ -192,7 +297,9 @@ const DashboardPageComponent = () => {
         iconBg: "bg-purple-50",
         iconColor: "text-purple-600",
         note: "Active department master data",
+        info: "Total active departments in master data.",
         href: "/setting/department",
+        permission: "master-data.read",
       },
       {
         label: "Branches",
@@ -201,48 +308,9 @@ const DashboardPageComponent = () => {
         iconBg: "bg-cyan-50",
         iconColor: "text-cyan-600",
         note: "Available branch setup",
+        info: "Total active branches in master data.",
         href: "/setting/branch",
-      },
-      {
-        label: "New Employees This Month",
-        value: data?.organization_snapshot.new_employees_this_month ?? 0,
-        icon: "pi-user-plus",
-        iconBg: "bg-emerald-50",
-        iconColor: "text-emerald-600",
-        note: "New joiners this month",
-        href: "/employees",
-      },
-    ];
-  }, [data]);
-
-  const peopleAdminSummary: DashboardCard[] = useMemo(() => {
-    return [
-      {
-        label: "Active Contracts",
-        value: data?.people_admin_notes.active_contracts ?? 0,
-        icon: "pi-id-card",
-        iconBg: "bg-slate-100",
-        iconColor: "text-slate-700",
-        note: "Employees with active contracts",
-        href: "/employees",
-      },
-      {
-        label: "Expiring in 7 Days",
-        value: data?.people_admin_notes.expiring_in_7_days ?? 0,
-        icon: "pi-exclamation-circle",
-        iconBg: "bg-orange-50",
-        iconColor: "text-orange-600",
-        note: "Contracts needing immediate review",
-        href: "/employees",
-      },
-      {
-        label: "Expiring in 30 Days",
-        value: data?.people_admin_notes.expiring_in_30_days ?? 0,
-        icon: "pi-calendar",
-        iconBg: "bg-amber-50",
-        iconColor: "text-amber-700",
-        note: "Upcoming contract expirations",
-        href: "/employees",
+        permission: "master-data.read",
       },
       {
         label: "Birthdays This Week",
@@ -250,8 +318,10 @@ const DashboardPageComponent = () => {
         icon: "pi-gift",
         iconBg: "bg-pink-50",
         iconColor: "text-pink-600",
-        note: "Employees celebrating this week",
+        note: "Employee birthdays this week",
+        info: "Number of employees whose birthday falls within the current week.",
         href: "/employees",
+        permission: "employee.read",
       },
     ];
   }, [data]);
@@ -323,7 +393,8 @@ const DashboardPageComponent = () => {
         {
           data: rows.map((item) => item.value),
           backgroundColor: rows.map(
-            (_, index) => fallbackDepartmentColors[index % fallbackDepartmentColors.length]
+            (_, index) =>
+              fallbackDepartmentColors[index % fallbackDepartmentColors.length]
           ),
           borderWidth: 2,
           borderColor: "#ffffff",
@@ -401,27 +472,49 @@ const DashboardPageComponent = () => {
   };
 
   const renderMetricCards = (items: DashboardCard[]) => {
-    return items.map((item) => (
-      <Card
-        key={item.label}
-        className={`shadow-sm ${clickableCardClass}`}
-        onClick={() => router.push(item.href)}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm text-slate-500">{item.label}</p>
-            <p className="mt-2 text-3xl font-bold text-slate-800">{item.value}</p>
-            <p className="mt-2 text-xs text-slate-400">{item.note}</p>
-          </div>
+    return items.map((item) => {
+      const canOpen = !!item.href && hasPermission(item.permission);
 
-          <div
-            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${item.iconBg}`}
-          >
-            <i className={`pi ${item.icon} text-xl ${item.iconColor}`} />
+      return (
+        <Card
+          key={item.label}
+          className={`shadow-sm transition-all duration-200 ${canOpen
+              ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md"
+              : "cursor-default"
+            }`}
+          onClick={() => {
+            if (canOpen && item.href) {
+              router.push(item.href);
+            }
+          }}
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-medium text-slate-500">
+                  {item.label}
+                </p>
+                <InfoHint text={item.info} />
+              </div>
+
+              <p className="mt-2 text-3xl font-bold text-slate-800">
+                {formatNumber(item.value)}
+              </p>
+
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                {item.note}
+              </p>
+            </div>
+
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${item.iconBg}`}
+            >
+              <i className={`pi ${item.icon} text-xl ${item.iconColor}`} />
+            </div>
           </div>
-        </div>
-      </Card>
-    ));
+        </Card>
+      );
+    });
   };
 
   if (isLoading) {
@@ -434,122 +527,70 @@ const DashboardPageComponent = () => {
 
   return (
     <div className="flex w-full flex-col gap-5">
-      <Card className="w-full" pt={{ content: { className: "p-0" } }}>
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-1 flex-col gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-800">
-                {getGreeting(profileState.name)}!
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">It is {getTodayDate()}</p>
-              <p className="mt-3 max-w-2xl text-sm text-slate-500">
-                Review today’s attendance condition, operational issues, and workforce overview.
-              </p>
+      <Card className="w-full overflow-hidden" pt={{ content: { className: "p-0" } }}>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 p-6 text-white">
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+
+          <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-1 flex-col gap-5">
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20">
+                  <i className="pi pi-calendar text-xs" />
+                  <span>{getTodayDate()}</span>
+                </div>
+
+                <h2 className="text-3xl font-bold tracking-tight">
+                  {getGreeting(adminName)}!
+                </h2>
+
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">
+                  Monitor today&apos;s attendance, employee availability, and
+                  workforce summary from live HRIS data.
+                </p>
+              </div>
+
+              {visibleQuickAccessItems.length > 0 && (
+                <div>
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">
+                    Quick Access
+                  </p>
+
+                  <div className="flex flex-wrap gap-3">
+                    {visibleQuickAccessItems.map((item, index) => (
+                      <Button
+                        key={item.href}
+                        type="button"
+                        label={item.label}
+                        icon={`pi ${item.icon}`}
+                        rounded
+                        outlined={index !== 0}
+                        className={
+                          index === 0
+                            ? "border-white/30 bg-white text-blue-700 hover:bg-blue-50"
+                            : "border-white/40 text-white hover:bg-white/10"
+                        }
+                        onClick={() => router.push(item.href)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <Button
-                type="button"
-                label="Attendance Summary"
-                icon="pi pi-file-check"
-                rounded
-                onClick={() => router.push("/attendance-summary")}
-              />
-              <Button
-                type="button"
-                label="Attendance Log"
-                icon="pi pi-clock"
-                rounded
-                outlined
-                onClick={() => router.push("/attendance-log")}
-              />
-              <Button
-                type="button"
-                label="Employees"
-                icon="pi pi-users"
-                rounded
-                outlined
-                onClick={() => router.push("/employees")}
-              />
-              <Button
-                type="button"
-                label="Refresh"
-                icon="pi pi-refresh"
-                rounded
-                outlined
-                onClick={() => mutate()}
+            <div className="hidden items-end justify-center lg:flex lg:w-[260px]">
+              <img
+                src="/images/welcome-dashboard.png"
+                alt="Welcome Dashboard"
+                className="w-56 drop-shadow-2xl"
               />
             </div>
-          </div>
-
-          <div className="flex items-end justify-center lg:w-[260px]">
-            <img
-              src="/images/welcome-dashboard.png"
-              alt="Welcome Dashboard"
-              className="w-44 md:w-52 lg:w-60"
-            />
           </div>
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {renderMetricCards(todayOverview)}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
-        <div className="xl:col-span-7">
-          <Card className="h-full shadow-sm">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-800">Needs Attention</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Priority operational items for admin review today.
-                  </p>
-                </div>
-
-                <Button
-                  type="button"
-                  label="Open Attendance Log"
-                  icon="pi pi-arrow-right"
-                  text
-                  onClick={() => router.push("/attendance-log")}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {renderMetricCards(needsAttention)}
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="xl:col-span-5">
-          <Card className="h-full shadow-sm">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-800">People Admin Notes</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Employee lifecycle and contract reminders.
-                  </p>
-                </div>
-
-                <Button
-                  type="button"
-                  label="Open Employees"
-                  icon="pi pi-arrow-right"
-                  text
-                  onClick={() => router.push("/employees")}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {renderMetricCards(peopleAdminSummary)}
-              </div>
-            </div>
-          </Card>
-        </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+        {renderMetricCards(todayCards)}
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
@@ -558,19 +599,27 @@ const DashboardPageComponent = () => {
             <div className="flex flex-col gap-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800">Attendance Trend</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-bold text-slate-800">
+                      Attendance Trend
+                    </h3>
+                    <InfoHint text="Shows daily present and absent employee counts for the current 14-day dashboard period." />
+                  </div>
+
                   <p className="mt-1 text-sm text-slate-500">
-                    Daily present versus absent trend for the current period.
+                    Daily present versus absent trend.
                   </p>
                 </div>
 
-                <Button
-                  type="button"
-                  label="Open Summary"
-                  icon="pi pi-arrow-right"
-                  text
-                  onClick={() => router.push("/attendance-summary")}
-                />
+                {hasPermission("attendance-summary.read") && (
+                  <Button
+                    type="button"
+                    label="Open Summary"
+                    icon="pi pi-arrow-right"
+                    text
+                    onClick={() => router.push("/attendance-summary")}
+                  />
+                )}
               </div>
 
               <div className="h-[320px] w-full">
@@ -586,26 +635,183 @@ const DashboardPageComponent = () => {
         </div>
 
         <div className="xl:col-span-5">
+          <Card className="h-full shadow-sm">
+            <div className="flex h-full flex-col gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-2xl font-bold text-slate-800">
+                    Today Summary
+                  </h3>
+                  <InfoHint text="Simple ratio summary calculated from today's attendance data and active employee count." />
+                </div>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Quick attendance ratio for today.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600">
+                      Attendance Rate
+                    </span>
+                    <span className="text-sm font-bold text-blue-600">
+                      {formatPercent(attendanceRate)}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-blue-500"
+                      style={{ width: `${attendanceRate}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600">
+                      Absence Rate
+                    </span>
+                    <span className="text-sm font-bold text-red-600">
+                      {formatPercent(absenceRate)}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-red-500"
+                      style={{ width: `${absenceRate}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600">
+                      Late Rate
+                    </span>
+                    <span className="text-sm font-bold text-amber-600">
+                      {formatPercent(lateRate)}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-amber-500"
+                      style={{ width: `${lateRate}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-600">
+                      Leave Rate
+                    </span>
+                    <span className="text-sm font-bold text-violet-600">
+                      {formatPercent(leaveRate)}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-violet-500"
+                      style={{ width: `${leaveRate}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-auto rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
+                <div className="grid grid-cols-2 gap-3 text-center">
+                  <div>
+                    <p className="text-xs text-slate-500">Present</p>
+                    <p className="mt-1 text-lg font-bold text-emerald-600">
+                      {presentToday}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-500">Active Staff</p>
+                    <p className="mt-1 text-lg font-bold text-blue-600">
+                      {activeEmployees}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+        <div className="xl:col-span-7">
           <Card className="shadow-sm">
             <div className="flex flex-col gap-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="text-2xl font-bold text-slate-800">Employees by Department</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-bold text-slate-800">
+                      Late Trend
+                    </h3>
+                    <InfoHint text="Shows daily number of employees marked late for the current dashboard period." />
+                  </div>
+
                   <p className="mt-1 text-sm text-slate-500">
-                    Current active employee distribution by department.
+                    Daily number of employees arriving late.
                   </p>
                 </div>
 
-                <Button
-                  type="button"
-                  label="Open Departments"
-                  icon="pi pi-arrow-right"
-                  text
-                  onClick={() => router.push("/setting/department")}
-                />
+                {hasPermission("attendance-summary.read") && (
+                  <Button
+                    type="button"
+                    label="Open Summary"
+                    icon="pi pi-arrow-right"
+                    text
+                    onClick={() => router.push("/attendance-summary")}
+                  />
+                )}
               </div>
 
-              <div className="h-[320px] w-full">
+              <div className="h-[300px] w-full">
+                <Chart
+                  type="bar"
+                  data={lateTrendData}
+                  options={barChartOptions}
+                  className="h-full"
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="xl:col-span-5">
+          <Card className="shadow-sm">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-2xl font-bold text-slate-800">
+                      Employees by Department
+                    </h3>
+                    <InfoHint text="Shows active employee distribution by current department assignment." />
+                  </div>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Current employee distribution by department.
+                  </p>
+                </div>
+
+                {hasPermission("master-data.read") && (
+                  <Button
+                    type="button"
+                    label="Departments"
+                    icon="pi pi-arrow-right"
+                    text
+                    onClick={() => router.push("/setting/department")}
+                  />
+                )}
+              </div>
+
+              <div className="h-[300px] w-full">
                 <Chart
                   type="doughnut"
                   data={departmentData}
@@ -618,63 +824,17 @@ const DashboardPageComponent = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {renderMetricCards(organizationSummary)}
-      </div>
+      <div>
+        <div className="mb-3 flex items-center gap-2">
+          <h3 className="text-xl font-bold text-slate-800">
+            Organization Snapshot
+          </h3>
+          <InfoHint text="Summary of employee and organization master data available in the system." />
+        </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-        <Card className="shadow-sm">
-          <div className="flex flex-col gap-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-2xl font-bold text-slate-800">Late Trend</h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Daily number of employees arriving late.
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                label="Open Summary"
-                icon="pi pi-arrow-right"
-                text
-                onClick={() => router.push("/attendance-summary")}
-              />
-            </div>
-
-            <div className="h-[300px] w-full">
-              <Chart
-                type="bar"
-                data={lateTrendData}
-                options={barChartOptions}
-                className="h-full"
-              />
-            </div>
-          </div>
-        </Card>
-
-        <Card className="shadow-sm">
-          <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-2xl font-bold text-slate-800">Dashboard Status</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Dashboard is now connected to backend data and ready for further metric expansion.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4">
-              <p className="text-sm font-semibold text-slate-700">Current live sections</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-500">
-                <li>• Today Overview</li>
-                <li>• Needs Attention</li>
-                <li>• Organization Snapshot</li>
-                <li>• Attendance Trend</li>
-                <li>• Late Trend</li>
-                <li>• Employees by Department</li>
-              </ul>
-            </div>
-          </div>
-        </Card>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {renderMetricCards(organizationCards)}
+        </div>
       </div>
     </div>
   );

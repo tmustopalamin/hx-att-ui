@@ -365,18 +365,25 @@ const RoleTableData = () => {
               <Controller
                 name="code"
                 control={control}
-                rules={{ required: "*required", }}
+                rules={{ required: "*required" }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
                       id="code"
-                      placeholder='example: admin'
+                      placeholder="example: admin"
                       disabled={!isAddNew}
                       {...field}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && (
-                      <small className="font-bold p-error"> {fieldState.error.message} </small>
+                      <small className="font-bold p-error">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+                    {!isAddNew && (
+                      <small className="text-slate-500">
+                        Role code is locked because it is used by Casbin policies.
+                      </small>
                     )}
                   </>
                 )}

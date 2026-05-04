@@ -12,10 +12,6 @@ type OvertimeRequestPayload = {
     reason: string | null;
 };
 
-type RejectOvertimeRequestPayload = {
-    rejection_reason: string | null;
-};
-
 const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
     const contentType = res.headers.get('Content-Type');
 
@@ -202,60 +198,6 @@ export const purgeOvertimeRequest = async (id: number) => {
         headers: {
             'Content-Type': 'application/json',
         },
-    });
-
-    if (!res.ok) {
-        throw await parseErrorResponse(res);
-    }
-
-    return res.json();
-};
-
-export const approveOvertimeRequest = async (
-    id: number,
-    rowVersion: number
-) => {
-    if (rowVersion <= 0) {
-        throw new Error('rowVersion is required');
-    }
-
-    const res = await fetch(`${API_URL}/${id}/approve`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'If-Match': String(rowVersion),
-        },
-    });
-
-    if (!res.ok) {
-        throw await parseErrorResponse(res);
-    }
-
-    return res.json();
-};
-
-export const rejectOvertimeRequest = async (
-    id: number,
-    rowVersion: number,
-    rejectionReason?: string | null
-) => {
-    if (rowVersion <= 0) {
-        throw new Error('rowVersion is required');
-    }
-
-    const payload: RejectOvertimeRequestPayload = {
-        rejection_reason: normalizeReason(rejectionReason),
-    };
-
-    const res = await fetch(`${API_URL}/${id}/reject`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'If-Match': String(rowVersion),
-        },
-        body: JSON.stringify(payload),
     });
 
     if (!res.ok) {

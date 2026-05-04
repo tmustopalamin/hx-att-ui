@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { InputOtp } from "primereact/inputotp";
 import { InputText } from "primereact/inputtext";
+
 import { ForgotPassword } from "@/app/types/forgot-password";
 import { showToast } from "@/store/ToastSlice";
 
@@ -41,14 +42,18 @@ const ForgotPasswordPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          email: formData.email.trim().toLowerCase(),
+        }),
       });
 
       const responseData = await res.json();
 
       if (!res.ok) {
         const errorMessage =
-          responseData?.message || "Failed to request reset password. Please try again.";
+          responseData?.message ||
+          "Failed to request reset password. Please try again.";
+
         throw new Error(errorMessage);
       }
 
@@ -58,7 +63,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: "OTP Sent",
           detail: responseData.message,
         })
       );
@@ -94,16 +99,14 @@ const ForgotPasswordPage = () => {
         throw new Error("OTP must be 6 digits.");
       }
 
-      const body = {
-        otp: otpValue,
-      };
-
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          otp: otpValue,
+        }),
       });
 
       const responseData = await res.json();
@@ -111,6 +114,7 @@ const ForgotPasswordPage = () => {
       if (!res.ok) {
         const errorMessage =
           responseData?.message || "Failed to verify OTP. Please try again.";
+
         throw new Error(errorMessage);
       }
 
@@ -123,7 +127,7 @@ const ForgotPasswordPage = () => {
         })
       );
 
-      router.push("/login");
+      router.replace("/login");
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -145,20 +149,26 @@ const ForgotPasswordPage = () => {
     }
   };
 
+  const inputBaseClass =
+    "h-12 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-800 shadow-sm transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50";
+
+  const inputErrorClass =
+    "border-red-300 focus:border-red-500 focus:ring-red-100";
+
   const renderStepIndicator = () => {
     return (
       <div className="mb-6 flex items-center justify-center gap-3">
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${!isOtpFormVisible
-              ? "bg-blue-600 text-white"
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${!isOtpFormVisible
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
               : "bg-blue-100 text-blue-700"
               }`}
           >
             1
           </div>
           <span
-            className={`text-xs font-medium ${!isOtpFormVisible ? "text-slate-700" : "text-slate-500"
+            className={`text-xs font-semibold ${!isOtpFormVisible ? "text-slate-800" : "text-slate-500"
               }`}
           >
             Email
@@ -169,15 +179,15 @@ const ForgotPasswordPage = () => {
 
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${isOtpFormVisible
-              ? "bg-blue-600 text-white"
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${isOtpFormVisible
+              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
               : "bg-slate-200 text-slate-500"
               }`}
           >
             2
           </div>
           <span
-            className={`text-xs font-medium ${isOtpFormVisible ? "text-slate-700" : "text-slate-500"
+            className={`text-xs font-semibold ${isOtpFormVisible ? "text-slate-800" : "text-slate-500"
               }`}
           >
             OTP
@@ -193,74 +203,22 @@ const ForgotPasswordPage = () => {
     }
 
     return (
-      <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+      <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
         <div className="flex items-start gap-3">
-          <i className="pi pi-exclamation-circle mt-0.5 text-red-500" />
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <i className="pi pi-exclamation-circle text-sm" />
+          </div>
+
           <div>
             <p className="text-sm font-semibold text-red-700">
               Process failed
             </p>
-            <p className="mt-1 text-sm text-red-600">{formError}</p>
+            <p className="mt-1 text-sm leading-5 text-red-600">
+              {formError}
+            </p>
           </div>
         </div>
       </div>
-    );
-  };
-
-  const renderFormOTP = () => {
-    return (
-      <>
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Input OTP</h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Enter the 6-digit OTP code sent to your email.
-          </p>
-        </div>
-
-        {renderStepIndicator()}
-        {renderErrorBanner()}
-
-        <div className="mb-6 flex flex-col items-center gap-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-            <InputOtp
-              disabled={submitting}
-              value={otpToken}
-              onChange={(e) => setOtpToken(e.value)}
-              length={6}
-              integerOnly
-            />
-          </div>
-
-          <p className="text-center text-xs text-slate-500">
-            Make sure the code is entered correctly before confirming.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            disabled={submitting}
-            onClick={onClickConfirmResetPassword}
-          >
-            {submitting && <i className="pi pi-spin pi-spinner" />}
-            <span>{submitting ? "Confirming..." : "Confirm OTP"}</span>
-          </button>
-
-          <button
-            type="button"
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 disabled:cursor-not-allowed"
-            disabled={submitting}
-            onClick={() => {
-              setOtpFormVisible(false);
-              setOtpToken("");
-              setFormError("");
-            }}
-          >
-            Back
-          </button>
-        </div>
-      </>
     );
   };
 
@@ -268,9 +226,12 @@ const ForgotPasswordPage = () => {
     return (
       <>
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-slate-900">Reset Password</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+            Reset password
+          </h1>
+
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Enter your registered email address to receive an OTP code.
+            Enter your registered email address and we will send an OTP code.
           </p>
         </div>
 
@@ -278,10 +239,10 @@ const ForgotPasswordPage = () => {
         {renderErrorBanner()}
 
         <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
-          <div className="flex flex-col gap-2">
+          <div className="space-y-2">
             <label
               htmlFor="email"
-              className="text-sm font-medium text-slate-700"
+              className="text-sm font-semibold text-slate-700"
             >
               Email
             </label>
@@ -293,32 +254,32 @@ const ForgotPasswordPage = () => {
                 required: "Email is required",
                 pattern: {
                   value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: "Email format is invalid",
+                  message: "Please enter a valid email address",
                 },
               }}
               render={({ field, fieldState }) => (
                 <>
                   <div className="relative">
-                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                      <i className="pi pi-envelope" />
+                    <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+                      <i className="pi pi-envelope text-sm" />
                     </span>
 
                     <InputText
                       id="email"
                       {...field}
                       type="email"
-                      placeholder="Enter your registered email"
+                      placeholder="name@company.com"
                       autoComplete="email"
                       disabled={submitting}
-                      className={`w-full rounded-xl border-slate-300 py-3 pl-11 pr-4 text-sm shadow-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100 ${fieldState.invalid ? "p-invalid" : ""
+                      className={`${inputBaseClass} pl-11 pr-4 ${fieldState.invalid ? inputErrorClass : ""
                         }`}
                     />
                   </div>
 
                   {fieldState.error && (
-                    <small className="text-sm font-medium text-red-500">
+                    <p className="text-xs font-medium text-red-500">
                       {fieldState.error.message}
-                    </small>
+                    </p>
                   )}
                 </>
               )}
@@ -327,51 +288,121 @@ const ForgotPasswordPage = () => {
 
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
             disabled={submitting}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
           >
-            {submitting && <i className="pi pi-spin pi-spinner" />}
-            <span>{submitting ? "Submitting..." : "Send OTP"}</span>
+            {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
+            <span>{submitting ? "Sending OTP..." : "Send OTP"}</span>
           </button>
         </form>
       </>
     );
   };
 
-  return (
-    <div className="w-full max-w-md">
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <div className="mb-5 flex justify-center">
-            <div className="flex h-40 w-40 items-center justify-center rounded-3xl bg-slate-50 shadow-sm ring-1 ring-slate-200">
-              <Image
-                src="/images/logo.png"
-                alt="Company Logo"
-                width={128}
-                height={128}
-                priority
-                className="object-contain"
-              />
-            </div>
-          </div>
+  const renderFormOTP = () => {
+    return (
+      <>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+            Verify OTP
+          </h1>
 
-          <p className="text-sm text-slate-500">
-            PT. Hexing Technology HRIS
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Enter the 6-digit OTP code sent to your registered email.
           </p>
         </div>
 
-        {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
+        {renderStepIndicator()}
+        {renderErrorBanner()}
 
-        <div className="mt-6 text-center">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 hover:underline"
-          >
-            Back to login
-          </Link>
+        <div className="mb-6 space-y-4">
+          <div className="flex justify-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+            <InputOtp
+              disabled={submitting}
+              value={otpToken}
+              onChange={(e) => setOtpToken(e.value)}
+              length={6}
+              integerOnly
+            />
+          </div>
+
+          <p className="text-center text-xs leading-5 text-slate-500">
+            Make sure the code is entered correctly before confirming.
+          </p>
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={onClickConfirmResetPassword}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
+          >
+            {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
+            <span>{submitting ? "Confirming..." : "Confirm OTP"}</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => {
+              setOtpFormVisible(false);
+              setOtpToken("");
+              setFormError("");
+            }}
+            className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50"
+          >
+            Back to email
+          </button>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <main className="fixed inset-0 flex min-h-screen w-screen items-center justify-center overflow-hidden bg-slate-100 px-4 py-8">
+      <div className="pointer-events-none absolute -left-28 -top-28 h-72 w-72 rounded-full bg-blue-200/50 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-sky-200/60 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40 blur-3xl" />
+
+      <section className="relative w-full max-w-[420px]">
+        <div className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-2xl shadow-slate-300/60 backdrop-blur md:p-8">
+          <div className="mb-7 text-center">
+            <div className="mb-5 flex justify-center">
+              <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm md:h-32 md:w-32">
+                <Image
+                  src="/images/logo.png"
+                  alt="PT. Hexing Technology"
+                  width={104}
+                  height={104}
+                  priority
+                  className="object-contain"
+                />
+              </div>
+            </div>
+
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">
+              HRIS System
+            </p>
+          </div>
+
+          {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
+
+          <div className="mt-6 text-center">
+            <Link
+              href="/login"
+              className="text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
+            >
+              Back to sign in
+            </Link>
+          </div>
+        </div>
+
+        <p className="mt-5 text-center text-xs text-slate-500">
+          © {new Date().getFullYear()} PT. Hexing Technology. All rights reserved.
+        </p>
+      </section>
+    </main>
   );
 };
 

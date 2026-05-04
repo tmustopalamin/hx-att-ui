@@ -48,14 +48,19 @@ export const saveRolePermissions = async (data: RolePermissions) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify({
+      role_id: data.role_id,
+      permissions: data.permissions,
+    }),
   });
+
   if (!res.ok) {
     const errorData: ResponseTypeError = await res.json();
     throw errorData;
   }
+
   return res.json();
-}
+};
 
 export const updateRole = async (id: number, rowVersion: number, data: Role) => {
   if (rowVersion <= -1)
@@ -76,6 +81,20 @@ export const updateRole = async (id: number, rowVersion: number, data: Role) => 
   }
   return res.json();
 }
+
+export const getRolePermissions = async (roleCode: string) => {
+  const res = await fetch(`${API_URL}/${roleCode}/permissions`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
+  }
+
+  return res.json();
+};
 
 export const deleteRole = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1)

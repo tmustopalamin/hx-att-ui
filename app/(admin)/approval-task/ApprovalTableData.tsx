@@ -2,7 +2,6 @@
 
 import CardTitle from '@/app/_components/CardTitle';
 import UseGetDocumentDetailApproval from '@/app/hooks/use-get-document-detail-approval';
-import { approveAction, rejectAction } from '@/app/services/approval-service';
 import { ApprovalRequestLine } from '@/app/types/approval-request-line';
 import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type';
 import { getErrorMessage, isResponseTypeError } from '@/app/utils/error-messages';
@@ -249,3 +248,11 @@ const ApprovalTableData = () => {
 }
 
 export default ApprovalTableData
+function approveAction(data: ApprovalRequestLine): ResponseType<ResponseTypeCreateSuccess> | PromiseLike<ResponseType<ResponseTypeCreateSuccess>> {
+  throw new Error('Function not implemented.');
+}
+
+function rejectAction(data: ApprovalRequestLine): ResponseType<ResponseTypeCreateSuccess> | PromiseLike<ResponseType<ResponseTypeCreateSuccess>> {
+  throw new Error('Function not implemented.');
+}
+

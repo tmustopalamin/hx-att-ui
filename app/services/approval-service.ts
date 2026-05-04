@@ -1,82 +1,87 @@
-import { ApprovalRequestLine } from "../types/approval-request-line";
-import { ResponseTypeError } from "../types/response-type";
+import { ApprovalActionPayload } from '../types/approval';
+import { ResponseTypeError } from '../types/response-type';
 
 const API_URL = '/api/approval';
 
-export const approveAction = async (data: ApprovalRequestLine) => {
-  const res = await fetch(API_URL + '/approve', {
+const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+  const contentType = res.headers.get('Content-Type');
+
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      return (await res.json()) as ResponseTypeError;
+    }
+
+    return {
+      success: false,
+      code: String(res.status),
+      message: await res.text(),
+    };
+  } catch {
+    return {
+      success: false,
+      code: String(res.status),
+      message: 'Unknown error',
+    };
+  }
+};
+
+const normalizeNote = (value?: string | null) => {
+  const trimmed = (value ?? '').trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+export const approveApprovalRequest = async (
+  approvalRequestId: number,
+  rowVersion: number,
+  payload: ApprovalActionPayload
+) => {
+  if (rowVersion <= 0) {
+    throw new Error('rowVersion is required');
+  }
+
+  const res = await fetch(`${API_URL}/${approvalRequestId}/approve`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
+      'If-Match': String(rowVersion),
     },
     body: JSON.stringify({
-      id: data.id
-    })    
+      note: normalizeNote(payload.note),
+    }),
   });
 
-  const contentType = res.headers.get("Content-Type");
   if (!res.ok) {
-    let errorDetail: ResponseTypeError;
-
-    try {
-      if (contentType && contentType.includes("application/json")) {
-        errorDetail = (await res.json()) as ResponseTypeError;
-      } else {
-        errorDetail = {
-          success: false,
-          code: String(res.status),
-          message: await res.text(),
-        };
-      }
-    } catch {
-      errorDetail = {
-        success: false,
-        code: String(res.status),
-        message: "Unknown error",
-      };
-    }
-    throw errorDetail;
+    throw await parseErrorResponse(res);
   }
 
   return res.json();
-}
+};
 
-export const rejectAction = async (data: ApprovalRequestLine) => {
-  const res = await fetch(API_URL + '/reject', {
+export const rejectApprovalRequest = async (
+  approvalRequestId: number,
+  rowVersion: number,
+  payload: ApprovalActionPayload
+) => {
+  if (rowVersion <= 0) {
+    throw new Error('rowVersion is required');
+  }
+
+  const res = await fetch(`${API_URL}/${approvalRequestId}/reject`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
+      'If-Match': String(rowVersion),
     },
     body: JSON.stringify({
-      id: data.id
-    })    
+      note: normalizeNote(payload.note),
+    }),
   });
 
-  const contentType = res.headers.get("Content-Type");
   if (!res.ok) {
-    let errorDetail: ResponseTypeError;
-
-    try {
-      if (contentType && contentType.includes("application/json")) {
-        errorDetail = (await res.json()) as ResponseTypeError;
-      } else {
-        errorDetail = {
-          success: false,
-          code: String(res.status),
-          message: await res.text(),
-        };
-      }
-    } catch {
-      errorDetail = {
-        success: false,
-        code: String(res.status),
-        message: "Unknown error",
-      };
-    }
-    throw errorDetail;
+    throw await parseErrorResponse(res);
   }
 
   return res.json();
-}
+};

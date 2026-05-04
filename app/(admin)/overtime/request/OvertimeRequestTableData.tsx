@@ -40,11 +40,9 @@ import {
 } from '@/app/types/overtime-request';
 
 import {
-    approveOvertimeRequest,
     createOvertimeRequest,
     deleteOvertimeRequest,
     purgeOvertimeRequest,
-    rejectOvertimeRequest,
     restoreOvertimeRequest,
     updateOvertimeRequest,
 } from '@/app/services/overtime-request-service';
@@ -165,13 +163,7 @@ const OvertimeRequestTableData = () => {
     const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const [rejectDialogVisible, setRejectDialogVisible] = useState(false);
-    const [rejectReason, setRejectReason] = useState('');
-    const [rejectTarget, setRejectTarget] = useState<OvertimeRequest | null>(null);
-    const [isRejecting, setIsRejecting] = useState(false);
-
     const timeOptions = useMemo(() => buildTimeOptions(15), []);
-
     const currentKey = `/api/overtime-request?show_all=${isShowDeletedDataChecked}`;
 
     const {
@@ -520,100 +512,6 @@ const OvertimeRequestTableData = () => {
         }
     };
 
-    const handleApprove = async (data: OvertimeRequest) => {
-        try {
-            const res: ResponseType<ResponseTypeCreateSuccess> =
-                await approveOvertimeRequest(data.id, data.row_version);
-
-            await refreshData();
-
-            dispatch(
-                showToast({
-                    visible: true,
-                    severity: 'success',
-                    summary: 'Success',
-                    detail:
-                        res.message ||
-                        'Overtime request approved and recorded in attendance summary.',
-                })
-            );
-        } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
-        }
-    };
-
-    const handleReject = async () => {
-        if (!rejectTarget) {
-            return;
-        }
-
-        try {
-            setIsRejecting(true);
-
-            const res: ResponseType<ResponseTypeCreateSuccess> =
-                await rejectOvertimeRequest(
-                    rejectTarget.id,
-                    rejectTarget.row_version,
-                    rejectReason
-                );
-
-            await refreshData();
-
-            setRejectDialogVisible(false);
-            setRejectTarget(null);
-            setRejectReason('');
-
-            dispatch(
-                showToast({
-                    visible: true,
-                    severity: 'warn',
-                    summary: 'Rejected',
-                    detail: res.message || 'Overtime request rejected successfully.',
-                })
-            );
-        } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
-        } finally {
-            setIsRejecting(false);
-        }
-    };
-
     const onSubmit = async (data: OvertimeRequestForm) => {
         if (!isValid || isSaving) {
             return;
@@ -735,40 +633,6 @@ const OvertimeRequestTableData = () => {
         });
     };
 
-    const onClickApprove = (data: OvertimeRequest) => {
-        confirmDialog({
-            message:
-                'Approve this overtime request? Approved overtime will be recorded in attendance summary.',
-            header: 'Approve Confirmation',
-            icon: 'pi pi-check-circle',
-            defaultFocus: 'accept',
-            accept: () => handleApprove(data),
-            reject: () => { },
-            footer: (options) => (
-                <div className="flex justify-end gap-3">
-                    <Button
-                        label="No"
-                        icon="pi pi-times"
-                        onClick={options.reject}
-                        className="p-button-text"
-                    />
-                    <Button
-                        label="Approve"
-                        icon="pi pi-check"
-                        onClick={options.accept}
-                        className="p-button-success"
-                    />
-                </div>
-            ),
-        });
-    };
-
-    const onClickReject = (data: OvertimeRequest) => {
-        setRejectTarget(data);
-        setRejectReason('');
-        setRejectDialogVisible(true);
-    };
-
     const statusBody = (rowData: OvertimeRequest) => {
         if (rowData.deleted_at) {
             return <Tag value="Deleted" severity="secondary" />;
@@ -794,36 +658,9 @@ const OvertimeRequestTableData = () => {
     const actionColumnBody = (rowData: OvertimeRequest) => {
         const status = rowData.status?.toUpperCase();
         const isPending = status === 'PENDING' && !rowData.deleted_at;
-        const isApproved = status === 'APPROVED';
-
-        const canAdminAction = hasRole(profileState.role, ['admin', 'superadmin']);
 
         return (
             <div className="flex flex-wrap gap-2">
-                {canAdminAction && isPending && (
-                    <>
-                        <Button
-                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                            tooltip="approve"
-                            rounded
-                            severity="success"
-                            icon="pi pi-check"
-                            size="small"
-                            onClick={() => onClickApprove(rowData)}
-                        />
-
-                        <Button
-                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                            tooltip="reject"
-                            rounded
-                            severity="warning"
-                            icon="pi pi-times"
-                            size="small"
-                            onClick={() => onClickReject(rowData)}
-                        />
-                    </>
-                )}
-
                 {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
                     <>
                         <Button
@@ -863,7 +700,7 @@ const OvertimeRequestTableData = () => {
 
                         <Button
                             tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                            tooltip={isApproved ? 'approved request cannot be updated' : 'update'}
+                            tooltip={isPending ? 'update' : 'only pending request can be updated'}
                             rounded
                             severity="help"
                             icon="pi pi-pencil"
@@ -951,10 +788,10 @@ const OvertimeRequestTableData = () => {
                     <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
                         <div>
                             <div className="text-2xl font-semibold text-slate-800">
-                                Overtime Request
+                                My Overtime Request
                             </div>
                             <div className="mt-1 text-sm text-slate-500">
-                                Submit, approve, and monitor overtime requests. Approved overtime
+                                Submit and monitor your own overtime requests. Approved overtime
                                 will be included in attendance summary.
                             </div>
                         </div>
@@ -981,7 +818,7 @@ const OvertimeRequestTableData = () => {
                                     className="w-full sm:w-[18rem]"
                                     value={globalFilterValue}
                                     onChange={onGlobalFilterChange}
-                                    placeholder="Search employee, reason, or status"
+                                    placeholder="Search reason or status"
                                 />
                             </IconField>
 
@@ -996,7 +833,7 @@ const OvertimeRequestTableData = () => {
                     <div className="overflow-x-auto">
                         <DataTable
                             value={rows}
-                            tableStyle={{ minWidth: '126rem' }}
+                            tableStyle={{ minWidth: '118rem' }}
                             stripedRows
                             paginator
                             scrollable
@@ -1093,34 +930,18 @@ const OvertimeRequestTableData = () => {
                             />
 
                             <Column
-                                header="Rejected By"
-                                body={(rowData: OvertimeRequest) =>
-                                    rowData.rejected_by_name ?? '-'
-                                }
-                                style={{ minWidth: '14rem' }}
-                            />
-
-                            <Column
-                                header="Rejected At"
-                                body={(rowData: OvertimeRequest) =>
-                                    formatDateTime(rowData.rejected_at)
-                                }
-                                style={{ minWidth: '14rem' }}
-                            />
-
-                            <Column
                                 header="Action"
                                 body={actionColumnBody}
                                 frozen
                                 alignFrozen="right"
-                                style={{ minWidth: '14rem' }}
+                                style={{ minWidth: '10rem' }}
                                 headerStyle={{
-                                    minWidth: '14rem',
+                                    minWidth: '10rem',
                                     background: '#ffffff',
                                     zIndex: 1,
                                 }}
                                 bodyStyle={{
-                                    minWidth: '14rem',
+                                    minWidth: '10rem',
                                     background: '#ffffff',
                                 }}
                             />
@@ -1393,64 +1214,6 @@ const OvertimeRequestTableData = () => {
                     </div>
                 </Dialog>
             </form>
-
-            <Dialog
-                header="Reject Overtime Request"
-                visible={rejectDialogVisible}
-                style={{ width: '95vw', maxWidth: '520px' }}
-                onHide={() => {
-                    if (isRejecting) {
-                        return;
-                    }
-
-                    setRejectDialogVisible(false);
-                    setRejectTarget(null);
-                    setRejectReason('');
-                }}
-                modal
-                draggable={false}
-                resizable={false}
-                footer={
-                    <div className="flex justify-end gap-3">
-                        <Button
-                            type="button"
-                            label="Cancel"
-                            icon="pi pi-times"
-                            className="p-button-text"
-                            disabled={isRejecting}
-                            onClick={() => {
-                                setRejectDialogVisible(false);
-                                setRejectTarget(null);
-                                setRejectReason('');
-                            }}
-                        />
-
-                        <Button
-                            type="button"
-                            label={isRejecting ? 'Rejecting...' : 'Reject'}
-                            icon={isRejecting ? 'pi pi-spin pi-spinner' : 'pi pi-times'}
-                            severity="danger"
-                            disabled={isRejecting}
-                            onClick={handleReject}
-                        />
-                    </div>
-                }
-            >
-                <div className="flex flex-col gap-3">
-                    <p className="text-sm text-slate-600">
-                        Please enter rejection reason. This request will not update
-                        attendance summary.
-                    </p>
-
-                    <InputTextarea
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        rows={4}
-                        placeholder="Rejection reason"
-                        disabled={isRejecting}
-                    />
-                </div>
-            </Dialog>
         </>
     );
 };

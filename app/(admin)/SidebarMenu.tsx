@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
 
 import ActiveLink from "./ActiveLinkProps";
 import AppLogo from "../_components/sidebar-menu/AppLogo";
-import Can from "../_components/CanPermission";
+import { RootState } from "@/store/store";
 
 type MenuItem = {
   href: string;
@@ -18,7 +19,6 @@ type MenuSection = {
   key: string;
   label: string;
   icon: string;
-  permission?: string;
   items: MenuItem[];
 };
 
@@ -26,7 +26,6 @@ type SettingSubMenu = {
   key: string;
   label: string;
   icon: string;
-  permission?: string;
   items: MenuItem[];
 };
 
@@ -35,6 +34,7 @@ const selfServiceItems: MenuItem[] = [
     href: "/my-attendance/mobile-attendance",
     label: "Mobile Attendance",
     icon: "pi-map-marker",
+    permission: "mobile-attendance.create",
   },
   {
     href: "/my-attendance/attendance-history",
@@ -45,13 +45,22 @@ const selfServiceItems: MenuItem[] = [
     href: "/request-leave",
     label: "Request Leave",
     icon: "pi-calendar",
-    // permission: "leave.read",
+    permission: "request-leave.read",
   },
   {
     href: "/overtime/request",
     label: "Overtime Request",
     icon: "pi-clock",
-    // permission: "overtime.read",
+    permission: "overtime.read",
+  },
+];
+
+const approvalItems: MenuItem[] = [
+  {
+    href: "/approval",
+    label: "Approval Inbox",
+    icon: "pi-inbox",
+    permission: "approval.read",
   },
 ];
 
@@ -60,7 +69,19 @@ const employeeItems: MenuItem[] = [
     href: "/employees",
     label: "Employees",
     icon: "pi-users",
-    // permission: "employee.read",
+    permission: "employee.read",
+  },
+  {
+    href: "/leave-management",
+    label: "Leave Management",
+    icon: "pi-calendar",
+    permission: "leave-management.read",
+  },
+  {
+    href: "/overtime-management",
+    label: "Overtime Management",
+    icon: "pi-clock",
+    permission: "overtime-management.read",
   },
 ];
 
@@ -69,13 +90,13 @@ const timeManagementItems: MenuItem[] = [
     href: "/attendance-log",
     label: "Attendance Log",
     icon: "pi-clock",
-    // permission: "attendance.manage",
+    permission: "attendance-log.read",
   },
   {
     href: "/attendance-summary",
     label: "Attendance Summary",
     icon: "pi-file-check",
-    // permission: "attendance.manage",
+    permission: "attendance-summary.read",
   },
 ];
 
@@ -84,7 +105,7 @@ const payrollItems: MenuItem[] = [
     href: "/run-payroll",
     label: "Run Payroll",
     icon: "pi-calculator",
-    // permission: "payroll.read",
+    permission: "payroll.read",
   },
 ];
 
@@ -98,21 +119,25 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/agency",
         label: "Agency",
         icon: "pi-building",
+        permission: "master-data.read",
       },
       {
         href: "/setting/branch",
         label: "Branch",
         icon: "pi-sitemap",
+        permission: "master-data.read",
       },
       {
         href: "/setting/department",
         label: "Department",
         icon: "pi-briefcase",
+        permission: "master-data.read",
       },
       {
         href: "/setting/position",
         label: "Position",
         icon: "pi-user",
+        permission: "master-data.read",
       },
     ],
   },
@@ -125,41 +150,49 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/country",
         label: "Country",
         icon: "pi-globe",
+        permission: "master-data.read",
       },
       {
         href: "/setting/state",
         label: "Province",
         icon: "pi-map",
+        permission: "master-data.read",
       },
       {
         href: "/setting/city",
         label: "City",
         icon: "pi-map-marker",
+        permission: "master-data.read",
       },
       {
         href: "/setting/bank",
         label: "Bank",
         icon: "pi-credit-card",
+        permission: "master-data.read",
       },
       {
         href: "/setting/document-type",
         label: "Document Type",
         icon: "pi-file",
+        permission: "master-data.read",
       },
       {
         href: "/setting/employment-status",
         label: "Employment Status",
         icon: "pi-id-card",
+        permission: "master-data.read",
       },
       {
         href: "/setting/identity-type",
         label: "Identity Type",
         icon: "pi-id-card",
+        permission: "master-data.read",
       },
       {
         href: "/setting/relationship",
         label: "Relationship",
         icon: "pi-heart",
+        permission: "master-data.read",
       },
     ],
   },
@@ -172,21 +205,25 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/shift",
         label: "Shift",
         icon: "pi-calendar",
+        permission: "master-data.read",
       },
       {
         href: "/setting/shift-rule",
         label: "Shift Rule",
         icon: "pi-calendar",
+        permission: "shift-rule.read",
       },
       {
         href: "/setting/employee-shift-rule",
         label: "Employee Shift Rule",
         icon: "pi-list",
+        permission: "employee-shift-rule.read",
       },
       {
         href: "/setting/employee-shift-assignment",
         label: "Employee Shift Assignment",
         icon: "pi-calendar-plus",
+        permission: "employee-shift-assignment.read",
       },
     ],
   },
@@ -199,6 +236,7 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/fingerprint-scanner",
         label: "Fingerprint Scanner",
         icon: "pi-box",
+        permission: "master-data.read",
       },
     ],
   },
@@ -211,6 +249,7 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/leave-type",
         label: "Leave Type",
         icon: "pi-calendar",
+        permission: "master-data.read",
       },
     ],
   },
@@ -223,16 +262,19 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/payroll-formula",
         label: "Payroll Formula",
         icon: "pi-calculator",
+        permission: "payroll.read",
       },
       {
         href: "/setting/income-component",
         label: "Income Component",
         icon: "pi-plus-circle",
+        permission: "payroll.read",
       },
       {
         href: "/setting/deduction-component",
         label: "Deduction Component",
         icon: "pi-minus-circle",
+        permission: "payroll.read",
       },
     ],
   },
@@ -245,21 +287,25 @@ const settingSubMenus: SettingSubMenu[] = [
         href: "/setting/user",
         label: "Users",
         icon: "pi-user",
+        permission: "user.read",
       },
       {
         href: "/setting/role",
         label: "Roles",
         icon: "pi-users",
+        permission: "role.read",
       },
       {
         href: "/setting/permissions",
         label: "Permissions",
         icon: "pi-lock",
+        permission: "permission.read",
       },
       {
         href: "/setting/role-permissions",
         label: "Role Permissions",
         icon: "pi-key",
+        permission: "role-permission.read",
       },
     ],
   },
@@ -271,6 +317,12 @@ const topMenuSections: MenuSection[] = [
     label: "Self Service",
     icon: "pi-user",
     items: selfServiceItems,
+  },
+  {
+    key: "approval",
+    label: "Approval",
+    icon: "pi-inbox",
+    items: approvalItems,
   },
   {
     key: "employee-management",
@@ -292,11 +344,58 @@ const topMenuSections: MenuSection[] = [
   },
 ];
 
+const getProfilePermissions = (profileState: unknown): string[] => {
+  const profile = profileState as { permissions?: unknown };
+
+  if (!Array.isArray(profile.permissions)) {
+    return [];
+  }
+
+  return profile.permissions.filter(
+    (permission): permission is string => typeof permission === "string"
+  );
+};
+
 export default function SidebarMenu() {
   const pathname = usePathname();
+  const profileState = useSelector((state: RootState) => state.profile);
 
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const [openSubMenuKey, setOpenSubMenuKey] = useState<string | null>(null);
+
+  const permissionSet = useMemo(() => {
+    return new Set(getProfilePermissions(profileState));
+  }, [profileState]);
+
+  const hasPermission = (permission?: string) => {
+    if (!permission) {
+      return true;
+    }
+
+    return permissionSet.has(permission);
+  };
+
+  const getVisibleItems = (items: MenuItem[]) => {
+    return items.filter((item) => hasPermission(item.permission));
+  };
+
+  const visibleTopMenuSections = useMemo(() => {
+    return topMenuSections
+      .map((section) => ({
+        ...section,
+        items: getVisibleItems(section.items),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [permissionSet]);
+
+  const visibleSettingSubMenus = useMemo(() => {
+    return settingSubMenus
+      .map((submenu) => ({
+        ...submenu,
+        items: getVisibleItems(submenu.items),
+      }))
+      .filter((submenu) => submenu.items.length > 0);
+  }, [permissionSet]);
 
   const isPathActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -351,7 +450,7 @@ export default function SidebarMenu() {
     "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100";
 
   const renderLinkItem = (item: MenuItem) => {
-    const linkContent = (
+    return (
       <li key={item.href}>
         <ActiveLink
           href={item.href}
@@ -364,16 +463,6 @@ export default function SidebarMenu() {
         </ActiveLink>
       </li>
     );
-
-    if (item.permission) {
-      return (
-        <Can key={item.href} allOf={[item.permission]}>
-          {linkContent}
-        </Can>
-      );
-    }
-
-    return linkContent;
   };
 
   const renderLinkList = (items: MenuItem[]) => {
@@ -383,7 +472,7 @@ export default function SidebarMenu() {
   const renderTopSection = (section: MenuSection) => {
     const isOpen = isTopMenuOpen(section.key, section.items);
 
-    const sectionContent = (
+    return (
       <li key={section.key} className="space-y-1">
         <button
           type="button"
@@ -409,22 +498,16 @@ export default function SidebarMenu() {
         </div>
       </li>
     );
-
-    if (section.permission) {
-      return (
-        <Can key={section.key} allOf={[section.permission]}>
-          {sectionContent}
-        </Can>
-      );
-    }
-
-    return sectionContent;
   };
+
+  const isDashboardVisible = hasPermission("dashboard.read");
+  const isMainMenuVisible = visibleTopMenuSections.length > 0;
+  const isSettingVisible = visibleSettingSubMenus.length > 0;
 
   const isSettingOpen =
     openMenuKey === "setting" ||
     pathname.startsWith("/setting") ||
-    hasActiveSettingItems(settingSubMenus);
+    hasActiveSettingItems(visibleSettingSubMenus);
 
   const settingContent = (
     <li className="space-y-1">
@@ -449,10 +532,10 @@ export default function SidebarMenu() {
           }`}
       >
         <ul className="space-y-1 pl-3">
-          {settingSubMenus.map((submenu) => {
+          {visibleSettingSubMenus.map((submenu) => {
             const isOpen = isSubMenuOpen(submenu.key, submenu.items);
 
-            const submenuContent = (
+            return (
               <li key={submenu.key} className="space-y-1">
                 <button
                   type="button"
@@ -482,16 +565,6 @@ export default function SidebarMenu() {
                 </div>
               </li>
             );
-
-            if (submenu.permission) {
-              return (
-                <Can key={submenu.key} allOf={[submenu.permission]}>
-                  {submenuContent}
-                </Can>
-              );
-            }
-
-            return submenuContent;
           })}
         </ul>
       </div>
@@ -506,7 +579,7 @@ export default function SidebarMenu() {
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         <ul className="m-0 list-none space-y-2 p-0">
-          <Can allOf={["dashboard.read"]}>
+          {isDashboardVisible && (
             <li className="space-y-2 pb-1">
               <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 Summary
@@ -522,23 +595,31 @@ export default function SidebarMenu() {
                 <span>Dashboard</span>
               </ActiveLink>
             </li>
-          </Can>
+          )}
 
-          <li className="pt-1">
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Main Menu
-            </p>
-          </li>
+          {isMainMenuVisible && (
+            <>
+              <li className="pt-1">
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Main Menu
+                </p>
+              </li>
 
-          {topMenuSections.map((section) => renderTopSection(section))}
+              {visibleTopMenuSections.map((section) => renderTopSection(section))}
+            </>
+          )}
 
-          <li className="pt-2">
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Configuration
-            </p>
-          </li>
+          {isSettingVisible && (
+            <>
+              <li className="pt-2">
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Configuration
+                </p>
+              </li>
 
-          <Can allOf={["setting.read"]}>{settingContent}</Can>
+              {settingContent}
+            </>
+          )}
         </ul>
       </div>
     </div>

@@ -184,6 +184,7 @@ export const updateEmployeeEmploymentData = async (
             end_date: toDateString(payload.end_date),
             department_id: payload.department_id,
             position_id: payload.position_id,
+            supervisor_employee_id: payload.supervisor_employee_id,
             employment_status_id: payload.employment_status_id,
             agency_id: payload.agency_id ?? null,
             branch_id: payload.branch_id ?? null,
@@ -634,4 +635,30 @@ export const deleteEmployeeFamily = async (
 
     await ensureOk(res);
     return res.json();
+};
+
+export const getEmployeeOptions = async () => {
+    const res = await fetch('/api/employees', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!res.ok) {
+        throw new Error('Failed to fetch employee options');
+    }
+
+    const data = await res.json();
+
+    return data.map((item: any) => ({
+        id: item.id,
+        name:
+            item.full_name ||
+            [item.first_name, item.last_name].filter(Boolean).join(' ') ||
+            item.name ||
+            `Employee #${item.id}`,
+        is_active: item.is_active,
+    }));
 };
