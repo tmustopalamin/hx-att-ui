@@ -31,6 +31,31 @@ const ensureOk = async (res: Response) => {
   }
 };
 
+export interface CheckFingerprintPin2Result {
+  exists: boolean;
+
+  /**
+   * PIN1 / Machine PIN / internal id dari mesin fingerprint.
+   */
+  pin: string | null;
+
+  /**
+   * PIN2 / Fingerprint User ID / custom HRIS user id.
+   */
+  pin2: string | null;
+
+  /**
+   * Nama user di mesin fingerprint.
+   */
+  name: string | null;
+}
+
+export interface CheckFingerprintPin2Response {
+  success: boolean;
+  data: CheckFingerprintPin2Result;
+  message: string;
+}
+
 export const createEmployeeFingerprint = async (data: EmployeeFingerprint) => {
   const res = await fetch(`${API_URL}/${data.employee_id}/fingerprint`, {
     method: "POST",
@@ -40,8 +65,14 @@ export const createEmployeeFingerprint = async (data: EmployeeFingerprint) => {
     },
     body: JSON.stringify({
       fp_device_id: data.fp_device_id,
+
+      // Sekarang ini berarti PIN2 / Fingerprint User ID.
       fp_pin: data.fp_pin,
+
+      // true  = Link Existing User in Device
+      // false = Create New User in Device
       pin_already_exist: data.pin_already_exist,
+
       is_primary: data.is_primary,
     }),
   });
@@ -68,7 +99,10 @@ export const updateEmployeeFingerprint = async (
     },
     body: JSON.stringify({
       fp_device_id: data.fp_device_id,
+
+      // Sekarang ini berarti PIN2 / Fingerprint User ID.
       fp_pin: data.fp_pin,
+
       pin_already_exist: data.pin_already_exist,
       is_primary: data.is_primary,
     }),
@@ -138,16 +172,22 @@ export const restoreEmployeeFingerprint = async (
   return res.json();
 };
 
+/**
+ * Check Fingerprint User ID / PIN2 in selected device.
+ *
+ * Endpoint lama /get-user-by-pin mencari berdasarkan PIN1.
+ * Endpoint baru ini mencari berdasarkan PIN2 lewat GetAllUserInfo.
+ */
 export const checkPinEmployeeFingerprint = async (
   fp_device_id: number,
   fp_pin: string
-) => {
+): Promise<CheckFingerprintPin2Response> => {
   const body = {
     fp_device_id,
-    pin: fp_pin,
+    pin2: fp_pin,
   };
 
-  const res = await fetch(`/api/fingerprint-scanner/get-user-by-pin`, {
+  const res = await fetch(`/api/fingerprint-scanner/check-user-pin2`, {
     method: "POST",
     credentials: "include",
     headers: {

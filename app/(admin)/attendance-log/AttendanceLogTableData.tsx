@@ -23,7 +23,11 @@ import { fetcher } from '@/app/utils/fetcher'
 import { AttendanceLog } from '@/app/types/attendance-log'
 import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi'
 import LoadingDataTable from '@/app/_components/LoadingDataTable'
-import { remapEmployeeAttendanceLog } from '@/app/services/attendance-log-service'
+import {
+  remapEmployeeAttendanceLog,
+  syncAttendanceLog,
+  AttendanceLogSyncResult,
+} from '@/app/services/attendance-log-service'
 import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages'
 import { useDispatch } from 'react-redux'
 import { showToast } from '@/store/ToastSlice'
@@ -33,8 +37,9 @@ type ProcessedFilter = 'ALL' | 'PROCESSED' | 'UNPROCESSED'
 const AttendanceLogTableData = () => {
   const dispatch = useDispatch()
 
-  const [isFetchData, setIsFetchData] = useState(false)
-  const [requestVersion, setRequestVersion] = useState(0)
+  const [syncLoading, setSyncLoading] = useState(false)
+  const [syncResultDialog, setSyncResultDialog] = useState(false)
+  const [syncResult, setSyncResult] = useState<AttendanceLogSyncResult | null>(null)
 
   const [dateFrom, setDateFrom] = useState<Date | null>(null)
   const [dateTo, setDateTo] = useState<Date | null>(null)
@@ -45,7 +50,7 @@ const AttendanceLogTableData = () => {
   const [detailDialog, setDetailDialog] = useState(false)
   const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
 
-  const swrKey = `/api/attendance-log?is_fetch_data=${isFetchData}&v=${requestVersion}`
+  const swrKey = `/api/attendance-log`
 
   const {
     data: attendanceLogData,
@@ -121,22 +126,55 @@ const AttendanceLogTableData = () => {
   const onClickSyncLog = () => {
     confirmDialog({
       header: 'Sync Attendance Log',
-      message: 'Pull latest attendance logs from fingerprint scanner?',
+      message: 'Pull latest attendance logs from all active fingerprint scanners?',
       icon: 'pi pi-info-circle',
       defaultFocus: 'accept',
       accept: async () => {
-        setIsFetchData(true)
-        setRequestVersion((prev) => prev + 1)
-        await mutate()
+        try {
+          setSyncLoading(true)
 
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'success',
-            summary: 'Success',
-            detail: 'Attendance log sync triggered',
-          })
-        )
+          const response = await syncAttendanceLog()
+          setSyncResult(response.data)
+          setSyncResultDialog(true)
+
+          await mutate()
+
+          dispatch(
+            showToast({
+              visible: true,
+              severity:
+                response.data?.scanner_failed > 0
+                  ? response.data?.scanner_success > 0
+                    ? 'warn'
+                    : 'error'
+                  : 'success',
+              summary: 'Sync Finished',
+              detail: response.data?.message ?? 'Attendance log sync finished',
+            })
+          )
+        } catch (err: unknown) {
+          if (isResponseTypeError(err)) {
+            dispatch(
+              showToast({
+                visible: true,
+                severity: 'error',
+                summary: 'Error',
+                detail: getErrorMessage(err, 'message'),
+              })
+            )
+          } else if (err instanceof Error) {
+            dispatch(
+              showToast({
+                visible: true,
+                severity: 'error',
+                summary: 'Error',
+                detail: err.message,
+              })
+            )
+          }
+        } finally {
+          setSyncLoading(false)
+        }
       },
       reject: () => { },
     })
@@ -400,7 +438,7 @@ const AttendanceLogTableData = () => {
                 label="Sync Log"
                 icon="pi pi-refresh"
                 size="small"
-                loading={isValidating && isFetchData}
+                loading={syncLoading}
                 onClick={onClickSyncLog}
               />
               <Button
@@ -668,6 +706,107 @@ const AttendanceLogTableData = () => {
                 {JSON.stringify(selectedLog.extra_data ?? {}, null, 2)}
               </pre>
             </div>
+          </div>
+        )}
+      </Dialog>
+
+      <Dialog
+        header="Attendance Log Sync Result"
+        visible={syncResultDialog}
+        style={{ width: '900px', maxWidth: '95vw' }}
+        onHide={() => setSyncResultDialog(false)}
+      >
+        {syncResult && (
+          <div className="flex flex-col gap-4">
+            <div
+              className={`rounded-xl border px-4 py-3 ${syncResult.scanner_failed > 0
+                ? syncResult.scanner_success > 0
+                  ? 'border-amber-200 bg-amber-50'
+                  : 'border-red-200 bg-red-50'
+                : 'border-green-200 bg-green-50'
+                }`}
+            >
+              <div className="text-lg font-semibold text-slate-900">
+                {syncResult.message}
+              </div>
+              <div className="mt-1 text-sm text-slate-600">
+                Status: {syncResult.status}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+              <div className="rounded-xl border bg-white px-4 py-3">
+                <div className="text-xs text-slate-500">Scanners</div>
+                <div className="text-xl font-semibold">
+                  {syncResult.scanner_success}/{syncResult.scanner_total}
+                </div>
+              </div>
+
+              <div className="rounded-xl border bg-white px-4 py-3">
+                <div className="text-xs text-slate-500">Fetched</div>
+                <div className="text-xl font-semibold">
+                  {syncResult.total_fetched.toLocaleString('id-ID')}
+                </div>
+              </div>
+
+              <div className="rounded-xl border bg-white px-4 py-3">
+                <div className="text-xs text-slate-500">Inserted</div>
+                <div className="text-xl font-semibold text-green-700">
+                  {syncResult.total_inserted.toLocaleString('id-ID')}
+                </div>
+              </div>
+
+              <div className="rounded-xl border bg-white px-4 py-3">
+                <div className="text-xs text-slate-500">Duplicate</div>
+                <div className="text-xl font-semibold text-amber-700">
+                  {syncResult.total_duplicate.toLocaleString('id-ID')}
+                </div>
+              </div>
+
+              <div className="rounded-xl border bg-white px-4 py-3">
+                <div className="text-xs text-slate-500">Invalid Mapping</div>
+                <div className="text-xl font-semibold text-red-700">
+                  {syncResult.total_invalid_mapping.toLocaleString('id-ID')}
+                </div>
+              </div>
+            </div>
+
+            <DataTable
+              value={syncResult.details}
+              stripedRows
+              rows={10}
+              paginator
+              emptyMessage="No sync result"
+            >
+              <Column field="scanner_name" header="Scanner" />
+              <Column field="scanner_ip" header="IP" />
+              <Column field="status" header="Status" />
+              <Column field="fetched" header="Fetched" />
+              <Column field="inserted" header="Inserted" />
+              <Column field="duplicate" header="Duplicate" />
+              <Column field="invalid_mapping" header="Invalid" />
+              <Column
+                header="Message"
+                body={(row) => (
+                  <div className="max-w-xs text-sm">
+                    {row.error_message ? (
+                      <>
+                        <div className="font-medium text-red-600">
+                          {row.error_message}
+                        </div>
+                        {row.suggestion && (
+                          <div className="mt-1 text-xs text-slate-500">
+                            {row.suggestion}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-green-700">Success</span>
+                    )}
+                  </div>
+                )}
+              />
+            </DataTable>
           </div>
         )}
       </Dialog>

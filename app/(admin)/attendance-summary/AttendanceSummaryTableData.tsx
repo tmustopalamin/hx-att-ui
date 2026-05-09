@@ -25,6 +25,7 @@ import { fetcher } from '@/app/utils/fetcher'
 import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi'
 import LoadingDataTable from '@/app/_components/LoadingDataTable'
 import { AttendanceSummary } from '@/app/types/attendance-summary'
+import AttendanceAutoProcessSettingPanel from './AttendanceAutoProcessSettingPanel'
 
 interface FilterForm {
   startDate: Date | null
@@ -164,6 +165,7 @@ const AttendanceSummaryTableData = () => {
   const [expandedRows, setExpandedRows] = useState<DataTableExpandedRows | undefined>(undefined)
   const [groupFirst, setGroupFirst] = useState(0)
   const [groupsPerPage, setGroupsPerPage] = useState(5)
+  const [showAutoProcessSettingPanel, setShowAutoProcessSettingPanel] = useState(false)
 
   const keyword = watch('keyword')
   const statusFilter = watch('status')
@@ -677,14 +679,31 @@ const AttendanceSummaryTableData = () => {
                 onClick={onClickProcessAttendance}
               />
               <Button
-                label="Export Excel"
+                label=""
+                tooltip='Export Excel'
                 icon="pi pi-file-excel"
                 className="p-button-success"
                 onClick={exportExcel}
                 loading={isExporting}
+                tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
+              />
+              <Button
+                icon="pi pi-cog"
+                className={
+                  showAutoProcessSettingPanel
+                    ? 'p-button-warning'
+                    : 'p-button-secondary'
+                }
+                tooltip="Auto Process Setting"
+                tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
+                onClick={() => setShowAutoProcessSettingPanel((prev) => !prev)}
               />
             </div>
           </div>
+
+          {showAutoProcessSettingPanel && (
+            <AttendanceAutoProcessSettingPanel />
+          )}
 
           {(actionError || actionSuccess) && (
             <div
