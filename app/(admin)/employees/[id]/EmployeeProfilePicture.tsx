@@ -1,58 +1,74 @@
 "use client";
 
-import { Employee } from '@/app/types/employee';
-import { redirect, useParams } from 'next/navigation';
-import { Avatar } from 'primereact/avatar'
-import React, { useRef, useState } from 'react'
+import { Employee } from "@/app/types/employee";
+import { useParams, useRouter } from "next/navigation";
+import { Avatar } from "primereact/avatar";
+import React, { useMemo, useState } from "react";
 
 interface EmployeePhotoProfileProps {
-  data: Employee | undefined,
+  data: Employee | undefined;
 }
 
-const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
-  const params = useParams();
+const getPhotoUrl = (photoUrl?: string | null) => {
+  if (!photoUrl) return undefined;
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+    return photoUrl;
+  }
+
+  if (photoUrl.startsWith("/")) {
+    return photoUrl;
+  }
+
+  return `/api/public/images/uploads/${encodeURIComponent(photoUrl)}`;
+};
+
+const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
   const [isHovering, setIsHovering] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const file = files[0];
-    }
+  const initials = useMemo(() => {
+    const first = data?.first_name?.trim()?.charAt(0) ?? "";
+    const last = data?.last_name?.trim()?.charAt(0) ?? "";
+
+    return `${first}${last}`.toUpperCase() || "EM";
+  }, [data?.first_name, data?.last_name]);
+
+  const photoUrl = getPhotoUrl(data?.photo_url);
+
+  const goToEditPhoto = () => {
+    if (!params?.id) return;
+
+    router.push(`/employees/${params.id}/edit-photo`);
   };
 
   return (
     <div
-      style={{ position: 'relative', width: '7rem', height: '7rem' }}
-      className='relative'
+      style={{ position: "relative", width: "7rem", height: "7rem" }}
+      className="relative"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
       <Avatar
-        label={`${data?.first_name[0]}${data?.last_name[0]}`}
-        image={data?.photo_url ? `http://localhost:3050/api/public/images/uploads/${data?.photo_url}` : undefined}
+        label={initials}
+        image={photoUrl}
         shape="circle"
-        style={{ width: '7rem', height: '7rem', fontSize: '3rem' }}
+        className="bg-blue-100 text-blue-700"
+        style={{ width: "7rem", height: "7rem", fontSize: "3rem" }}
       />
 
       {isHovering && (
-        <div
-          onClick={() => redirect(`/employees/${params?.id}/edit-photo`)}
-          className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center text-white text-sm font-medium cursor-pointer"
-        >Change</div>
-      )
-      }
+        <button
+          type="button"
+          onClick={goToEditPhoto}
+          className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-sm font-medium text-white"
+        >
+          Change
+        </button>
+      )}
+    </div>
+  );
+};
 
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
-    </div >
-  )
-}
-
-export default EmployeeProfilePicture
+export default EmployeeProfilePicture;

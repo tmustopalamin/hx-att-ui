@@ -116,7 +116,6 @@ const DepartmentTableData = () => {
     }
 
     try {
-      console.log(selectedData.row_version, 'hiyaa')
       const res: ResponseType<ResponseTypeCreateSuccess> = await updateDepartment(selectedData.id, selectedData.row_version, data)
 
       setVisible(false);
@@ -204,7 +203,6 @@ const DepartmentTableData = () => {
 
     reset(data)
     setSelectedData(data);
-    console.log(data, 'hahaha')
   }
 
 

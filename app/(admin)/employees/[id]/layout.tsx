@@ -1,3 +1,5 @@
+// app/(admin)/employees/[id]/layout.tsx
+
 "use client";
 
 import React, { Suspense, useMemo } from "react";
@@ -24,6 +26,7 @@ const pageTitleMap: Record<string, string> = {
   leave: "Leave",
   "income-component": "Income Component",
   "deduction-component": "Deduction Component",
+  "edit-photo": "Edit Photo",
 };
 
 const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
@@ -70,15 +73,23 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
       <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
           <div className="flex min-w-0 flex-col gap-4">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col items-center gap-3">
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="flex min-w-0 flex-col items-center gap-3">
                 <EmployeeProfilePicture data={data} />
 
-                <div className="min-w-0 text-center">
-                  <h2 className="truncate text-xl font-semibold text-slate-900">
+                <div className="flex w-full min-w-0 flex-col items-center text-center">
+                  <h2
+                    className="w-full max-w-[230px] text-center text-lg font-semibold leading-snug text-slate-900"
+                    style={{ overflowWrap: "anywhere" }}
+                    title={employeeName}
+                  >
                     {employeeName}
                   </h2>
-                  <p className="mt-1 truncate text-sm text-slate-500">
+
+                  <p
+                    className="mt-1 w-full max-w-[230px] truncate text-sm text-slate-500"
+                    title={employmentData?.position_name || "-"}
+                  >
                     {employmentData?.position_name || "-"}
                   </p>
                 </div>

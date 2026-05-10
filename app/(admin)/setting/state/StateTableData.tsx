@@ -115,7 +115,6 @@ const StateTableData = () => {
     }
 
     try {
-      console.log(selectedData.row_version, 'hiyaa')
       const res: ResponseType<ResponseTypeCreateSuccess> = await updateState(selectedData.id, selectedData.row_version, data)
 
       setVisible(false);
@@ -203,7 +202,6 @@ const StateTableData = () => {
 
     reset(data)
     setSelectedData(data);
-    console.log(data, 'hahaha')
   }
 
 

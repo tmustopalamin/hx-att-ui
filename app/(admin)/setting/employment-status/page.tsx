@@ -143,7 +143,6 @@ const EmploymentStatusSettingPage = () => {
 
             if (!res.ok) throw new Error(`Failed to update: ${res.status}`);
             const data_res = await res.json();
-            console.log('Updated:', data_res);
 
             setVisible(false);
             reset();
@@ -173,7 +172,6 @@ const EmploymentStatusSettingPage = () => {
 
             if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
             const data_res = await res.json();
-            console.log('Deleted:', data_res);
 
             setVisible(false);
             reset();

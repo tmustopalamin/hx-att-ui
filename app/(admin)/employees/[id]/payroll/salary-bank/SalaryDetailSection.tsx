@@ -67,13 +67,11 @@ const SalaryDetailSection = () => {
     });
 
     const result = await res.json();
-    console.log(result);
 
     getPersonalData();
   };
 
   const onInvalid = (errors: FieldErrors<FormData>) => {
-    console.log("❌ Form is invalid:", errors);
   };
 
   return (

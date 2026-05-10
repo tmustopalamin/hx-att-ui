@@ -11,15 +11,14 @@ export const createEmployeeDeductionComponent = async (data: EmployeeDeductionCo
     end_date: dayjs(data.end_date).isValid() ? dayjs(data.end_date).format('YYYY-MM-DD') : null,
   }
 
-  console.log(newData, 'adaw');
 
   const res = await fetch(`${API_URL}/${data.employee_id}/deduction-component`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(newData)    
+    body: JSON.stringify(newData)
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -69,8 +68,8 @@ export const updateEmployeeDeductionComponent = async (id: number, rowVersion: n
     body: JSON.stringify(updateData)
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -82,14 +81,14 @@ export const deleteEmployeeDeductionComponent = async (id: number, data: Employe
   const res = await fetch(`${API_URL}/${data.employee_id}/deduction-component/${id}`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(data.row_version),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -98,13 +97,13 @@ export const purgeEmployeeDeductionComponent = async (id: number, data: Employee
   const res = await fetch(`${API_URL}/${data.employee_id}/deduction-component/${id}/purge`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -113,7 +112,7 @@ export const restoreEmployeeDeductionComponent = async (id: number, data: Employ
   const res = await fetch(`${API_URL}/${data.employee_id}/deduction-component/${id}/restore`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(data.row_version),
     },

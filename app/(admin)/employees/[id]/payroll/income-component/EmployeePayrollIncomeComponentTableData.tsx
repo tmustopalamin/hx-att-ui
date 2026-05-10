@@ -312,7 +312,6 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const onChangeIncomeComponent = (id: number) => {
     const incomeComponent = incomeComponentData?.find((ic: IncomeComponent) => ic.id === id);
-    console.log(incomeComponent)
     if (incomeComponent) {
       setSelectedIncomeComponent(incomeComponent)
     }

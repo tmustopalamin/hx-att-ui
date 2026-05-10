@@ -121,7 +121,6 @@ const PositionTableData = () => {
     }
 
     try {
-      console.log(selectedData.row_version, 'hiyaa')
       const res: ResponseType<ResponseTypeCreateSuccess> = await updatePosition(selectedData.id, selectedData.row_version, data)
 
       setVisible(false);
@@ -211,7 +210,6 @@ const PositionTableData = () => {
 
     reset(data)
     setSelectedData(data);
-    console.log(data, 'hahaha')
   }
 
 
@@ -435,7 +433,6 @@ const PositionTableData = () => {
                       loading={stateIsLoading}
                       disabled={stateIsLoading || !!stateError}
                       onChange={(e) => {
-                        console.log("Clear clicked, value:", e.value);
                         field.onChange(e.value ?? null);
                       }}
                       optionLabel="name"

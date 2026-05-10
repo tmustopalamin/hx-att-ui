@@ -7,10 +7,10 @@ export const createState = async (data: State) => {
   const res = await fetch(API_URL, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data)
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -41,7 +41,6 @@ export const createState = async (data: State) => {
 }
 
 export const updateState = async (id: number, rowVersion: number, data: State) => {
-  console.log(rowVersion, 'adah')
   if (rowVersion <= -1)
     throw new Error('rowVersion is required');
 
@@ -55,8 +54,8 @@ export const updateState = async (id: number, rowVersion: number, data: State) =
     body: JSON.stringify(data)
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -68,14 +67,14 @@ export const deleteState = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(rowVersion),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -84,13 +83,13 @@ export const purgeState = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -99,7 +98,7 @@ export const restoreState = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(rowVersion),
     },

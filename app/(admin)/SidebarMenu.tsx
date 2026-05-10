@@ -31,6 +31,12 @@ type SettingSubMenu = {
 
 const selfServiceItems: MenuItem[] = [
   {
+    href: "/my-profile",
+    label: "My Profile",
+    icon: "pi-user",
+    permission: "my-profile.read",
+  },
+  {
     href: "/my-attendance/mobile-attendance",
     label: "Mobile Attendance",
     icon: "pi-map-marker",
@@ -67,7 +73,7 @@ const approvalItems: MenuItem[] = [
 const employeeItems: MenuItem[] = [
   {
     href: "/employees",
-    label: "Employees",
+    label: "Manage Employee",
     icon: "pi-users",
     permission: "employee.read",
   },
@@ -197,10 +203,16 @@ const settingSubMenus: SettingSubMenu[] = [
     ],
   },
   {
-    key: "time-attendance-setup",
-    label: "Time & Attendance Setup",
+    key: "attendance-setup",
+    label: "Attendance Setup",
     icon: "pi-calendar-clock",
     items: [
+      {
+        href: "/setting/holiday",
+        label: "Holiday",
+        icon: "pi-calendar-times",
+        permission: "master-data.read",
+      },
       {
         href: "/setting/shift",
         label: "Shift",

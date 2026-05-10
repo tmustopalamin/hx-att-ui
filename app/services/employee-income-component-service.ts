@@ -11,15 +11,13 @@ export const createEmployeeIncomeComponent = async (data: EmployeeIncomeComponen
     end_date: dayjs(data.end_date).isValid() ? dayjs(data.end_date).format('YYYY-MM-DD') : null,
   }
 
-  console.log(newData, 'adaw');
-
   const res = await fetch(`${API_URL}/${data.employee_id}/income-component`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(newData)    
+    body: JSON.stringify(newData)
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -69,8 +67,8 @@ export const updateEmployeeIncomeComponent = async (id: number, rowVersion: numb
     body: JSON.stringify(updateData)
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -82,14 +80,14 @@ export const deleteEmployeeIncomeComponent = async (id: number, data: EmployeeIn
   const res = await fetch(`${API_URL}/${data.employee_id}/income-component/${id}`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(data.row_version),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -98,13 +96,13 @@ export const purgeEmployeeIncomeComponent = async (id: number, data: EmployeeInc
   const res = await fetch(`${API_URL}/${data.employee_id}/income-component/${id}/purge`, {
     method: 'DELETE',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
 }
@@ -113,7 +111,7 @@ export const restoreEmployeeIncomeComponent = async (id: number, data: EmployeeI
   const res = await fetch(`${API_URL}/${data.employee_id}/income-component/${id}/restore`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'If-Match': String(data.row_version),
     },

@@ -405,7 +405,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   <Button
                     label="Generate Schedule"
                     icon="pi pi-plus"
-                    onClick={() => router.push('/generate')}
+                    onClick={() => router.push('/setting/employee-shift-assignment/generate')}
                   />
                 </div>
               </div>

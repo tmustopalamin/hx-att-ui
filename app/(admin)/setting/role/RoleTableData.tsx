@@ -161,7 +161,6 @@ const RoleTableData = () => {
   }
 
   const handleRestore = async (data: Role) => {
-    console.log(data, 'back')
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await restoreRole(data.id, data.row_version);
       setVisible(false);

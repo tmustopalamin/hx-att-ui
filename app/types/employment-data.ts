@@ -5,5 +5,5 @@ export interface EmploymentData {
     department_id: boolean;
     position_id: string;
     job_level_id: number;
-    position_name: number;
+    position_name: string;
 }
