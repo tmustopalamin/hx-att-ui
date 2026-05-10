@@ -487,6 +487,7 @@ export const createEmployeeEmergencyContact = async (
             name: payload.name.trim(),
             relationship_id: Number(payload.relationship_id),
             phone: payload.phone.trim(),
+            is_active: payload.is_active
         }),
     });
 
@@ -512,6 +513,7 @@ export const updateEmployeeEmergencyContact = async (
             name: payload.name.trim(),
             relationship_id: Number(payload.relationship_id),
             phone: payload.phone.trim(),
+            is_active: payload.is_active
         }),
     });
 
@@ -580,6 +582,7 @@ export const createEmployeeFamily = async (
             job: payload.job?.trim() || null,
             phone1: payload.phone1?.trim() || null,
             phone2: payload.phone2?.trim() || null,
+            is_active: payload.is_active
         }),
     });
 
@@ -605,6 +608,7 @@ export const updateEmployeeFamily = async (
             name: payload.name.trim(),
             relationship_id: Number(payload.relationship_id),
             dob: payload.dob,
+            is_active: payload.is_active,
             marital_status: payload.marital_status,
             gender_id: Number(payload.gender_id),
             job: payload.job?.trim() || null,

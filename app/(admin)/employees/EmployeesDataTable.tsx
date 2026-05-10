@@ -57,6 +57,7 @@ type EmployeeListRow = Employee & {
 type QuickCreateEmployeeForm = {
   creation_mode: QuickCreateMode;
   first_name: string;
+  middle_name: string;
   last_name: string;
   birth_place: string;
   dob: Date | null;
@@ -73,6 +74,7 @@ const getBody = () => document.body;
 const emptyQuickCreateForm: QuickCreateEmployeeForm = {
   creation_mode: "employee_only",
   first_name: "",
+  middle_name: "",
   last_name: "",
   birth_place: "",
   dob: null,
@@ -219,6 +221,7 @@ const EmployeesDataTable = () => {
         create_user: createUser,
         employee: {
           first_name: form.first_name.trim(),
+          middle_name: form.middle_name.trim() || null,
           last_name: form.last_name.trim(),
           dob: form.dob ? form.dob.toISOString().slice(0, 10) : "",
           gender_id: Number(form.gender_id),
@@ -907,6 +910,32 @@ const EmployeesDataTable = () => {
                             {...field}
                             className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                             placeholder="Enter first name"
+                          />
+                          {fieldState.error && (
+                            <small className="p-error">{fieldState.error.message}</small>
+                          )}
+                        </div>
+                      )}
+                    />
+
+                    <Controller
+                      name="middle_name"
+                      control={control}
+                      rules={{
+                        maxLength: {
+                          value: 50,
+                          message: "Maximum 50 characters",
+                        },
+                      }}
+                      render={({ field, fieldState }) => (
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Middle Name
+                          </label>
+                          <InputText
+                            {...field}
+                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                            placeholder="Enter middle name"
                           />
                           {fieldState.error && (
                             <small className="p-error">{fieldState.error.message}</small>

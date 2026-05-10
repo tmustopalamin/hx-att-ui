@@ -1,139 +1,133 @@
 import dayjs from "dayjs";
-import { EmployeeShiftAssignment, EmployeeShiftAssignmentBulkObj, NewEmployeeShiftAssignment } from "../types/employee-shift-assignment";
+import {
+  EmployeeShiftAssignment,
+  NewEmployeeShiftAssignment,
+} from "../types/employee-shift-assignment";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/employee-shift-assignment';
+const API_URL = "/api/employee-shift-assignment";
 
-export const createEmployeeShiftAssignment = async (data: NewEmployeeShiftAssignment) => {
+const parseError = async (res: Response): Promise<ResponseTypeError> => {
+  const contentType = res.headers.get("Content-Type");
+
+  try {
+    if (contentType && contentType.includes("application/json")) {
+      return (await res.json()) as ResponseTypeError;
+    }
+
+    return {
+      success: false,
+      code: String(res.status),
+      message: await res.text(),
+    };
+  } catch {
+    return {
+      success: false,
+      code: String(res.status),
+      message: "Unknown error",
+    };
+  }
+};
+
+const ensureOk = async (res: Response) => {
+  if (!res.ok) {
+    throw await parseError(res);
+  }
+};
+
+export const createEmployeeShiftAssignment = async (
+  data: NewEmployeeShiftAssignment
+) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
-  const contentType = res.headers.get("Content-Type");
-  if (!res.ok) {
-    let errorDetail: ResponseTypeError;
-
-    try {
-      if (contentType && contentType.includes("application/json")) {
-        errorDetail = (await res.json()) as ResponseTypeError;
-      } else {
-        errorDetail = {
-          success: false,
-          code: String(res.status),
-          message: await res.text(),
-        };
-      }
-    } catch {
-      errorDetail = {
-        success: false,
-        code: String(res.status),
-        message: "Unknown error",
-      };
-    }
-    throw errorDetail;
-  }
-
+  await ensureOk(res);
   return res.json();
-}
+};
 
-export const updateEmployeeShiftAssignment = async (id: number, rowVersion: number, data: EmployeeShiftAssignment) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateEmployeeShiftAssignment = async (
+  id: number,
+  rowVersion: number,
+  data: EmployeeShiftAssignment
+) => {
+  if (rowVersion <= -1) {
+    throw new Error("rowVersion is required");
+  }
 
   const updateData = {
     ...data,
-    shift_date: dayjs(data.shift_date).format('YYYY-MM-DD'),
+    shift_date: data.shift_date
+      ? dayjs(data.shift_date).format("YYYY-MM-DD")
+      : null,
+  };
+
+  const res = await fetch(`${API_URL}/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+    body: JSON.stringify(updateData),
+  });
+
+  await ensureOk(res);
+  return res.json();
+};
+
+export const deleteEmployeeShiftAssignment = async (
+  id: number,
+  rowVersion: number
+) => {
+  if (rowVersion <= -1) {
+    throw new Error("rowVersion is required");
   }
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
-    },
-    body: JSON.stringify(updateData)
-  });
-  if (!res.ok) {
-    const errorData: ResponseTypeError = await res.json();
-    throw errorData;
-  }
-  return res.json();
-}
-
-export const deleteEmployeeShiftAssignment = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
-
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
-  if (!res.ok) {
-    const errorData: ResponseTypeError = await res.json();
-    throw errorData;
-  }
+
+  await ensureOk(res);
   return res.json();
-}
+};
 
 export const purgeEmployeeShiftAssignment = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
-  if (!res.ok) {
-    const errorData: ResponseTypeError = await res.json();
-    throw errorData;
-  }
-  return res.json();
-}
 
-export const restoreEmployeeShiftAssignment = async (id: number, rowVersion: number) => {
+  await ensureOk(res);
+  return res.json();
+};
+
+export const restoreEmployeeShiftAssignment = async (
+  id: number,
+  rowVersion: number
+) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
-  const contentType = res.headers.get("Content-Type");
-  if (!res.ok) {
-    let errorDetail: ResponseTypeError;
-
-    try {
-      if (contentType && contentType.includes("application/json")) {
-        errorDetail = (await res.json()) as ResponseTypeError;
-      } else {
-        errorDetail = {
-          success: false,
-          code: String(res.status),
-          message: await res.text(),
-        };
-      }
-    } catch {
-      errorDetail = {
-        success: false,
-        code: String(res.status),
-        message: "Unknown error",
-      };
-    }
-    throw errorDetail;
-  }
-
+  await ensureOk(res);
   return res.json();
-}
-
+};
