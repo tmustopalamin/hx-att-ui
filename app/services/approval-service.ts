@@ -1,13 +1,16 @@
-import { ApprovalActionPayload } from '../types/approval';
-import { ResponseTypeError } from '../types/response-type';
+import {
+  ApprovalActionPayload,
+  ApprovalWorkflowSettingForm,
+} from "../types/approval";
+import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/approval';
+const API_URL = "/api/approval";
 
 const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
-  const contentType = res.headers.get('Content-Type');
+  const contentType = res.headers.get("Content-Type");
 
   try {
-    if (contentType && contentType.includes('application/json')) {
+    if (contentType && contentType.includes("application/json")) {
       return (await res.json()) as ResponseTypeError;
     }
 
@@ -20,35 +23,40 @@ const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => 
     return {
       success: false,
       code: String(res.status),
-      message: 'Unknown error',
+      message: "Unknown error",
     };
   }
 };
 
-const normalizeNote = (value?: string | null) => {
-  const trimmed = (value ?? '').trim();
-  return trimmed.length > 0 ? trimmed : null;
+const validateRowVersion = (rowVersion: number) => {
+  if (rowVersion <= 0 || Number.isNaN(rowVersion)) {
+    throw new Error("rowVersion is required");
+  }
+};
+
+const normalizeNotePayload = (note?: string | null): ApprovalActionPayload => {
+  const cleanNote = (note ?? "").trim();
+
+  return {
+    note: cleanNote ? cleanNote : null,
+  };
 };
 
 export const approveApprovalRequest = async (
   approvalRequestId: number,
   rowVersion: number,
-  payload: ApprovalActionPayload
+  note?: string | null
 ) => {
-  if (rowVersion <= 0) {
-    throw new Error('rowVersion is required');
-  }
+  validateRowVersion(rowVersion);
 
   const res = await fetch(`${API_URL}/${approvalRequestId}/approve`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify({
-      note: normalizeNote(payload.note),
-    }),
+    body: JSON.stringify(normalizeNotePayload(note)),
   });
 
   if (!res.ok) {
@@ -61,22 +69,48 @@ export const approveApprovalRequest = async (
 export const rejectApprovalRequest = async (
   approvalRequestId: number,
   rowVersion: number,
-  payload: ApprovalActionPayload
+  note?: string | null
 ) => {
-  if (rowVersion <= 0) {
-    throw new Error('rowVersion is required');
-  }
+  validateRowVersion(rowVersion);
 
   const res = await fetch(`${API_URL}/${approvalRequestId}/reject`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify({
-      note: normalizeNote(payload.note),
-    }),
+    body: JSON.stringify(normalizeNotePayload(note)),
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return res.json();
+};
+
+export const updateApprovalWorkflowSetting = async (
+  id: number,
+  rowVersion: number,
+  data: ApprovalWorkflowSettingForm
+) => {
+  validateRowVersion(rowVersion);
+
+  const payload = {
+    name: data.name.trim(),
+    required_steps: Number(data.required_steps),
+    is_active: Boolean(data.is_active),
+  };
+
+  const res = await fetch(`${API_URL}/workflow-settings/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {

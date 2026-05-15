@@ -68,6 +68,12 @@ const approvalItems: MenuItem[] = [
     icon: "pi-inbox",
     permission: "approval.read",
   },
+  {
+    href: "/setting/approval-settings",
+    label: "Approval Settings",
+    icon: "pi-cog",
+    permission: "approval.update",
+  },
 ];
 
 const employeeItems: MenuItem[] = [
@@ -92,6 +98,24 @@ const employeeItems: MenuItem[] = [
 ];
 
 const timeManagementItems: MenuItem[] = [
+  {
+    href: "/setting/employee-shift-rule",
+    label: "Employee Schedule Rule",
+    icon: "pi-list",
+    permission: "employee-shift-rule.read",
+  },
+  {
+    href: "/setting/employee-shift-assignment",
+    label: "Daily Schedule",
+    icon: "pi-calendar-plus",
+    permission: "employee-shift-assignment.read",
+  },
+  {
+    href: "/setting/fingerprint-scanner",
+    label: "Fingerprint Scanner",
+    icon: "pi-box",
+    permission: "master-data.read",
+  },
   {
     href: "/attendance-log",
     label: "Attendance Log",
@@ -225,31 +249,6 @@ const settingSubMenus: SettingSubMenu[] = [
         icon: "pi-calendar",
         permission: "shift-rule.read",
       },
-      {
-        href: "/setting/employee-shift-rule",
-        label: "Employee Shift Rule",
-        icon: "pi-list",
-        permission: "employee-shift-rule.read",
-      },
-      {
-        href: "/setting/employee-shift-assignment",
-        label: "Employee Shift Assignment",
-        icon: "pi-calendar-plus",
-        permission: "employee-shift-assignment.read",
-      },
-    ],
-  },
-  {
-    key: "fingerprint",
-    label: "Fingerprint",
-    icon: "pi-id-card",
-    items: [
-      {
-        href: "/setting/fingerprint-scanner",
-        label: "Fingerprint Scanner",
-        icon: "pi-box",
-        permission: "master-data.read",
-      },
     ],
   },
   {
@@ -343,8 +342,8 @@ const topMenuSections: MenuSection[] = [
     items: employeeItems,
   },
   {
-    key: "time-management",
-    label: "Time Management",
+    key: "time-attendance",
+    label: "Time & Attendance",
     icon: "pi-calendar-clock",
     items: timeManagementItems,
   },
@@ -503,7 +502,7 @@ export default function SidebarMenu() {
         </button>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[700px] opacity-100" : "max-h-0 opacity-0"
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[900px] opacity-100" : "max-h-0 opacity-0"
             }`}
         >
           <ul className="space-y-1 pl-3">{renderLinkList(section.items)}</ul>
@@ -517,9 +516,7 @@ export default function SidebarMenu() {
   const isSettingVisible = visibleSettingSubMenus.length > 0;
 
   const isSettingOpen =
-    openMenuKey === "setting" ||
-    pathname.startsWith("/setting") ||
-    hasActiveSettingItems(visibleSettingSubMenus);
+    openMenuKey === "setting" || hasActiveSettingItems(visibleSettingSubMenus);
 
   const settingContent = (
     <li className="space-y-1">
@@ -617,7 +614,9 @@ export default function SidebarMenu() {
                 </p>
               </li>
 
-              {visibleTopMenuSections.map((section) => renderTopSection(section))}
+              {visibleTopMenuSections.map((section) =>
+                renderTopSection(section)
+              )}
             </>
           )}
 

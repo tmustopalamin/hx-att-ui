@@ -25,6 +25,7 @@ export interface OvertimeRequest {
     cancelled_at?: string | null;
 
     submitted_at?: string | null;
+    approval_request_id?: number | null;
 
     created_at?: string;
     created_by?: number | null;

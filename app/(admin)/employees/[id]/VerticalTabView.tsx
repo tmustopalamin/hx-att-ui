@@ -55,10 +55,10 @@ const VerticalTabview = () => {
           label: "Attendance",
           href: `/employees/${employeeId}/time/attendance`,
         },
-        {
-          label: "Overtime",
-          href: `/employees/${employeeId}/time/overtime`,
-        },
+        // {
+        //   label: "Overtime",
+        //   href: `/employees/${employeeId}/time/overtime`,
+        // },
         {
           label: "Leave",
           href: `/employees/${employeeId}/time/leave`,

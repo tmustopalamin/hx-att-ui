@@ -1,72 +1,346 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import useSWR, { mutate } from 'swr';
 import dayjs from 'dayjs';
 
-import { Card } from 'primereact/card';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { FilterMatchMode } from 'primereact/api';
 import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
+import { Calendar } from 'primereact/calendar';
+import { Card } from 'primereact/card';
+import { Checkbox } from 'primereact/checkbox';
+import { Column } from 'primereact/column';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { InputText } from 'primereact/inputtext';
+import { DataTable } from 'primereact/datatable';
+import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
+import { FilterMatchMode } from 'primereact/api';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
-import { Checkbox } from 'primereact/checkbox';
-import { Dropdown } from 'primereact/dropdown';
-import { Calendar } from 'primereact/calendar';
+import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Tag } from 'primereact/tag';
 
-import { fetcher } from '@/app/utils/fetcher';
-import LoadingDataTable from '@/app/_components/LoadingDataTable';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
-import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages';
-import { showToast } from '@/store/ToastSlice';
-import { RootState } from '@/store/store';
-import { hasRole } from '@/app/utils/role-utils';
-
 import { useDispatch, useSelector } from 'react-redux';
 
-import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type';
-import { LeaveType } from '@/app/types/leave-type';
-import { EmployeeLeaveBalance } from '@/app/types/employee-leave-balance';
+import LoadingDataTable from '@/app/_components/LoadingDataTable';
+import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
+
+import { fetcher } from '@/app/utils/fetcher';
+import { getErrorMessage, isResponseTypeError } from '@/app/utils/error-messages';
+import { hasRole } from '@/app/utils/role-utils';
+
+import { RootState } from '@/store/store';
+import { showToast } from '@/store/ToastSlice';
+
 import {
   RequestLeave,
   RequestLeaveForm,
   defaultRequestLeaveFormValue,
 } from '@/app/types/request-leave';
-import { RequestLeaveAttachment } from '@/app/types/request-leave-attachment';
+import { RequestLeaveApprovalDetail } from '@/app/types/request-leave-approval-detail';
 
-import {
-  createRequestLeave,
-  deleteRequestLeave,
-  getPreviewWorkingDays,
-  purgeRequestLeave,
-  restoreRequestLeave,
-  updateRequestLeave,
-} from '@/app/services/request-leave-service';
+import { getRequestLeaveApprovalDetail } from '@/app/services/request-leave-service';
 
-import {
-  uploadRequestLeaveAttachment,
-  getRequestLeaveAttachments,
-  deleteRequestLeaveAttachment,
-} from '@/app/services/request-leave-attachment-service';
+type EmployeeLeaveBalanceOption = {
+  id: number;
+  employee_id: number;
+  leave_type_id: number;
+  leave_type_name?: string | null;
+  period_start: string;
+  period_end: string;
+  opening_balance: number;
+  entitlement: number;
+  taken: number;
+  adjustment: number;
+  closing_balance: number;
+  expired_balance: number;
+  deleted_at?: string | null;
+  row_version: number;
+};
+
+type ApiResponse<T = unknown> = {
+  success: boolean;
+  data?: T;
+  message?: string;
+  code?: string;
+};
+
+type ApiIdResponse = {
+  id: number;
+  row_version?: number;
+};
+
+const REQUEST_LEAVE_API_URL = '/api/request-leave';
+const REQUEST_LEAVE_KEY_PREFIX = '/api/request-leave';
+const LEAVE_BALANCE_KEY = '/api/employees/leave-balance';
 
 const getBody = () => document.body;
 
-const MAX_ATTACHMENT_SIZE = 5 * 1024 * 1024;
+const parseErrorResponse = async (res: Response) => {
+  const contentType = res.headers.get('Content-Type');
 
-const allowedAttachmentTypes = [
-  'image/jpeg',
-  'image/png',
-  'application/pdf',
-];
+  try {
+    if (contentType && contentType.includes('application/json')) {
+      return await res.json();
+    }
 
-const allowedAttachmentAccept = '.jpg,.jpeg,.png,.pdf';
+    return {
+      success: false,
+      code: String(res.status),
+      message: await res.text(),
+    };
+  } catch {
+    return {
+      success: false,
+      code: String(res.status),
+      message: 'Unknown error',
+    };
+  }
+};
+
+const getResponseMessage = (response: ApiResponse, fallback: string) => {
+  return response?.message || fallback;
+};
+
+const getResponseId = (response: ApiResponse<ApiIdResponse>) => {
+  return response?.data?.id ?? 0;
+};
+
+const toApiDate = (value: Date | null) => {
+  if (!value) {
+    return null;
+  }
+
+  return dayjs(value).format('YYYY-MM-DD');
+};
+
+const createRequestLeaveApi = async (data: RequestLeaveForm) => {
+  const payload = {
+    leave_type_id: data.leave_type_id,
+    employee_leave_balance_id: data.employee_leave_balance_id,
+    start_date: toApiDate(data.start_date),
+    end_date: toApiDate(data.end_date),
+    reason: data.reason?.trim() || null,
+    total_days: data.total_days,
+  };
+
+  const res = await fetch(REQUEST_LEAVE_API_URL, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const updateRequestLeaveApi = async (
+  id: number,
+  rowVersion: number,
+  data: RequestLeaveForm
+) => {
+  const payload = {
+    leave_type_id: data.leave_type_id,
+    employee_leave_balance_id: data.employee_leave_balance_id,
+    start_date: toApiDate(data.start_date),
+    end_date: toApiDate(data.end_date),
+    reason: data.reason?.trim() || null,
+    total_days: data.total_days,
+  };
+
+  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-Match': String(rowVersion),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const deleteRequestLeaveApi = async (id: number, rowVersion: number) => {
+  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-Match': String(rowVersion),
+    },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const restoreRequestLeaveApi = async (id: number, rowVersion: number) => {
+  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/restore`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-Match': String(rowVersion),
+    },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const purgeRequestLeaveApi = async (id: number) => {
+  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/purge`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const submitRequestLeaveApi = async (id: number, rowVersion: number) => {
+  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/submit`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'If-Match': String(rowVersion),
+    },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const uploadRequestLeaveAttachmentApi = async (
+  requestLeaveId: number,
+  file: File
+) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${requestLeaveId}/attachments`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return (await res.json()) as ApiResponse<ApiIdResponse>;
+};
+
+const getStatusSeverity = (status?: string | null) => {
+  const value = (status ?? '').toUpperCase();
+
+  if (value === 'APPROVED') {
+    return 'success';
+  }
+
+  if (value === 'REJECTED') {
+    return 'danger';
+  }
+
+  if (value === 'PENDING') {
+    return 'warning';
+  }
+
+  if (value === 'CANCELLED') {
+    return 'secondary';
+  }
+
+  if (value === 'WAITING') {
+    return 'info';
+  }
+
+  return 'info';
+};
+
+const formatDate = (value?: string | Date | null) => {
+  if (!value) {
+    return '-';
+  }
+
+  return dayjs(value).format('DD MMM YYYY');
+};
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) {
+    return '-';
+  }
+
+  return dayjs(value).format('DD MMM YYYY HH:mm');
+};
+
+const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
+  if (!startDate || !endDate) {
+    return 0;
+  }
+
+  const start = dayjs(startDate).startOf('day');
+  const end = dayjs(endDate).startOf('day');
+
+  if (end.isBefore(start)) {
+    return 0;
+  }
+
+  let total = 0;
+  let current = start;
+
+  while (current.isSame(end) || current.isBefore(end)) {
+    const day = current.day();
+
+    if (day !== 0 && day !== 6) {
+      total += 1;
+    }
+
+    current = current.add(1, 'day');
+  }
+
+  return total;
+};
+
+const isDraftRequest = (rowData: RequestLeave) => {
+  return (
+    rowData.status?.toUpperCase() === 'PENDING' &&
+    !rowData.deleted_at &&
+    !rowData.approval_request_id &&
+    !rowData.submitted_at
+  );
+};
+
+const hasApprovalDetail = (rowData: RequestLeave) => {
+  return !!rowData.approval_request_id || !!rowData.submitted_at;
+};
 
 const RequestLeaveTableData = () => {
   const dispatch = useDispatch();
@@ -74,25 +348,19 @@ const RequestLeaveTableData = () => {
 
   const [selectedData, setSelectedData] = useState<RequestLeave | null>(null);
   const [globalFilterValue, setGlobalFilterValue] = useState('');
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState('New Request Leave');
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
-  const [attachmentDialogVisible, setAttachmentDialogVisible] = useState(false);
-  const [attachmentRows, setAttachmentRows] = useState<RequestLeaveAttachment[]>([]);
-  const [attachmentLoading, setAttachmentLoading] = useState(false);
-  const [attachmentRequestLeave, setAttachmentRequestLeave] = useState<RequestLeave | null>(null);
-  const [openingAttachmentId, setOpeningAttachmentId] = useState<number | null>(null);
-  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<number | null>(null);
+  const [approvalDetailVisible, setApprovalDetailVisible] = useState(false);
+  const [approvalDetailLoading, setApprovalDetailLoading] = useState(false);
+  const [approvalDetail, setApprovalDetail] =
+    useState<RequestLeaveApprovalDetail | null>(null);
 
-  const [previewFileUrl, setPreviewFileUrl] = useState<string | null>(null);
-  const [previewFileName, setPreviewFileName] = useState('');
-  const [previewFileContentType, setPreviewFileContentType] = useState('');
-
-  const currentKey = `/api/request-leave?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `${REQUEST_LEAVE_KEY_PREFIX}?show_all=${isShowDeletedDataChecked}`;
 
   const {
     control,
@@ -108,6 +376,14 @@ const RequestLeaveTableData = () => {
     mode: 'onTouched',
   });
 
+  const startDate = watch('start_date');
+  const endDate = watch('end_date');
+  const employeeLeaveBalanceId = watch('employee_leave_balance_id');
+
+  const previewTotalDays = useMemo(() => {
+    return calculateWorkingDays(startDate, endDate);
+  }, [startDate, endDate]);
+
   const [filters, setFilters] = useState({
     global: { value: '', matchMode: FilterMatchMode.CONTAINS },
   });
@@ -118,299 +394,85 @@ const RequestLeaveTableData = () => {
     isLoading,
   } = useSWR<RequestLeave[]>(currentKey, fetcher);
 
-  const {
-    data: leaveTypeData,
-    error: leaveTypeError,
-    isLoading: leaveTypeIsLoading,
-  } = useSWR<LeaveType[]>('/api/leave-type', fetcher);
+  const { data: leaveBalanceData } = useSWR<EmployeeLeaveBalanceOption[]>(
+    LEAVE_BALANCE_KEY,
+    fetcher
+  );
 
-  const {
-    data: employeeLeaveBalanceData,
-    error: employeeLeaveBalanceError,
-    isLoading: employeeLeaveBalanceIsLoading,
-  } = useSWR<EmployeeLeaveBalance[]>('/api/employees/leave-balance', fetcher);
+  const rows = requestLeaveData ?? [];
+  const leaveBalanceRows = leaveBalanceData ?? [];
 
-  const requestRows = requestLeaveData ?? [];
+  const leaveBalanceOptions = useMemo(() => {
+    return leaveBalanceRows
+      .filter((item) => !item.deleted_at)
+      .map((item) => ({
+        label: `${item.leave_type_name ?? `Leave Type #${item.leave_type_id}`} • ${formatDate(
+          item.period_start
+        )} - ${formatDate(item.period_end)} • Balance ${item.closing_balance}`,
+        value: item.id,
+      }));
+  }, [leaveBalanceRows]);
 
-  const selectedLeaveTypeId = watch('leave_type_id');
-  const selectedBalanceId = watch('employee_leave_balance_id');
-  const startDate = watch('start_date');
-  const endDate = watch('end_date');
-  const totalDays = watch('total_days') || 0;
+  const selectedLeaveBalance = useMemo(() => {
+    return leaveBalanceRows.find((item) => item.id === employeeLeaveBalanceId) ?? null;
+  }, [leaveBalanceRows, employeeLeaveBalanceId]);
 
-  const requestSummary = useMemo(() => {
-    const pending = requestRows.filter(
-      (item) => item.status?.toUpperCase() === 'PENDING' && !item.deleted_at
-    ).length;
+  const refreshData = async () => {
+    await mutate(currentKey);
+    await mutate(LEAVE_BALANCE_KEY);
+  };
 
-    const approved = requestRows.filter(
-      (item) => item.status?.toUpperCase() === 'APPROVED' && !item.deleted_at
-    ).length;
-
-    const rejected = requestRows.filter(
-      (item) => item.status?.toUpperCase() === 'REJECTED' && !item.deleted_at
-    ).length;
-
-    return { pending, approved, rejected };
-  }, [requestRows]);
-
-  const activeLeaveTypes = useMemo(() => {
-    return (leaveTypeData ?? []).filter((item) => item.is_active);
-  }, [leaveTypeData]);
-
-  const leaveTypeNameMap = useMemo(() => {
-    const map = new Map<number, string>();
-
-    (leaveTypeData ?? []).forEach((item) => {
-      map.set(item.id, item.name);
-    });
-
-    return map;
-  }, [leaveTypeData]);
-
-  const selectedLeaveType = useMemo(() => {
-    return (leaveTypeData ?? []).find(
-      (item) => item.id === Number(selectedLeaveTypeId)
-    );
-  }, [leaveTypeData, selectedLeaveTypeId]);
-
-  const availableLeaveBalances = useMemo(() => {
-    const balances = employeeLeaveBalanceData ?? [];
-
-    if (!selectedLeaveTypeId || Number(selectedLeaveTypeId) <= 0) {
-      return balances.filter((item) => !item.deleted_at);
-    }
-
-    return balances.filter(
-      (item) =>
-        item.leave_type_id === Number(selectedLeaveTypeId) &&
-        !item.deleted_at
-    );
-  }, [employeeLeaveBalanceData, selectedLeaveTypeId]);
-
-  const selectedBalance = useMemo(() => {
-    return (employeeLeaveBalanceData ?? []).find(
-      (item) => item.id === Number(selectedBalanceId)
-    );
-  }, [employeeLeaveBalanceData, selectedBalanceId]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const calculatePreview = async () => {
-      if (!startDate || !endDate) {
-        setValue('total_days', 0);
-        return;
-      }
-
-      if (dayjs(endDate).isBefore(startDate, 'day')) {
-        setValue('total_days', 0);
-        return;
-      }
-
-      try {
-        setIsPreviewLoading(true);
-
-        const total = await getPreviewWorkingDays(startDate, endDate);
-
-        if (isMounted) {
-          setValue('total_days', total);
-        }
-      } catch (err: unknown) {
-        if (!isMounted) {
-          return;
-        }
-
-        setValue('total_days', 0);
-
-        if (isResponseTypeError(err)) {
-          dispatch(
-            showToast({
-              visible: true,
-              severity: 'error',
-              summary: 'Error',
-              detail: getErrorMessage(err, 'message'),
-            })
-          );
-        } else if (err instanceof Error) {
-          dispatch(
-            showToast({
-              visible: true,
-              severity: 'error',
-              summary: 'Error',
-              detail: err.message,
-            })
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsPreviewLoading(false);
-        }
-      }
-    };
-
-    void calculatePreview();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [startDate, endDate, setValue, dispatch]);
-
-  useEffect(() => {
-    if (!selectedBalanceId) {
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Error',
+          detail: getErrorMessage(err, 'message'),
+        })
+      );
       return;
     }
 
-    const exists = availableLeaveBalances.some(
-      (item) => item.id === Number(selectedBalanceId)
-    );
-
-    if (!exists) {
-      setValue('employee_leave_balance_id', 0);
-    }
-  }, [availableLeaveBalances, selectedBalanceId, setValue]);
-
-  useEffect(() => {
-    return () => {
-      if (previewFileUrl) {
-        URL.revokeObjectURL(previewFileUrl);
-      }
-    };
-  }, [previewFileUrl]);
-
-  const clearPreviewFile = () => {
-    if (previewFileUrl) {
-      URL.revokeObjectURL(previewFileUrl);
-    }
-
-    setPreviewFileUrl(null);
-    setPreviewFileName('');
-    setPreviewFileContentType('');
-  };
-
-  const parseBlobError = async (res: Response) => {
-    const contentType = res.headers.get('Content-Type') ?? '';
-
-    try {
-      if (contentType.includes('application/json')) {
-        const errorBody = await res.json();
-        return errorBody?.message ?? 'Failed to open attachment.';
-      }
-
-      const text = await res.text();
-      return text || 'Failed to open attachment.';
-    } catch {
-      return 'Failed to open attachment.';
-    }
-  };
-
-  const fetchSecureAttachmentBlob = async (
-    requestLeaveId: number,
-    attachmentId: number
-  ) => {
-    const res = await fetch(
-      `/api/request-leave/${requestLeaveId}/attachments/${attachmentId}/view`,
-      {
-        method: 'GET',
-        credentials: 'include',
-      }
-    );
-
-    if (!res.ok) {
-      const message = await parseBlobError(res);
-      throw new Error(message);
-    }
-
-    return res.blob();
-  };
-
-  const previewAttachmentSecurely = async (item: RequestLeaveAttachment) => {
-    try {
-      setOpeningAttachmentId(item.id);
-
-      const blob = await fetchSecureAttachmentBlob(
-        item.employee_leave_id,
-        item.id
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Error',
+          detail: err.message,
+        })
       );
-
-      const contentType = blob.type || item.content_type;
-
-      if (
-        !contentType.startsWith('image/') &&
-        contentType !== 'application/pdf'
-      ) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'warn',
-            summary: 'Preview not available',
-            detail: 'Only image and PDF attachments can be previewed.',
-          })
-        );
-        return;
-      }
-
-      clearPreviewFile();
-
-      const blobUrl = URL.createObjectURL(blob);
-
-      setPreviewFileUrl(blobUrl);
-      setPreviewFileName(item.original_file_name);
-      setPreviewFileContentType(contentType);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-    } finally {
-      setOpeningAttachmentId(null);
+      return;
     }
+
+    const message =
+      typeof err === 'object' &&
+        err !== null &&
+        'message' in err &&
+        typeof (err as { message?: unknown }).message === 'string'
+        ? (err as { message: string }).message
+        : 'Unknown error';
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: 'error',
+        summary: 'Error',
+        detail: message,
+      })
+    );
   };
 
-  const downloadAttachmentSecurely = async (item: RequestLeaveAttachment) => {
-    try {
-      setDownloadingAttachmentId(item.id);
-
-      const blob = await fetchSecureAttachmentBlob(
-        item.employee_leave_id,
-        item.id
-      );
-
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-
-      link.href = blobUrl;
-      link.download = item.original_file_name || 'attachment';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setTimeout(() => {
-        URL.revokeObjectURL(blobUrl);
-      }, 60_000);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-    } finally {
-      setDownloadingAttachmentId(null);
-    }
+  const handleDialogHide = () => {
+    setVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+    reset(defaultRequestLeaveFormValue);
   };
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onGlobalFilterChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
 
     setFilters({
@@ -418,32 +480,6 @@ const RequestLeaveTableData = () => {
     });
 
     setGlobalFilterValue(value);
-  };
-
-  const refreshData = async () => {
-    await mutate(currentKey);
-  };
-
-  const refreshAttachmentRows = async (requestLeaveId: number) => {
-    const attachments = await getRequestLeaveAttachments(requestLeaveId);
-    setAttachmentRows(attachments);
-  };
-
-  const handleDialogHide = () => {
-    setVisible(false);
-    setSelectedData(null);
-    setIsAddNew(false);
-    setIsPreviewLoading(false);
-    reset(defaultRequestLeaveFormValue);
-  };
-
-  const handleAttachmentDialogHide = () => {
-    clearPreviewFile();
-    setAttachmentDialogVisible(false);
-    setAttachmentRows([]);
-    setAttachmentRequestLeave(null);
-    setOpeningAttachmentId(null);
-    setDownloadingAttachmentId(null);
   };
 
   const onClickNew = () => {
@@ -455,7 +491,7 @@ const RequestLeaveTableData = () => {
     reset(defaultRequestLeaveFormValue);
 
     setTimeout(() => {
-      setFocus('leave_type_id');
+      setFocus('employee_leave_balance_id');
     }, 0);
   };
 
@@ -472,7 +508,7 @@ const RequestLeaveTableData = () => {
       employee_leave_balance_id: data.employee_leave_balance_id,
       start_date: data.start_date ? dayjs(data.start_date).toDate() : null,
       end_date: data.end_date ? dayjs(data.end_date).toDate() : null,
-      reason: data.reason,
+      reason: data.reason ?? '',
       total_days: data.total_days,
       attachment_file: null,
       deleted_at: data.deleted_at,
@@ -480,104 +516,24 @@ const RequestLeaveTableData = () => {
     });
 
     setTimeout(() => {
-      setFocus('leave_type_id');
+      setFocus('employee_leave_balance_id');
     }, 0);
-  };
-
-  const onClickViewAttachments = async (data: RequestLeave) => {
-    try {
-      setAttachmentLoading(true);
-      setAttachmentRequestLeave(data);
-      setAttachmentDialogVisible(true);
-      clearPreviewFile();
-
-      await refreshAttachmentRows(data.id);
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-    } finally {
-      setAttachmentLoading(false);
-    }
-  };
-
-  const uploadAttachmentIfAny = async (
-    requestLeaveId: number,
-    file: File | null
-  ) => {
-    if (!file) {
-      return;
-    }
-
-    await uploadRequestLeaveAttachment(requestLeaveId, file);
   };
 
   const handleSubmitNew = async (data: RequestLeaveForm) => {
     try {
       setIsSaving(true);
 
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createRequestLeave(data);
+      const payload = {
+        ...data,
+        total_days: previewTotalDays,
+      };
 
-      const newRequestId = Number(res.data?.id ?? 0);
+      const res = await createRequestLeaveApi(payload);
+      const createdId = getResponseId(res);
 
-      if (newRequestId > 0 && data.attachment_file) {
-        try {
-          await uploadAttachmentIfAny(newRequestId, data.attachment_file);
-        } catch (uploadErr: unknown) {
-          await refreshData();
-          handleDialogHide();
-
-          if (isResponseTypeError(uploadErr)) {
-            dispatch(
-              showToast({
-                visible: true,
-                severity: 'warn',
-                summary: 'Request Created, Attachment Failed',
-                detail:
-                  getErrorMessage(uploadErr, 'message') ||
-                  'Leave request was created, but attachment upload failed. Please update the request and upload the attachment again.',
-              })
-            );
-          } else if (uploadErr instanceof Error) {
-            dispatch(
-              showToast({
-                visible: true,
-                severity: 'warn',
-                summary: 'Request Created, Attachment Failed',
-                detail: uploadErr.message,
-              })
-            );
-          } else {
-            dispatch(
-              showToast({
-                visible: true,
-                severity: 'warn',
-                summary: 'Request Created, Attachment Failed',
-                detail:
-                  'Leave request was created, but attachment upload failed. Please update the request and upload the attachment again.',
-              })
-            );
-          }
-
-          return;
-        }
+      if (createdId > 0 && data.attachment_file) {
+        await uploadRequestLeaveAttachmentApi(createdId, data.attachment_file);
       }
 
       await refreshData();
@@ -588,29 +544,14 @@ const RequestLeaveTableData = () => {
           visible: true,
           severity: 'success',
           summary: 'Success',
-          detail: res.message || 'Leave request created successfully.',
+          detail: getResponseMessage(
+            res,
+            'Request leave created successfully.'
+          ),
         })
       );
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
+      showError(err);
     } finally {
       setIsSaving(false);
     }
@@ -618,25 +559,25 @@ const RequestLeaveTableData = () => {
 
   const handleUpdate = async (data: RequestLeaveForm) => {
     if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Please select data first.',
-        })
-      );
       return;
     }
 
     try {
       setIsSaving(true);
 
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await updateRequestLeave(selectedData.id, selectedData.row_version, data);
+      const payload = {
+        ...data,
+        total_days: previewTotalDays,
+      };
+
+      const res = await updateRequestLeaveApi(
+        selectedData.id,
+        selectedData.row_version,
+        payload
+      );
 
       if (data.attachment_file) {
-        await uploadAttachmentIfAny(selectedData.id, data.attachment_file);
+        await uploadRequestLeaveAttachmentApi(selectedData.id, data.attachment_file);
       }
 
       await refreshData();
@@ -647,29 +588,14 @@ const RequestLeaveTableData = () => {
           visible: true,
           severity: 'success',
           summary: 'Success',
-          detail: res.message || 'Leave request updated successfully.',
+          detail: getResponseMessage(
+            res,
+            'Request leave updated successfully.'
+          ),
         })
       );
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
+      showError(err);
     } finally {
       setIsSaving(false);
     }
@@ -677,8 +603,7 @@ const RequestLeaveTableData = () => {
 
   const handleDelete = async (data: RequestLeave) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await deleteRequestLeave(data.id, data.row_version);
+      const res = await deleteRequestLeaveApi(data.id, data.row_version);
 
       await refreshData();
 
@@ -687,74 +612,20 @@ const RequestLeaveTableData = () => {
           visible: true,
           severity: 'success',
           summary: 'Success',
-          detail: res.message || 'Leave request deleted successfully.',
+          detail: getResponseMessage(
+            res,
+            'Request leave deleted successfully.'
+          ),
         })
       );
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: RequestLeave) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await purgeRequestLeave(data.id);
-
-      await refreshData();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'Leave request deleted permanently.',
-        })
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
+      showError(err);
     }
   };
 
   const handleRestore = async (data: RequestLeave) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await restoreRequestLeave(data.id, data.row_version);
+      const res = await restoreRequestLeaveApi(data.id, data.row_version);
 
       await refreshData();
 
@@ -763,50 +634,21 @@ const RequestLeaveTableData = () => {
           visible: true,
           severity: 'success',
           summary: 'Success',
-          detail: res.message || 'Leave request restored successfully.',
+          detail: getResponseMessage(
+            res,
+            'Request leave restored successfully.'
+          ),
         })
       );
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
+      showError(err);
     }
   };
 
-  const handleDeleteAttachment = async (item: RequestLeaveAttachment) => {
-    if (!attachmentRequestLeave) {
-      return;
-    }
-
+  const handlePurge = async (data: RequestLeave) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await deleteRequestLeaveAttachment(
-          attachmentRequestLeave.id,
-          item.id,
-          item.row_version
-        );
+      const res = await purgeRequestLeaveApi(data.id);
 
-      if (previewFileUrl && previewFileName === item.original_file_name) {
-        clearPreviewFile();
-      }
-
-      await refreshAttachmentRows(attachmentRequestLeave.id);
       await refreshData();
 
       dispatch(
@@ -814,115 +656,121 @@ const RequestLeaveTableData = () => {
           visible: true,
           severity: 'success',
           summary: 'Success',
-          detail: res.message || 'Attachment deleted successfully.',
+          detail: getResponseMessage(
+            res,
+            'Request leave deleted permanently.'
+          ),
         })
       );
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
+      showError(err);
     }
   };
 
-  const onClickDeleteAttachment = (item: RequestLeaveAttachment) => {
-    confirmDialog({
-      message: 'Do you want to delete this attachment?',
-      header: 'Delete Attachment Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
-      accept: () => handleDeleteAttachment(item),
-      reject: () => { },
-      footer: (options) => (
-        <div className="flex justify-end gap-3">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
+  const handleSubmitApproval = async (data: RequestLeave) => {
+    try {
+      const res = await submitRequestLeaveApi(data.id, data.row_version);
+
+      await refreshData();
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'success',
+          summary: 'Success',
+          detail: getResponseMessage(
+            res,
+            'Request leave submitted successfully.'
+          ),
+        })
+      );
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onClickApprovalDetail = async (data: RequestLeave) => {
+    try {
+      setApprovalDetailLoading(true);
+      setApprovalDetailVisible(true);
+      setApprovalDetail(null);
+
+      const result = await getRequestLeaveApprovalDetail(data.id);
+      setApprovalDetail(result);
+    } catch (err: unknown) {
+      setApprovalDetailVisible(false);
+      showError(err);
+    } finally {
+      setApprovalDetailLoading(false);
+    }
+  };
+
+  const closeApprovalDetailDialog = () => {
+    setApprovalDetailVisible(false);
+    setApprovalDetail(null);
+    setApprovalDetailLoading(false);
   };
 
   const onSubmit = async (data: RequestLeaveForm) => {
-    if (!isValid || isSaving || isPreviewLoading) {
+    if (!isValid || isSaving) {
       return;
     }
 
-    let requestedDays = 0;
-
-    try {
-      setIsPreviewLoading(true);
-      requestedDays = await getPreviewWorkingDays(data.start_date, data.end_date);
-      setValue('total_days', requestedDays);
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: err.message,
-          })
-        );
-      }
-
-      return;
-    } finally {
-      setIsPreviewLoading(false);
-    }
-
-    if (requestedDays <= 0) {
+    if (!data.employee_leave_balance_id || !data.leave_type_id) {
       dispatch(
         showToast({
           visible: true,
           severity: 'error',
-          summary: 'Invalid request',
-          detail: 'Selected date range has no working days.',
+          summary: 'Validation',
+          detail: 'Please select leave balance.',
         })
       );
       return;
     }
 
-    if (selectedBalance && requestedDays > selectedBalance.closing_balance) {
+    if (!data.start_date || !data.end_date) {
       dispatch(
         showToast({
           visible: true,
           severity: 'error',
-          summary: 'Insufficient balance',
-          detail: 'Requested days exceed the selected leave balance closing amount.',
+          summary: 'Validation',
+          detail: 'Start date and end date are required.',
+        })
+      );
+      return;
+    }
+
+    if (dayjs(data.end_date).isBefore(dayjs(data.start_date), 'day')) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Validation',
+          detail: 'End date cannot be before start date.',
+        })
+      );
+      return;
+    }
+
+    if (previewTotalDays <= 0) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Validation',
+          detail: 'Total leave days must be greater than 0.',
+        })
+      );
+      return;
+    }
+
+    if (selectedLeaveBalance && previewTotalDays > selectedLeaveBalance.closing_balance) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: 'error',
+          summary: 'Validation',
+          detail: 'Total leave days cannot be greater than closing balance.',
         })
       );
       return;
@@ -936,9 +784,36 @@ const RequestLeaveTableData = () => {
     await handleUpdate(data);
   };
 
+  const onClickSubmit = (data: RequestLeave) => {
+    confirmDialog({
+      message: 'Do you want to submit this leave request for approval?',
+      header: 'Submit Confirmation',
+      icon: 'pi pi-send',
+      defaultFocus: 'accept',
+      accept: () => handleSubmitApproval(data),
+      reject: () => { },
+      footer: (options) => (
+        <div className="flex justify-end gap-3">
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes, Submit"
+            icon="pi pi-send"
+            onClick={options.accept}
+            severity="success"
+          />
+        </div>
+      ),
+    });
+  };
+
   const onClickDelete = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to delete this request?',
+      message: 'Do you want to delete this leave request?',
       header: 'Delete Confirmation',
       icon: 'pi pi-info-circle',
       defaultFocus: 'accept',
@@ -956,7 +831,7 @@ const RequestLeaveTableData = () => {
             label="Yes"
             icon="pi pi-check"
             onClick={options.accept}
-            className="p-button-danger"
+            severity="danger"
           />
         </div>
       ),
@@ -965,7 +840,7 @@ const RequestLeaveTableData = () => {
 
   const onClickRestore = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to restore this request?',
+      message: 'Do you want to restore this leave request?',
       header: 'Restore Confirmation',
       icon: 'pi pi-info-circle',
       defaultFocus: 'accept',
@@ -983,7 +858,7 @@ const RequestLeaveTableData = () => {
             label="Yes"
             icon="pi pi-check"
             onClick={options.accept}
-            className="p-button-success"
+            severity="success"
           />
         </div>
       ),
@@ -992,7 +867,7 @@ const RequestLeaveTableData = () => {
 
   const onClickPurge = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to delete this request forever?',
+      message: 'Do you want to delete this leave request forever?',
       header: 'Delete Forever Confirmation',
       icon: 'pi pi-info-circle',
       defaultFocus: 'accept',
@@ -1010,29 +885,11 @@ const RequestLeaveTableData = () => {
             label="Yes"
             icon="pi pi-check"
             onClick={options.accept}
-            className="p-button-danger"
+            severity="danger"
           />
         </div>
       ),
     });
-  };
-
-  const leaveTypeBody = (rowData: RequestLeave) => {
-    return rowData.leave_name || leaveTypeNameMap.get(rowData.leave_type_id) || '-';
-  };
-
-  const dateRangeBody = (rowData: RequestLeave) => {
-    return `${dayjs(rowData.start_date).format('DD MMM YYYY')} - ${dayjs(
-      rowData.end_date
-    ).format('DD MMM YYYY')}`;
-  };
-
-  const processedAtBody = (rowData: RequestLeave) => {
-    if (!rowData.approved_at) {
-      return '-';
-    }
-
-    return dayjs(rowData.approved_at).format('DD MMM YYYY HH:mm');
   };
 
   const statusBody = (rowData: RequestLeave) => {
@@ -1040,7 +897,7 @@ const RequestLeaveTableData = () => {
       return <Tag value="Deleted" severity="secondary" />;
     }
 
-    const status = (rowData.status || '').toUpperCase();
+    const status = rowData.status?.toUpperCase();
 
     if (status === 'APPROVED') {
       return <Tag value="Approved" severity="success" />;
@@ -1051,73 +908,105 @@ const RequestLeaveTableData = () => {
     }
 
     if (status === 'CANCELLED') {
-      return <Tag value="Cancelled" severity="warning" />;
+      return <Tag value="Cancelled" severity="secondary" />;
     }
 
-    return <Tag value="Pending" severity="info" />;
+    if (hasApprovalDetail(rowData)) {
+      return <Tag value="Waiting Approval" severity="warning" />;
+    }
+
+    return <Tag value="Draft" severity="info" />;
   };
 
-  const attachmentBody = (rowData: RequestLeave) => {
-    const attachmentCount = rowData.attachment_count ?? 0;
+  const leaveTypeBody = (rowData: RequestLeave) => {
+    return rowData.leave_name ?? '-';
+  };
 
-    if (rowData.requires_attachment && attachmentCount <= 0) {
-      return <Tag value="Required" severity="danger" />;
+  const dateBody = (rowData: RequestLeave) => {
+    return (
+      <div className="flex flex-col gap-1">
+        <span className="font-medium text-slate-800">
+          {formatDate(rowData.start_date)} - {formatDate(rowData.end_date)}
+        </span>
+        <span className="text-sm text-slate-500">
+          Total days: {rowData.total_days}
+        </span>
+
+        {rowData.submitted_at && (
+          <span className="text-xs text-slate-500">
+            Submitted {formatDateTime(rowData.submitted_at)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const reasonBody = (rowData: RequestLeave) => {
+    return (
+      <span className="text-sm leading-6 text-slate-700">
+        {rowData.reason || '-'}
+      </span>
+    );
+  };
+
+  const approvalInfoBody = (rowData: RequestLeave) => {
+    const status = rowData.status?.toUpperCase();
+
+    if (status === 'APPROVED') {
+      return (
+        <div className="flex flex-col gap-1">
+          <span className="font-medium text-slate-800">
+            {rowData.approved_by_name ?? '-'}
+          </span>
+          <span className="text-xs text-slate-500">
+            {formatDateTime(rowData.approved_at)}
+          </span>
+        </div>
+      );
     }
 
-    if (attachmentCount > 0) {
-      return <Tag value={`${attachmentCount} file(s)`} severity="success" />;
+    if (status === 'REJECTED') {
+      return <span className="text-sm text-slate-600">Rejected</span>;
     }
 
-    return <Tag value="None" severity="secondary" />;
+    if (hasApprovalDetail(rowData)) {
+      return (
+        <span className="text-sm text-slate-600">
+          Submitted {formatDateTime(rowData.submitted_at)}
+        </span>
+      );
+    }
+
+    return <span className="text-sm text-slate-500">Not submitted</span>;
   };
 
   const actionColumnBody = (rowData: RequestLeave) => {
-    const isPending =
-      rowData.status?.toUpperCase() === 'PENDING' && !rowData.deleted_at;
-
-    const isFinalStatus =
-      rowData.status?.toUpperCase() === 'APPROVED' ||
-      rowData.status?.toUpperCase() === 'REJECTED' ||
-      rowData.status?.toUpperCase() === 'CANCELLED';
+    const isDraft = isDraftRequest(rowData);
 
     return (
-      <div className="flex flex-wrap gap-2">
-        <Button
-          tooltipOptions={{ appendTo: getBody, position: 'top' }}
-          tooltip="attachments"
-          rounded
-          severity="info"
-          icon="pi pi-paperclip"
-          size="small"
-          onClick={() => onClickViewAttachments(rowData)}
-        />
-
-        {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: getBody, position: 'top' }}
-            tooltip="restore"
-            rounded
-            severity="success"
-            icon="pi pi-refresh"
-            size="small"
-            onClick={() => onClickRestore(rowData)}
-          />
-        )}
-
-        {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: getBody, position: 'top' }}
-            tooltip="delete forever"
-            rounded
-            severity="secondary"
-            icon="pi pi-times"
-            size="small"
-            onClick={() => onClickPurge(rowData)}
-          />
-        )}
-
-        {!rowData.deleted_at && (
+      <div className="flex flex-nowrap items-center gap-2">
+        {isDraft && (
           <>
+            <Button
+              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltip="submit for approval"
+              rounded
+              severity="success"
+              icon="pi pi-send"
+              size="small"
+              onClick={() => onClickSubmit(rowData)}
+            />
+
+            <Button
+              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltip="edit"
+              rounded
+              severity="help"
+              icon="pi pi-pencil"
+              size="small"
+              onClick={() => onClickUpdate(rowData)}
+            />
+
             <Button
               tooltipOptions={{ appendTo: getBody, position: 'top' }}
               tooltip="delete"
@@ -1125,19 +1014,43 @@ const RequestLeaveTableData = () => {
               severity="danger"
               icon="pi pi-trash"
               size="small"
-              disabled={!isPending}
               onClick={() => onClickDelete(rowData)}
+            />
+          </>
+        )}
+
+        {!isDraft && hasApprovalDetail(rowData) && !rowData.deleted_at && (
+          <Button
+            tooltipOptions={{ appendTo: getBody, position: 'top' }}
+            tooltip="approval detail"
+            rounded
+            severity="secondary"
+            icon="pi pi-list-check"
+            size="small"
+            onClick={() => onClickApprovalDetail(rowData)}
+          />
+        )}
+
+        {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
+          <>
+            <Button
+              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltip="restore"
+              rounded
+              severity="success"
+              icon="pi pi-refresh"
+              size="small"
+              onClick={() => onClickRestore(rowData)}
             />
 
             <Button
               tooltipOptions={{ appendTo: getBody, position: 'top' }}
-              tooltip="update"
+              tooltip="delete forever"
               rounded
-              severity="help"
-              icon="pi pi-pencil"
+              severity="secondary"
+              icon="pi pi-times"
               size="small"
-              disabled={isFinalStatus}
-              onClick={() => onClickUpdate(rowData)}
+              onClick={() => onClickPurge(rowData)}
             />
           </>
         )}
@@ -1145,31 +1058,22 @@ const RequestLeaveTableData = () => {
     );
   };
 
-  const footerContent = (
+  const dialogFooter = (
     <div className="flex justify-end gap-3">
       <Button
         type="button"
         label="Cancel"
         icon="pi pi-times"
-        onClick={handleDialogHide}
         className="p-button-text"
-        disabled={isSaving || isPreviewLoading}
+        onClick={handleDialogHide}
+        disabled={isSaving}
       />
       <Button
-        type="submit"
-        label={
-          isSaving
-            ? isAddNew
-              ? 'Submitting...'
-              : 'Saving...'
-            : isPreviewLoading
-              ? 'Calculating...'
-              : isAddNew
-                ? 'Submit'
-                : 'Save'
-        }
-        icon={isSaving || isPreviewLoading ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
-        disabled={isSaving || isPreviewLoading}
+        type="button"
+        label={isSaving ? 'Saving...' : 'Save'}
+        icon={isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
+        disabled={isSaving}
+        onClick={handleSubmit(onSubmit)}
       />
     </div>
   );
@@ -1186,70 +1090,47 @@ const RequestLeaveTableData = () => {
     <>
       <ConfirmDialog />
 
-      <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card>
-          <div className="text-sm text-slate-500">Pending Requests</div>
-          <div className="mt-2 text-3xl font-semibold text-slate-800">
-            {requestSummary.pending}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="text-sm text-slate-500">Approved Requests</div>
-          <div className="mt-2 text-3xl font-semibold text-green-600">
-            {requestSummary.approved}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="text-sm text-slate-500">Rejected Requests</div>
-          <div className="mt-2 text-3xl font-semibold text-red-600">
-            {requestSummary.rejected}
-          </div>
-        </Card>
-      </div>
-
-      <Card>
-        <div className="flex flex-col gap-5 p-4">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
+      <Card className="border border-slate-100 shadow-sm">
+        <div className="flex flex-col gap-5 p-4 md:p-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="text-2xl font-semibold text-slate-800">
                 Request Leave
               </div>
-              <div className="mt-1 text-sm text-slate-500">
-                Submit and manage your own leave requests. Approval is handled from Approval Inbox.
+              <div className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                Create leave request as draft, then submit it for approval.
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {hasRole(profileState.role, ['superadmin']) && (
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <Checkbox
-                    inputId="showDeletedData"
-                    checked={isShowDeletedDataChecked}
-                    onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
-                  />
-                  <label
-                    htmlFor="showDeletedData"
-                    className="cursor-pointer text-sm text-slate-700"
-                  >
-                    Show deleted data
-                  </label>
-                </div>
-              )}
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="showDeleted"
+                  checked={isShowDeletedDataChecked}
+                  onChange={(e) =>
+                    setIsShowDeletedDataChecked(Boolean(e.checked))
+                  }
+                />
+                <label
+                  htmlFor="showDeleted"
+                  className="text-sm text-slate-700"
+                >
+                  Show deleted data
+                </label>
+              </div>
 
               <IconField iconPosition="left">
                 <InputIcon className="pi pi-search" />
                 <InputText
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Search request leave"
-                  className="w-full sm:w-64"
+                  placeholder="Search reason or status"
+                  className="w-full lg:w-[20rem]"
                 />
               </IconField>
 
               <Button
-                label="New Request"
+                label="New"
                 icon="pi pi-plus"
                 onClick={onClickNew}
               />
@@ -1257,79 +1138,67 @@ const RequestLeaveTableData = () => {
           </div>
 
           <DataTable
-            value={requestRows}
-            stripedRows
+            value={rows}
+            dataKey="id"
             paginator
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
+            stripedRows
+            scrollable
+            responsiveLayout="scroll"
+            tableStyle={{ minWidth: '92rem' }}
+            emptyMessage="No request leave found."
+            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             filters={filters}
             globalFilterFields={[
               'leave_name',
               'reason',
               'status',
-              'approved_by_name',
+              'start_date',
+              'end_date',
             ]}
-            emptyMessage="No request leave found."
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-            scrollable
-            tableStyle={{ minWidth: '110rem' }}
           >
             <Column
               header="#"
-              headerStyle={{ width: '3rem' }}
+              headerStyle={{ width: '4rem' }}
               body={(_, options) => options.rowIndex + 1}
             />
 
             <Column
               header="Leave Type"
               body={leaveTypeBody}
-              style={{ minWidth: '14rem' }}
+              style={{ minWidth: '16rem' }}
             />
 
             <Column
-              header="Date Range"
-              body={dateRangeBody}
-              style={{ minWidth: '18rem' }}
+              header="Date"
+              body={dateBody}
+              style={{ minWidth: '20rem' }}
             />
 
             <Column
-              field="total_days"
-              header="Days"
-              style={{ minWidth: '8rem' }}
-            />
-
-            <Column
-              field="reason"
-              header="Reason"
-              style={{ minWidth: '24rem' }}
-            />
-
-            <Column
-              header="Attachment"
-              body={attachmentBody}
+              header="Total Days"
+              body={(rowData: RequestLeave) => rowData.total_days}
               style={{ minWidth: '10rem' }}
             />
 
             <Column
               header="Status"
               body={statusBody}
-              style={{ minWidth: '10rem' }}
+              style={{ minWidth: '12rem' }}
             />
 
             <Column
-              field="approved_by_name"
-              header="Processed By"
-              body={(rowData: RequestLeave) => rowData.approved_by_name || '-'}
-              style={{ minWidth: '14rem' }}
+              header="Reason"
+              body={reasonBody}
+              style={{ minWidth: '22rem' }}
             />
 
             <Column
-              header="Processed At"
-              body={processedAtBody}
-              style={{ minWidth: '14rem' }}
+              header="Approval Info"
+              body={approvalInfoBody}
+              style={{ minWidth: '18rem' }}
             />
 
             <Column
@@ -1337,15 +1206,18 @@ const RequestLeaveTableData = () => {
               body={actionColumnBody}
               frozen
               alignFrozen="right"
-              style={{ minWidth: '13rem' }}
+              style={{ minWidth: '12rem', width: '12rem' }}
               headerStyle={{
-                minWidth: '13rem',
+                minWidth: '12rem',
+                width: '12rem',
                 background: '#ffffff',
                 zIndex: 1,
               }}
               bodyStyle={{
-                minWidth: '13rem',
+                minWidth: '12rem',
+                width: '12rem',
                 background: '#ffffff',
+                whiteSpace: 'nowrap',
               }}
             />
           </DataTable>
@@ -1353,550 +1225,397 @@ const RequestLeaveTableData = () => {
       </Card>
 
       <Dialog
-        header="Leave Attachments"
-        visible={attachmentDialogVisible}
-        style={{ width: '95vw', maxWidth: '920px' }}
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{ width: '95vw', maxWidth: '760px' }}
         breakpoints={{ '960px': '95vw' }}
-        onHide={handleAttachmentDialogHide}
+        onHide={handleDialogHide}
+        footer={dialogFooter}
         modal
         draggable={false}
         resizable={false}
       >
-        <div className="flex flex-col gap-5">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            {attachmentRequestLeave ? (
-              <>
-                <span className="font-semibold">Request:</span>{' '}
-                {leaveTypeBody(attachmentRequestLeave)} |{' '}
-                {dateRangeBody(attachmentRequestLeave)}
-              </>
-            ) : (
-              'Attachment list'
-            )}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label className="text-sm font-medium text-slate-700">
+              Leave Balance
+            </label>
+
+            <Controller
+              name="employee_leave_balance_id"
+              control={control}
+              rules={{ required: 'Leave balance is required' }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    value={field.value || null}
+                    options={leaveBalanceOptions}
+                    optionLabel="label"
+                    optionValue="value"
+                    onChange={(e) => {
+                      field.onChange(e.value);
+
+                      const selected = leaveBalanceRows.find(
+                        (item) => item.id === e.value
+                      );
+
+                      setValue(
+                        'leave_type_id',
+                        selected?.leave_type_id ?? 0,
+                        { shouldValidate: true }
+                      );
+                    }}
+                    placeholder="Select leave balance"
+                    filter
+                    className={fieldState.invalid ? 'p-invalid' : ''}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
           </div>
 
-          <DataTable
-            value={attachmentRows}
-            loading={attachmentLoading}
-            emptyMessage="No attachment found."
-            dataKey="id"
-            tableStyle={{ minWidth: '55rem' }}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: '3rem' }}
-              body={(_, options) => options.rowIndex + 1}
-            />
-
-            <Column
-              field="original_file_name"
-              header="File Name"
-              style={{ minWidth: '20rem' }}
-            />
-
-            <Column
-              field="content_type"
-              header="Type"
-              style={{ minWidth: '12rem' }}
-            />
-
-            <Column
-              header="Size"
-              body={(rowData: RequestLeaveAttachment) =>
-                `${(rowData.file_size / 1024).toFixed(1)} KB`
-              }
-              style={{ minWidth: '8rem' }}
-            />
-
-            <Column
-              header="Uploaded At"
-              body={(rowData: RequestLeaveAttachment) =>
-                dayjs(rowData.created_at).format('DD MMM YYYY HH:mm')
-              }
-              style={{ minWidth: '14rem' }}
-            />
-
-            <Column
-              header="Action"
-              style={{ minWidth: '12rem' }}
-              body={(rowData: RequestLeaveAttachment) => (
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                    tooltip="Preview"
-                    rounded
-                    severity="info"
-                    icon={
-                      openingAttachmentId === rowData.id
-                        ? 'pi pi-spin pi-spinner'
-                        : 'pi pi-eye'
-                    }
-                    size="small"
-                    disabled={openingAttachmentId === rowData.id}
-                    onClick={() => previewAttachmentSecurely(rowData)}
-                  />
-
-                  <Button
-                    tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                    tooltip="Download"
-                    rounded
-                    severity="secondary"
-                    icon={
-                      downloadingAttachmentId === rowData.id
-                        ? 'pi pi-spin pi-spinner'
-                        : 'pi pi-download'
-                    }
-                    size="small"
-                    disabled={downloadingAttachmentId === rowData.id}
-                    onClick={() => downloadAttachmentSecurely(rowData)}
-                  />
-
-                  {attachmentRequestLeave?.status?.toUpperCase() === 'PENDING' && (
-                    <Button
-                      tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                      tooltip="Delete"
-                      rounded
-                      severity="danger"
-                      icon="pi pi-trash"
-                      size="small"
-                      onClick={() => onClickDeleteAttachment(rowData)}
-                    />
-                  )}
+          {selectedLeaveBalance && (
+            <div className="md:col-span-2">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Selected Balance
                 </div>
-              )}
-            />
-          </DataTable>
-
-          {previewFileUrl && (
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-semibold text-slate-800">
-                    {previewFileName}
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    {previewFileContentType}
-                  </div>
+                <div className="mt-1 text-lg font-semibold text-slate-800">
+                  {selectedLeaveBalance.leave_type_name ?? '-'}
                 </div>
-
-                <Button
-                  type="button"
-                  label="Close Preview"
-                  icon="pi pi-times"
-                  className="p-button-text"
-                  onClick={clearPreviewFile}
-                />
+                <div className="mt-1 text-sm text-slate-500">
+                  Period {formatDate(selectedLeaveBalance.period_start)} -{' '}
+                  {formatDate(selectedLeaveBalance.period_end)} • Closing
+                  Balance {selectedLeaveBalance.closing_balance}
+                </div>
               </div>
-
-              {previewFileContentType.startsWith('image/') ? (
-                <div className="flex justify-center rounded-xl bg-white p-3">
-                  <img
-                    src={previewFileUrl}
-                    alt={previewFileName}
-                    className="max-h-[70vh] max-w-full rounded-lg object-contain"
-                  />
-                </div>
-              ) : (
-                <iframe
-                  src={previewFileUrl}
-                  title={previewFileName}
-                  className="h-[70vh] w-full rounded-xl border border-slate-200 bg-white"
-                />
-              )}
             </div>
           )}
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              Start Date
+            </label>
+            <Controller
+              name="start_date"
+              control={control}
+              rules={{ required: 'Start date is required' }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Calendar
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.value)}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    className={fieldState.invalid ? 'p-invalid' : ''}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              End Date
+            </label>
+            <Controller
+              name="end_date"
+              control={control}
+              rules={{ required: 'End date is required' }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Calendar
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.value)}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    className={fieldState.invalid ? 'p-invalid' : ''}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Leave Days Preview
+              </div>
+              <div className="mt-1 text-lg font-semibold text-slate-800">
+                {previewTotalDays} day(s)
+              </div>
+              <div className="mt-1 text-sm text-slate-500">
+                Preview counts working days only, excluding Saturday and Sunday.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label className="text-sm font-medium text-slate-700">
+              Reason
+            </label>
+            <Controller
+              name="reason"
+              control={control}
+              rules={{ required: 'Reason is required' }}
+              render={({ field, fieldState }) => (
+                <>
+                  <InputTextarea
+                    {...field}
+                    rows={4}
+                    placeholder="Explain your leave reason"
+                    className={fieldState.invalid ? 'p-invalid' : ''}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label className="text-sm font-medium text-slate-700">
+              Attachment
+            </label>
+            <Controller
+              name="attachment_file"
+              control={control}
+              render={({ field }) => (
+                <input
+                  type="file"
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  onChange={(event) => {
+                    field.onChange(event.target.files?.[0] ?? null);
+                  }}
+                />
+              )}
+            />
+            <div className="text-xs text-slate-500">
+              Upload only if this leave type requires attachment.
+            </div>
+          </div>
         </div>
       </Dialog>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: '95vw', maxWidth: '980px' }}
-          breakpoints={{ '960px': '95vw' }}
-          onHide={handleDialogHide}
-          footer={footerContent}
-          modal
-          draggable={false}
-          resizable={false}
-        >
+      <Dialog
+        header="Approval Detail"
+        visible={approvalDetailVisible}
+        style={{ width: '95vw', maxWidth: '900px' }}
+        breakpoints={{ '960px': '95vw' }}
+        onHide={closeApprovalDetailDialog}
+        modal
+        draggable={false}
+        resizable={false}
+      >
+        {approvalDetailLoading && (
+          <div className="flex items-center justify-center py-10">
+            <i className="pi pi-spin pi-spinner mr-2" />
+            <span>Loading approval detail...</span>
+          </div>
+        )}
+
+        {!approvalDetailLoading && approvalDetail && (
           <div className="flex flex-col gap-5">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Leave Request Detail
-                </h3>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Fill leave type, balance period, date range, reason, and attachment if required.
-                </p>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <Tag
+                  value={`Leave: ${approvalDetail.leave_status}`}
+                  severity={getStatusSeverity(approvalDetail.leave_status)}
+                />
+
+                {approvalDetail.approval_status &&
+                  approvalDetail.approval_status !==
+                  approvalDetail.leave_status && (
+                    <Tag
+                      value={`Approval: ${approvalDetail.approval_status}`}
+                      severity={getStatusSeverity(
+                        approvalDetail.approval_status
+                      )}
+                    />
+                  )}
               </div>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="leave_type_id"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Leave Type
-                  </label>
-                  <Controller
-                    name="leave_type_id"
-                    control={control}
-                    rules={{
-                      required: 'Leave type is required',
-                      validate: (value) =>
-                        Number(value) > 0 || 'Leave type is required',
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <Dropdown
-                          id="leave_type_id"
-                          appendTo={getBody}
-                          value={field.value}
-                          options={activeLeaveTypes}
-                          loading={leaveTypeIsLoading}
-                          disabled={leaveTypeIsLoading || !!leaveTypeError || isSaving}
-                          onChange={(e) => field.onChange(e.value)}
-                          optionLabel="name"
-                          optionValue="id"
-                          placeholder="Select leave type"
-                          className={fieldState.invalid ? 'p-invalid' : ''}
-                          filter
-                          showClear
-                        />
-                        {fieldState.error && (
-                          <small className="font-bold p-error">
-                            {fieldState.error.message}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <div className="text-sm text-slate-500">
+                    Request No
+                  </div>
+                  <div className="mt-1 font-semibold text-slate-800">
+                    {approvalDetail.request_no || '-'}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="employee_leave_balance_id"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Leave Balance Period
-                  </label>
-                  <Controller
-                    name="employee_leave_balance_id"
-                    control={control}
-                    rules={{
-                      required: 'Leave balance is required',
-                      validate: (value) =>
-                        Number(value) > 0 || 'Leave balance is required',
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <Dropdown
-                          id="employee_leave_balance_id"
-                          appendTo={getBody}
-                          value={field.value}
-                          options={availableLeaveBalances.map((item) => ({
-                            label: `${dayjs(item.period_start).format('DD MMM YYYY')} - ${dayjs(item.period_end).format('DD MMM YYYY')} | Closing: ${item.closing_balance}`,
-                            value: item.id,
-                          }))}
-                          loading={employeeLeaveBalanceIsLoading}
-                          disabled={
-                            employeeLeaveBalanceIsLoading ||
-                            !!employeeLeaveBalanceError ||
-                            isSaving
-                          }
-                          onChange={(e) => field.onChange(e.value)}
-                          placeholder="Select leave balance"
-                          className={fieldState.invalid ? 'p-invalid' : ''}
-                          filter
-                          showClear
-                        />
-                        {fieldState.error && (
-                          <small className="font-bold p-error">
-                            {fieldState.error.message}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  />
+                <div>
+                  <div className="text-sm text-slate-500">
+                    Approval Request ID
+                  </div>
+                  <div className="mt-1 font-semibold text-slate-800">
+                    {approvalDetail.approval_request_id
+                      ? `#${approvalDetail.approval_request_id}`
+                      : '-'}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="start_date"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Start Date
-                  </label>
-                  <Controller
-                    name="start_date"
-                    control={control}
-                    rules={{
-                      required: 'Start date is required',
-                      validate: (value) => {
-                        if (!value || !selectedBalance) {
-                          return true;
-                        }
-
-                        const selected = dayjs(value);
-                        const min = dayjs(selectedBalance.period_start);
-                        const max = dayjs(selectedBalance.period_end);
-
-                        if (selected.isBefore(min, 'day') || selected.isAfter(max, 'day')) {
-                          return 'Start date must be within selected leave balance period';
-                        }
-
-                        return true;
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <Calendar
-                          id="start_date"
-                          appendTo={getBody}
-                          value={field.value}
-                          onChange={(e) => field.onChange(e.value)}
-                          dateFormat="dd/mm/yy"
-                          showIcon
-                          className={fieldState.invalid ? 'p-invalid' : ''}
-                          disabled={isSaving}
-                        />
-                        {fieldState.error && (
-                          <small className="font-bold p-error">
-                            {fieldState.error.message}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  />
+                <div>
+                  <div className="text-sm text-slate-500">
+                    Submitted At
+                  </div>
+                  <div className="mt-1 font-semibold text-slate-800">
+                    {formatDateTime(approvalDetail.submitted_at)}
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="end_date"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    End Date
-                  </label>
-                  <Controller
-                    name="end_date"
-                    control={control}
-                    rules={{
-                      required: 'End date is required',
-                      validate: (value) => {
-                        const start = watch('start_date');
-
-                        if (!value || !start) {
-                          return true;
-                        }
-
-                        if (dayjs(value).isBefore(start, 'day')) {
-                          return 'End date must be after or equal to start date';
-                        }
-
-                        if (selectedBalance) {
-                          const selected = dayjs(value);
-                          const min = dayjs(selectedBalance.period_start);
-                          const max = dayjs(selectedBalance.period_end);
-
-                          if (selected.isBefore(min, 'day') || selected.isAfter(max, 'day')) {
-                            return 'End date must be within selected leave balance period';
-                          }
-                        }
-
-                        return true;
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <Calendar
-                          id="end_date"
-                          appendTo={getBody}
-                          value={field.value}
-                          onChange={(e) => field.onChange(e.value)}
-                          dateFormat="dd/mm/yy"
-                          showIcon
-                          className={fieldState.invalid ? 'p-invalid' : ''}
-                          disabled={isSaving}
-                        />
-                        {fieldState.error && (
-                          <small className="font-bold p-error">
-                            {fieldState.error.message}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <label
-                    htmlFor="reason"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Reason
-                  </label>
-                  <Controller
-                    name="reason"
-                    control={control}
-                    rules={{
-                      validate: (value) => {
-                        if (selectedLeaveType?.requires_reason && !value.trim()) {
-                          return 'Reason is required';
-                        }
-
-                        return true;
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <InputTextarea
-                          id="reason"
-                          {...field}
-                          rows={4}
-                          placeholder="Enter leave reason"
-                          className={fieldState.invalid ? 'p-invalid' : ''}
-                          disabled={isSaving}
-                        />
-                        {fieldState.error && (
-                          <small className="font-bold p-error">
-                            {fieldState.error.message}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2 md:col-span-2">
-                  <label
-                    htmlFor="attachment_file"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Attachment
-                  </label>
-                  <Controller
-                    name="attachment_file"
-                    control={control}
-                    rules={{
-                      validate: (value) => {
-                        if (
-                          selectedLeaveType?.requires_attachment &&
-                          isAddNew &&
-                          !value
-                        ) {
-                          return 'Attachment is required for this leave type';
-                        }
-
-                        if (value && value.size > MAX_ATTACHMENT_SIZE) {
-                          return 'Maximum file size is 5 MB';
-                        }
-
-                        if (value && !allowedAttachmentTypes.includes(value.type)) {
-                          return 'Only JPG, PNG, and PDF files are allowed';
-                        }
-
-                        return true;
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <input
-                          id="attachment_file"
-                          type="file"
-                          accept={allowedAttachmentAccept}
-                          disabled={isSaving}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0] ?? null;
-                            field.onChange(file);
-                          }}
-                        />
-
-                        <small className="text-slate-500">
-                          Allowed file: JPG, PNG, PDF. Max size: 5 MB.
-                        </small>
-
-                        {selectedData?.attachment_count &&
-                          selectedData.attachment_count > 0 ? (
-                          <small className="text-green-600">
-                            Existing attachment: {selectedData.attachment_count} file(s).
-                            Uploading a new file will add another attachment.
-                          </small>
-                        ) : null}
-
-                        {fieldState.error && (
-                          <small className="font-bold p-error">
-                            {fieldState.error.message}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  />
+                <div>
+                  <div className="text-sm text-slate-500">
+                    Completed At
+                  </div>
+                  <div className="mt-1 font-semibold text-slate-800">
+                    {formatDateTime(approvalDetail.completed_at)}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Request Summary
-                </h3>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Review the selected balance and automatically calculated leave days before submitting.
-                </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mb-4 text-lg font-semibold text-slate-800">
+                Approval Steps
               </div>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm text-slate-500">Requested Days</div>
-                  <div className="mt-2 text-2xl font-semibold text-slate-800">
-                    {isPreviewLoading ? '...' : totalDays}
-                  </div>
-                  <div className="mt-1 text-xs text-slate-400">
-                    Weekend and holiday are excluded by backend.
-                  </div>
+              {approvalDetail.steps.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                  No approval step found.
                 </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {approvalDetail.steps.map((step) => (
+                    <div
+                      key={step.id}
+                      className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Tag
+                              value={`Step ${step.step_no}`}
+                              severity="info"
+                            />
+                            <Tag
+                              value={step.status}
+                              severity={getStatusSeverity(
+                                step.status
+                              )}
+                            />
+                          </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm text-slate-500">
-                    Selected Balance Closing
-                  </div>
-                  <div className="mt-2 text-2xl font-semibold text-slate-800">
-                    {selectedBalance?.closing_balance ?? 0}
-                  </div>
-                </div>
+                          <div className="mt-3 text-sm text-slate-500">
+                            Approver
+                          </div>
+                          <div className="font-semibold text-slate-800">
+                            {step.approver_name ||
+                              `Employee #${step.approver_employee_id}`}
+                          </div>
+                        </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="text-sm text-slate-500">Selected Period</div>
-                  <div className="mt-2 text-sm font-medium text-slate-800">
-                    {selectedBalance
-                      ? `${dayjs(selectedBalance.period_start).format('DD MMM YYYY')} - ${dayjs(selectedBalance.period_end).format('DD MMM YYYY')}`
-                      : '-'}
-                  </div>
+                        <div className="text-left md:text-right">
+                          <div className="text-sm text-slate-500">
+                            Acted By
+                          </div>
+                          <div className="font-semibold text-slate-800">
+                            {step.acted_by_name || '-'}
+                          </div>
+
+                          <div className="mt-2 text-sm text-slate-500">
+                            Acted At
+                          </div>
+                          <div className="font-semibold text-slate-800">
+                            {formatDateTime(step.acted_at)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {step.note && (
+                        <div className="mt-4 rounded-lg bg-white px-3 py-2 text-sm leading-6 text-slate-700">
+                          {step.note}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="mb-4 text-lg font-semibold text-slate-800">
+                Approval Timeline
               </div>
 
-              {selectedBalance && totalDays > selectedBalance.closing_balance && (
-                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                  Requested days exceed available closing balance for the selected leave balance period.
+              {approvalDetail.actions.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                  No approval action found.
                 </div>
-              )}
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {approvalDetail.actions.map((action) => (
+                    <div
+                      key={action.id}
+                      className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                    >
+                      <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                        <i className="pi pi-history text-sm" />
+                      </div>
 
-              {!isPreviewLoading && startDate && endDate && totalDays <= 0 && (
-                <div className="mt-4 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
-                  Selected date range has no working days after excluding weekend and holiday.
-                </div>
-              )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                          <div className="font-semibold text-slate-800">
+                            {action.action}
+                            {action.step_no
+                              ? ` - Step ${action.step_no}`
+                              : ''}
+                          </div>
 
-              {selectedLeaveType?.requires_attachment && (
-                <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                  This leave type requires an attachment before it can be approved.
+                          <div className="text-sm text-slate-500">
+                            {formatDateTime(action.acted_at)}
+                          </div>
+                        </div>
+
+                        <div className="mt-1 text-sm text-slate-600">
+                          By{' '}
+                          {action.actor_name ||
+                            `Employee #${action.actor_employee_id}`}
+                        </div>
+
+                        {action.note && (
+                          <div className="mt-2 text-sm leading-6 text-slate-700">
+                            {action.note}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </div>
-        </Dialog>
-      </form>
+        )}
+      </Dialog>
     </>
   );
 };

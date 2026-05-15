@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 
 import { RequestLeaveForm } from "../types/request-leave";
 import { ResponseTypeError } from "../types/response-type";
+import { RequestLeaveApprovalDetail } from "../types/request-leave-approval-detail";
 
 const API_URL = "/api/request-leave";
 
@@ -40,10 +41,20 @@ const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => 
   }
 };
 
+const toOptionalNumber = (value: number | null | undefined): number | null => {
+  const numericValue = Number(value ?? 0);
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return null;
+  }
+
+  return numericValue;
+};
+
 const buildPayload = (data: RequestLeaveForm) => {
   return {
     leave_type_id: Number(data.leave_type_id),
-    employee_leave_balance_id: Number(data.employee_leave_balance_id),
+    employee_leave_balance_id: toOptionalNumber(data.employee_leave_balance_id),
     start_date: data.start_date
       ? dayjs(data.start_date).format("YYYY-MM-DD")
       : null,
@@ -149,6 +160,25 @@ export const updateRequestLeave = async (
   return res.json();
 };
 
+export const submitRequestLeave = async (id: number, rowVersion: number) => {
+  validateRowVersion(rowVersion);
+
+  const res = await fetch(`${API_URL}/${id}/submit`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return res.json();
+};
+
 export const deleteRequestLeave = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
@@ -231,6 +261,24 @@ export const rejectRequestLeave = async (id: number, rowVersion: number) => {
     headers: {
       "Content-Type": "application/json",
       "If-Match": String(rowVersion),
+    },
+  });
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  return res.json();
+};
+
+export const getRequestLeaveApprovalDetail = async (
+  requestLeaveId: number
+): Promise<RequestLeaveApprovalDetail> => {
+  const res = await fetch(`${API_URL}/${requestLeaveId}/approval-detail`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
   });
 

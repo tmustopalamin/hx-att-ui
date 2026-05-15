@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import { ResponseTypeError } from '../types/response-type';
 import { OvertimeRequestForm } from '../types/overtime-request';
+import { OvertimeRequestApprovalDetail } from '../types/overtime-request-approval-detail';
 
 const API_URL = '/api/overtime-request';
 
@@ -31,6 +32,12 @@ const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => 
             code: String(res.status),
             message: 'Unknown error',
         };
+    }
+};
+
+const validateRowVersion = (rowVersion: number) => {
+    if (rowVersion <= 0 || Number.isNaN(rowVersion)) {
+        throw new Error('rowVersion is required');
     }
 };
 
@@ -120,9 +127,7 @@ export const updateOvertimeRequest = async (
     rowVersion: number,
     data: OvertimeRequestForm
 ) => {
-    if (rowVersion <= 0) {
-        throw new Error('rowVersion is required');
-    }
+    validateRowVersion(rowVersion);
 
     const payload = buildOvertimeRequestPayload(data);
 
@@ -143,13 +148,51 @@ export const updateOvertimeRequest = async (
     return res.json();
 };
 
+export const submitOvertimeRequest = async (
+    id: number,
+    rowVersion: number
+) => {
+    validateRowVersion(rowVersion);
+
+    const res = await fetch(`${API_URL}/${id}/submit`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'If-Match': String(rowVersion),
+        },
+    });
+
+    if (!res.ok) {
+        throw await parseErrorResponse(res);
+    }
+
+    return res.json();
+};
+
+export const getOvertimeRequestApprovalDetail = async (
+    id: number
+): Promise<OvertimeRequestApprovalDetail> => {
+    const res = await fetch(`${API_URL}/${id}/approval-detail`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!res.ok) {
+        throw await parseErrorResponse(res);
+    }
+
+    return res.json();
+};
+
 export const deleteOvertimeRequest = async (
     id: number,
     rowVersion: number
 ) => {
-    if (rowVersion <= 0) {
-        throw new Error('rowVersion is required');
-    }
+    validateRowVersion(rowVersion);
 
     const res = await fetch(`${API_URL}/${id}`, {
         method: 'DELETE',
@@ -171,9 +214,7 @@ export const restoreOvertimeRequest = async (
     id: number,
     rowVersion: number
 ) => {
-    if (rowVersion <= 0) {
-        throw new Error('rowVersion is required');
-    }
+    validateRowVersion(rowVersion);
 
     const res = await fetch(`${API_URL}/${id}/restore`, {
         method: 'POST',

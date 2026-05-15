@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import useSWR, { mutate } from 'swr';
 import dayjs from 'dayjs';
@@ -24,7 +24,6 @@ import LoadingDataTable from '@/app/_components/LoadingDataTable';
 import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
 import { fetcher } from '@/app/utils/fetcher';
 import { getErrorMessage, isResponseTypeError } from '@/app/utils/error-messages';
-
 import { showToast } from '@/store/ToastSlice';
 
 import {
@@ -41,6 +40,25 @@ import {
 const API_KEY = '/api/approval/pending';
 
 const getBody = () => document.body;
+
+const useIsMobile = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkScreen = () => {
+            setIsMobile(window.innerWidth < 1024);
+        };
+
+        checkScreen();
+        window.addEventListener('resize', checkScreen);
+
+        return () => {
+            window.removeEventListener('resize', checkScreen);
+        };
+    }, []);
+
+    return isMobile;
+};
 
 const formatDate = (value?: string | null) => {
     if (!value) {
@@ -81,6 +99,20 @@ const formatDuration = (seconds?: number | null) => {
     }
 
     return `${hours}h ${minutes}m`;
+};
+
+const truncateText = (value?: string | null, maxLength = 90) => {
+    const text = (value ?? '').trim();
+
+    if (!text) {
+        return '-';
+    }
+
+    if (text.length <= maxLength) {
+        return text;
+    }
+
+    return `${text.substring(0, maxLength)}...`;
 };
 
 const getModuleLabel = (moduleCode?: string | null) => {
@@ -130,11 +162,36 @@ const getStatusSeverity = (status?: string | null) => {
         return 'secondary';
     }
 
+    if (value === 'WAITING') {
+        return 'info';
+    }
+
     return 'info';
+};
+
+const getRequestTitle = (rowData: ApprovalPendingItem) => {
+    return formatDate(rowData.request_date);
+};
+
+const getRequestSubtitle = (rowData: ApprovalPendingItem) => {
+    const moduleCode = rowData.module_code?.toUpperCase();
+
+    if (moduleCode === 'LEAVE') {
+        return `Total days: ${rowData.request_seconds ?? '-'}`;
+    }
+
+    if (moduleCode === 'OVERTIME') {
+        return `${formatTime(rowData.request_start_at)} - ${formatTime(
+            rowData.request_end_at
+        )} • ${formatDuration(rowData.request_seconds)}`;
+    }
+
+    return '-';
 };
 
 const ApprovalInboxTableData = () => {
     const dispatch = useDispatch();
+    const isMobile = useIsMobile();
 
     const [globalFilterValue, setGlobalFilterValue] = useState('');
     const [selectedData, setSelectedData] = useState<ApprovalPendingItem | null>(
@@ -170,6 +227,30 @@ const ApprovalInboxTableData = () => {
 
     const rows = approvalData ?? [];
 
+    const filteredMobileRows = useMemo(() => {
+        const keyword = globalFilterValue.trim().toLowerCase();
+
+        if (!keyword) {
+            return rows;
+        }
+
+        return rows.filter((item) => {
+            const searchable = [
+                item.module_code,
+                item.requester_name,
+                item.request_reason,
+                item.request_status,
+                item.status,
+                getRequestTitle(item),
+                getRequestSubtitle(item),
+            ]
+                .join(' ')
+                .toLowerCase();
+
+            return searchable.includes(keyword);
+        });
+    }, [rows, globalFilterValue]);
+
     const summary = useMemo(() => {
         const overtime = rows.filter(
             (item) => item.module_code?.toUpperCase() === 'OVERTIME'
@@ -190,6 +271,41 @@ const ApprovalInboxTableData = () => {
         await mutate(API_KEY);
     };
 
+    const showError = (err: unknown) => {
+        if (isResponseTypeError(err)) {
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: getErrorMessage(err, 'message'),
+                })
+            );
+            return;
+        }
+
+        if (err instanceof Error) {
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: err.message,
+                })
+            );
+            return;
+        }
+
+        dispatch(
+            showToast({
+                visible: true,
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Unknown error',
+            })
+        );
+    };
+
     const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
 
@@ -206,8 +322,8 @@ const ApprovalInboxTableData = () => {
     };
 
     const closeDetail = () => {
-        setSelectedData(null);
         setDetailVisible(false);
+        setSelectedData(null);
     };
 
     const openActionDialog = (
@@ -216,6 +332,7 @@ const ApprovalInboxTableData = () => {
     ) => {
         setSelectedData(data);
         setActionType(type);
+        setDetailVisible(false);
         reset(defaultApprovalActionFormValue);
         setActionVisible(true);
 
@@ -225,6 +342,10 @@ const ApprovalInboxTableData = () => {
     };
 
     const closeActionDialog = () => {
+        if (isSaving) {
+            return;
+        }
+
         setSelectedData(null);
         setActionType(null);
         setActionVisible(false);
@@ -243,9 +364,7 @@ const ApprovalInboxTableData = () => {
                 await approveApprovalRequest(
                     selectedData.approval_request_id,
                     selectedData.row_version,
-                    {
-                        note: formData.note,
-                    }
+                    formData.note
                 );
             }
 
@@ -253,14 +372,11 @@ const ApprovalInboxTableData = () => {
                 await rejectApprovalRequest(
                     selectedData.approval_request_id,
                     selectedData.row_version,
-                    {
-                        note: formData.note,
-                    }
+                    formData.note
                 );
             }
 
             await refreshData();
-            closeActionDialog();
 
             dispatch(
                 showToast({
@@ -273,65 +389,30 @@ const ApprovalInboxTableData = () => {
                             : 'Approval request rejected successfully.',
                 })
             );
+
+            closeActionDialog();
         } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
+            showError(err);
         } finally {
             setIsSaving(false);
         }
     };
 
-    const confirmApprove = (data: ApprovalPendingItem) => {
-        confirmDialog({
-            message: 'Do you want to approve this request?',
-            header: 'Approve Confirmation',
-            icon: 'pi pi-check-circle',
-            defaultFocus: 'accept',
-            accept: () => openActionDialog(data, 'approve'),
-            reject: () => { },
-            footer: (options) => (
-                <div className="flex justify-end gap-3">
-                    <Button
-                        label="No"
-                        icon="pi pi-times"
-                        onClick={options.reject}
-                        className="p-button-text"
-                    />
-                    <Button
-                        label="Yes"
-                        icon="pi pi-check"
-                        onClick={options.accept}
-                        className="p-button-success"
-                    />
-                </div>
-            ),
-        });
-    };
+    const confirmActionSubmit = (formData: ApprovalActionForm) => {
+        if (!selectedData || !actionType) {
+            return;
+        }
 
-    const confirmReject = (data: ApprovalPendingItem) => {
+        const isApprove = actionType === 'approve';
+
         confirmDialog({
-            message: 'Do you want to reject this request?',
-            header: 'Reject Confirmation',
-            icon: 'pi pi-times-circle',
+            message: isApprove
+                ? 'Do you want to approve this request?'
+                : 'Do you want to reject this request?',
+            header: isApprove ? 'Approve Confirmation' : 'Reject Confirmation',
+            icon: isApprove ? 'pi pi-check-circle' : 'pi pi-times-circle',
             defaultFocus: 'accept',
-            accept: () => openActionDialog(data, 'reject'),
+            accept: () => handleApprovalAction(formData),
             reject: () => { },
             footer: (options) => (
                 <div className="flex justify-end gap-3">
@@ -340,12 +421,14 @@ const ApprovalInboxTableData = () => {
                         icon="pi pi-times"
                         onClick={options.reject}
                         className="p-button-text"
+                        disabled={isSaving}
                     />
                     <Button
-                        label="Yes"
-                        icon="pi pi-check"
+                        label={isApprove ? 'Yes, Approve' : 'Yes, Reject'}
+                        icon={isApprove ? 'pi pi-check' : 'pi pi-times'}
                         onClick={options.accept}
-                        className="p-button-danger"
+                        severity={isApprove ? 'success' : 'danger'}
+                        disabled={isSaving}
                     />
                 </div>
             ),
@@ -361,63 +444,55 @@ const ApprovalInboxTableData = () => {
         );
     };
 
-    const statusBody = (rowData: ApprovalPendingItem) => {
+    const approvalStepBody = (rowData: ApprovalPendingItem) => {
         return (
-            <Tag
-                value={rowData.status ?? '-'}
-                severity={getStatusSeverity(rowData.status)}
-            />
-        );
-    };
-
-    const requestStatusBody = (rowData: ApprovalPendingItem) => {
-        return (
-            <Tag
-                value={rowData.request_status ?? '-'}
-                severity={getStatusSeverity(rowData.request_status)}
-            />
+            <div className="flex items-center gap-2">
+                <Tag value={`Step ${rowData.step_no}`} severity="info" />
+                <Tag
+                    value={rowData.status ?? '-'}
+                    severity={getStatusSeverity(rowData.status)}
+                />
+            </div>
         );
     };
 
     const requestInfoBody = (rowData: ApprovalPendingItem) => {
-        const moduleCode = rowData.module_code?.toUpperCase();
+        return (
+            <div className="flex flex-col gap-1">
+                <span className="font-medium text-slate-800">
+                    {getRequestTitle(rowData)}
+                </span>
+                <span className="text-sm text-slate-500">
+                    {getRequestSubtitle(rowData)}
+                </span>
+            </div>
+        );
+    };
 
-        if (moduleCode === 'OVERTIME') {
-            return (
-                <div className="flex flex-col gap-1">
-                    <span className="font-medium text-slate-800">
-                        {formatDate(rowData.request_date)}
-                    </span>
-                    <span className="text-sm text-slate-500">
-                        {formatTime(rowData.request_start_at)} -{' '}
-                        {formatTime(rowData.request_end_at)}
-                    </span>
-                    <span className="text-sm text-slate-500">
-                        Duration: {formatDuration(rowData.request_seconds)}
-                    </span>
-                </div>
-            );
-        }
+    const requesterBody = (rowData: ApprovalPendingItem) => {
+        return (
+            <div className="flex flex-col gap-1">
+                <span className="font-medium text-slate-800">
+                    {rowData.requester_name ?? '-'}
+                </span>
+                <span className="text-xs text-slate-500">
+                    Submitted {formatDateTime(rowData.submitted_at)}
+                </span>
+            </div>
+        );
+    };
 
-        if (moduleCode === 'LEAVE') {
-            return (
-                <div className="flex flex-col gap-1">
-                    <span className="font-medium text-slate-800">
-                        {formatDate(rowData.request_date)}
-                    </span>
-                    <span className="text-sm text-slate-500">
-                        Total days: {rowData.request_seconds ?? '-'}
-                    </span>
-                </div>
-            );
-        }
-
-        return '-';
+    const reasonBody = (rowData: ApprovalPendingItem) => {
+        return (
+            <span className="text-sm leading-6 text-slate-700">
+                {truncateText(rowData.request_reason, 80)}
+            </span>
+        );
     };
 
     const actionBody = (rowData: ApprovalPendingItem) => {
         return (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-nowrap items-center justify-start gap-2">
                 <Button
                     tooltipOptions={{ appendTo: getBody, position: 'top' }}
                     tooltip="View detail"
@@ -435,7 +510,7 @@ const ApprovalInboxTableData = () => {
                     severity="success"
                     icon="pi pi-check"
                     size="small"
-                    onClick={() => confirmApprove(rowData)}
+                    onClick={() => openActionDialog(rowData, 'approve')}
                 />
 
                 <Button
@@ -445,7 +520,7 @@ const ApprovalInboxTableData = () => {
                     severity="danger"
                     icon="pi pi-times"
                     size="small"
-                    onClick={() => confirmReject(rowData)}
+                    onClick={() => openActionDialog(rowData, 'reject')}
                 />
             </div>
         );
@@ -459,7 +534,7 @@ const ApprovalInboxTableData = () => {
                 : 'Approval Action';
 
     const actionDialogFooter = (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-row justify-end gap-3">
             <Button
                 type="button"
                 label="Cancel"
@@ -487,6 +562,192 @@ const ApprovalInboxTableData = () => {
         </div>
     );
 
+    const renderDesktopTable = () => {
+        return (
+            <DataTable
+                value={rows}
+                tableStyle={{ minWidth: '76rem' }}
+                stripedRows
+                paginator
+                rows={10}
+                rowsPerPageOptions={[10, 25, 50]}
+                dataKey="approval_request_step_id"
+                globalFilterFields={[
+                    'module_code',
+                    'requester_name',
+                    'request_reason',
+                    'request_status',
+                    'status',
+                ]}
+                emptyMessage="No pending approval found."
+                filters={filters}
+                currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                loading={isLoading}
+                scrollable
+                responsiveLayout="scroll"
+                className="text-sm"
+            >
+                <Column
+                    header="#"
+                    headerStyle={{ width: '4rem' }}
+                    body={(_, options) => options.rowIndex + 1}
+                />
+
+                <Column
+                    header="Type"
+                    body={moduleBody}
+                    style={{ width: '8rem', minWidth: '8rem' }}
+                />
+
+                <Column
+                    header="Requester"
+                    body={requesterBody}
+                    style={{ minWidth: '17rem' }}
+                />
+
+                <Column
+                    header="Request"
+                    body={requestInfoBody}
+                    style={{ minWidth: '15rem' }}
+                />
+
+                <Column
+                    header="Reason"
+                    body={reasonBody}
+                    style={{ minWidth: '20rem' }}
+                />
+
+                <Column
+                    header="Approval"
+                    body={approvalStepBody}
+                    style={{ minWidth: '13rem' }}
+                />
+
+                <Column
+                    header="Action"
+                    body={actionBody}
+                    frozen
+                    alignFrozen="right"
+                    style={{
+                        width: '12rem',
+                        minWidth: '12rem',
+                    }}
+                    headerStyle={{
+                        width: '12rem',
+                        minWidth: '12rem',
+                        background: '#ffffff',
+                        zIndex: 1,
+                    }}
+                    bodyStyle={{
+                        width: '12rem',
+                        minWidth: '12rem',
+                        background: '#ffffff',
+                        whiteSpace: 'nowrap',
+                    }}
+                />
+            </DataTable>
+        );
+    };
+
+    const renderMobileCards = () => {
+        if (filteredMobileRows.length === 0) {
+            return (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center">
+                    <div className="text-base font-semibold text-slate-700">
+                        No pending approval found
+                    </div>
+                    <div className="mt-1 text-sm text-slate-500">
+                        Try changing your search keyword.
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="flex flex-col gap-4">
+                {filteredMobileRows.map((rowData) => (
+                    <div
+                        key={rowData.approval_request_step_id}
+                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Tag
+                                        value={getModuleLabel(rowData.module_code)}
+                                        severity={getModuleSeverity(rowData.module_code)}
+                                    />
+                                    <Tag
+                                        value={`Step ${rowData.step_no}`}
+                                        severity="info"
+                                    />
+                                </div>
+
+                                <div className="mt-3 truncate text-base font-semibold text-slate-900">
+                                    {rowData.requester_name ?? '-'}
+                                </div>
+
+                                <div className="mt-1 text-sm text-slate-500">
+                                    Submitted {formatDateTime(rowData.submitted_at)}
+                                </div>
+                            </div>
+
+                            <Tag
+                                value={rowData.status ?? '-'}
+                                severity={getStatusSeverity(rowData.status)}
+                            />
+                        </div>
+
+                        <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3">
+                            <div className="text-sm font-semibold text-slate-800">
+                                {getRequestTitle(rowData)}
+                            </div>
+                            <div className="mt-1 text-sm text-slate-500">
+                                {getRequestSubtitle(rowData)}
+                            </div>
+                        </div>
+
+                        <div className="mt-4">
+                            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Reason
+                            </div>
+                            <div className="mt-1 text-sm leading-6 text-slate-700">
+                                {truncateText(rowData.request_reason, 130)}
+                            </div>
+                        </div>
+
+                        <div className="mt-4 flex flex-row gap-2">
+                            <Button
+                                icon="pi pi-eye"
+                                severity="info"
+                                size="small"
+                                className="flex-1"
+                                onClick={() => openDetail(rowData)}
+                            />
+
+                            <Button
+                                icon="pi pi-check"
+                                severity="success"
+                                size="small"
+                                className="flex-1"
+                                onClick={() => openActionDialog(rowData, 'approve')}
+                            />
+
+                            <Button
+                                icon="pi pi-times"
+                                severity="danger"
+                                size="small"
+                                className="flex-1"
+                                onClick={() => openActionDialog(rowData, 'reject')}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     if (isLoading) {
         return <LoadingDataTable />;
     }
@@ -499,46 +760,73 @@ const ApprovalInboxTableData = () => {
         <>
             <ConfirmDialog />
 
-            <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-                <Card>
-                    <div className="text-sm text-slate-500">Pending Approval</div>
-                    <div className="mt-2 text-3xl font-semibold text-slate-800">
-                        {summary.total}
+            <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Card className="border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-sm text-slate-500">
+                                Pending Approval
+                            </div>
+                            <div className="mt-2 text-3xl font-semibold text-slate-800">
+                                {summary.total}
+                            </div>
+                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+                            <i className="pi pi-inbox text-xl" />
+                        </div>
                     </div>
                 </Card>
 
-                <Card>
-                    <div className="text-sm text-slate-500">Overtime Request</div>
-                    <div className="mt-2 text-3xl font-semibold text-blue-600">
-                        {summary.overtime}
+                <Card className="border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-sm text-slate-500">
+                                Overtime Request
+                            </div>
+                            <div className="mt-2 text-3xl font-semibold text-blue-600">
+                                {summary.overtime}
+                            </div>
+                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                            <i className="pi pi-clock text-xl" />
+                        </div>
                     </div>
                 </Card>
 
-                <Card>
-                    <div className="text-sm text-slate-500">Leave Request</div>
-                    <div className="mt-2 text-3xl font-semibold text-green-600">
-                        {summary.leave}
+                <Card className="border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-sm text-slate-500">
+                                Leave Request
+                            </div>
+                            <div className="mt-2 text-3xl font-semibold text-green-600">
+                                {summary.leave}
+                            </div>
+                        </div>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-600">
+                            <i className="pi pi-calendar text-xl" />
+                        </div>
                     </div>
                 </Card>
             </div>
 
-            <Card>
+            <Card className="border border-slate-100 shadow-sm">
                 <div className="flex flex-col gap-5 p-4 md:p-5">
-                    <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
+                    <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
                         <div>
                             <div className="text-2xl font-semibold text-slate-800">
                                 Approval Inbox
                             </div>
-                            <div className="mt-1 text-sm text-slate-500">
+                            <div className="mt-1 text-sm leading-6 text-slate-500">
                                 Review requests that are waiting for your approval.
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                             <IconField iconPosition="left">
                                 <InputIcon className="pi pi-search" />
                                 <InputText
-                                    className="w-full sm:w-[20rem]"
+                                    className="w-full sm:w-[22rem]"
                                     value={globalFilterValue}
                                     onChange={onGlobalFilterChange}
                                     placeholder="Search requester, module, reason"
@@ -554,120 +842,14 @@ const ApprovalInboxTableData = () => {
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <DataTable
-                            value={rows}
-                            tableStyle={{ minWidth: '110rem' }}
-                            stripedRows
-                            paginator
-                            scrollable
-                            scrollHeight="500px"
-                            rows={10}
-                            rowsPerPageOptions={[10, 25, 50]}
-                            dataKey="approval_request_step_id"
-                            globalFilterFields={[
-                                'module_code',
-                                'requester_name',
-                                'request_reason',
-                                'request_status',
-                                'status',
-                            ]}
-                            emptyMessage="No pending approval found."
-                            filters={filters}
-                            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                            loading={isLoading}
-                        >
-                            <Column
-                                header="#"
-                                headerStyle={{ width: '4rem', minWidth: '4rem' }}
-                                bodyStyle={{ minWidth: '4rem' }}
-                                body={(_, options) => options.rowIndex + 1}
-                            />
-
-                            <Column
-                                header="Module"
-                                body={moduleBody}
-                                style={{ minWidth: '10rem' }}
-                            />
-
-                            <Column
-                                field="requester_name"
-                                header="Requester"
-                                body={(rowData: ApprovalPendingItem) =>
-                                    rowData.requester_name ?? '-'
-                                }
-                                style={{ minWidth: '16rem' }}
-                            />
-
-                            <Column
-                                header="Request Info"
-                                body={requestInfoBody}
-                                style={{ minWidth: '18rem' }}
-                            />
-
-                            <Column
-                                field="request_reason"
-                                header="Reason"
-                                body={(rowData: ApprovalPendingItem) =>
-                                    rowData.request_reason ?? '-'
-                                }
-                                style={{ minWidth: '24rem' }}
-                            />
-
-                            <Column
-                                header="Request Status"
-                                body={requestStatusBody}
-                                style={{ minWidth: '12rem' }}
-                            />
-
-                            <Column
-                                header="Approval Step"
-                                body={(rowData: ApprovalPendingItem) =>
-                                    `Step ${rowData.step_no}`
-                                }
-                                style={{ minWidth: '10rem' }}
-                            />
-
-                            <Column
-                                header="Approval Status"
-                                body={statusBody}
-                                style={{ minWidth: '12rem' }}
-                            />
-
-                            <Column
-                                header="Submitted At"
-                                body={(rowData: ApprovalPendingItem) =>
-                                    formatDateTime(rowData.submitted_at)
-                                }
-                                style={{ minWidth: '15rem' }}
-                            />
-
-                            <Column
-                                header="Action"
-                                body={actionBody}
-                                frozen
-                                alignFrozen="right"
-                                style={{ minWidth: '12rem' }}
-                                headerStyle={{
-                                    minWidth: '12rem',
-                                    background: '#ffffff',
-                                    zIndex: 1,
-                                }}
-                                bodyStyle={{
-                                    minWidth: '12rem',
-                                    background: '#ffffff',
-                                }}
-                            />
-                        </DataTable>
-                    </div>
+                    {isMobile ? renderMobileCards() : renderDesktopTable()}
                 </div>
             </Card>
 
             <Dialog
                 header="Approval Detail"
                 visible={detailVisible}
-                style={{ width: '95vw', maxWidth: '760px' }}
+                style={{ width: '95vw', maxWidth: '780px' }}
                 breakpoints={{ '960px': '95vw' }}
                 onHide={closeDetail}
                 modal
@@ -677,76 +859,66 @@ const ApprovalInboxTableData = () => {
                 {selectedData && (
                     <div className="flex flex-col gap-5">
                         <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+                            <div className="mb-5 flex flex-wrap items-center gap-2">
+                                <Tag
+                                    value={getModuleLabel(selectedData.module_code)}
+                                    severity={getModuleSeverity(selectedData.module_code)}
+                                />
+                                <Tag
+                                    value={`Step ${selectedData.step_no}`}
+                                    severity="info"
+                                />
+                                <Tag
+                                    value={selectedData.status ?? '-'}
+                                    severity={getStatusSeverity(selectedData.status)}
+                                />
+                            </div>
+
                             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <div>
-                                    <div className="text-sm text-slate-500">Module</div>
-                                    <div className="mt-1">
-                                        <Tag
-                                            value={getModuleLabel(selectedData.module_code)}
-                                            severity={getModuleSeverity(selectedData.module_code)}
-                                        />
+                                    <div className="text-sm text-slate-500">
+                                        Requester
                                     </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-sm text-slate-500">Requester</div>
                                     <div className="mt-1 font-semibold text-slate-800">
                                         {selectedData.requester_name ?? '-'}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div className="text-sm text-slate-500">Reference ID</div>
+                                    <div className="text-sm text-slate-500">
+                                        Reference ID
+                                    </div>
                                     <div className="mt-1 font-semibold text-slate-800">
                                         #{selectedData.reference_id}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <div className="text-sm text-slate-500">Step</div>
-                                    <div className="mt-1 font-semibold text-slate-800">
-                                        Step {selectedData.step_no}
+                                    <div className="text-sm text-slate-500">
+                                        Submitted At
                                     </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-sm text-slate-500">Request Date</div>
-                                    <div className="mt-1 font-semibold text-slate-800">
-                                        {formatDate(selectedData.request_date)}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-sm text-slate-500">Submitted At</div>
                                     <div className="mt-1 font-semibold text-slate-800">
                                         {formatDateTime(selectedData.submitted_at)}
                                     </div>
                                 </div>
 
-                                {selectedData.module_code?.toUpperCase() === 'OVERTIME' && (
-                                    <>
-                                        <div>
-                                            <div className="text-sm text-slate-500">Start</div>
-                                            <div className="mt-1 font-semibold text-slate-800">
-                                                {formatTime(selectedData.request_start_at)}
-                                            </div>
-                                        </div>
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Request Date
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {getRequestTitle(selectedData)}
+                                    </div>
+                                </div>
 
-                                        <div>
-                                            <div className="text-sm text-slate-500">End</div>
-                                            <div className="mt-1 font-semibold text-slate-800">
-                                                {formatTime(selectedData.request_end_at)}
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <div className="text-sm text-slate-500">Duration</div>
-                                            <div className="mt-1 font-semibold text-slate-800">
-                                                {formatDuration(selectedData.request_seconds)}
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
+                                <div className="md:col-span-2">
+                                    <div className="text-sm text-slate-500">
+                                        Request Info
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {getRequestSubtitle(selectedData)}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -757,34 +929,32 @@ const ApprovalInboxTableData = () => {
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-3">
+                        <div className="flex flex-row gap-3">
                             <Button
                                 label="Reject"
                                 icon="pi pi-times"
                                 severity="danger"
-                                onClick={() => {
-                                    const data = selectedData;
-                                    closeDetail();
-                                    confirmReject(data);
-                                }}
+                                className="flex-1"
+                                onClick={() =>
+                                    openActionDialog(selectedData, 'reject')
+                                }
                             />
 
                             <Button
                                 label="Approve"
                                 icon="pi pi-check"
                                 severity="success"
-                                onClick={() => {
-                                    const data = selectedData;
-                                    closeDetail();
-                                    confirmApprove(data);
-                                }}
+                                className="flex-1"
+                                onClick={() =>
+                                    openActionDialog(selectedData, 'approve')
+                                }
                             />
                         </div>
                     </div>
                 )}
             </Dialog>
 
-            <form onSubmit={handleSubmit(handleApprovalAction)}>
+            <form onSubmit={handleSubmit(confirmActionSubmit)}>
                 <Dialog
                     header={actionDialogTitle}
                     visible={actionVisible}
@@ -797,6 +967,40 @@ const ApprovalInboxTableData = () => {
                     resizable={false}
                 >
                     <div className="flex flex-col gap-5">
+                        {selectedData && (
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Tag
+                                        value={getModuleLabel(
+                                            selectedData.module_code
+                                        )}
+                                        severity={getModuleSeverity(
+                                            selectedData.module_code
+                                        )}
+                                    />
+                                    <Tag
+                                        value={`Step ${selectedData.step_no}`}
+                                        severity="info"
+                                    />
+                                    <Tag
+                                        value={selectedData.status ?? '-'}
+                                        severity={getStatusSeverity(
+                                            selectedData.status
+                                        )}
+                                    />
+                                </div>
+
+                                <div className="mt-3 font-semibold text-slate-800">
+                                    {selectedData.requester_name ?? '-'}
+                                </div>
+
+                                <div className="mt-1 text-sm text-slate-500">
+                                    {getRequestTitle(selectedData)} •{' '}
+                                    {getRequestSubtitle(selectedData)}
+                                </div>
+                            </div>
+                        )}
+
                         <div className="rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm leading-6 text-slate-600">
                             {actionType === 'approve'
                                 ? 'Add an optional note before approving this request.'
@@ -804,8 +1008,11 @@ const ApprovalInboxTableData = () => {
                         </div>
 
                         <div className="flex flex-col gap-2">
-                            <label htmlFor="note" className="text-sm font-medium text-slate-700">
-                                Note
+                            <label
+                                htmlFor="note"
+                                className="text-sm font-medium text-slate-700"
+                            >
+                                Note {actionType === 'reject' ? '*' : ''}
                             </label>
 
                             <Controller
@@ -813,7 +1020,10 @@ const ApprovalInboxTableData = () => {
                                 control={control}
                                 rules={{
                                     validate: (value) => {
-                                        if (actionType === 'reject' && !value.trim()) {
+                                        if (
+                                            actionType === 'reject' &&
+                                            !value.trim()
+                                        ) {
                                             return 'Rejection reason is required';
                                         }
 
@@ -831,7 +1041,9 @@ const ApprovalInboxTableData = () => {
                                                     ? 'Approval note'
                                                     : 'Rejection reason'
                                             }
-                                            className={fieldState.invalid ? 'p-invalid' : ''}
+                                            className={
+                                                fieldState.invalid ? 'p-invalid' : ''
+                                            }
                                             disabled={isSaving}
                                         />
 

@@ -5,26 +5,27 @@ import { Controller, useForm } from 'react-hook-form';
 import useSWR, { mutate } from 'swr';
 import dayjs from 'dayjs';
 
-import { Card } from 'primereact/card';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { FilterMatchMode } from 'primereact/api';
 import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
+import { Card } from 'primereact/card';
+import { Calendar } from 'primereact/calendar';
+import { Checkbox } from 'primereact/checkbox';
+import { Column } from 'primereact/column';
 import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { InputText } from 'primereact/inputtext';
+import { DataTable } from 'primereact/datatable';
+import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
+import { FilterMatchMode } from 'primereact/api';
 import { IconField } from 'primereact/iconfield';
 import { InputIcon } from 'primereact/inputicon';
-import { Checkbox } from 'primereact/checkbox';
-import { Calendar } from 'primereact/calendar';
+import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Tag } from 'primereact/tag';
-import { Dropdown } from 'primereact/dropdown';
 
 import { useDispatch, useSelector } from 'react-redux';
 
 import LoadingDataTable from '@/app/_components/LoadingDataTable';
 import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
+
 import { fetcher } from '@/app/utils/fetcher';
 import { getErrorMessage, isResponseTypeError } from '@/app/utils/error-messages';
 import { hasRole } from '@/app/utils/role-utils';
@@ -38,12 +39,15 @@ import {
     OvertimeRequestForm,
     defaultOvertimeRequestFormValue,
 } from '@/app/types/overtime-request';
+import { OvertimeRequestApprovalDetail } from '@/app/types/overtime-request-approval-detail';
 
 import {
     createOvertimeRequest,
     deleteOvertimeRequest,
+    getOvertimeRequestApprovalDetail,
     purgeOvertimeRequest,
     restoreOvertimeRequest,
+    submitOvertimeRequest,
     updateOvertimeRequest,
 } from '@/app/services/overtime-request-service';
 
@@ -61,10 +65,7 @@ const buildTimeOptions = (stepMinutes = 15): TimeOption[] => {
         const hour = Math.floor(minuteOfDay / 60);
         const minute = minuteOfDay % 60;
 
-        const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(
-            2,
-            '0'
-        )}`;
+        const value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 
         options.push({
             label: value,
@@ -83,10 +84,7 @@ const toTimeValue = (value?: string | null) => {
     return dayjs(value).format('HH:mm');
 };
 
-const combineDateAndTime = (
-    date: Date | null,
-    time: string | null
-): Date | null => {
+const combineDateAndTime = (date: Date | null, time: string | null): Date | null => {
     if (!date || !time) {
         return null;
     }
@@ -114,27 +112,6 @@ const combineDateAndTime = (
         .toDate();
 };
 
-const formatSeconds = (seconds?: number | null) => {
-    const totalSeconds = Number(seconds ?? 0);
-
-    if (totalSeconds <= 0) {
-        return '0h 0m';
-    }
-
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-    return `${hours}h ${minutes}m`;
-};
-
-const formatTime = (value?: string | null) => {
-    if (!value) {
-        return '-';
-    }
-
-    return dayjs(value).format('HH:mm');
-};
-
 const formatDate = (value?: string | null) => {
     if (!value) {
         return '-';
@@ -151,20 +128,86 @@ const formatDateTime = (value?: string | null) => {
     return dayjs(value).format('DD MMM YYYY HH:mm');
 };
 
+const formatTime = (value?: string | null) => {
+    if (!value) {
+        return '-';
+    }
+
+    return dayjs(value).format('HH:mm');
+};
+
+const formatSeconds = (seconds?: number | null) => {
+    const totalSeconds = Number(seconds ?? 0);
+
+    if (totalSeconds <= 0) {
+        return '0h 0m';
+    }
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+    return `${hours}h ${minutes}m`;
+};
+
+const getStatusSeverity = (status?: string | null) => {
+    const value = (status ?? '').toUpperCase();
+
+    if (value === 'APPROVED') {
+        return 'success';
+    }
+
+    if (value === 'REJECTED') {
+        return 'danger';
+    }
+
+    if (value === 'PENDING') {
+        return 'warning';
+    }
+
+    if (value === 'CANCELLED') {
+        return 'secondary';
+    }
+
+    if (value === 'WAITING') {
+        return 'info';
+    }
+
+    return 'info';
+};
+
+const isDraftRequest = (rowData: OvertimeRequest) => {
+    return (
+        rowData.status?.toUpperCase() === 'PENDING' &&
+        !rowData.deleted_at &&
+        !rowData.approval_request_id &&
+        !rowData.submitted_at
+    );
+};
+
+const hasApprovalDetail = (rowData: OvertimeRequest) => {
+    return !!rowData.approval_request_id || !!rowData.submitted_at;
+};
+
 const OvertimeRequestTableData = () => {
     const dispatch = useDispatch();
     const profileState = useSelector((state: RootState) => state.profile);
 
     const [selectedData, setSelectedData] = useState<OvertimeRequest | null>(null);
     const [globalFilterValue, setGlobalFilterValue] = useState('');
+    const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+
     const [isAddNew, setIsAddNew] = useState(false);
     const [visible, setVisible] = useState(false);
     const [popupHeaderTitle, setPopupHeaderTitle] = useState('New Overtime Request');
-    const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const timeOptions = useMemo(() => buildTimeOptions(15), []);
+    const [approvalDetailVisible, setApprovalDetailVisible] = useState(false);
+    const [approvalDetailLoading, setApprovalDetailLoading] = useState(false);
+    const [approvalDetail, setApprovalDetail] =
+        useState<OvertimeRequestApprovalDetail | null>(null);
+
     const currentKey = `/api/overtime-request?show_all=${isShowDeletedDataChecked}`;
+    const timeOptions = useMemo(() => buildTimeOptions(15), []);
 
     const {
         control,
@@ -213,35 +256,43 @@ const OvertimeRequestTableData = () => {
 
     const rows = overtimeRequestData ?? [];
 
-    const requestSummary = useMemo(() => {
-        const activeRows = rows.filter((item) => !item.deleted_at);
-
-        const pending = activeRows.filter(
-            (item) => item.status?.toUpperCase() === 'PENDING'
-        ).length;
-
-        const approved = activeRows.filter(
-            (item) => item.status?.toUpperCase() === 'APPROVED'
-        ).length;
-
-        const rejected = activeRows.filter(
-            (item) => item.status?.toUpperCase() === 'REJECTED'
-        ).length;
-
-        const totalApprovedSeconds = activeRows
-            .filter((item) => item.status?.toUpperCase() === 'APPROVED')
-            .reduce((total, item) => total + Number(item.requested_seconds ?? 0), 0);
-
-        return {
-            pending,
-            approved,
-            rejected,
-            totalApprovedSeconds,
-        };
-    }, [rows]);
-
     const refreshData = async () => {
         await mutate(currentKey);
+    };
+
+    const showError = (err: unknown) => {
+        if (isResponseTypeError(err)) {
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: getErrorMessage(err, 'message'),
+                })
+            );
+            return;
+        }
+
+        if (err instanceof Error) {
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: err.message,
+                })
+            );
+            return;
+        }
+
+        dispatch(
+            showToast({
+                visible: true,
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Unknown error',
+            })
+        );
     };
 
     const handleDialogHide = () => {
@@ -315,25 +366,7 @@ const OvertimeRequestTableData = () => {
                 })
             );
         } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
+            showError(err);
         } finally {
             setIsSaving(false);
         }
@@ -341,14 +374,6 @@ const OvertimeRequestTableData = () => {
 
     const handleUpdate = async (data: OvertimeRequestForm) => {
         if (!selectedData) {
-            dispatch(
-                showToast({
-                    visible: true,
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Please select data first.',
-                })
-            );
             return;
         }
 
@@ -374,25 +399,7 @@ const OvertimeRequestTableData = () => {
                 })
             );
         } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
+            showError(err);
         } finally {
             setIsSaving(false);
         }
@@ -414,25 +421,7 @@ const OvertimeRequestTableData = () => {
                 })
             );
         } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
+            showError(err);
         }
     };
 
@@ -452,25 +441,7 @@ const OvertimeRequestTableData = () => {
                 })
             );
         } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
+            showError(err);
         }
     };
 
@@ -490,26 +461,50 @@ const OvertimeRequestTableData = () => {
                 })
             );
         } catch (err: unknown) {
-            if (isResponseTypeError(err)) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: getErrorMessage(err, 'message'),
-                    })
-                );
-            } else if (err instanceof Error) {
-                dispatch(
-                    showToast({
-                        visible: true,
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: err.message,
-                    })
-                );
-            }
+            showError(err);
         }
+    };
+
+    const handleSubmitApproval = async (data: OvertimeRequest) => {
+        try {
+            const res: ResponseType<ResponseTypeCreateSuccess> =
+                await submitOvertimeRequest(data.id, data.row_version);
+
+            await refreshData();
+
+            dispatch(
+                showToast({
+                    visible: true,
+                    severity: 'success',
+                    summary: 'Success',
+                    detail: res.message || 'Overtime request submitted successfully.',
+                })
+            );
+        } catch (err: unknown) {
+            showError(err);
+        }
+    };
+
+    const onClickApprovalDetail = async (data: OvertimeRequest) => {
+        try {
+            setApprovalDetailLoading(true);
+            setApprovalDetailVisible(true);
+            setApprovalDetail(null);
+
+            const result = await getOvertimeRequestApprovalDetail(data.id);
+            setApprovalDetail(result);
+        } catch (err: unknown) {
+            setApprovalDetailVisible(false);
+            showError(err);
+        } finally {
+            setApprovalDetailLoading(false);
+        }
+    };
+
+    const closeApprovalDetailDialog = () => {
+        setApprovalDetailVisible(false);
+        setApprovalDetail(null);
+        setApprovalDetailLoading(false);
     };
 
     const onSubmit = async (data: OvertimeRequestForm) => {
@@ -552,6 +547,33 @@ const OvertimeRequestTableData = () => {
         await handleUpdate(data);
     };
 
+    const onClickSubmit = (data: OvertimeRequest) => {
+        confirmDialog({
+            message: 'Do you want to submit this overtime request for approval?',
+            header: 'Submit Confirmation',
+            icon: 'pi pi-send',
+            defaultFocus: 'accept',
+            accept: () => handleSubmitApproval(data),
+            reject: () => { },
+            footer: (options) => (
+                <div className="flex justify-end gap-3">
+                    <Button
+                        label="No"
+                        icon="pi pi-times"
+                        onClick={options.reject}
+                        className="p-button-text"
+                    />
+                    <Button
+                        label="Yes, Submit"
+                        icon="pi pi-send"
+                        onClick={options.accept}
+                        severity="success"
+                    />
+                </div>
+            ),
+        });
+    };
+
     const onClickDelete = (data: OvertimeRequest) => {
         confirmDialog({
             message: 'Do you want to delete this overtime request?',
@@ -572,7 +594,7 @@ const OvertimeRequestTableData = () => {
                         label="Yes"
                         icon="pi pi-check"
                         onClick={options.accept}
-                        className="p-button-danger"
+                        severity="danger"
                     />
                 </div>
             ),
@@ -599,7 +621,7 @@ const OvertimeRequestTableData = () => {
                         label="Yes"
                         icon="pi pi-check"
                         onClick={options.accept}
-                        className="p-button-success"
+                        severity="success"
                     />
                 </div>
             ),
@@ -626,7 +648,7 @@ const OvertimeRequestTableData = () => {
                         label="Yes"
                         icon="pi pi-check"
                         onClick={options.accept}
-                        className="p-button-danger"
+                        severity="danger"
                     />
                 </div>
             ),
@@ -649,18 +671,105 @@ const OvertimeRequestTableData = () => {
         }
 
         if (status === 'CANCELLED') {
-            return <Tag value="Cancelled" severity="warning" />;
+            return <Tag value="Cancelled" severity="secondary" />;
         }
 
-        return <Tag value="Pending" severity="info" />;
+        if (hasApprovalDetail(rowData)) {
+            return <Tag value="Waiting Approval" severity="warning" />;
+        }
+
+        return <Tag value="Draft" severity="info" />;
+    };
+
+    const overtimeDateBody = (rowData: OvertimeRequest) => {
+        return (
+            <div className="flex flex-col gap-1">
+                <span className="font-medium text-slate-800">
+                    {formatDate(rowData.overtime_date)}
+                </span>
+
+                {rowData.submitted_at && (
+                    <span className="text-xs text-slate-500">
+                        Submitted {formatDateTime(rowData.submitted_at)}
+                    </span>
+                )}
+            </div>
+        );
+    };
+
+    const timeBody = (rowData: OvertimeRequest) => {
+        return (
+            <div className="flex flex-col gap-1">
+                <span className="font-medium text-slate-800">
+                    {formatTime(rowData.requested_start_at)} -{' '}
+                    {formatTime(rowData.requested_end_at)}
+                </span>
+                <span className="text-xs text-slate-500">
+                    {formatSeconds(rowData.requested_seconds)}
+                </span>
+            </div>
+        );
+    };
+
+    const reasonBody = (rowData: OvertimeRequest) => {
+        return (
+            <span className="text-sm leading-6 text-slate-700">
+                {rowData.reason || '-'}
+            </span>
+        );
     };
 
     const actionColumnBody = (rowData: OvertimeRequest) => {
-        const status = rowData.status?.toUpperCase();
-        const isPending = status === 'PENDING' && !rowData.deleted_at;
+        const isDraft = isDraftRequest(rowData);
 
         return (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-nowrap items-center gap-2">
+                {isDraft && (
+                    <>
+                        <Button
+                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                            tooltip="submit for approval"
+                            rounded
+                            severity="success"
+                            icon="pi pi-send"
+                            size="small"
+                            onClick={() => onClickSubmit(rowData)}
+                        />
+
+                        <Button
+                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                            tooltip="edit"
+                            rounded
+                            severity="help"
+                            icon="pi pi-pencil"
+                            size="small"
+                            onClick={() => onClickUpdate(rowData)}
+                        />
+
+                        <Button
+                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                            tooltip="delete"
+                            rounded
+                            severity="danger"
+                            icon="pi pi-trash"
+                            size="small"
+                            onClick={() => onClickDelete(rowData)}
+                        />
+                    </>
+                )}
+
+                {!isDraft && hasApprovalDetail(rowData) && !rowData.deleted_at && (
+                    <Button
+                        tooltipOptions={{ appendTo: getBody, position: 'top' }}
+                        tooltip="approval detail"
+                        rounded
+                        severity="secondary"
+                        icon="pi pi-list-check"
+                        size="small"
+                        onClick={() => onClickApprovalDetail(rowData)}
+                    />
+                )}
+
                 {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
                     <>
                         <Button
@@ -684,57 +793,23 @@ const OvertimeRequestTableData = () => {
                         />
                     </>
                 )}
-
-                {!rowData.deleted_at && (
-                    <>
-                        <Button
-                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                            tooltip="delete"
-                            rounded
-                            severity="danger"
-                            icon="pi pi-trash"
-                            size="small"
-                            disabled={!isPending}
-                            onClick={() => onClickDelete(rowData)}
-                        />
-
-                        <Button
-                            tooltipOptions={{ appendTo: getBody, position: 'top' }}
-                            tooltip={isPending ? 'update' : 'only pending request can be updated'}
-                            rounded
-                            severity="help"
-                            icon="pi pi-pencil"
-                            size="small"
-                            disabled={!isPending}
-                            onClick={() => onClickUpdate(rowData)}
-                        />
-                    </>
-                )}
             </div>
         );
     };
 
-    const footerContent = (
+    const dialogFooter = (
         <div className="flex justify-end gap-3">
             <Button
                 type="button"
                 label="Cancel"
                 icon="pi pi-times"
-                onClick={handleDialogHide}
                 className="p-button-text"
+                onClick={handleDialogHide}
                 disabled={isSaving}
             />
             <Button
                 type="submit"
-                label={
-                    isSaving
-                        ? isAddNew
-                            ? 'Submitting...'
-                            : 'Saving...'
-                        : isAddNew
-                            ? 'Submit'
-                            : 'Save'
-                }
+                label={isSaving ? 'Saving...' : 'Save'}
                 icon={isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
                 disabled={isSaving}
             />
@@ -753,60 +828,30 @@ const OvertimeRequestTableData = () => {
         <>
             <ConfirmDialog />
 
-            <div className="mb-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-                <Card>
-                    <div className="text-sm text-slate-500">Pending Requests</div>
-                    <div className="mt-2 text-3xl font-semibold text-slate-800">
-                        {requestSummary.pending}
-                    </div>
-                </Card>
-
-                <Card>
-                    <div className="text-sm text-slate-500">Approved Requests</div>
-                    <div className="mt-2 text-3xl font-semibold text-green-600">
-                        {requestSummary.approved}
-                    </div>
-                </Card>
-
-                <Card>
-                    <div className="text-sm text-slate-500">Rejected Requests</div>
-                    <div className="mt-2 text-3xl font-semibold text-red-500">
-                        {requestSummary.rejected}
-                    </div>
-                </Card>
-
-                <Card>
-                    <div className="text-sm text-slate-500">Approved Overtime</div>
-                    <div className="mt-2 text-3xl font-semibold text-blue-600">
-                        {formatSeconds(requestSummary.totalApprovedSeconds)}
-                    </div>
-                </Card>
-            </div>
-
-            <Card>
+            <Card className="border border-slate-100 shadow-sm">
                 <div className="flex flex-col gap-5 p-4 md:p-5">
                     <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
                         <div>
                             <div className="text-2xl font-semibold text-slate-800">
-                                My Overtime Request
+                                Overtime Request
                             </div>
-                            <div className="mt-1 text-sm text-slate-500">
-                                Submit and monitor your own overtime requests. Approved overtime
-                                will be included in attendance summary.
+                            <div className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                                Create overtime as draft, then submit it for approval.
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                             <div className="flex items-center gap-2">
                                 <Checkbox
-                                    inputId="showDeletedData"
-                                    name="showDeletedData"
-                                    onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
+                                    inputId="showDeleted"
                                     checked={isShowDeletedDataChecked}
+                                    onChange={(e) =>
+                                        setIsShowDeletedDataChecked(Boolean(e.checked))
+                                    }
                                 />
                                 <label
-                                    htmlFor="showDeletedData"
-                                    className="text-sm text-slate-600"
+                                    htmlFor="showDeleted"
+                                    className="text-sm text-slate-700"
                                 >
                                     Show deleted data
                                 </label>
@@ -815,138 +860,99 @@ const OvertimeRequestTableData = () => {
                             <IconField iconPosition="left">
                                 <InputIcon className="pi pi-search" />
                                 <InputText
-                                    className="w-full sm:w-[18rem]"
                                     value={globalFilterValue}
                                     onChange={onGlobalFilterChange}
                                     placeholder="Search reason or status"
+                                    className="w-full lg:w-[20rem]"
                                 />
                             </IconField>
 
                             <Button
-                                label="New Overtime Request"
+                                label="New"
                                 icon="pi pi-plus"
                                 onClick={onClickNew}
                             />
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <DataTable
-                            value={rows}
-                            tableStyle={{ minWidth: '118rem' }}
-                            stripedRows
-                            paginator
-                            scrollable
-                            scrollHeight="500px"
-                            rows={10}
-                            rowsPerPageOptions={[10, 25, 50]}
-                            dataKey="id"
-                            globalFilterFields={[
-                                'employee_name',
-                                'reason',
-                                'status',
-                                'approved_by_name',
-                                'rejected_by_name',
-                            ]}
-                            emptyMessage="No overtime request found."
-                            filters={filters}
-                            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                            loading={isLoading}
-                        >
-                            <Column
-                                header="#"
-                                headerStyle={{ width: '4rem', minWidth: '4rem' }}
-                                bodyStyle={{ minWidth: '4rem' }}
-                                body={(_, options) => options.rowIndex + 1}
-                            />
+                    <DataTable
+                        value={rows}
+                        dataKey="id"
+                        paginator
+                        rows={10}
+                        rowsPerPageOptions={[10, 25, 50]}
+                        stripedRows
+                        scrollable
+                        responsiveLayout="scroll"
+                        tableStyle={{ minWidth: '80rem' }}
+                        emptyMessage="No overtime request found."
+                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                        filters={filters}
+                        globalFilterFields={[
+                            'reason',
+                            'status',
+                            'overtime_date',
+                        ]}
+                    >
+                        <Column
+                            header="#"
+                            headerStyle={{ width: '4rem' }}
+                            body={(_, options) => options.rowIndex + 1}
+                        />
 
-                            <Column
-                                field="employee_name"
-                                header="Employee"
-                                body={(rowData: OvertimeRequest) => rowData.employee_name ?? '-'}
-                                style={{ minWidth: '16rem' }}
-                            />
+                        <Column
+                            header="Overtime Date"
+                            body={overtimeDateBody}
+                            style={{ minWidth: '16rem' }}
+                        />
 
-                            <Column
-                                header="Overtime Date"
-                                body={(rowData: OvertimeRequest) =>
-                                    formatDate(rowData.overtime_date)
-                                }
-                                style={{ minWidth: '12rem' }}
-                            />
+                        <Column
+                            header="Requested Time"
+                            body={timeBody}
+                            style={{ minWidth: '16rem' }}
+                        />
 
-                            <Column
-                                header="Start"
-                                body={(rowData: OvertimeRequest) =>
-                                    formatTime(rowData.requested_start_at)
-                                }
-                                style={{ minWidth: '8rem' }}
-                            />
+                        <Column
+                            header="Duration"
+                            body={(rowData: OvertimeRequest) =>
+                                formatSeconds(rowData.requested_seconds)
+                            }
+                            style={{ minWidth: '10rem' }}
+                        />
 
-                            <Column
-                                header="End"
-                                body={(rowData: OvertimeRequest) =>
-                                    formatTime(rowData.requested_end_at)
-                                }
-                                style={{ minWidth: '8rem' }}
-                            />
+                        <Column
+                            header="Status"
+                            body={statusBody}
+                            style={{ minWidth: '12rem' }}
+                        />
 
-                            <Column
-                                header="Duration"
-                                body={(rowData: OvertimeRequest) =>
-                                    formatSeconds(rowData.requested_seconds)
-                                }
-                                style={{ minWidth: '9rem' }}
-                            />
+                        <Column
+                            header="Reason"
+                            body={reasonBody}
+                            style={{ minWidth: '22rem' }}
+                        />
 
-                            <Column
-                                field="reason"
-                                header="Reason"
-                                body={(rowData: OvertimeRequest) => rowData.reason ?? '-'}
-                                style={{ minWidth: '20rem' }}
-                            />
-
-                            <Column
-                                header="Status"
-                                body={statusBody}
-                                style={{ minWidth: '9rem' }}
-                            />
-
-                            <Column
-                                header="Approved By"
-                                body={(rowData: OvertimeRequest) =>
-                                    rowData.approved_by_name ?? '-'
-                                }
-                                style={{ minWidth: '14rem' }}
-                            />
-
-                            <Column
-                                header="Approved At"
-                                body={(rowData: OvertimeRequest) =>
-                                    formatDateTime(rowData.approved_at)
-                                }
-                                style={{ minWidth: '14rem' }}
-                            />
-
-                            <Column
-                                header="Action"
-                                body={actionColumnBody}
-                                frozen
-                                alignFrozen="right"
-                                style={{ minWidth: '10rem' }}
-                                headerStyle={{
-                                    minWidth: '10rem',
-                                    background: '#ffffff',
-                                    zIndex: 1,
-                                }}
-                                bodyStyle={{
-                                    minWidth: '10rem',
-                                    background: '#ffffff',
-                                }}
-                            />
-                        </DataTable>
-                    </div>
+                        <Column
+                            header="Action"
+                            body={actionColumnBody}
+                            frozen
+                            alignFrozen="right"
+                            style={{ minWidth: '12rem', width: '12rem' }}
+                            headerStyle={{
+                                minWidth: '12rem',
+                                width: '12rem',
+                                background: '#ffffff',
+                                zIndex: 1,
+                            }}
+                            bodyStyle={{
+                                minWidth: '12rem',
+                                width: '12rem',
+                                background: '#ffffff',
+                                whiteSpace: 'nowrap',
+                            }}
+                        />
+                    </DataTable>
                 </div>
             </Card>
 
@@ -954,266 +960,373 @@ const OvertimeRequestTableData = () => {
                 <Dialog
                     header={popupHeaderTitle}
                     visible={visible}
-                    style={{ width: '95vw', maxWidth: '860px' }}
+                    style={{ width: '95vw', maxWidth: '720px' }}
                     breakpoints={{ '960px': '95vw' }}
                     onHide={handleDialogHide}
-                    footer={footerContent}
-                    onShow={() => {
-                        setFocus('overtime_date');
-                    }}
+                    footer={dialogFooter}
                     modal
                     draggable={false}
                     resizable={false}
                 >
-                    <div className="flex flex-col gap-5">
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-slate-800">
-                                    Overtime Information
-                                </h3>
-                                <p className="mt-1 text-sm leading-6 text-slate-500">
-                                    Choose the overtime date, requested start time, requested end
-                                    time, and reason.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <div className="flex flex-col gap-2">
-                                    <label
-                                        htmlFor="overtime_date"
-                                        className="text-sm font-medium text-slate-700"
-                                    >
-                                        Overtime Date
-                                    </label>
-
-                                    <Controller
-                                        name="overtime_date"
-                                        control={control}
-                                        rules={{
-                                            required: 'Overtime date is required',
-                                        }}
-                                        render={({ field, fieldState }) => (
-                                            <>
-                                                <Calendar
-                                                    id="overtime_date"
-                                                    appendTo={getBody}
-                                                    value={field.value}
-                                                    onChange={(e) => field.onChange(e.value)}
-                                                    dateFormat="dd/mm/yy"
-                                                    showIcon
-                                                    className={fieldState.invalid ? 'p-invalid' : ''}
-                                                    disabled={isSaving}
-                                                />
-
-                                                {fieldState.error && (
-                                                    <small className="font-bold p-error">
-                                                        {fieldState.error.message}
-                                                    </small>
-                                                )}
-                                            </>
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                        <div className="flex flex-col gap-2 md:col-span-2">
+                            <label className="text-sm font-medium text-slate-700">
+                                Overtime Date
+                            </label>
+                            <Controller
+                                name="overtime_date"
+                                control={control}
+                                rules={{ required: 'Overtime date is required' }}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <Calendar
+                                            value={field.value}
+                                            onChange={(e) => field.onChange(e.value)}
+                                            dateFormat="dd-mm-yy"
+                                            showIcon
+                                            className={
+                                                fieldState.invalid ? 'p-invalid' : ''
+                                            }
+                                        />
+                                        {fieldState.error && (
+                                            <small className="font-bold p-error">
+                                                {fieldState.error.message}
+                                            </small>
                                         )}
-                                    />
+                                    </>
+                                )}
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-slate-700">
+                                Start Time
+                            </label>
+                            <Controller
+                                name="requested_start_time"
+                                control={control}
+                                rules={{ required: 'Start time is required' }}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <Dropdown
+                                            value={field.value}
+                                            options={timeOptions}
+                                            onChange={(e) => field.onChange(e.value)}
+                                            placeholder="Select start time"
+                                            filter
+                                            className={
+                                                fieldState.invalid ? 'p-invalid' : ''
+                                            }
+                                        />
+                                        {fieldState.error && (
+                                            <small className="font-bold p-error">
+                                                {fieldState.error.message}
+                                            </small>
+                                        )}
+                                    </>
+                                )}
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-slate-700">
+                                End Time
+                            </label>
+                            <Controller
+                                name="requested_end_time"
+                                control={control}
+                                rules={{ required: 'End time is required' }}
+                                render={({ field, fieldState }) => (
+                                    <>
+                                        <Dropdown
+                                            value={field.value}
+                                            options={timeOptions}
+                                            onChange={(e) => field.onChange(e.value)}
+                                            placeholder="Select end time"
+                                            filter
+                                            className={
+                                                fieldState.invalid ? 'p-invalid' : ''
+                                            }
+                                        />
+                                        {fieldState.error && (
+                                            <small className="font-bold p-error">
+                                                {fieldState.error.message}
+                                            </small>
+                                        )}
+                                    </>
+                                )}
+                            />
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    Duration Preview
                                 </div>
-
-                                <div className="hidden md:block" />
-
-                                <div className="flex flex-col gap-2">
-                                    <label
-                                        htmlFor="requested_start_time"
-                                        className="text-sm font-medium text-slate-700"
-                                    >
-                                        Requested Start Time
-                                    </label>
-
-                                    <Controller
-                                        name="requested_start_time"
-                                        control={control}
-                                        rules={{
-                                            required: 'Start time is required',
-                                        }}
-                                        render={({ field, fieldState }) => (
-                                            <>
-                                                <Dropdown
-                                                    id="requested_start_time"
-                                                    appendTo={getBody}
-                                                    value={field.value}
-                                                    options={timeOptions}
-                                                    onChange={(e) => field.onChange(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Select start time"
-                                                    filter
-                                                    showClear
-                                                    className={
-                                                        fieldState.invalid ? 'p-invalid w-full' : 'w-full'
-                                                    }
-                                                    disabled={isSaving}
-                                                />
-
-                                                {fieldState.error && (
-                                                    <small className="font-bold p-error">
-                                                        {fieldState.error.message}
-                                                    </small>
-                                                )}
-                                            </>
-                                        )}
-                                    />
+                                <div className="mt-1 text-lg font-semibold text-slate-800">
+                                    {formatSeconds(previewSeconds)}
                                 </div>
-
-                                <div className="flex flex-col gap-2">
-                                    <label
-                                        htmlFor="requested_end_time"
-                                        className="text-sm font-medium text-slate-700"
-                                    >
-                                        Requested End Time
-                                    </label>
-
-                                    <Controller
-                                        name="requested_end_time"
-                                        control={control}
-                                        rules={{
-                                            required: 'End time is required',
-                                            validate: (value) => {
-                                                const date = watch('overtime_date');
-                                                const startTime = watch('requested_start_time');
-
-                                                const startAt = combineDateAndTime(date, startTime);
-                                                const endAt = combineDateAndTime(date, value);
-
-                                                if (!startAt || !endAt) {
-                                                    return true;
-                                                }
-
-                                                if (
-                                                    dayjs(endAt).isSame(startAt) ||
-                                                    dayjs(endAt).isBefore(startAt)
-                                                ) {
-                                                    return 'End time must be after start time';
-                                                }
-
-                                                return true;
-                                            },
-                                        }}
-                                        render={({ field, fieldState }) => (
-                                            <>
-                                                <Dropdown
-                                                    id="requested_end_time"
-                                                    appendTo={getBody}
-                                                    value={field.value}
-                                                    options={timeOptions}
-                                                    onChange={(e) => field.onChange(e.value)}
-                                                    optionLabel="label"
-                                                    optionValue="value"
-                                                    placeholder="Select end time"
-                                                    filter
-                                                    showClear
-                                                    className={
-                                                        fieldState.invalid ? 'p-invalid w-full' : 'w-full'
-                                                    }
-                                                    disabled={isSaving}
-                                                />
-
-                                                {fieldState.error && (
-                                                    <small className="font-bold p-error">
-                                                        {fieldState.error.message}
-                                                    </small>
-                                                )}
-                                            </>
-                                        )}
-                                    />
-                                </div>
-
-                                <div className="flex flex-col gap-2 md:col-span-2">
-                                    <label
-                                        htmlFor="reason"
-                                        className="text-sm font-medium text-slate-700"
-                                    >
-                                        Reason
-                                    </label>
-
-                                    <Controller
-                                        name="reason"
-                                        control={control}
-                                        rules={{
-                                            required: 'Reason is required',
-                                            maxLength: {
-                                                value: 1000,
-                                                message: 'Maximum 1000 characters',
-                                            },
-                                        }}
-                                        render={({ field, fieldState }) => (
-                                            <>
-                                                <InputTextarea
-                                                    id="reason"
-                                                    placeholder="Explain the overtime reason"
-                                                    {...field}
-                                                    rows={4}
-                                                    className={fieldState.invalid ? 'p-invalid' : ''}
-                                                    disabled={isSaving}
-                                                />
-
-                                                {fieldState.error && (
-                                                    <small className="font-bold p-error">
-                                                        {fieldState.error.message}
-                                                    </small>
-                                                )}
-                                            </>
-                                        )}
-                                    />
+                                <div className="mt-1 text-sm text-slate-500">
+                                    {previewStartAt && previewEndAt
+                                        ? `${formatDateTime(
+                                            previewStartAt.toISOString()
+                                        )} - ${formatDateTime(
+                                            previewEndAt.toISOString()
+                                        )}`
+                                        : 'Select date and time first'}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
-                            <div className="mb-4">
-                                <h3 className="text-sm font-semibold text-slate-800">
-                                    Request Summary
-                                </h3>
-                                <p className="mt-1 text-sm leading-6 text-slate-500">
-                                    Overtime amount is not calculated here. Payroll module will
-                                    calculate overtime pay later.
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-                                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                    <div className="text-sm text-slate-500">Start</div>
-                                    <div className="mt-2 text-xl font-semibold text-slate-800">
-                                        {previewStartAt
-                                            ? dayjs(previewStartAt).format('HH:mm')
-                                            : '-'}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                    <div className="text-sm text-slate-500">End</div>
-                                    <div className="mt-2 text-xl font-semibold text-slate-800">
-                                        {previewEndAt ? dayjs(previewEndAt).format('HH:mm') : '-'}
-                                    </div>
-                                </div>
-
-                                <div className="rounded-xl border border-slate-200 bg-white p-4">
-                                    <div className="text-sm text-slate-500">Duration</div>
-                                    <div className="mt-2 text-xl font-semibold text-blue-600">
-                                        {formatSeconds(previewSeconds)}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {previewStartAt && previewEndAt && previewSeconds <= 0 && (
-                                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                                    End time must be after start time.
-                                </div>
-                            )}
-
-                            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                                Submit this request for approval. Approved overtime will be
-                                included in attendance summary.
-                            </div>
+                        <div className="flex flex-col gap-2 md:col-span-2">
+                            <label className="text-sm font-medium text-slate-700">
+                                Reason
+                            </label>
+                            <Controller
+                                name="reason"
+                                control={control}
+                                render={({ field }) => (
+                                    <InputTextarea
+                                        {...field}
+                                        rows={4}
+                                        placeholder="Explain why overtime is needed"
+                                    />
+                                )}
+                            />
                         </div>
                     </div>
                 </Dialog>
             </form>
+
+            <Dialog
+                header="Approval Detail"
+                visible={approvalDetailVisible}
+                style={{ width: '95vw', maxWidth: '900px' }}
+                breakpoints={{ '960px': '95vw' }}
+                onHide={closeApprovalDetailDialog}
+                modal
+                draggable={false}
+                resizable={false}
+            >
+                {approvalDetailLoading && (
+                    <div className="flex items-center justify-center py-10">
+                        <i className="pi pi-spin pi-spinner mr-2" />
+                        <span>Loading approval detail...</span>
+                    </div>
+                )}
+
+                {!approvalDetailLoading && approvalDetail && (
+                    <div className="flex flex-col gap-5">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+                            <div className="mb-4 flex flex-wrap items-center gap-2">
+                                <Tag
+                                    value={`Overtime: ${approvalDetail.overtime_status}`}
+                                    severity={getStatusSeverity(
+                                        approvalDetail.overtime_status
+                                    )}
+                                />
+
+                                {approvalDetail.approval_status &&
+                                    approvalDetail.approval_status !==
+                                    approvalDetail.overtime_status && (
+                                        <Tag
+                                            value={`Approval: ${approvalDetail.approval_status}`}
+                                            severity={getStatusSeverity(
+                                                approvalDetail.approval_status
+                                            )}
+                                        />
+                                    )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Overtime Date
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {formatDate(approvalDetail.overtime_date)}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Approval Request ID
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {approvalDetail.approval_request_id
+                                            ? `#${approvalDetail.approval_request_id}`
+                                            : '-'}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Requested Time
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {formatTime(
+                                            approvalDetail.requested_start_at
+                                        )}{' '}
+                                        -{' '}
+                                        {formatTime(
+                                            approvalDetail.requested_end_at
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Duration
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {formatSeconds(
+                                            approvalDetail.requested_seconds
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Submitted At
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {formatDateTime(approvalDetail.submitted_at)}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-sm text-slate-500">
+                                        Completed At
+                                    </div>
+                                    <div className="mt-1 font-semibold text-slate-800">
+                                        {formatDateTime(approvalDetail.completed_at)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                            <div className="mb-4 text-lg font-semibold text-slate-800">
+                                Approval Steps
+                            </div>
+
+                            {approvalDetail.steps.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                    No approval step found.
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {approvalDetail.steps.map((step) => (
+                                        <div
+                                            key={step.id}
+                                            className="rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                                        >
+                                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                                <div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <Tag
+                                                            value={`Step ${step.step_no}`}
+                                                            severity="info"
+                                                        />
+                                                        <Tag
+                                                            value={step.status}
+                                                            severity={getStatusSeverity(
+                                                                step.status
+                                                            )}
+                                                        />
+                                                    </div>
+
+                                                    <div className="mt-3 text-sm text-slate-500">
+                                                        Approver
+                                                    </div>
+                                                    <div className="font-semibold text-slate-800">
+                                                        {step.approver_name ||
+                                                            `Employee #${step.approver_employee_id}`}
+                                                    </div>
+                                                </div>
+
+                                                <div className="text-left md:text-right">
+                                                    <div className="text-sm text-slate-500">
+                                                        Acted By
+                                                    </div>
+                                                    <div className="font-semibold text-slate-800">
+                                                        {step.acted_by_name || '-'}
+                                                    </div>
+
+                                                    <div className="mt-2 text-sm text-slate-500">
+                                                        Acted At
+                                                    </div>
+                                                    <div className="font-semibold text-slate-800">
+                                                        {formatDateTime(step.acted_at)}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {step.note && (
+                                                <div className="mt-4 rounded-lg bg-white px-3 py-2 text-sm leading-6 text-slate-700">
+                                                    {step.note}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                            <div className="mb-4 text-lg font-semibold text-slate-800">
+                                Approval Timeline
+                            </div>
+
+                            {approvalDetail.actions.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                                    No approval action found.
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {approvalDetail.actions.map((action) => (
+                                        <div
+                                            key={action.id}
+                                            className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4"
+                                        >
+                                            <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                                <i className="pi pi-history text-sm" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                                                    <div className="font-semibold text-slate-800">
+                                                        {action.action}
+                                                        {action.step_no
+                                                            ? ` - Step ${action.step_no}`
+                                                            : ''}
+                                                    </div>
+
+                                                    <div className="text-sm text-slate-500">
+                                                        {formatDateTime(action.acted_at)}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-1 text-sm text-slate-600">
+                                                    By{' '}
+                                                    {action.actor_name ||
+                                                        `Employee #${action.actor_employee_id}`}
+                                                </div>
+
+                                                {action.note && (
+                                                    <div className="mt-2 text-sm leading-6 text-slate-700">
+                                                        {action.note}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Dialog>
         </>
     );
 };
