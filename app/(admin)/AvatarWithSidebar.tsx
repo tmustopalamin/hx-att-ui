@@ -44,6 +44,10 @@ const AvatarWithSidebar = () => {
         return `${apiBaseUrl}/api/public/images/uploads/${profileData.photo_url}`;
     }, [profileData?.photo_url]);
 
+    const closeSidebar = () => {
+        setIsSidebarVisible(false);
+    };
+
     const onClickLogout = async () => {
         try {
             setLoggingOut(true);
@@ -58,6 +62,7 @@ const AvatarWithSidebar = () => {
             if (!res.ok) {
                 const errorMessage =
                     responseData?.message || "Failed to logout. Please try again.";
+
                 throw new Error(errorMessage);
             }
 
@@ -144,7 +149,7 @@ const AvatarWithSidebar = () => {
                                     {profileData?.name || "User"}
                                 </h3>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    Manage your account and current session.
+                                    Manage your account, notifications, and current session.
                                 </p>
                             </div>
                         </div>
@@ -154,7 +159,7 @@ const AvatarWithSidebar = () => {
                         <div className="space-y-3">
                             <Link
                                 href="/account-settings"
-                                onClick={() => setIsSidebarVisible(false)}
+                                onClick={closeSidebar}
                                 className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 transition-colors hover:bg-slate-50"
                             >
                                 <div className="mt-1 text-blue-600">
@@ -167,6 +172,25 @@ const AvatarWithSidebar = () => {
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
                                         Change your account details and profile information.
+                                    </p>
+                                </div>
+                            </Link>
+
+                            <Link
+                                href="/notification-center"
+                                onClick={closeSidebar}
+                                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 transition-colors hover:bg-slate-50"
+                            >
+                                <div className="mt-1 text-blue-600">
+                                    <i className="pi pi-bell text-lg" />
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-800">
+                                        Notifications
+                                    </p>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        View approval alerts, HRIS updates, and system messages.
                                     </p>
                                 </div>
                             </Link>

@@ -39,6 +39,28 @@ const API_KEY = '/api/approval/workflow-settings?show_all=true';
 
 const getBody = () => document.body;
 
+type ApprovalWorkflowSettingListResponse =
+    | ApprovalWorkflowSetting[]
+    | ResponseType<ApprovalWorkflowSetting[]>;
+
+const normalizeApprovalWorkflowSettings = (
+    response?: ApprovalWorkflowSettingListResponse
+): ApprovalWorkflowSetting[] => {
+    if (!response) {
+        return [];
+    }
+
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    if (Array.isArray(response.data)) {
+        return response.data;
+    }
+
+    return [];
+};
+
 const ApprovalSettingsTableData = () => {
     const dispatch = useDispatch();
 
@@ -66,9 +88,9 @@ const ApprovalSettingsTableData = () => {
         data,
         error,
         isLoading,
-    } = useSWR<ApprovalWorkflowSetting[]>(API_KEY, fetcher);
+    } = useSWR<ApprovalWorkflowSettingListResponse>(API_KEY, fetcher);
 
-    const rows = data ?? [];
+    const rows = normalizeApprovalWorkflowSettings(data);
 
     const refreshData = async () => {
         await mutate(API_KEY);

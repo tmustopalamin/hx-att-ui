@@ -10,13 +10,15 @@ import BProgressProvider from "../utils/providers/BProgressProvider";
 import AvatarWithSidebar from "./AvatarWithSidebar";
 import SidebarMenu from "./SidebarMenu";
 import { apiFetch } from "../services/api-fetch";
+import NotificationBell from "../_components/NotificationBell";
 
 const AppMain = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
 
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] =
+    useState(false);
 
   const getBody = () => document.body;
 
@@ -72,8 +74,8 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
       {/* Desktop sidebar */}
       <aside
         className={`hidden h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out md:block ${isDesktopSidebarCollapsed
-            ? "w-0 border-r-0 opacity-0"
-            : "w-[17rem] border-r border-slate-200 opacity-100"
+          ? "w-0 border-r-0 opacity-0"
+          : "w-[17rem] border-r border-slate-200 opacity-100"
           }`}
       >
         <div className="h-full bg-white">
@@ -94,7 +96,8 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
                   />
                 </div>
 
-                <div className="flex shrink-0 items-center gap-3">
+                <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                  <NotificationBell />
                   <AvatarWithSidebar />
                 </div>
               </div>
