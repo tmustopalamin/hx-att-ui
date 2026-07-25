@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const BankDetailSection = () => {
-  return (
-    <div>BankDetailSection</div>
-  )
-}
+  return <div>BankDetailSection</div>;
+};
 
-export default BankDetailSection
+export default BankDetailSection;

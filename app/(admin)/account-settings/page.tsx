@@ -2,7 +2,10 @@
 
 import CardTitle from "@/app/_components/CardTitle";
 import { FormChangePassword } from "@/app/types/form-change-password";
-import { isResponseTypeError, getErrorMessage } from "@/app/utils/error-messages";
+import {
+  isResponseTypeError,
+  getErrorMessage,
+} from "@/app/utils/error-messages";
 import { changePassword } from "@/app/services/user-service";
 import { showToast } from "@/store/ToastSlice";
 import { Card } from "primereact/card";
@@ -61,7 +64,7 @@ const AccountSettingsPage = () => {
           severity: "success",
           summary: "Success",
           detail: "Password changed successfully.",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -71,7 +74,7 @@ const AccountSettingsPage = () => {
             severity: "error",
             summary: "Failed",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -80,7 +83,7 @@ const AccountSettingsPage = () => {
             severity: "error",
             summary: "Failed",
             detail: err.message,
-          })
+          }),
         );
       } else {
         dispatch(
@@ -89,7 +92,7 @@ const AccountSettingsPage = () => {
             severity: "error",
             summary: "Failed",
             detail: "Unexpected error occurred. Please try again.",
-          })
+          }),
         );
       }
     } finally {
@@ -106,7 +109,10 @@ const AccountSettingsPage = () => {
 
         <TabPanel header="Change Password">
           <div className="w-full max-w-xl">
-            <form className="w-full space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <form
+              className="w-full space-y-4"
+              onSubmit={handleSubmit(onSubmit)}
+            >
               <div className="mb-6">
                 <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
                   Change Password
@@ -133,8 +139,9 @@ const AccountSettingsPage = () => {
                         toggleMask
                         feedback={false}
                         inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
-                          }`}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
                         pt={{
                           iconField: {
                             root: {
@@ -191,8 +198,9 @@ const AccountSettingsPage = () => {
                         toggleMask
                         feedback
                         inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
-                          }`}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
                         pt={{
                           iconField: {
                             root: {
@@ -241,8 +249,9 @@ const AccountSettingsPage = () => {
                         toggleMask
                         feedback={false}
                         inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""
-                          }`}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
                         pt={{
                           iconField: {
                             root: {

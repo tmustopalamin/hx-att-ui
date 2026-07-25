@@ -1,16 +1,16 @@
 import { Frequency } from "../types/frequency";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/frequency';
+const API_URL = "/api/frequency";
 
 export const createFrequency = async (data: Frequency) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -38,69 +38,71 @@ export const createFrequency = async (data: Frequency) => {
   }
 
   return res.json();
-}
+};
 
-export const updateFrequency = async (id: number, rowVersion: number, data: Frequency) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateFrequency = async (
+  id: number,
+  rowVersion: number,
+  data: Frequency,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const deleteFrequency = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgeFrequency = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const restoreFrequency = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -129,5 +131,4 @@ export const restoreFrequency = async (id: number, rowVersion: number) => {
   }
 
   return res.json();
-}
-
+};

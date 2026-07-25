@@ -45,7 +45,11 @@ export const createAgency = async (data: Agency) => {
   return res.json();
 };
 
-export const updateAgency = async (id: number, rowVersion: number, data: Agency) => {
+export const updateAgency = async (
+  id: number,
+  rowVersion: number,
+  data: Agency,
+) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {

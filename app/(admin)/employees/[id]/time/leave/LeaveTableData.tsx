@@ -10,7 +10,10 @@ import dayjs from "dayjs";
 import { fetcher } from "@/app/utils/fetcher";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 
 import {
@@ -72,7 +75,9 @@ const LeaveTableData = () => {
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
 
-  const [selectedData, setSelectedData] = useState<EmployeeLeaveBalance | null>(null);
+  const [selectedData, setSelectedData] = useState<EmployeeLeaveBalance | null>(
+    null,
+  );
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
@@ -80,7 +85,8 @@ const LeaveTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
 
   const {
     control,
@@ -109,8 +115,11 @@ const LeaveTableData = () => {
   } = useSWR<LeaveTypeOption[]>("/api/leave-type?show_all=false", fetcher);
 
   const leaveTypeActive = useMemo(
-    () => (leaveTypeData ?? []).filter((item) => item.is_active !== false && !item.deleted_at),
-    [leaveTypeData]
+    () =>
+      (leaveTypeData ?? []).filter(
+        (item) => item.is_active !== false && !item.deleted_at,
+      ),
+    [leaveTypeData],
   );
 
   const refreshList = async () => {
@@ -151,7 +160,9 @@ const LeaveTableData = () => {
       id: data.id,
       employee_id: data.employee_id,
       leave_type_id: data.leave_type_id,
-      period_start: data.period_start ? dayjs(data.period_start).toDate() : null,
+      period_start: data.period_start
+        ? dayjs(data.period_start).toDate()
+        : null,
       period_end: data.period_end ? dayjs(data.period_end).toDate() : null,
       opening_balance: Number(data.opening_balance ?? 0),
       entitlement: Number(data.entitlement ?? 0),
@@ -188,7 +199,7 @@ const LeaveTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Leave balance created successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -198,7 +209,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -207,7 +218,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -221,7 +232,7 @@ const LeaveTableData = () => {
           severity: "error",
           summary: "Error",
           detail: "Please select data",
-        })
+        }),
       );
       return;
     }
@@ -235,7 +246,7 @@ const LeaveTableData = () => {
       const res = await updateEmployeeLeaveBalance(
         selectedData.id,
         selectedData.row_version,
-        payload
+        payload,
       );
 
       closeDialog();
@@ -247,7 +258,7 @@ const LeaveTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Leave balance updated successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -257,7 +268,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -266,7 +277,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -283,7 +294,7 @@ const LeaveTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Leave balance deleted successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -293,7 +304,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -302,7 +313,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -319,7 +330,7 @@ const LeaveTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Leave balance restored successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -329,7 +340,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -338,7 +349,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -355,7 +366,7 @@ const LeaveTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Leave balance permanently deleted",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -365,7 +376,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -374,7 +385,7 @@ const LeaveTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -530,7 +541,8 @@ const LeaveTableData = () => {
                 Leave Balance
               </h5>
               <p className="mt-1 text-sm text-slate-500">
-                Manage employee leave balance period, entitlement, usage, and remaining balance.
+                Manage employee leave balance period, entitlement, usage, and
+                remaining balance.
               </p>
             </div>
 
@@ -575,7 +587,11 @@ const LeaveTableData = () => {
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
             filters={filters}
-            globalFilterFields={["leave_type_name", "period_start", "period_end"]}
+            globalFilterFields={[
+              "leave_type_name",
+              "period_start",
+              "period_end",
+            ]}
             emptyMessage="No leave balance found."
             currentPageReportTemplate="{first} to {last} of {totalRecords}"
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
@@ -598,17 +614,37 @@ const LeaveTableData = () => {
               body={periodBodyTemplate}
               style={{ minWidth: "16rem" }}
             />
-            <Column field="opening_balance" header="Opening" style={{ minWidth: "8rem" }} />
-            <Column field="entitlement" header="Entitlement" style={{ minWidth: "8rem" }} />
+            <Column
+              field="opening_balance"
+              header="Opening"
+              style={{ minWidth: "8rem" }}
+            />
+            <Column
+              field="entitlement"
+              header="Entitlement"
+              style={{ minWidth: "8rem" }}
+            />
             <Column field="taken" header="Taken" style={{ minWidth: "8rem" }} />
-            <Column field="adjustment" header="Adjustment" style={{ minWidth: "8rem" }} />
+            <Column
+              field="adjustment"
+              header="Adjustment"
+              style={{ minWidth: "8rem" }}
+            />
             <Column
               header="Closing"
               body={closingBalanceBodyTemplate}
               style={{ minWidth: "8rem" }}
             />
-            <Column field="expired_balance" header="Expired" style={{ minWidth: "8rem" }} />
-            <Column header="Status" body={statusBodyTemplate} style={{ minWidth: "8rem" }} />
+            <Column
+              field="expired_balance"
+              header="Expired"
+              style={{ minWidth: "8rem" }}
+            />
+            <Column
+              header="Status"
+              body={statusBodyTemplate}
+              style={{ minWidth: "8rem" }}
+            />
             <Column
               headerClassName="bg-white"
               className="bg-white"
@@ -654,7 +690,8 @@ const LeaveTableData = () => {
               control={control}
               rules={{
                 required: "Leave type is required",
-                validate: (value) => Number(value) > 0 || "Leave type is required",
+                validate: (value) =>
+                  Number(value) > 0 || "Leave type is required",
               }}
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">
@@ -678,7 +715,9 @@ const LeaveTableData = () => {
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -706,7 +745,9 @@ const LeaveTableData = () => {
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -734,7 +775,9 @@ const LeaveTableData = () => {
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}

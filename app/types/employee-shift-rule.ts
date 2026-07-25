@@ -4,7 +4,7 @@ export interface RotationRule {
   sequence_no: number;
   shift_id: string;
   duration_days: number;
-};
+}
 
 export interface EmployeeShiftRule {
   id: number;
@@ -18,9 +18,9 @@ export interface EmployeeShiftRule {
 }
 
 export interface RotationRuleFromApi {
-  id: number,
-  rule_id: number,
+  id: number;
+  rule_id: number;
   sequence_no: number;
   shift_id: number;
   duration_days: number;
-};
+}

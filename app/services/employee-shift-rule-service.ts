@@ -1,16 +1,16 @@
 import { EmployeeShiftRule } from "../types/employee-shift-rule";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/shift-employee';
+const API_URL = "/api/shift-employee";
 
 export const createEmployeeShiftRule = async (data: any) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -38,38 +38,43 @@ export const createEmployeeShiftRule = async (data: any) => {
   }
 
   return res.json();
-}
+};
 
-export const updateEmployeeShiftRule = async (id: number, rowVersion: number, data: EmployeeShiftRule) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateEmployeeShiftRule = async (
+  id: number,
+  rowVersion: number,
+  data: EmployeeShiftRule,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
     const errorData: ResponseTypeError = await res.json();
     throw errorData;
   }
   return res.json();
-}
+};
 
-export const deleteEmployeeShiftRule = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const deleteEmployeeShiftRule = async (
+  id: number,
+  rowVersion: number,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
@@ -77,14 +82,14 @@ export const deleteEmployeeShiftRule = async (id: number, rowVersion: number) =>
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgeEmployeeShiftRule = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
@@ -92,15 +97,18 @@ export const purgeEmployeeShiftRule = async (id: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
-export const restoreEmployeeShiftRule = async (id: number, rowVersion: number) => {
+export const restoreEmployeeShiftRule = async (
+  id: number,
+  rowVersion: number,
+) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -129,5 +137,4 @@ export const restoreEmployeeShiftRule = async (id: number, rowVersion: number) =
   }
 
   return res.json();
-}
-
+};

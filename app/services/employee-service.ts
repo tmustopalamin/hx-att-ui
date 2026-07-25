@@ -50,7 +50,7 @@ export const createEmployee = async (data: Employee) => {
 
 export const uploadEmployeePhoto = async (
   employeeId: number | string,
-  file: File
+  file: File,
 ): Promise<{
   message: string;
 }> => {

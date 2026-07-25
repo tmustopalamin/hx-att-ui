@@ -14,7 +14,10 @@ import {
   EmployeeEmploymentData,
   OptionItem,
 } from "@/app/types/employee-general";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
@@ -78,7 +81,9 @@ const EmployeeDetailEmployment = () => {
 
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
-  const [employmentStatuses, setEmploymentStatuses] = useState<OptionItem[]>([]);
+  const [employmentStatuses, setEmploymentStatuses] = useState<OptionItem[]>(
+    [],
+  );
   const [agencies, setAgencies] = useState<OptionItem[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -106,7 +111,7 @@ const EmployeeDetailEmployment = () => {
     return positions.filter(
       (position) =>
         !position.department_id ||
-        Number(position.department_id) === Number(selectedDepartmentId)
+        Number(position.department_id) === Number(selectedDepartmentId),
     );
   }, [positions, selectedDepartmentId]);
 
@@ -118,7 +123,7 @@ const EmployeeDetailEmployment = () => {
     return branches.filter(
       (branch) =>
         !branch.agency_id ||
-        Number(branch.agency_id) === Number(selectedAgencyId)
+        Number(branch.agency_id) === Number(selectedAgencyId),
     );
   }, [branches, selectedAgencyId]);
 
@@ -138,7 +143,7 @@ const EmployeeDetailEmployment = () => {
       selectedAgencyId &&
       selectedBranchId &&
       !branchOptions.some(
-        (branch) => Number(branch.id) === Number(selectedBranchId)
+        (branch) => Number(branch.id) === Number(selectedBranchId),
       )
     ) {
       setValue("branch_id", null);
@@ -170,7 +175,7 @@ const EmployeeDetailEmployment = () => {
       setDepartments(departmentList);
       setPositions(positionList.filter((item) => item.is_active !== false));
       setEmploymentStatuses(
-        employmentStatusList.filter((item) => item.is_active !== false)
+        employmentStatusList.filter((item) => item.is_active !== false),
       );
       setAgencies(agencyList);
       setBranches(branchList);
@@ -184,8 +189,7 @@ const EmployeeDetailEmployment = () => {
           department_id: employmentData.department_id ?? null,
           position_id: employmentData.position_id ?? null,
           employment_status_id: employmentData.employment_status_id ?? null,
-          supervisor_employee_id:
-            employmentData.supervisor_employee_id ?? null,
+          supervisor_employee_id: employmentData.supervisor_employee_id ?? null,
           join_date: employmentData.join_date
             ? dayjs(employmentData.join_date).toDate()
             : null,
@@ -214,7 +218,7 @@ const EmployeeDetailEmployment = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -223,7 +227,7 @@ const EmployeeDetailEmployment = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     } finally {
@@ -250,7 +254,7 @@ const EmployeeDetailEmployment = () => {
           severity: "error",
           summary: "Error",
           detail: "Supervisor cannot be the same as the employee.",
-        })
+        }),
       );
       return;
     }
@@ -283,7 +287,7 @@ const EmployeeDetailEmployment = () => {
           severity: "success",
           summary: "Success",
           detail: "Employment data updated successfully.",
-        })
+        }),
       );
 
       setIsPageEdit(false);
@@ -296,7 +300,7 @@ const EmployeeDetailEmployment = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -305,7 +309,7 @@ const EmployeeDetailEmployment = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }

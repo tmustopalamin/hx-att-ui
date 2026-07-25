@@ -1,17 +1,17 @@
-import React from 'react'
-import EmployeeScheduleTableData from './EmployeeScheduleTableData';
+import React from "react";
+import EmployeeScheduleTableData from "./EmployeeScheduleTableData";
 
 export const metadata = {
-    title: 'Manage Bank - PT. Hexing Technology',
-    description: 'add, update, delete bank data',
+  title: "Manage Bank - PT. Hexing Technology",
+  description: "add, update, delete bank data",
 };
 
 const EmployeeScheduleSettingPage = () => {
-    return <>
-        <EmployeeScheduleTableData />
+  return (
+    <>
+      <EmployeeScheduleTableData />
     </>
-}
+  );
+};
 
-
-
-export default EmployeeScheduleSettingPage
+export default EmployeeScheduleSettingPage;

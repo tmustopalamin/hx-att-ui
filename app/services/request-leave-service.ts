@@ -19,7 +19,9 @@ type PreviewLeaveDaysResponse = {
   message: string;
 };
 
-const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+const parseErrorResponse = async (
+  res: Response,
+): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
   try {
@@ -58,9 +60,7 @@ const buildPayload = (data: RequestLeaveForm) => {
     start_date: data.start_date
       ? dayjs(data.start_date).format("YYYY-MM-DD")
       : null,
-    end_date: data.end_date
-      ? dayjs(data.end_date).format("YYYY-MM-DD")
-      : null,
+    end_date: data.end_date ? dayjs(data.end_date).format("YYYY-MM-DD") : null,
     reason: (data.reason ?? "").trim(),
   };
 };
@@ -73,7 +73,7 @@ const validateRowVersion = (rowVersion: number) => {
 
 export const previewRequestLeaveDays = async (
   startDate: Date | null,
-  endDate: Date | null
+  endDate: Date | null,
 ) => {
   if (!startDate || !endDate) {
     return {
@@ -109,7 +109,7 @@ export const previewRequestLeaveDays = async (
 
 export const getPreviewWorkingDays = async (
   startDate: Date | null,
-  endDate: Date | null
+  endDate: Date | null,
 ) => {
   const result = await previewRequestLeaveDays(startDate, endDate);
   return result.total_days;
@@ -137,7 +137,7 @@ export const createRequestLeave = async (data: RequestLeaveForm) => {
 export const updateRequestLeave = async (
   id: number,
   rowVersion: number,
-  data: RequestLeaveForm
+  data: RequestLeaveForm,
 ) => {
   validateRowVersion(rowVersion);
 
@@ -272,7 +272,7 @@ export const rejectRequestLeave = async (id: number, rowVersion: number) => {
 };
 
 export const getRequestLeaveApprovalDetail = async (
-  requestLeaveId: number
+  requestLeaveId: number,
 ): Promise<RequestLeaveApprovalDetail> => {
   const res = await fetch(`${API_URL}/${requestLeaveId}/approval-detail`, {
     method: "GET",

@@ -1,18 +1,17 @@
-import React from 'react'
-import BranchTableData from './BranchTableData';
+import React from "react";
+import BranchTableData from "./BranchTableData";
 
 export const metadata = {
-    title: 'Manage Branch - PT. Hexing Technology',
-    description: 'add, update, delete branch data',
+  title: "Manage Branch - PT. Hexing Technology",
+  description: "add, update, delete branch data",
 };
 
-
 const BranchSettingPage = () => {
-    return <>
-        <BranchTableData />
+  return (
+    <>
+      <BranchTableData />
     </>
-}
+  );
+};
 
-
-
-export default BranchSettingPage
+export default BranchSettingPage;

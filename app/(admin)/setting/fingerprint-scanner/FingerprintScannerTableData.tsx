@@ -101,7 +101,7 @@ const formatDateTime = (value?: string | null) => {
 };
 
 const getSyncSeverity = (
-  status?: string | null
+  status?: string | null,
 ): "success" | "secondary" | "info" | "warning" | "danger" => {
   const normalized = status?.toUpperCase();
 
@@ -128,7 +128,7 @@ const FingerprintScannerTableData = () => {
   const dispatch = useDispatch();
 
   const [selectedData, setSelectedData] = useState<FingerprintScanner | null>(
-    null
+    null,
   );
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
@@ -142,10 +142,11 @@ const FingerprintScannerTableData = () => {
   const [checkLoadingId, setCheckLoadingId] = useState<number | null>(null);
   const [syncLoadingId, setSyncLoadingId] = useState<number | null>(null);
   const [syncResultDialog, setSyncResultDialog] = useState(false);
-  const [syncResult, setSyncResult] =
-    useState<AttendanceLogSyncResult | null>(null);
+  const [syncResult, setSyncResult] = useState<AttendanceLogSyncResult | null>(
+    null,
+  );
   const [userListLoadingId, setUserListLoadingId] = useState<number | null>(
-    null
+    null,
   );
   const [userListDialog, setUserListDialog] = useState(false);
   const [userListData, setUserListData] = useState<
@@ -253,7 +254,7 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail: res.message || "Fingerprint scanner created successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -263,7 +264,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -272,7 +273,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -286,7 +287,7 @@ const FingerprintScannerTableData = () => {
           severity: "error",
           summary: "error",
           detail: "Please select data",
-        })
+        }),
       );
       return;
     }
@@ -298,7 +299,7 @@ const FingerprintScannerTableData = () => {
         await updateFingerprintScanner(
           selectedData.id,
           selectedData.row_version,
-          payload
+          payload,
         );
 
       closeDialog();
@@ -310,7 +311,7 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail: res.message || "Fingerprint scanner updated successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -320,7 +321,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -329,7 +330,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -348,7 +349,7 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail: res.message || "Fingerprint scanner deleted successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -358,7 +359,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -367,7 +368,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -386,8 +387,9 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail:
-            res.message || "Fingerprint scanner permanently deleted successfully",
-        })
+            res.message ||
+            "Fingerprint scanner permanently deleted successfully",
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -397,7 +399,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -406,7 +408,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -425,7 +427,7 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail: res.message || "Fingerprint scanner restored successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -435,7 +437,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -444,7 +446,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -463,7 +465,7 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail: res.message || "Fingerprint scanner is connected",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -473,7 +475,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -482,7 +484,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     } finally {
@@ -513,7 +515,7 @@ const FingerprintScannerTableData = () => {
               severity: res.data.scanner_failed > 0 ? "error" : "success",
               summary: "Sync Finished",
               detail: res.data.message || res.message,
-            })
+            }),
           );
         } catch (err: unknown) {
           if (isResponseTypeError(err)) {
@@ -523,7 +525,7 @@ const FingerprintScannerTableData = () => {
                 severity: "error",
                 summary: "error",
                 detail: getErrorMessage(err, "message"),
-              })
+              }),
             );
           } else if (err instanceof Error) {
             dispatch(
@@ -532,14 +534,14 @@ const FingerprintScannerTableData = () => {
                 severity: "error",
                 summary: "error",
                 detail: err.message,
-              })
+              }),
             );
           }
         } finally {
           setSyncLoadingId(null);
         }
       },
-      reject: () => { },
+      reject: () => {},
     });
   };
 
@@ -559,7 +561,7 @@ const FingerprintScannerTableData = () => {
           severity: "success",
           summary: "success",
           detail: res.message || "Get user list successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -569,7 +571,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -578,7 +580,7 @@ const FingerprintScannerTableData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     } finally {
@@ -810,19 +812,27 @@ const FingerprintScannerTableData = () => {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-slate-500">Status</div>
-            <div className="font-semibold text-slate-900">{syncResult.status}</div>
+            <div className="font-semibold text-slate-900">
+              {syncResult.status}
+            </div>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-slate-500">Fetched</div>
-            <div className="font-semibold text-slate-900">{syncResult.total_fetched}</div>
+            <div className="font-semibold text-slate-900">
+              {syncResult.total_fetched}
+            </div>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-slate-500">Inserted</div>
-            <div className="font-semibold text-slate-900">{syncResult.total_inserted}</div>
+            <div className="font-semibold text-slate-900">
+              {syncResult.total_inserted}
+            </div>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="text-xs text-slate-500">Invalid Mapping</div>
-            <div className="font-semibold text-slate-900">{syncResult.total_invalid_mapping}</div>
+            <div className="font-semibold text-slate-900">
+              {syncResult.total_invalid_mapping}
+            </div>
           </div>
         </div>
 
@@ -832,15 +842,47 @@ const FingerprintScannerTableData = () => {
           tableStyle={{ minWidth: "80rem" }}
           emptyMessage="No sync detail"
         >
-          <Column field="scanner_name" header="Scanner" style={{ minWidth: "14rem" }} />
+          <Column
+            field="scanner_name"
+            header="Scanner"
+            style={{ minWidth: "14rem" }}
+          />
           <Column field="status" header="Status" style={{ minWidth: "8rem" }} />
-          <Column field="fetched" header="Fetched" style={{ minWidth: "8rem" }} />
-          <Column field="after_filter" header="After Filter" style={{ minWidth: "8rem" }} />
-          <Column field="inserted" header="Inserted" style={{ minWidth: "8rem" }} />
-          <Column field="duplicate" header="Duplicate" style={{ minWidth: "8rem" }} />
-          <Column field="invalid_mapping" header="Invalid Mapping" style={{ minWidth: "10rem" }} />
-          <Column field="error_message" header="Error" style={{ minWidth: "18rem" }} />
-          <Column field="suggestion" header="Suggestion" style={{ minWidth: "22rem" }} />
+          <Column
+            field="fetched"
+            header="Fetched"
+            style={{ minWidth: "8rem" }}
+          />
+          <Column
+            field="after_filter"
+            header="After Filter"
+            style={{ minWidth: "8rem" }}
+          />
+          <Column
+            field="inserted"
+            header="Inserted"
+            style={{ minWidth: "8rem" }}
+          />
+          <Column
+            field="duplicate"
+            header="Duplicate"
+            style={{ minWidth: "8rem" }}
+          />
+          <Column
+            field="invalid_mapping"
+            header="Invalid Mapping"
+            style={{ minWidth: "10rem" }}
+          />
+          <Column
+            field="error_message"
+            header="Error"
+            style={{ minWidth: "18rem" }}
+          />
+          <Column
+            field="suggestion"
+            header="Suggestion"
+            style={{ minWidth: "22rem" }}
+          />
         </DataTable>
       </div>
     );
@@ -862,7 +904,8 @@ const FingerprintScannerTableData = () => {
                 Fingerprint Scanner
               </h2>
               <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                Manage fingerprint scanner devices and automatic attendance log sync.
+                Manage fingerprint scanner devices and automatic attendance log
+                sync.
               </p>
             </div>
 
@@ -872,7 +915,9 @@ const FingerprintScannerTableData = () => {
                   <Checkbox
                     inputId="showDeletedScanner"
                     checked={isShowDeletedDataChecked}
-                    onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
+                    onChange={() =>
+                      setIsShowDeletedDataChecked((prev) => !prev)
+                    }
                   />
                   <label
                     htmlFor="showDeletedScanner"
@@ -926,21 +971,65 @@ const FingerprintScannerTableData = () => {
             stripedRows
             tableStyle={{ minWidth: "120rem" }}
           >
-            <Column header="#" body={(_, options) => options.rowIndex + 1} style={{ width: "4rem" }} />
+            <Column
+              header="#"
+              body={(_, options) => options.rowIndex + 1}
+              style={{ width: "4rem" }}
+            />
             <Column field="code" header="Code" style={{ minWidth: "9rem" }} />
             <Column field="name" header="Name" style={{ minWidth: "13rem" }} />
             <Column field="ip" header="IP" style={{ minWidth: "10rem" }} />
             <Column field="port" header="Port" style={{ minWidth: "7rem" }} />
-            <Column header="Active" body={activeBodyTemplate} style={{ minWidth: "8rem" }} />
-            <Column header="Auto Sync" body={autoSyncBodyTemplate} style={{ minWidth: "9rem" }} />
-            <Column header="Interval" body={syncIntervalBodyTemplate} style={{ minWidth: "10rem" }} />
-            <Column header="Timezone" body={timezoneBodyTemplate} style={{ minWidth: "9rem" }} />
-            <Column header="Last Pull Time" body={lastPullBodyTemplate} style={{ minWidth: "14rem" }} />
-            <Column header="Last Sync At" body={lastSyncBodyTemplate} style={{ minWidth: "14rem" }} />
-            <Column header="Last Success" body={lastSuccessBodyTemplate} style={{ minWidth: "14rem" }} />
-            <Column header="Sync Status" body={syncStatusBodyTemplate} style={{ minWidth: "10rem" }} />
-            <Column header="Sync Error" body={syncErrorBodyTemplate} style={{ minWidth: "18rem" }} />
-            <Column header="Data Status" body={deletedStatusBodyTemplate} style={{ minWidth: "9rem" }} />
+            <Column
+              header="Active"
+              body={activeBodyTemplate}
+              style={{ minWidth: "8rem" }}
+            />
+            <Column
+              header="Auto Sync"
+              body={autoSyncBodyTemplate}
+              style={{ minWidth: "9rem" }}
+            />
+            <Column
+              header="Interval"
+              body={syncIntervalBodyTemplate}
+              style={{ minWidth: "10rem" }}
+            />
+            <Column
+              header="Timezone"
+              body={timezoneBodyTemplate}
+              style={{ minWidth: "9rem" }}
+            />
+            <Column
+              header="Last Pull Time"
+              body={lastPullBodyTemplate}
+              style={{ minWidth: "14rem" }}
+            />
+            <Column
+              header="Last Sync At"
+              body={lastSyncBodyTemplate}
+              style={{ minWidth: "14rem" }}
+            />
+            <Column
+              header="Last Success"
+              body={lastSuccessBodyTemplate}
+              style={{ minWidth: "14rem" }}
+            />
+            <Column
+              header="Sync Status"
+              body={syncStatusBodyTemplate}
+              style={{ minWidth: "10rem" }}
+            />
+            <Column
+              header="Sync Error"
+              body={syncErrorBodyTemplate}
+              style={{ minWidth: "18rem" }}
+            />
+            <Column
+              header="Data Status"
+              body={deletedStatusBodyTemplate}
+              style={{ minWidth: "9rem" }}
+            />
             <Column
               header="Action"
               body={actionBodyTemplate}
@@ -1008,7 +1097,9 @@ const FingerprintScannerTableData = () => {
                     {...field}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -1028,7 +1119,9 @@ const FingerprintScannerTableData = () => {
                     {...field}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -1048,7 +1141,9 @@ const FingerprintScannerTableData = () => {
                     {...field}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -1068,7 +1163,9 @@ const FingerprintScannerTableData = () => {
                     {...field}
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -1098,7 +1195,9 @@ const FingerprintScannerTableData = () => {
                     WIB = 420, WITA = 480, WIT = 540.
                   </small>
                   {fieldState.error && (
-                    <small className="p-error block">{fieldState.error.message}</small>
+                    <small className="p-error block">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -1111,7 +1210,8 @@ const FingerprintScannerTableData = () => {
                     Auto Sync Settings
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    The backend worker checks every minute, but this scanner will only sync based on the selected interval.
+                    The backend worker checks every minute, but this scanner
+                    will only sync based on the selected interval.
                   </p>
                 </div>
 
@@ -1126,7 +1226,8 @@ const FingerprintScannerTableData = () => {
                             Auto Sync Attendance Log
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            Automatically pull attendance logs from this scanner.
+                            Automatically pull attendance logs from this
+                            scanner.
                           </p>
                         </div>
                         <InputSwitch
@@ -1165,7 +1266,9 @@ const FingerprintScannerTableData = () => {
                         />
 
                         {fieldState.error && (
-                          <small className="p-error">{fieldState.error.message}</small>
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
                         )}
                       </div>
                     )}
@@ -1185,7 +1288,8 @@ const FingerprintScannerTableData = () => {
                         Active Scanner
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Inactive scanners will not be used for manual or auto sync.
+                        Inactive scanners will not be used for manual or auto
+                        sync.
                       </p>
                     </div>
                     <InputSwitch
@@ -1225,10 +1329,22 @@ const FingerprintScannerTableData = () => {
             scrollable
             tableStyle={{ minWidth: "80rem" }}
           >
-            <Column field="pin" header="PIN / PIN1" style={{ minWidth: "8rem" }} />
-            <Column field="pin2" header="PIN2 / User ID" style={{ minWidth: "10rem" }} />
+            <Column
+              field="pin"
+              header="PIN / PIN1"
+              style={{ minWidth: "8rem" }}
+            />
+            <Column
+              field="pin2"
+              header="PIN2 / User ID"
+              style={{ minWidth: "10rem" }}
+            />
             <Column field="name" header="Name" style={{ minWidth: "14rem" }} />
-            <Column field="privilege" header="Privilege" style={{ minWidth: "8rem" }} />
+            <Column
+              field="privilege"
+              header="Privilege"
+              style={{ minWidth: "8rem" }}
+            />
             <Column field="group" header="Group" style={{ minWidth: "8rem" }} />
             <Column field="card" header="Card" style={{ minWidth: "10rem" }} />
             <Column field="tz1" header="TZ1" style={{ minWidth: "8rem" }} />

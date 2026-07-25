@@ -1,10 +1,8 @@
-import React from 'react'
-import EmployeeDetailEducationWorkExpTab from './EmployeeDetailEducationWorkExpTab'
+import React from "react";
+import EmployeeDetailEducationWorkExpTab from "./EmployeeDetailEducationWorkExpTab";
 
 const EmployeeDetailGeneralEducation = () => {
-  return (
-    <EmployeeDetailEducationWorkExpTab />
-  )
-}
+  return <EmployeeDetailEducationWorkExpTab />;
+};
 
-export default EmployeeDetailGeneralEducation
+export default EmployeeDetailGeneralEducation;

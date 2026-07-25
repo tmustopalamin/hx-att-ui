@@ -1,16 +1,16 @@
 import RoleTableData from "./RoleTableData";
 
 export const metadata = {
-    title: 'Manage Role - PT. Hexing Technology',
-    description: 'add, update, delete role',
+  title: "Manage Role - PT. Hexing Technology",
+  description: "add, update, delete role",
 };
 
 const RoleSettingPage = () => {
-    return <>
-        <RoleTableData />
+  return (
+    <>
+      <RoleTableData />
     </>
-}
+  );
+};
 
-
-
-export default RoleSettingPage
+export default RoleSettingPage;

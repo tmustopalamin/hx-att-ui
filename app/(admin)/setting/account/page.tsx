@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const SettingAccountPage = () => {
-  return (
-    <div>SettingAccountPage</div>
-  )
-}
+  return <div>SettingAccountPage</div>;
+};
 
-export default SettingAccountPage
+export default SettingAccountPage;

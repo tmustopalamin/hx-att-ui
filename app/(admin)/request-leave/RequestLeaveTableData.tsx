@@ -1,46 +1,49 @@
-'use client';
+"use client";
 
-import { ChangeEvent, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import useSWR, { mutate } from 'swr';
-import dayjs from 'dayjs';
+import { ChangeEvent, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import useSWR, { mutate } from "swr";
+import dayjs from "dayjs";
 
-import { Button } from 'primereact/button';
-import { Calendar } from 'primereact/calendar';
-import { Card } from 'primereact/card';
-import { Checkbox } from 'primereact/checkbox';
-import { Column } from 'primereact/column';
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { DataTable } from 'primereact/datatable';
-import { Dialog } from 'primereact/dialog';
-import { Dropdown } from 'primereact/dropdown';
-import { FilterMatchMode } from 'primereact/api';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { InputText } from 'primereact/inputtext';
-import { InputTextarea } from 'primereact/inputtextarea';
-import { Tag } from 'primereact/tag';
+import { Button } from "primereact/button";
+import { Calendar } from "primereact/calendar";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
+import { FilterMatchMode } from "primereact/api";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Tag } from "primereact/tag";
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
 
-import LoadingDataTable from '@/app/_components/LoadingDataTable';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 
-import { fetcher } from '@/app/utils/fetcher';
-import { getErrorMessage, isResponseTypeError } from '@/app/utils/error-messages';
-import { hasRole } from '@/app/utils/role-utils';
+import { fetcher } from "@/app/utils/fetcher";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { hasRole } from "@/app/utils/role-utils";
 
-import { RootState } from '@/store/store';
-import { showToast } from '@/store/ToastSlice';
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
 
 import {
   RequestLeave,
   RequestLeaveForm,
   defaultRequestLeaveFormValue,
-} from '@/app/types/request-leave';
-import { RequestLeaveApprovalDetail } from '@/app/types/request-leave-approval-detail';
+} from "@/app/types/request-leave";
+import { RequestLeaveApprovalDetail } from "@/app/types/request-leave-approval-detail";
 
-import { getRequestLeaveApprovalDetail } from '@/app/services/request-leave-service';
+import { getRequestLeaveApprovalDetail } from "@/app/services/request-leave-service";
 
 type EmployeeLeaveBalanceOption = {
   id: number;
@@ -71,17 +74,17 @@ type ApiIdResponse = {
   row_version?: number;
 };
 
-const REQUEST_LEAVE_API_URL = '/api/request-leave';
-const REQUEST_LEAVE_KEY_PREFIX = '/api/request-leave';
-const LEAVE_BALANCE_KEY = '/api/employees/leave-balance';
+const REQUEST_LEAVE_API_URL = "/api/request-leave";
+const REQUEST_LEAVE_KEY_PREFIX = "/api/request-leave";
+const LEAVE_BALANCE_KEY = "/api/employees/leave-balance";
 
 const getBody = () => document.body;
 
 const parseErrorResponse = async (res: Response) => {
-  const contentType = res.headers.get('Content-Type');
+  const contentType = res.headers.get("Content-Type");
 
   try {
-    if (contentType && contentType.includes('application/json')) {
+    if (contentType && contentType.includes("application/json")) {
       return await res.json();
     }
 
@@ -94,7 +97,7 @@ const parseErrorResponse = async (res: Response) => {
     return {
       success: false,
       code: String(res.status),
-      message: 'Unknown error',
+      message: "Unknown error",
     };
   }
 };
@@ -112,7 +115,7 @@ const toApiDate = (value: Date | null) => {
     return null;
   }
 
-  return dayjs(value).format('YYYY-MM-DD');
+  return dayjs(value).format("YYYY-MM-DD");
 };
 
 const createRequestLeaveApi = async (data: RequestLeaveForm) => {
@@ -126,10 +129,10 @@ const createRequestLeaveApi = async (data: RequestLeaveForm) => {
   };
 
   const res = await fetch(REQUEST_LEAVE_API_URL, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
@@ -144,7 +147,7 @@ const createRequestLeaveApi = async (data: RequestLeaveForm) => {
 const updateRequestLeaveApi = async (
   id: number,
   rowVersion: number,
-  data: RequestLeaveForm
+  data: RequestLeaveForm,
 ) => {
   const payload = {
     leave_type_id: data.leave_type_id,
@@ -156,11 +159,11 @@ const updateRequestLeaveApi = async (
   };
 
   const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
     body: JSON.stringify(payload),
   });
@@ -174,11 +177,11 @@ const updateRequestLeaveApi = async (
 
 const deleteRequestLeaveApi = async (id: number, rowVersion: number) => {
   const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -191,11 +194,11 @@ const deleteRequestLeaveApi = async (id: number, rowVersion: number) => {
 
 const restoreRequestLeaveApi = async (id: number, rowVersion: number) => {
   const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -208,10 +211,10 @@ const restoreRequestLeaveApi = async (id: number, rowVersion: number) => {
 
 const purgeRequestLeaveApi = async (id: number) => {
   const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
@@ -224,11 +227,11 @@ const purgeRequestLeaveApi = async (id: number) => {
 
 const submitRequestLeaveApi = async (id: number, rowVersion: number) => {
   const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/submit`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -241,16 +244,19 @@ const submitRequestLeaveApi = async (id: number, rowVersion: number) => {
 
 const uploadRequestLeaveAttachmentApi = async (
   requestLeaveId: number,
-  file: File
+  file: File,
 ) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
 
-  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${requestLeaveId}/attachments`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  });
+  const res = await fetch(
+    `${REQUEST_LEAVE_API_URL}/${requestLeaveId}/attachments`,
+    {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    },
+  );
 
   if (!res.ok) {
     throw await parseErrorResponse(res);
@@ -260,45 +266,45 @@ const uploadRequestLeaveAttachmentApi = async (
 };
 
 const getStatusSeverity = (status?: string | null) => {
-  const value = (status ?? '').toUpperCase();
+  const value = (status ?? "").toUpperCase();
 
-  if (value === 'APPROVED') {
-    return 'success';
+  if (value === "APPROVED") {
+    return "success";
   }
 
-  if (value === 'REJECTED') {
-    return 'danger';
+  if (value === "REJECTED") {
+    return "danger";
   }
 
-  if (value === 'PENDING') {
-    return 'warning';
+  if (value === "PENDING") {
+    return "warning";
   }
 
-  if (value === 'CANCELLED') {
-    return 'secondary';
+  if (value === "CANCELLED") {
+    return "secondary";
   }
 
-  if (value === 'WAITING') {
-    return 'info';
+  if (value === "WAITING") {
+    return "info";
   }
 
-  return 'info';
+  return "info";
 };
 
 const formatDate = (value?: string | Date | null) => {
   if (!value) {
-    return '-';
+    return "-";
   }
 
-  return dayjs(value).format('DD MMM YYYY');
+  return dayjs(value).format("DD MMM YYYY");
 };
 
 const formatDateTime = (value?: string | null) => {
   if (!value) {
-    return '-';
+    return "-";
   }
 
-  return dayjs(value).format('DD MMM YYYY HH:mm');
+  return dayjs(value).format("DD MMM YYYY HH:mm");
 };
 
 const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
@@ -306,8 +312,8 @@ const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
     return 0;
   }
 
-  const start = dayjs(startDate).startOf('day');
-  const end = dayjs(endDate).startOf('day');
+  const start = dayjs(startDate).startOf("day");
+  const end = dayjs(endDate).startOf("day");
 
   if (end.isBefore(start)) {
     return 0;
@@ -323,7 +329,7 @@ const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
       total += 1;
     }
 
-    current = current.add(1, 'day');
+    current = current.add(1, "day");
   }
 
   return total;
@@ -331,7 +337,7 @@ const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
 
 const isDraftRequest = (rowData: RequestLeave) => {
   return (
-    rowData.status?.toUpperCase() === 'PENDING' &&
+    rowData.status?.toUpperCase() === "PENDING" &&
     !rowData.deleted_at &&
     !rowData.approval_request_id &&
     !rowData.submitted_at
@@ -347,12 +353,13 @@ const RequestLeaveTableData = () => {
   const profileState = useSelector((state: RootState) => state.profile);
 
   const [selectedData, setSelectedData] = useState<RequestLeave | null>(null);
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
 
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState('New Request Leave');
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New Request Leave");
   const [isSaving, setIsSaving] = useState(false);
 
   const [approvalDetailVisible, setApprovalDetailVisible] = useState(false);
@@ -373,19 +380,19 @@ const RequestLeaveTableData = () => {
     formState: { isValid },
   } = useForm<RequestLeaveForm>({
     defaultValues: defaultRequestLeaveFormValue,
-    mode: 'onTouched',
+    mode: "onTouched",
   });
 
-  const startDate = watch('start_date');
-  const endDate = watch('end_date');
-  const employeeLeaveBalanceId = watch('employee_leave_balance_id');
+  const startDate = watch("start_date");
+  const endDate = watch("end_date");
+  const employeeLeaveBalanceId = watch("employee_leave_balance_id");
 
   const previewTotalDays = useMemo(() => {
     return calculateWorkingDays(startDate, endDate);
   }, [startDate, endDate]);
 
   const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
 
   const {
@@ -396,7 +403,7 @@ const RequestLeaveTableData = () => {
 
   const { data: leaveBalanceData } = useSWR<EmployeeLeaveBalanceOption[]>(
     LEAVE_BALANCE_KEY,
-    fetcher
+    fetcher,
   );
 
   const rows = requestLeaveData ?? [];
@@ -407,14 +414,17 @@ const RequestLeaveTableData = () => {
       .filter((item) => !item.deleted_at)
       .map((item) => ({
         label: `${item.leave_type_name ?? `Leave Type #${item.leave_type_id}`} • ${formatDate(
-          item.period_start
+          item.period_start,
         )} - ${formatDate(item.period_end)} • Balance ${item.closing_balance}`,
         value: item.id,
       }));
   }, [leaveBalanceRows]);
 
   const selectedLeaveBalance = useMemo(() => {
-    return leaveBalanceRows.find((item) => item.id === employeeLeaveBalanceId) ?? null;
+    return (
+      leaveBalanceRows.find((item) => item.id === employeeLeaveBalanceId) ??
+      null
+    );
   }, [leaveBalanceRows, employeeLeaveBalanceId]);
 
   const refreshData = async () => {
@@ -427,10 +437,10 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Error',
-          detail: getErrorMessage(err, 'message'),
-        })
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
       );
       return;
     }
@@ -439,29 +449,29 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Error',
+          severity: "error",
+          summary: "Error",
           detail: err.message,
-        })
+        }),
       );
       return;
     }
 
     const message =
-      typeof err === 'object' &&
-        err !== null &&
-        'message' in err &&
-        typeof (err as { message?: unknown }).message === 'string'
+      typeof err === "object" &&
+      err !== null &&
+      "message" in err &&
+      typeof (err as { message?: unknown }).message === "string"
         ? (err as { message: string }).message
-        : 'Unknown error';
+        : "Unknown error";
 
     dispatch(
       showToast({
         visible: true,
-        severity: 'error',
-        summary: 'Error',
+        severity: "error",
+        summary: "Error",
         detail: message,
-      })
+      }),
     );
   };
 
@@ -487,11 +497,11 @@ const RequestLeaveTableData = () => {
     setSelectedData(null);
     setIsAddNew(true);
     setVisible(true);
-    setPopupHeaderTitle('New Request Leave');
+    setPopupHeaderTitle("New Request Leave");
     reset(defaultRequestLeaveFormValue);
 
     setTimeout(() => {
-      setFocus('employee_leave_balance_id');
+      setFocus("employee_leave_balance_id");
     }, 0);
   };
 
@@ -500,7 +510,7 @@ const RequestLeaveTableData = () => {
     setSelectedData(data);
     setIsAddNew(false);
     setVisible(true);
-    setPopupHeaderTitle('Update Request Leave');
+    setPopupHeaderTitle("Update Request Leave");
 
     reset({
       id: data.id,
@@ -508,7 +518,7 @@ const RequestLeaveTableData = () => {
       employee_leave_balance_id: data.employee_leave_balance_id,
       start_date: data.start_date ? dayjs(data.start_date).toDate() : null,
       end_date: data.end_date ? dayjs(data.end_date).toDate() : null,
-      reason: data.reason ?? '',
+      reason: data.reason ?? "",
       total_days: data.total_days,
       attachment_file: null,
       deleted_at: data.deleted_at,
@@ -516,7 +526,7 @@ const RequestLeaveTableData = () => {
     });
 
     setTimeout(() => {
-      setFocus('employee_leave_balance_id');
+      setFocus("employee_leave_balance_id");
     }, 0);
   };
 
@@ -542,13 +552,13 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
+          severity: "success",
+          summary: "Success",
           detail: getResponseMessage(
             res,
-            'Request leave created successfully.'
+            "Request leave created successfully.",
           ),
-        })
+        }),
       );
     } catch (err: unknown) {
       showError(err);
@@ -573,11 +583,14 @@ const RequestLeaveTableData = () => {
       const res = await updateRequestLeaveApi(
         selectedData.id,
         selectedData.row_version,
-        payload
+        payload,
       );
 
       if (data.attachment_file) {
-        await uploadRequestLeaveAttachmentApi(selectedData.id, data.attachment_file);
+        await uploadRequestLeaveAttachmentApi(
+          selectedData.id,
+          data.attachment_file,
+        );
       }
 
       await refreshData();
@@ -586,13 +599,13 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
+          severity: "success",
+          summary: "Success",
           detail: getResponseMessage(
             res,
-            'Request leave updated successfully.'
+            "Request leave updated successfully.",
           ),
-        })
+        }),
       );
     } catch (err: unknown) {
       showError(err);
@@ -610,13 +623,13 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
+          severity: "success",
+          summary: "Success",
           detail: getResponseMessage(
             res,
-            'Request leave deleted successfully.'
+            "Request leave deleted successfully.",
           ),
-        })
+        }),
       );
     } catch (err: unknown) {
       showError(err);
@@ -632,13 +645,13 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
+          severity: "success",
+          summary: "Success",
           detail: getResponseMessage(
             res,
-            'Request leave restored successfully.'
+            "Request leave restored successfully.",
           ),
-        })
+        }),
       );
     } catch (err: unknown) {
       showError(err);
@@ -654,13 +667,10 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: getResponseMessage(
-            res,
-            'Request leave deleted permanently.'
-          ),
-        })
+          severity: "success",
+          summary: "Success",
+          detail: getResponseMessage(res, "Request leave deleted permanently."),
+        }),
       );
     } catch (err: unknown) {
       showError(err);
@@ -676,13 +686,13 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
+          severity: "success",
+          summary: "Success",
           detail: getResponseMessage(
             res,
-            'Request leave submitted successfully.'
+            "Request leave submitted successfully.",
           ),
-        })
+        }),
       );
     } catch (err: unknown) {
       showError(err);
@@ -720,10 +730,10 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Validation',
-          detail: 'Please select leave balance.',
-        })
+          severity: "error",
+          summary: "Validation",
+          detail: "Please select leave balance.",
+        }),
       );
       return;
     }
@@ -732,22 +742,22 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Validation',
-          detail: 'Start date and end date are required.',
-        })
+          severity: "error",
+          summary: "Validation",
+          detail: "Start date and end date are required.",
+        }),
       );
       return;
     }
 
-    if (dayjs(data.end_date).isBefore(dayjs(data.start_date), 'day')) {
+    if (dayjs(data.end_date).isBefore(dayjs(data.start_date), "day")) {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Validation',
-          detail: 'End date cannot be before start date.',
-        })
+          severity: "error",
+          summary: "Validation",
+          detail: "End date cannot be before start date.",
+        }),
       );
       return;
     }
@@ -756,22 +766,25 @@ const RequestLeaveTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Validation',
-          detail: 'Total leave days must be greater than 0.',
-        })
+          severity: "error",
+          summary: "Validation",
+          detail: "Total leave days must be greater than 0.",
+        }),
       );
       return;
     }
 
-    if (selectedLeaveBalance && previewTotalDays > selectedLeaveBalance.closing_balance) {
+    if (
+      selectedLeaveBalance &&
+      previewTotalDays > selectedLeaveBalance.closing_balance
+    ) {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Validation',
-          detail: 'Total leave days cannot be greater than closing balance.',
-        })
+          severity: "error",
+          summary: "Validation",
+          detail: "Total leave days cannot be greater than closing balance.",
+        }),
       );
       return;
     }
@@ -786,12 +799,12 @@ const RequestLeaveTableData = () => {
 
   const onClickSubmit = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to submit this leave request for approval?',
-      header: 'Submit Confirmation',
-      icon: 'pi pi-send',
-      defaultFocus: 'accept',
+      message: "Do you want to submit this leave request for approval?",
+      header: "Submit Confirmation",
+      icon: "pi pi-send",
+      defaultFocus: "accept",
       accept: () => handleSubmitApproval(data),
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -813,12 +826,12 @@ const RequestLeaveTableData = () => {
 
   const onClickDelete = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to delete this leave request?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to delete this leave request?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => handleDelete(data),
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -840,12 +853,12 @@ const RequestLeaveTableData = () => {
 
   const onClickRestore = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to restore this leave request?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to restore this leave request?",
+      header: "Restore Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => handleRestore(data),
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -867,12 +880,12 @@ const RequestLeaveTableData = () => {
 
   const onClickPurge = (data: RequestLeave) => {
     confirmDialog({
-      message: 'Do you want to delete this leave request forever?',
-      header: 'Delete Forever Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to delete this leave request forever?",
+      header: "Delete Forever Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => handlePurge(data),
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -899,15 +912,15 @@ const RequestLeaveTableData = () => {
 
     const status = rowData.status?.toUpperCase();
 
-    if (status === 'APPROVED') {
+    if (status === "APPROVED") {
       return <Tag value="Approved" severity="success" />;
     }
 
-    if (status === 'REJECTED') {
+    if (status === "REJECTED") {
       return <Tag value="Rejected" severity="danger" />;
     }
 
-    if (status === 'CANCELLED') {
+    if (status === "CANCELLED") {
       return <Tag value="Cancelled" severity="secondary" />;
     }
 
@@ -919,7 +932,7 @@ const RequestLeaveTableData = () => {
   };
 
   const leaveTypeBody = (rowData: RequestLeave) => {
-    return rowData.leave_name ?? '-';
+    return rowData.leave_name ?? "-";
   };
 
   const dateBody = (rowData: RequestLeave) => {
@@ -944,7 +957,7 @@ const RequestLeaveTableData = () => {
   const reasonBody = (rowData: RequestLeave) => {
     return (
       <span className="text-sm leading-6 text-slate-700">
-        {rowData.reason || '-'}
+        {rowData.reason || "-"}
       </span>
     );
   };
@@ -952,11 +965,11 @@ const RequestLeaveTableData = () => {
   const approvalInfoBody = (rowData: RequestLeave) => {
     const status = rowData.status?.toUpperCase();
 
-    if (status === 'APPROVED') {
+    if (status === "APPROVED") {
       return (
         <div className="flex flex-col gap-1">
           <span className="font-medium text-slate-800">
-            {rowData.approved_by_name ?? '-'}
+            {rowData.approved_by_name ?? "-"}
           </span>
           <span className="text-xs text-slate-500">
             {formatDateTime(rowData.approved_at)}
@@ -965,7 +978,7 @@ const RequestLeaveTableData = () => {
       );
     }
 
-    if (status === 'REJECTED') {
+    if (status === "REJECTED") {
       return <span className="text-sm text-slate-600">Rejected</span>;
     }
 
@@ -988,7 +1001,7 @@ const RequestLeaveTableData = () => {
         {isDraft && (
           <>
             <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
               tooltip="submit for approval"
               rounded
               severity="success"
@@ -998,7 +1011,7 @@ const RequestLeaveTableData = () => {
             />
 
             <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
               tooltip="edit"
               rounded
               severity="help"
@@ -1008,7 +1021,7 @@ const RequestLeaveTableData = () => {
             />
 
             <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
               tooltip="delete"
               rounded
               severity="danger"
@@ -1021,7 +1034,7 @@ const RequestLeaveTableData = () => {
 
         {!isDraft && hasApprovalDetail(rowData) && !rowData.deleted_at && (
           <Button
-            tooltipOptions={{ appendTo: getBody, position: 'top' }}
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
             tooltip="approval detail"
             rounded
             severity="secondary"
@@ -1031,10 +1044,10 @@ const RequestLeaveTableData = () => {
           />
         )}
 
-        {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
+        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
           <>
             <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
               tooltip="restore"
               rounded
               severity="success"
@@ -1044,7 +1057,7 @@ const RequestLeaveTableData = () => {
             />
 
             <Button
-              tooltipOptions={{ appendTo: getBody, position: 'top' }}
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
               tooltip="delete forever"
               rounded
               severity="secondary"
@@ -1070,8 +1083,8 @@ const RequestLeaveTableData = () => {
       />
       <Button
         type="button"
-        label={isSaving ? 'Saving...' : 'Save'}
-        icon={isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
+        label={isSaving ? "Saving..." : "Save"}
+        icon={isSaving ? "pi pi-spin pi-spinner" : "pi pi-check"}
         disabled={isSaving}
         onClick={handleSubmit(onSubmit)}
       />
@@ -1111,10 +1124,7 @@ const RequestLeaveTableData = () => {
                     setIsShowDeletedDataChecked(Boolean(e.checked))
                   }
                 />
-                <label
-                  htmlFor="showDeleted"
-                  className="text-sm text-slate-700"
-                >
+                <label htmlFor="showDeleted" className="text-sm text-slate-700">
                   Show deleted data
                 </label>
               </div>
@@ -1129,11 +1139,7 @@ const RequestLeaveTableData = () => {
                 />
               </IconField>
 
-              <Button
-                label="New"
-                icon="pi pi-plus"
-                onClick={onClickNew}
-              />
+              <Button label="New" icon="pi pi-plus" onClick={onClickNew} />
             </div>
           </div>
 
@@ -1146,59 +1152,59 @@ const RequestLeaveTableData = () => {
             stripedRows
             scrollable
             responsiveLayout="scroll"
-            tableStyle={{ minWidth: '92rem' }}
+            tableStyle={{ minWidth: "92rem" }}
             emptyMessage="No request leave found."
             currentPageReportTemplate="{first} to {last} of {totalRecords}"
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             filters={filters}
             globalFilterFields={[
-              'leave_name',
-              'reason',
-              'status',
-              'start_date',
-              'end_date',
+              "leave_name",
+              "reason",
+              "status",
+              "start_date",
+              "end_date",
             ]}
           >
             <Column
               header="#"
-              headerStyle={{ width: '4rem' }}
+              headerStyle={{ width: "4rem" }}
               body={(_, options) => options.rowIndex + 1}
             />
 
             <Column
               header="Leave Type"
               body={leaveTypeBody}
-              style={{ minWidth: '16rem' }}
+              style={{ minWidth: "16rem" }}
             />
 
             <Column
               header="Date"
               body={dateBody}
-              style={{ minWidth: '20rem' }}
+              style={{ minWidth: "20rem" }}
             />
 
             <Column
               header="Total Days"
               body={(rowData: RequestLeave) => rowData.total_days}
-              style={{ minWidth: '10rem' }}
+              style={{ minWidth: "10rem" }}
             />
 
             <Column
               header="Status"
               body={statusBody}
-              style={{ minWidth: '12rem' }}
+              style={{ minWidth: "12rem" }}
             />
 
             <Column
               header="Reason"
               body={reasonBody}
-              style={{ minWidth: '22rem' }}
+              style={{ minWidth: "22rem" }}
             />
 
             <Column
               header="Approval Info"
               body={approvalInfoBody}
-              style={{ minWidth: '18rem' }}
+              style={{ minWidth: "18rem" }}
             />
 
             <Column
@@ -1206,18 +1212,18 @@ const RequestLeaveTableData = () => {
               body={actionColumnBody}
               frozen
               alignFrozen="right"
-              style={{ minWidth: '12rem', width: '12rem' }}
+              style={{ minWidth: "12rem", width: "12rem" }}
               headerStyle={{
-                minWidth: '12rem',
-                width: '12rem',
-                background: '#ffffff',
+                minWidth: "12rem",
+                width: "12rem",
+                background: "#ffffff",
                 zIndex: 1,
               }}
               bodyStyle={{
-                minWidth: '12rem',
-                width: '12rem',
-                background: '#ffffff',
-                whiteSpace: 'nowrap',
+                minWidth: "12rem",
+                width: "12rem",
+                background: "#ffffff",
+                whiteSpace: "nowrap",
               }}
             />
           </DataTable>
@@ -1227,8 +1233,8 @@ const RequestLeaveTableData = () => {
       <Dialog
         header={popupHeaderTitle}
         visible={visible}
-        style={{ width: '95vw', maxWidth: '760px' }}
-        breakpoints={{ '960px': '95vw' }}
+        style={{ width: "95vw", maxWidth: "760px" }}
+        breakpoints={{ "960px": "95vw" }}
         onHide={handleDialogHide}
         footer={dialogFooter}
         modal
@@ -1244,7 +1250,7 @@ const RequestLeaveTableData = () => {
             <Controller
               name="employee_leave_balance_id"
               control={control}
-              rules={{ required: 'Leave balance is required' }}
+              rules={{ required: "Leave balance is required" }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1256,18 +1262,16 @@ const RequestLeaveTableData = () => {
                       field.onChange(e.value);
 
                       const selected = leaveBalanceRows.find(
-                        (item) => item.id === e.value
+                        (item) => item.id === e.value,
                       );
 
-                      setValue(
-                        'leave_type_id',
-                        selected?.leave_type_id ?? 0,
-                        { shouldValidate: true }
-                      );
+                      setValue("leave_type_id", selected?.leave_type_id ?? 0, {
+                        shouldValidate: true,
+                      });
                     }}
                     placeholder="Select leave balance"
                     filter
-                    className={fieldState.invalid ? 'p-invalid' : ''}
+                    className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
                     <small className="font-bold p-error">
@@ -1286,10 +1290,10 @@ const RequestLeaveTableData = () => {
                   Selected Balance
                 </div>
                 <div className="mt-1 text-lg font-semibold text-slate-800">
-                  {selectedLeaveBalance.leave_type_name ?? '-'}
+                  {selectedLeaveBalance.leave_type_name ?? "-"}
                 </div>
                 <div className="mt-1 text-sm text-slate-500">
-                  Period {formatDate(selectedLeaveBalance.period_start)} -{' '}
+                  Period {formatDate(selectedLeaveBalance.period_start)} -{" "}
                   {formatDate(selectedLeaveBalance.period_end)} • Closing
                   Balance {selectedLeaveBalance.closing_balance}
                 </div>
@@ -1304,7 +1308,7 @@ const RequestLeaveTableData = () => {
             <Controller
               name="start_date"
               control={control}
-              rules={{ required: 'Start date is required' }}
+              rules={{ required: "Start date is required" }}
               render={({ field, fieldState }) => (
                 <>
                   <Calendar
@@ -1312,7 +1316,7 @@ const RequestLeaveTableData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     dateFormat="dd-mm-yy"
                     showIcon
-                    className={fieldState.invalid ? 'p-invalid' : ''}
+                    className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
                     <small className="font-bold p-error">
@@ -1331,7 +1335,7 @@ const RequestLeaveTableData = () => {
             <Controller
               name="end_date"
               control={control}
-              rules={{ required: 'End date is required' }}
+              rules={{ required: "End date is required" }}
               render={({ field, fieldState }) => (
                 <>
                   <Calendar
@@ -1339,7 +1343,7 @@ const RequestLeaveTableData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     dateFormat="dd-mm-yy"
                     showIcon
-                    className={fieldState.invalid ? 'p-invalid' : ''}
+                    className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
                     <small className="font-bold p-error">
@@ -1366,20 +1370,18 @@ const RequestLeaveTableData = () => {
           </div>
 
           <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700">
-              Reason
-            </label>
+            <label className="text-sm font-medium text-slate-700">Reason</label>
             <Controller
               name="reason"
               control={control}
-              rules={{ required: 'Reason is required' }}
+              rules={{ required: "Reason is required" }}
               render={({ field, fieldState }) => (
                 <>
                   <InputTextarea
                     {...field}
                     rows={4}
                     placeholder="Explain your leave reason"
-                    className={fieldState.invalid ? 'p-invalid' : ''}
+                    className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
                     <small className="font-bold p-error">
@@ -1418,8 +1420,8 @@ const RequestLeaveTableData = () => {
       <Dialog
         header="Approval Detail"
         visible={approvalDetailVisible}
-        style={{ width: '95vw', maxWidth: '900px' }}
-        breakpoints={{ '960px': '95vw' }}
+        style={{ width: "95vw", maxWidth: "900px" }}
+        breakpoints={{ "960px": "95vw" }}
         onHide={closeApprovalDetailDialog}
         modal
         draggable={false}
@@ -1443,11 +1445,11 @@ const RequestLeaveTableData = () => {
 
                 {approvalDetail.approval_status &&
                   approvalDetail.approval_status !==
-                  approvalDetail.leave_status && (
+                    approvalDetail.leave_status && (
                     <Tag
                       value={`Approval: ${approvalDetail.approval_status}`}
                       severity={getStatusSeverity(
-                        approvalDetail.approval_status
+                        approvalDetail.approval_status,
                       )}
                     />
                   )}
@@ -1455,11 +1457,9 @@ const RequestLeaveTableData = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <div className="text-sm text-slate-500">
-                    Request No
-                  </div>
+                  <div className="text-sm text-slate-500">Request No</div>
                   <div className="mt-1 font-semibold text-slate-800">
-                    {approvalDetail.request_no || '-'}
+                    {approvalDetail.request_no || "-"}
                   </div>
                 </div>
 
@@ -1470,23 +1470,19 @@ const RequestLeaveTableData = () => {
                   <div className="mt-1 font-semibold text-slate-800">
                     {approvalDetail.approval_request_id
                       ? `#${approvalDetail.approval_request_id}`
-                      : '-'}
+                      : "-"}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">
-                    Submitted At
-                  </div>
+                  <div className="text-sm text-slate-500">Submitted At</div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDateTime(approvalDetail.submitted_at)}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">
-                    Completed At
-                  </div>
+                  <div className="text-sm text-slate-500">Completed At</div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDateTime(approvalDetail.completed_at)}
                   </div>
@@ -1519,9 +1515,7 @@ const RequestLeaveTableData = () => {
                             />
                             <Tag
                               value={step.status}
-                              severity={getStatusSeverity(
-                                step.status
-                              )}
+                              severity={getStatusSeverity(step.status)}
                             />
                           </div>
 
@@ -1535,11 +1529,9 @@ const RequestLeaveTableData = () => {
                         </div>
 
                         <div className="text-left md:text-right">
-                          <div className="text-sm text-slate-500">
-                            Acted By
-                          </div>
+                          <div className="text-sm text-slate-500">Acted By</div>
                           <div className="font-semibold text-slate-800">
-                            {step.acted_by_name || '-'}
+                            {step.acted_by_name || "-"}
                           </div>
 
                           <div className="mt-2 text-sm text-slate-500">
@@ -1586,9 +1578,7 @@ const RequestLeaveTableData = () => {
                         <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                           <div className="font-semibold text-slate-800">
                             {action.action}
-                            {action.step_no
-                              ? ` - Step ${action.step_no}`
-                              : ''}
+                            {action.step_no ? ` - Step ${action.step_no}` : ""}
                           </div>
 
                           <div className="text-sm text-slate-500">
@@ -1597,7 +1587,7 @@ const RequestLeaveTableData = () => {
                         </div>
 
                         <div className="mt-1 text-sm text-slate-600">
-                          By{' '}
+                          By{" "}
                           {action.actor_name ||
                             `Employee #${action.actor_employee_id}`}
                         </div>

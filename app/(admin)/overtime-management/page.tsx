@@ -1,7 +1,7 @@
 import OvertimeManagementTableData from "./OvertimeManagementTableData";
 
 const OvertimeManagementPage = () => {
-    return <OvertimeManagementTableData />;
+  return <OvertimeManagementTableData />;
 };
 
 export default OvertimeManagementPage;

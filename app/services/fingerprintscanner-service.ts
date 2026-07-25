@@ -62,7 +62,7 @@ export const createFingerprintScanner = async (data: FingerprintScanner) => {
 export const updateFingerprintScanner = async (
   id: number,
   rowVersion: number,
-  data: FingerprintScanner
+  data: FingerprintScanner,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
@@ -87,7 +87,7 @@ export const updateFingerprintScanner = async (
 
 export const deleteFingerprintScanner = async (
   id: number,
-  rowVersion: number
+  rowVersion: number,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
@@ -127,7 +127,7 @@ export const purgeFingerprintScanner = async (id: number) => {
 
 export const restoreFingerprintScanner = async (
   id: number,
-  rowVersion: number
+  rowVersion: number,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
@@ -150,7 +150,7 @@ export const restoreFingerprintScanner = async (
 };
 
 export const checkConnectionFingerprintScanner = async (
-  data: FingerprintScanner
+  data: FingerprintScanner,
 ) => {
   const res = await fetch(`${API_URL}/check-connection/${data.id}`, {
     method: "GET",
@@ -214,7 +214,7 @@ export interface AttendanceLogSyncResult {
 }
 
 export const syncFingerprintScannerAttendanceLog = async (
-  scannerId: number
+  scannerId: number,
 ): Promise<{
   success: boolean;
   data: AttendanceLogSyncResult;
@@ -249,7 +249,7 @@ export interface FingerprintScannerUserInfoRow {
 }
 
 export const getAllUserListFingerprintScanner = async (
-  scannerId: number
+  scannerId: number,
 ): Promise<{
   success: boolean;
   data: FingerprintScannerUserInfoRow[];

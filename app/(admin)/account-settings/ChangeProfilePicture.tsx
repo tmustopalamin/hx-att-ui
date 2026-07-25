@@ -16,7 +16,10 @@ import { Employee } from "@/app/types/employee";
 import { Me } from "@/app/types/me";
 import { uploadEmployeePhoto } from "@/app/services/employee-service";
 import { fetcher } from "@/app/utils/fetcher";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 
 import { updateDataProfile } from "@/store/me/ProfileSlice";
 import { RootState } from "@/store/store";
@@ -57,7 +60,7 @@ const getInitials = (employee?: Employee | null, me?: Me | null) => {
     const words = name.split(" ").filter(Boolean);
     const first = words[0]?.charAt(0) ?? "";
     const last =
-      words.length > 1 ? words[words.length - 1]?.charAt(0) ?? "" : "";
+      words.length > 1 ? (words[words.length - 1]?.charAt(0) ?? "") : "";
 
     return `${first}${last}`.toUpperCase() || "EM";
   }
@@ -146,7 +149,9 @@ const ChangeProfilePicture = ({
       ? Number(profileState.employee_id)
       : null;
 
-    const meEmployeeId = meData?.employee_id ? Number(meData.employee_id) : null;
+    const meEmployeeId = meData?.employee_id
+      ? Number(meData.employee_id)
+      : null;
 
     return (
       targetEmployeeId === profileEmployeeId ||
@@ -196,7 +201,7 @@ const ChangeProfilePicture = ({
     await mutate(
       (key) => typeof key === "string" && key.startsWith("/api/employees/list"),
       undefined,
-      { revalidate: true }
+      { revalidate: true },
     );
 
     if (!isOwnProfile) {
@@ -231,7 +236,7 @@ const ChangeProfilePicture = ({
             ? currentPermissions
             : refreshedMe.permissions,
           photo_url: refreshedMe.photo_url,
-        })
+        }),
       );
     } catch {
       // Photo upload already succeeded. Do not fail page only because profile refresh failed.
@@ -248,7 +253,7 @@ const ChangeProfilePicture = ({
           severity: "error",
           summary: "Failed",
           detail: "Employee ID is not available.",
-        })
+        }),
       );
       return;
     }
@@ -260,7 +265,7 @@ const ChangeProfilePicture = ({
           severity: "warn",
           summary: "Warning",
           detail: "Please select a file first.",
-        })
+        }),
       );
       return;
     }
@@ -280,7 +285,7 @@ const ChangeProfilePicture = ({
           severity: "success",
           summary: "Success",
           detail: response.message || "Photo uploaded successfully.",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -290,7 +295,7 @@ const ChangeProfilePicture = ({
             severity: "error",
             summary: "Failed",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -299,7 +304,7 @@ const ChangeProfilePicture = ({
             severity: "error",
             summary: "Failed",
             detail: err.message,
-          })
+          }),
         );
       } else {
         dispatch(
@@ -308,7 +313,7 @@ const ChangeProfilePicture = ({
             severity: "error",
             summary: "Failed",
             detail: "Upload failed.",
-          })
+          }),
         );
       }
     } finally {

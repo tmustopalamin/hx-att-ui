@@ -83,22 +83,27 @@ const VerticalTabview = () => {
   ];
 
   return (
-    <nav className="flex min-w-0 flex-col gap-4" aria-label="Employee detail navigation">
+    <nav
+      className="flex min-w-0 flex-col gap-4"
+      aria-label="Employee detail navigation"
+    >
       {sections.map((section) => {
         const isSectionActive = activeGroup === section.key;
 
         return (
           <section
             key={section.key}
-            className={`rounded-2xl border p-3 transition ${isSectionActive
-              ? "border-blue-200 bg-blue-50/50"
-              : "border-slate-200 bg-slate-50/70"
-              }`}
+            className={`rounded-2xl border p-3 transition ${
+              isSectionActive
+                ? "border-blue-200 bg-blue-50/50"
+                : "border-slate-200 bg-slate-50/70"
+            }`}
           >
             <div className="mb-2 flex items-center gap-2 px-1">
               <span
-                className={`${section.icon} ${isSectionActive ? "text-blue-600" : "text-slate-500"
-                  }`}
+                className={`${section.icon} ${
+                  isSectionActive ? "text-blue-600" : "text-slate-500"
+                }`}
               />
               <h3 className="text-sm font-semibold text-slate-900">
                 {section.label}
@@ -114,21 +119,24 @@ const VerticalTabview = () => {
                     key={item.href}
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
-                    className={`group relative flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${isActive
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-slate-700 hover:bg-white hover:text-slate-900"
-                      }`}
+                    className={`group relative flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "text-slate-700 hover:bg-white hover:text-slate-900"
+                    }`}
                   >
                     <span
-                      className={`shrink-0 rounded-full ${isActive
-                        ? "h-2 w-2 bg-white"
-                        : "h-1.5 w-1.5 bg-slate-300 group-hover:bg-slate-400"
-                        }`}
+                      className={`shrink-0 rounded-full ${
+                        isActive
+                          ? "h-2 w-2 bg-white"
+                          : "h-1.5 w-1.5 bg-slate-300 group-hover:bg-slate-400"
+                      }`}
                     />
 
                     <span
-                      className={`min-w-0 break-words ${isActive ? "font-semibold" : "font-medium"
-                        }`}
+                      className={`min-w-0 break-words ${
+                        isActive ? "font-semibold" : "font-medium"
+                      }`}
                     >
                       {item.label}
                     </span>

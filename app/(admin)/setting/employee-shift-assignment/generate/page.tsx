@@ -1,15 +1,13 @@
-import React from 'react'
-import EmployeeShiftAssignmentGenerateForm from './EmployeeShiftAssignmentGenerateForm'
+import React from "react";
+import EmployeeShiftAssignmentGenerateForm from "./EmployeeShiftAssignmentGenerateForm";
 
 export const metadata = {
-    title: 'Generate Employee Schedule - PT. Hexing Technology',
-    description: 'generate schedule employee',
+  title: "Generate Employee Schedule - PT. Hexing Technology",
+  description: "generate schedule employee",
 };
 
 const EmployeeShiftAssignmentGeneratePage = () => {
-    return (
-        <EmployeeShiftAssignmentGenerateForm />
-    )
-}
+  return <EmployeeShiftAssignmentGenerateForm />;
+};
 
-export default EmployeeShiftAssignmentGeneratePage
+export default EmployeeShiftAssignmentGeneratePage;

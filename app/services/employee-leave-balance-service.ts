@@ -48,7 +48,7 @@ const buildPayload = (data: EmployeeLeaveBalanceForm) => {
 };
 
 export const createEmployeeLeaveBalance = async (
-  data: EmployeeLeaveBalanceForm
+  data: EmployeeLeaveBalanceForm,
 ) => {
   const res = await fetch(`${API_URL}/${data.employee_id}/leave-balance`, {
     method: "POST",
@@ -66,21 +66,24 @@ export const createEmployeeLeaveBalance = async (
 export const updateEmployeeLeaveBalance = async (
   id: number,
   rowVersion: number,
-  data: EmployeeLeaveBalanceForm
+  data: EmployeeLeaveBalanceForm,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${data.employee_id}/leave-balance/${id}`, {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "If-Match": String(rowVersion),
+  const res = await fetch(
+    `${API_URL}/${data.employee_id}/leave-balance/${id}`,
+    {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
+      },
+      body: JSON.stringify(buildPayload(data)),
     },
-    body: JSON.stringify(buildPayload(data)),
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -88,20 +91,23 @@ export const updateEmployeeLeaveBalance = async (
 
 export const deleteEmployeeLeaveBalance = async (
   id: number,
-  data: EmployeeLeaveBalance
+  data: EmployeeLeaveBalance,
 ) => {
   if (data.row_version <= -1) {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${data.employee_id}/leave-balance/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "If-Match": String(data.row_version),
+  const res = await fetch(
+    `${API_URL}/${data.employee_id}/leave-balance/${id}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(data.row_version),
+      },
     },
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -109,7 +115,7 @@ export const deleteEmployeeLeaveBalance = async (
 
 export const purgeEmployeeLeaveBalance = async (
   id: number,
-  data: EmployeeLeaveBalance
+  data: EmployeeLeaveBalance,
 ) => {
   const res = await fetch(
     `${API_URL}/${data.employee_id}/leave-balance/${id}/purge`,
@@ -119,7 +125,7 @@ export const purgeEmployeeLeaveBalance = async (
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   await ensureOk(res);
@@ -128,7 +134,7 @@ export const purgeEmployeeLeaveBalance = async (
 
 export const restoreEmployeeLeaveBalance = async (
   id: number,
-  data: EmployeeLeaveBalance
+  data: EmployeeLeaveBalance,
 ) => {
   const res = await fetch(
     `${API_URL}/${data.employee_id}/leave-balance/${id}/restore`,
@@ -139,7 +145,7 @@ export const restoreEmployeeLeaveBalance = async (
         "Content-Type": "application/json",
         "If-Match": String(data.row_version),
       },
-    }
+    },
   );
 
   await ensureOk(res);

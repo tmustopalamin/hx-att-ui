@@ -36,7 +36,7 @@ const ensureOk = async (res: Response) => {
 };
 
 export const createEmployeeShiftAssignment = async (
-  data: NewEmployeeShiftAssignment
+  data: NewEmployeeShiftAssignment,
 ) => {
   const res = await fetch(API_URL, {
     method: "POST",
@@ -54,7 +54,7 @@ export const createEmployeeShiftAssignment = async (
 export const updateEmployeeShiftAssignment = async (
   id: number,
   rowVersion: number,
-  data: EmployeeShiftAssignment
+  data: EmployeeShiftAssignment,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
@@ -83,7 +83,7 @@ export const updateEmployeeShiftAssignment = async (
 
 export const deleteEmployeeShiftAssignment = async (
   id: number,
-  rowVersion: number
+  rowVersion: number,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
@@ -117,7 +117,7 @@ export const purgeEmployeeShiftAssignment = async (id: number) => {
 
 export const restoreEmployeeShiftAssignment = async (
   id: number,
-  rowVersion: number
+  rowVersion: number,
 ) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
     method: "POST",

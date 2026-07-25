@@ -67,7 +67,9 @@ const buildUpdateUserPayload = (id: number, data: User): UpdateUserPayload => {
   return payload;
 };
 
-const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+const parseErrorResponse = async (
+  res: Response,
+): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
   try {
@@ -108,8 +110,16 @@ export const createUser = async (data: User) => {
   return res.json();
 };
 
-export const updateUser = async (id: number, rowVersion: number, data: User) => {
-  if (rowVersion === null || rowVersion === undefined || Number.isNaN(Number(rowVersion))) {
+export const updateUser = async (
+  id: number,
+  rowVersion: number,
+  data: User,
+) => {
+  if (
+    rowVersion === null ||
+    rowVersion === undefined ||
+    Number.isNaN(Number(rowVersion))
+  ) {
     throw new Error("rowVersion is required");
   }
 
@@ -133,7 +143,11 @@ export const updateUser = async (id: number, rowVersion: number, data: User) => 
 };
 
 export const deleteUser = async (id: number, rowVersion: number) => {
-  if (rowVersion === null || rowVersion === undefined || Number.isNaN(Number(rowVersion))) {
+  if (
+    rowVersion === null ||
+    rowVersion === undefined ||
+    Number.isNaN(Number(rowVersion))
+  ) {
     throw new Error("rowVersion is required");
   }
 
@@ -170,7 +184,11 @@ export const purgeUser = async (id: number) => {
 };
 
 export const restoreUser = async (id: number, rowVersion: number) => {
-  if (rowVersion === null || rowVersion === undefined || Number.isNaN(Number(rowVersion))) {
+  if (
+    rowVersion === null ||
+    rowVersion === undefined ||
+    Number.isNaN(Number(rowVersion))
+  ) {
     throw new Error("rowVersion is required");
   }
 

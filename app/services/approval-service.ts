@@ -6,7 +6,9 @@ import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/approval";
 
-const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+const parseErrorResponse = async (
+  res: Response,
+): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
   try {
@@ -45,7 +47,7 @@ const normalizeNotePayload = (note?: string | null): ApprovalActionPayload => {
 export const approveApprovalRequest = async (
   approvalRequestId: number,
   rowVersion: number,
-  note?: string | null
+  note?: string | null,
 ) => {
   validateRowVersion(rowVersion);
 
@@ -69,7 +71,7 @@ export const approveApprovalRequest = async (
 export const rejectApprovalRequest = async (
   approvalRequestId: number,
   rowVersion: number,
-  note?: string | null
+  note?: string | null,
 ) => {
   validateRowVersion(rowVersion);
 
@@ -93,7 +95,7 @@ export const rejectApprovalRequest = async (
 export const updateApprovalWorkflowSetting = async (
   id: number,
   rowVersion: number,
-  data: ApprovalWorkflowSettingForm
+  data: ApprovalWorkflowSettingForm,
 ) => {
   validateRowVersion(rowVersion);
 

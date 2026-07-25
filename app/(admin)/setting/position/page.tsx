@@ -1,17 +1,17 @@
-import React from 'react'
-import PositionTableData from './PositionTableData';
+import React from "react";
+import PositionTableData from "./PositionTableData";
 
 export const metadata = {
-    title: 'Manage Position - PT. Hexing Technology',
-    description: 'add, update, delete Position data',
+  title: "Manage Position - PT. Hexing Technology",
+  description: "add, update, delete Position data",
 };
 
 const PositionSettingPage = () => {
-    return <>
-        <PositionTableData />
+  return (
+    <>
+      <PositionTableData />
     </>
-}
+  );
+};
 
-
-
-export default PositionSettingPage
+export default PositionSettingPage;

@@ -1,15 +1,17 @@
-import React from 'react'
-import AgencyTableData from './AgencyTableData';
+import React from "react";
+import AgencyTableData from "./AgencyTableData";
 
 export const metadata = {
-  title: 'Manage Agencies - PT. Hexing Technology',
-  description: 'add, update, delete agency data',
+  title: "Manage Agencies - PT. Hexing Technology",
+  description: "add, update, delete agency data",
 };
 
 const AgencySettingPage = () => {
-    return <>
-        <AgencyTableData />
+  return (
+    <>
+      <AgencyTableData />
     </>
-}
+  );
+};
 
-export default AgencySettingPage
+export default AgencySettingPage;

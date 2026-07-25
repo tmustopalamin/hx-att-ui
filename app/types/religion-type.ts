@@ -1,7 +1,7 @@
 export interface ReligionType {
-    id: number;
-    name: string;
-    is_active: boolean;
-    deleted_at: string;
-    row_version: number;
+  id: number;
+  name: string;
+  is_active: boolean;
+  deleted_at: string;
+  row_version: number;
 }

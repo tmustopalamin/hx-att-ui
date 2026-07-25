@@ -27,7 +27,9 @@ const normalizeCode = (value?: string | null) => {
 
 const buildLeaveTypePayload = (data: LeaveType): LeaveTypePayload => {
   const normalizedMaxDays =
-    data.max_days === null || data.max_days === undefined || Number.isNaN(Number(data.max_days))
+    data.max_days === null ||
+    data.max_days === undefined ||
+    Number.isNaN(Number(data.max_days))
       ? null
       : Number(data.max_days);
 
@@ -46,7 +48,9 @@ const buildLeaveTypePayload = (data: LeaveType): LeaveTypePayload => {
   };
 };
 
-const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+const parseErrorResponse = async (
+  res: Response,
+): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
   try {
@@ -87,7 +91,11 @@ export const createLeaveType = async (data: LeaveType) => {
   return res.json();
 };
 
-export const updateLeaveType = async (id: number, rowVersion: number, data: LeaveType) => {
+export const updateLeaveType = async (
+  id: number,
+  rowVersion: number,
+  data: LeaveType,
+) => {
   if (rowVersion <= 0) {
     throw new Error("rowVersion is required");
   }

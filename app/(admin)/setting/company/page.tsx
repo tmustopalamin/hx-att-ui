@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const SettingCompanyPage = () => {
-  return (
-    <div>SettingCompanyPage</div>
-  )
-}
+  return <div>SettingCompanyPage</div>;
+};
 
-export default SettingCompanyPage
+export default SettingCompanyPage;

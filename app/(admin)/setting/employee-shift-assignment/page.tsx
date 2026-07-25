@@ -1,17 +1,17 @@
-import React from 'react'
-import EmployeeShiftAssignment from './EmployeeShiftAssignment';
+import React from "react";
+import EmployeeShiftAssignment from "./EmployeeShiftAssignment";
 
 export const metadata = {
-    title: 'Assign Shift To Employee - PT. Hexing Technology',
-    description: 'add, update, delete and generate shift employee',
+  title: "Assign Shift To Employee - PT. Hexing Technology",
+  description: "add, update, delete and generate shift employee",
 };
 
 const BankSettingPage = () => {
-    return <>
-        <EmployeeShiftAssignment />
+  return (
+    <>
+      <EmployeeShiftAssignment />
     </>
-}
+  );
+};
 
-
-
-export default BankSettingPage
+export default BankSettingPage;

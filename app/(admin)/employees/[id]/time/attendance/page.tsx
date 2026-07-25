@@ -1,12 +1,12 @@
 import FingerprintTableData from "./FingerprintTableData";
 
 export const metadata = {
-  title: 'Attendance - PT. Hexing Technology',
-  description: 'employee attendance detail',
+  title: "Attendance - PT. Hexing Technology",
+  description: "employee attendance detail",
 };
 
 const EmployeeFingerprintData = () => {
-  return <FingerprintTableData />
-}
+  return <FingerprintTableData />;
+};
 
-export default EmployeeFingerprintData
+export default EmployeeFingerprintData;

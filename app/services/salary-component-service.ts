@@ -2,16 +2,16 @@ import { ResponseTypeError } from "../types/response-type";
 import dayjs from "dayjs";
 import { SalaryComponent } from "../types/salary_component";
 
-const API_URL = '/api/salary-component';
+const API_URL = "/api/salary-component";
 
 export const createSalaryComponent = async (data: SalaryComponent) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -39,38 +39,40 @@ export const createSalaryComponent = async (data: SalaryComponent) => {
   }
 
   return res.json();
-}
+};
 
-export const updateSalaryComponent = async (id: number, rowVersion: number, data: SalaryComponent) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateSalaryComponent = async (
+  id: number,
+  rowVersion: number,
+  data: SalaryComponent,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
     const errorData: ResponseTypeError = await res.json();
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const deleteSalaryComponent = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
@@ -78,14 +80,14 @@ export const deleteSalaryComponent = async (id: number, rowVersion: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgeSalaryComponent = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
@@ -93,15 +95,18 @@ export const purgeSalaryComponent = async (id: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
-export const restoreSalaryComponent = async (id: number, rowVersion: number) => {
+export const restoreSalaryComponent = async (
+  id: number,
+  rowVersion: number,
+) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -130,5 +135,4 @@ export const restoreSalaryComponent = async (id: number, rowVersion: number) => 
   }
 
   return res.json();
-}
-
+};

@@ -13,7 +13,7 @@ const initialState: ToastState = {
   severity: "success",
   summary: "",
   detail: "",
-  life: 3000
+  life: 3000,
 };
 
 const ToastSlice = createSlice({
@@ -29,7 +29,7 @@ const ToastSlice = createSlice({
     },
     hideToast: (state) => {
       state.visible = false;
-    }
+    },
   },
 });
 

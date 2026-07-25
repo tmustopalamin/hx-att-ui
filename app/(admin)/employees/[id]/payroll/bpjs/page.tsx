@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const TimeLeaveDetail = () => {
-  return (
-    <div>TimeLeaveDetail</div>
-  )
-}
+  return <div>TimeLeaveDetail</div>;
+};
 
-export default TimeLeaveDetail
+export default TimeLeaveDetail;

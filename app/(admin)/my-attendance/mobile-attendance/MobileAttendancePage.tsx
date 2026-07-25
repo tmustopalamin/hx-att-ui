@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import dayjs from "dayjs";
 import useSWR from "swr";
 import { useDispatch } from "react-redux";
@@ -12,7 +18,10 @@ import { Divider } from "primereact/divider";
 import { showToast } from "@/store/ToastSlice";
 import { fetcher } from "@/app/utils/fetcher";
 import { submitMobileAttendance } from "@/app/services/mobile-attendance-service";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 
 type PermissionStateUi = "idle" | "granted" | "denied" | "loading" | "error";
 
@@ -52,7 +61,11 @@ const pickFirstNumber = (...values: unknown[]) => {
       return value;
     }
 
-    if (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value))) {
+    if (
+      typeof value === "string" &&
+      value.trim() !== "" &&
+      !Number.isNaN(Number(value))
+    ) {
       return Number(value);
     }
   }
@@ -132,10 +145,20 @@ const buildGoogleMapsUrl = (latitude: number, longitude: number) => {
 const normalizeProfile = (raw: any): CurrentEmployeeProfile => {
   const root = raw?.data ?? raw ?? {};
   const data = typeof root === "object" && root !== null ? root : {};
-  const user = typeof data.user === "object" && data.user !== null ? data.user : {};
-  const employee = typeof data.employee === "object" && data.employee !== null ? data.employee : {};
-  const profile = typeof data.profile === "object" && data.profile !== null ? data.profile : {};
-  const employment = typeof data.employment === "object" && data.employment !== null ? data.employment : {};
+  const user =
+    typeof data.user === "object" && data.user !== null ? data.user : {};
+  const employee =
+    typeof data.employee === "object" && data.employee !== null
+      ? data.employee
+      : {};
+  const profile =
+    typeof data.profile === "object" && data.profile !== null
+      ? data.profile
+      : {};
+  const employment =
+    typeof data.employment === "object" && data.employment !== null
+      ? data.employment
+      : {};
 
   const rootFullName = buildFullNameFromParts(data);
   const userFullName = buildFullNameFromParts(user);
@@ -149,7 +172,7 @@ const normalizeProfile = (raw: any): CurrentEmployeeProfile => {
       user.employee_id,
       employee.employee_id,
       employee.id,
-      profile.employee_id
+      profile.employee_id,
     ),
     employee_name: pickFirstString(
       data.employee_name,
@@ -171,7 +194,7 @@ const normalizeProfile = (raw: any): CurrentEmployeeProfile => {
       rootFullName,
       userFullName,
       employeeFullName,
-      profileFullName
+      profileFullName,
     ),
     employee_code: pickFirstString(
       data.employee_code,
@@ -180,31 +203,31 @@ const normalizeProfile = (raw: any): CurrentEmployeeProfile => {
       employee.employee_code,
       employee.code,
       profile.employee_code,
-      profile.code
+      profile.code,
     ),
     position_name: pickFirstString(
       data.position_name,
       employment.position_name,
       employee.position_name,
-      profile.position_name
+      profile.position_name,
     ),
     branch_name: pickFirstString(
       data.branch_name,
       employment.branch_name,
       employee.branch_name,
-      profile.branch_name
+      profile.branch_name,
     ),
     agency_name: pickFirstString(
       data.agency_name,
       employment.agency_name,
       employee.agency_name,
-      profile.agency_name
+      profile.agency_name,
     ),
     photo_url: pickFirstString(
       data.photo_url,
       user.photo_url,
       employee.photo_url,
-      profile.photo_url
+      profile.photo_url,
     ),
   };
 };
@@ -216,8 +239,10 @@ const MobileAttendancePage = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [cameraPermission, setCameraPermission] = useState<PermissionStateUi>("idle");
-  const [locationPermission, setLocationPermission] = useState<PermissionStateUi>("idle");
+  const [cameraPermission, setCameraPermission] =
+    useState<PermissionStateUi>("idle");
+  const [locationPermission, setLocationPermission] =
+    useState<PermissionStateUi>("idle");
 
   const [cameraError, setCameraError] = useState("");
   const [locationError, setLocationError] = useState("");
@@ -234,7 +259,9 @@ const MobileAttendancePage = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmittedAt, setLastSubmittedAt] = useState<string | null>(null);
-  const [nowText, setNowText] = useState(dayjs().format(DISPLAY_DATE_TIME_FORMAT));
+  const [nowText, setNowText] = useState(
+    dayjs().format(DISPLAY_DATE_TIME_FORMAT),
+  );
 
   // Ganti endpoint ini kalau endpoint current user di project kamu berbeda.
   const {
@@ -245,7 +272,7 @@ const MobileAttendancePage = () => {
 
   const currentProfile = useMemo(
     () => normalizeProfile(currentProfileRaw),
-    [currentProfileRaw]
+    [currentProfileRaw],
   );
 
   useEffect(() => {
@@ -345,7 +372,7 @@ const MobileAttendancePage = () => {
         enableHighAccuracy: true,
         timeout: 15000,
         maximumAge: 0,
-      }
+      },
     );
   }, []);
 
@@ -371,7 +398,7 @@ const MobileAttendancePage = () => {
           severity: "error",
           summary: "Error",
           detail: "Camera is not ready.",
-        })
+        }),
       );
       return;
     }
@@ -386,7 +413,7 @@ const MobileAttendancePage = () => {
           severity: "error",
           summary: "Error",
           detail: "Camera preview is not ready yet.",
-        })
+        }),
       );
       return;
     }
@@ -402,7 +429,7 @@ const MobileAttendancePage = () => {
           severity: "error",
           summary: "Error",
           detail: "Failed to access image canvas.",
-        })
+        }),
       );
       return;
     }
@@ -417,7 +444,7 @@ const MobileAttendancePage = () => {
         severity: "success",
         summary: "Success",
         detail: "Photo captured successfully.",
-      })
+      }),
     );
   };
 
@@ -465,7 +492,7 @@ const MobileAttendancePage = () => {
           severity: "warn",
           summary: "Warning",
           detail: "Please capture photo first.",
-        })
+        }),
       );
       return;
     }
@@ -477,7 +504,7 @@ const MobileAttendancePage = () => {
           severity: "warn",
           summary: "Warning",
           detail: "Location is required before submit.",
-        })
+        }),
       );
       return;
     }
@@ -497,7 +524,8 @@ const MobileAttendancePage = () => {
           capture_method: "camera",
           geo_accuracy: geoData.accuracy,
           location_captured_at: geoData.capturedAt,
-          user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+          user_agent:
+            typeof navigator !== "undefined" ? navigator.userAgent : null,
         },
       });
 
@@ -510,7 +538,7 @@ const MobileAttendancePage = () => {
           severity: "success",
           summary: "Success",
           detail: "Attendance submitted successfully.",
-        })
+        }),
       );
 
       await refreshLocation();
@@ -522,7 +550,7 @@ const MobileAttendancePage = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(error, "message"),
-          })
+          }),
         );
       } else if (error instanceof Error) {
         dispatch(
@@ -531,7 +559,7 @@ const MobileAttendancePage = () => {
             severity: "error",
             summary: "Error",
             detail: error.message,
-          })
+          }),
         );
       } else {
         dispatch(
@@ -540,7 +568,7 @@ const MobileAttendancePage = () => {
             severity: "error",
             summary: "Error",
             detail: "Failed to submit attendance.",
-          })
+          }),
         );
       }
     } finally {
@@ -555,10 +583,16 @@ const MobileAttendancePage = () => {
           <div className="flex items-center gap-3">
             <Avatar
               image={currentProfile.photo_url || undefined}
-              label={currentProfile.photo_url ? undefined : getInitials(currentProfile.employee_name)}
+              label={
+                currentProfile.photo_url
+                  ? undefined
+                  : getInitials(currentProfile.employee_name)
+              }
               shape="circle"
               size="large"
-              className={!currentProfile.photo_url ? "bg-blue-100 text-blue-700" : ""}
+              className={
+                !currentProfile.photo_url ? "bg-blue-100 text-blue-700" : ""
+              }
             />
 
             <div className="min-w-0 flex-1">
@@ -572,7 +606,9 @@ const MobileAttendancePage = () => {
                 {currentProfileLoading
                   ? "Loading code..."
                   : currentProfile.employee_code || "No employee code"}
-                {currentProfile.position_name ? ` • ${currentProfile.position_name}` : ""}
+                {currentProfile.position_name
+                  ? ` • ${currentProfile.position_name}`
+                  : ""}
               </p>
 
               <p className="truncate text-xs text-slate-500 md:text-sm">
@@ -622,7 +658,7 @@ const MobileAttendancePage = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div
                     className={`rounded-xl border px-3 py-2 text-center text-sm font-medium ${getStatusColorClass(
-                      cameraPermission
+                      cameraPermission,
                     )}`}
                   >
                     Camera: {getStatusLabel(cameraPermission)}
@@ -630,7 +666,7 @@ const MobileAttendancePage = () => {
 
                   <div
                     className={`rounded-xl border px-3 py-2 text-center text-sm font-medium ${getStatusColorClass(
-                      locationPermission
+                      locationPermission,
                     )}`}
                   >
                     Location: {getStatusLabel(locationPermission)}
@@ -752,7 +788,11 @@ const MobileAttendancePage = () => {
                   disabled={!googleMapsUrl}
                   onClick={() => {
                     if (googleMapsUrl) {
-                      window.open(googleMapsUrl, "_blank", "noopener,noreferrer");
+                      window.open(
+                        googleMapsUrl,
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
                     }
                   }}
                   severity="secondary"
@@ -781,14 +821,18 @@ const MobileAttendancePage = () => {
                   <div>
                     <p className="text-xs text-slate-500">Latitude</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {geoData.latitude !== null ? geoData.latitude.toFixed(6) : "-"}
+                      {geoData.latitude !== null
+                        ? geoData.latitude.toFixed(6)
+                        : "-"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-xs text-slate-500">Longitude</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {geoData.longitude !== null ? geoData.longitude.toFixed(6) : "-"}
+                      {geoData.longitude !== null
+                        ? geoData.longitude.toFixed(6)
+                        : "-"}
                     </p>
                   </div>
 
@@ -839,7 +883,9 @@ const MobileAttendancePage = () => {
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-xs text-slate-500">Current Time</p>
-                  <p className="text-sm font-medium text-slate-900">{nowText}</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {nowText}
+                  </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -860,8 +906,8 @@ const MobileAttendancePage = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                Attendance will be submitted as a mobile attendance event and processed
-                automatically by the system.
+                Attendance will be submitted as a mobile attendance event and
+                processed automatically by the system.
               </div>
 
               <Button

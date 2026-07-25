@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react'
+import React, { lazy, Suspense } from "react";
 
 const TimeAttendanceDetail = () => {
   const renderSalaryBank = () => {
@@ -15,9 +15,7 @@ const TimeAttendanceDetail = () => {
     );
   };
 
-  return (
-    renderSalaryBank()
-  )
-}
+  return renderSalaryBank();
+};
 
-export default TimeAttendanceDetail
+export default TimeAttendanceDetail;

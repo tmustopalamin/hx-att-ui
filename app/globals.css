@@ -8,26 +8,28 @@
 
 /* === PrimeReact Theme & Icons === */
 /* Light theme */
-@import "primereact/resources/themes/lara-light-blue/theme.css" layer(primereact);
+@import "primereact/resources/themes/lara-light-blue/theme.css"
+  layer(primereact);
 @import "primeicons/primeicons.css" layer(primereact);
 
 /* === Font Custom === */
 @font-face {
-  font-family: 'Lato';
-  src: url('/fonts/Lato/Lato-Regular.ttf') format('truetype');
+  font-family: "Lato";
+  src: url("/fonts/Lato/Lato-Regular.ttf") format("truetype");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 /* === Override Global Font === */
-html, body {
-  font-family: 'Lato', sans-serif;
+html,
+body {
+  font-family: "Lato", sans-serif;
 }
 
 /* === PrimeReact Components pakai font Lato juga === */
 .p-component {
-  font-family: 'Lato', sans-serif;
+  font-family: "Lato", sans-serif;
 }
 
 .custom-sidebar .p-sidebar-content {

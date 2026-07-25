@@ -11,7 +11,7 @@ const EmployeeDetailGeneralPersonalTab = () => {
   const handleTabChange = (e: TabViewTabChangeEvent) => {
     setActiveIndex(e.index);
     setMountedTabs(() => {
-      const updated = [false, false, false]
+      const updated = [false, false, false];
       updated[e.index] = true;
       return updated;
     });
@@ -20,7 +20,7 @@ const EmployeeDetailGeneralPersonalTab = () => {
   const renderBasicInfo = () => {
     const PersonalData = lazy(() => import("./basic-info/PersonalData"));
     const PersonalIdentityAndAddress = lazy(
-      () => import("./basic-info/PersonalIdentityAndAddress")
+      () => import("./basic-info/PersonalIdentityAndAddress"),
     );
 
     return (
@@ -34,7 +34,9 @@ const EmployeeDetailGeneralPersonalTab = () => {
   };
 
   const renderFamilyInfo = () => {
-    const EmployeeFamily = lazy(() => import("./basic-info/EmployeeFamilyDataTable"));
+    const EmployeeFamily = lazy(
+      () => import("./basic-info/EmployeeFamilyDataTable"),
+    );
 
     return (
       <Suspense fallback={<LoadingDataTable />}>
@@ -46,7 +48,9 @@ const EmployeeDetailGeneralPersonalTab = () => {
   };
 
   const renderEmergencyContact = () => {
-    const EmployeeEmergencyContactDataTable = lazy(() => import("./basic-info/EmployeeEmergencyContactDataTable"));
+    const EmployeeEmergencyContactDataTable = lazy(
+      () => import("./basic-info/EmployeeEmergencyContactDataTable"),
+    );
 
     return (
       <Suspense fallback={<LoadingDataTable />}>

@@ -9,7 +9,10 @@ import { useDispatch } from "react-redux";
 import { fetcher } from "@/app/utils/fetcher";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 
 import { EmployeeFingerprint } from "@/app/types/employee-fingerprint";
@@ -65,7 +68,9 @@ const EmployeeFingerprintTableData = () => {
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
 
-  const [selectedData, setSelectedData] = useState<EmployeeFingerprint | null>(null);
+  const [selectedData, setSelectedData] = useState<EmployeeFingerprint | null>(
+    null,
+  );
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
@@ -74,11 +79,13 @@ const EmployeeFingerprintTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
 
   const [pinCheckState, setPinCheckState] = useState<PinCheckState>("idle");
   const [pinCheckMessage, setPinCheckMessage] = useState("");
-  const [pinCheckResult, setPinCheckResult] = useState<CheckFingerprintPin2Result | null>(null);
+  const [pinCheckResult, setPinCheckResult] =
+    useState<CheckFingerprintPin2Result | null>(null);
 
   const {
     control,
@@ -110,7 +117,7 @@ const EmployeeFingerprintTableData = () => {
 
   const fpActive = useMemo(
     () => fpData?.filter((a) => a.is_active) ?? [],
-    [fpData]
+    [fpData],
   );
 
   const watchedFpDeviceId = watch("fp_device_id");
@@ -184,7 +191,9 @@ const EmployeeFingerprintTableData = () => {
       pin2: data.fp_pin,
       name: data.fp_device_user_name ?? null,
     });
-    setPinCheckMessage("Existing mapping loaded. Re-check if you change scanner or PIN2.");
+    setPinCheckMessage(
+      "Existing mapping loaded. Re-check if you change scanner or PIN2.",
+    );
   };
 
   const closeDialog = () => {
@@ -210,7 +219,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "warn",
           summary: "Warning",
           detail: "Please select fingerprint scanner first",
-        })
+        }),
       );
       return;
     }
@@ -222,7 +231,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "warn",
           summary: "Warning",
           detail: "Please fill Fingerprint User ID / PIN2 first",
-        })
+        }),
       );
       return;
     }
@@ -234,7 +243,7 @@ const EmployeeFingerprintTableData = () => {
 
       const response = await checkPinEmployeeFingerprint(
         Number(watchedFpDeviceId),
-        watchedFpPin.trim()
+        watchedFpPin.trim(),
       );
 
       const result = response.data;
@@ -244,30 +253,32 @@ const EmployeeFingerprintTableData = () => {
         if (result.exists) {
           setPinCheckState("valid");
           setPinCheckMessage(
-            `User found in device. Machine PIN / PIN1: ${result.pin ?? "-"}`
+            `User found in device. Machine PIN / PIN1: ${result.pin ?? "-"}`,
           );
         } else {
           setPinCheckState("invalid");
           setPinCheckMessage(
-            "Fingerprint User ID / PIN2 was not found in this device. Use Create New User mode if you want to create it."
+            "Fingerprint User ID / PIN2 was not found in this device. Use Create New User mode if you want to create it.",
           );
         }
       } else {
         if (result.exists) {
           setPinCheckState("invalid");
           setPinCheckMessage(
-            "Fingerprint User ID / PIN2 already exists in this device. Use Link Existing User mode if you want to map it."
+            "Fingerprint User ID / PIN2 already exists in this device. Use Link Existing User mode if you want to map it.",
           );
         } else {
           setPinCheckState("valid");
           setPinCheckMessage(
-            "Fingerprint User ID / PIN2 is available. The system will create a new user in the device."
+            "Fingerprint User ID / PIN2 is available. The system will create a new user in the device.",
           );
         }
       }
     } catch (err: unknown) {
       setPinCheckState("error");
-      setPinCheckMessage("Failed to check Fingerprint User ID / PIN2 in device.");
+      setPinCheckMessage(
+        "Failed to check Fingerprint User ID / PIN2 in device.",
+      );
       setPinCheckResult(null);
 
       if (isResponseTypeError(err)) {
@@ -277,7 +288,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -286,7 +297,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -300,7 +311,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "warn",
           summary: "Warning",
           detail: "Please check Fingerprint User ID / PIN2 before saving.",
-        })
+        }),
       );
       return false;
     }
@@ -313,7 +324,7 @@ const EmployeeFingerprintTableData = () => {
           summary: "Warning",
           detail:
             "This mode links existing user, but the Fingerprint User ID / PIN2 was not found in device.",
-        })
+        }),
       );
       return false;
     }
@@ -326,7 +337,7 @@ const EmployeeFingerprintTableData = () => {
           summary: "Warning",
           detail:
             "This mode creates new user, but the Fingerprint User ID / PIN2 already exists in device.",
-        })
+        }),
       );
       return false;
     }
@@ -353,7 +364,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Fingerprint mapping created successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -363,7 +374,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -372,7 +383,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -386,7 +397,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "error",
           summary: "Error",
           detail: "Please select data",
-        })
+        }),
       );
       return;
     }
@@ -394,11 +405,15 @@ const EmployeeFingerprintTableData = () => {
     if (!validatePinStateBeforeSubmit()) return;
 
     try {
-      const res = await updateEmployeeFingerprint(selectedData.id, selectedData.row_version, {
-        ...data,
-        employee_id: employeeId,
-        fp_pin: data.fp_pin.trim(),
-      });
+      const res = await updateEmployeeFingerprint(
+        selectedData.id,
+        selectedData.row_version,
+        {
+          ...data,
+          employee_id: employeeId,
+          fp_pin: data.fp_pin.trim(),
+        },
+      );
 
       closeDialog();
       await mutate(fingerprintKey);
@@ -409,7 +424,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Fingerprint mapping updated successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -419,7 +434,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -428,7 +443,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -447,7 +462,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Fingerprint mapping deleted successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -457,7 +472,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -466,7 +481,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -485,7 +500,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Fingerprint mapping permanently deleted",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -495,7 +510,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -504,7 +519,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -523,7 +538,7 @@ const EmployeeFingerprintTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Fingerprint mapping restored successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -533,7 +548,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -542,7 +557,7 @@ const EmployeeFingerprintTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -666,7 +681,8 @@ const EmployeeFingerprintTableData = () => {
     if (pinCheckState === "idle") {
       return (
         <small className="text-slate-500">
-          Check Fingerprint User ID / PIN2 in the fingerprint scanner before saving.
+          Check Fingerprint User ID / PIN2 in the fingerprint scanner before
+          saving.
         </small>
       );
     }
@@ -691,7 +707,9 @@ const EmployeeFingerprintTableData = () => {
 
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
-        <div className="mb-2 font-semibold text-slate-800">Device Check Result</div>
+        <div className="mb-2 font-semibold text-slate-800">
+          Device Check Result
+        </div>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           <div>
             <div className="text-xs text-slate-500">Exists in Device</div>
@@ -706,7 +724,9 @@ const EmployeeFingerprintTableData = () => {
             </div>
           </div>
           <div>
-            <div className="text-xs text-slate-500">Fingerprint User ID / PIN2</div>
+            <div className="text-xs text-slate-500">
+              Fingerprint User ID / PIN2
+            </div>
             <div className="font-medium text-slate-800">
               {pinCheckResult.pin2 ?? watchedFpPin ?? "-"}
             </div>
@@ -751,7 +771,8 @@ const EmployeeFingerprintTableData = () => {
                 Employee Fingerprint
               </h2>
               <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                Map this employee to fingerprint device user using Fingerprint User ID / PIN2.
+                Map this employee to fingerprint device user using Fingerprint
+                User ID / PIN2.
               </p>
             </div>
 
@@ -836,14 +857,18 @@ const EmployeeFingerprintTableData = () => {
               field="fp_machine_pin"
               header="Machine PIN / PIN1"
               style={{ minWidth: "12rem" }}
-              body={(rowData: EmployeeFingerprint) => rowData.fp_machine_pin ?? "-"}
+              body={(rowData: EmployeeFingerprint) =>
+                rowData.fp_machine_pin ?? "-"
+              }
             />
 
             <Column
               field="fp_device_user_name"
               header="Device User Name"
               style={{ minWidth: "14rem" }}
-              body={(rowData: EmployeeFingerprint) => rowData.fp_device_user_name ?? "-"}
+              body={(rowData: EmployeeFingerprint) =>
+                rowData.fp_device_user_name ?? "-"
+              }
             />
 
             <Column
@@ -911,10 +936,11 @@ const EmployeeFingerprintTableData = () => {
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div
-                  className={`cursor-pointer rounded-xl border bg-white p-4 ${mappingMode === "LINK_EXISTING"
-                    ? "border-blue-400 ring-1 ring-blue-300"
-                    : "border-slate-200"
-                    }`}
+                  className={`cursor-pointer rounded-xl border bg-white p-4 ${
+                    mappingMode === "LINK_EXISTING"
+                      ? "border-blue-400 ring-1 ring-blue-300"
+                      : "border-slate-200"
+                  }`}
                   onClick={() => setMappingMode("LINK_EXISTING")}
                 >
                   <div className="flex items-start gap-3">
@@ -933,18 +959,20 @@ const EmployeeFingerprintTableData = () => {
                         Link Existing User in Device
                       </label>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Use this if the fingerprint user already exists in the device.
-                        The system will search by PIN2 and save the Machine PIN / PIN1.
+                        Use this if the fingerprint user already exists in the
+                        device. The system will search by PIN2 and save the
+                        Machine PIN / PIN1.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div
-                  className={`cursor-pointer rounded-xl border bg-white p-4 ${mappingMode === "CREATE_NEW"
-                    ? "border-blue-400 ring-1 ring-blue-300"
-                    : "border-slate-200"
-                    }`}
+                  className={`cursor-pointer rounded-xl border bg-white p-4 ${
+                    mappingMode === "CREATE_NEW"
+                      ? "border-blue-400 ring-1 ring-blue-300"
+                      : "border-slate-200"
+                  }`}
                   onClick={() => setMappingMode("CREATE_NEW")}
                 >
                   <div className="flex items-start gap-3">
@@ -963,8 +991,9 @@ const EmployeeFingerprintTableData = () => {
                         Create New User in Device
                       </label>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Use this if the fingerprint user does not exist yet.
-                        The backend will generate Machine PIN / PIN1 and insert PIN2 to the device.
+                        Use this if the fingerprint user does not exist yet. The
+                        backend will generate Machine PIN / PIN1 and insert PIN2
+                        to the device.
                       </p>
                     </div>
                   </div>
@@ -994,7 +1023,9 @@ const EmployeeFingerprintTableData = () => {
                     options={fpActive}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder={fpIsLoading ? "Loading scanner..." : "Select scanner"}
+                    placeholder={
+                      fpIsLoading ? "Loading scanner..." : "Select scanner"
+                    }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                     onChange={(e) => {
                       field.onChange(e.value);
@@ -1004,7 +1035,9 @@ const EmployeeFingerprintTableData = () => {
                     filter
                   />
                   {fieldState.error && (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   )}
                 </div>
               )}
@@ -1047,7 +1080,9 @@ const EmployeeFingerprintTableData = () => {
                     />
                   </div>
                   {fieldState.error ? (
-                    <small className="p-error">{fieldState.error.message}</small>
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
                   ) : (
                     pinCheckMessageNode()
                   )}
@@ -1068,7 +1103,8 @@ const EmployeeFingerprintTableData = () => {
                         Primary Fingerprint Mapping
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Mark this scanner user as the primary fingerprint mapping for this employee.
+                        Mark this scanner user as the primary fingerprint
+                        mapping for this employee.
                       </p>
                     </div>
                     <InputSwitch

@@ -22,7 +22,6 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw error;
     }
 
-
     return res.json();
   };
 
@@ -30,8 +29,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     shouldRetryOnError: false,
-  }
-  );
+  });
 
   useEffect(() => {
     if (data) {

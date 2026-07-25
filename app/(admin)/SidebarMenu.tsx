@@ -1,34 +1,28 @@
 "use client";
-
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
-
 import ActiveLink from "./ActiveLinkProps";
 import AppLogo from "../_components/sidebar-menu/AppLogo";
 import { RootState } from "@/store/store";
-
 type MenuItem = {
   href: string;
   label: string;
   icon: string;
   permission?: string;
 };
-
 type MenuSection = {
   key: string;
   label: string;
   icon: string;
   items: MenuItem[];
 };
-
 type SettingSubMenu = {
   key: string;
   label: string;
   icon: string;
   items: MenuItem[];
 };
-
 const selfServiceItems: MenuItem[] = [
   {
     href: "/my-profile",
@@ -60,7 +54,6 @@ const selfServiceItems: MenuItem[] = [
     permission: "overtime.read",
   },
 ];
-
 const approvalItems: MenuItem[] = [
   {
     href: "/approval",
@@ -75,7 +68,6 @@ const approvalItems: MenuItem[] = [
     permission: "approval.update",
   },
 ];
-
 const employeeItems: MenuItem[] = [
   {
     href: "/employees",
@@ -96,7 +88,6 @@ const employeeItems: MenuItem[] = [
     permission: "overtime-management.read",
   },
 ];
-
 const timeManagementItems: MenuItem[] = [
   {
     href: "/setting/employee-shift-rule",
@@ -129,7 +120,6 @@ const timeManagementItems: MenuItem[] = [
     permission: "attendance-summary.read",
   },
 ];
-
 const payrollItems: MenuItem[] = [
   {
     href: "/run-payroll",
@@ -138,7 +128,6 @@ const payrollItems: MenuItem[] = [
     permission: "payroll.read",
   },
 ];
-
 const settingSubMenus: SettingSubMenu[] = [
   {
     key: "organization",
@@ -321,7 +310,6 @@ const settingSubMenus: SettingSubMenu[] = [
     ],
   },
 ];
-
 const topMenuSections: MenuSection[] = [
   {
     key: "self-service",
@@ -354,285 +342,249 @@ const topMenuSections: MenuSection[] = [
     items: payrollItems,
   },
 ];
-
 const getProfilePermissions = (profileState: unknown): string[] => {
   const profile = profileState as { permissions?: unknown };
-
   if (!Array.isArray(profile.permissions)) {
     return [];
   }
-
   return profile.permissions.filter(
-    (permission): permission is string => typeof permission === "string"
+    (permission): permission is string => typeof permission === "string",
   );
 };
-
 export default function SidebarMenu() {
   const pathname = usePathname();
   const profileState = useSelector((state: RootState) => state.profile);
-
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const [openSubMenuKey, setOpenSubMenuKey] = useState<string | null>(null);
-
   const permissionSet = useMemo(() => {
     return new Set(getProfilePermissions(profileState));
   }, [profileState]);
-
   const hasPermission = (permission?: string) => {
     if (!permission) {
       return true;
     }
-
     return permissionSet.has(permission);
   };
-
   const getVisibleItems = (items: MenuItem[]) => {
     return items.filter((item) => hasPermission(item.permission));
   };
-
   const visibleTopMenuSections = useMemo(() => {
     return topMenuSections
-      .map((section) => ({
-        ...section,
-        items: getVisibleItems(section.items),
-      }))
+      .map((section) => ({ ...section, items: getVisibleItems(section.items) }))
       .filter((section) => section.items.length > 0);
   }, [permissionSet]);
-
   const visibleSettingSubMenus = useMemo(() => {
     return settingSubMenus
-      .map((submenu) => ({
-        ...submenu,
-        items: getVisibleItems(submenu.items),
-      }))
+      .map((submenu) => ({ ...submenu, items: getVisibleItems(submenu.items) }))
       .filter((submenu) => submenu.items.length > 0);
   }, [permissionSet]);
-
   const isPathActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
-
   const hasActiveItems = (items: MenuItem[]) => {
     return items.some((item) => isPathActive(item.href));
   };
-
   const hasActiveSettingItems = (items: SettingSubMenu[]) => {
     return items.some((item) => hasActiveItems(item.items));
   };
-
   const isTopMenuOpen = (key: string, items: MenuItem[]) => {
     return openMenuKey === key || hasActiveItems(items);
   };
-
   const isSubMenuOpen = (key: string, items: MenuItem[]) => {
     return openSubMenuKey === key || hasActiveItems(items);
   };
-
   const toggleMenu = (key: string) => {
     setOpenMenuKey((current) => (current === key ? null : key));
   };
-
   const toggleSubMenu = (key: string) => {
     setOpenSubMenuKey((current) => (current === key ? null : key));
   };
-
   const topButtonClass = (isOpen: boolean) =>
-    `flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${isOpen
-      ? "bg-slate-100 text-slate-900"
-      : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-    }`;
-
+    `flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${isOpen ? "bg-slate-100 text-slate-900" : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"}`;
   const submenuButtonClass = (isOpen: boolean) =>
-    `flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isOpen
-      ? "bg-slate-100 text-slate-900"
-      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-    }`;
-
+    `flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${isOpen ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"}`;
   const menuLinkClass =
     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900";
-
   const menuLinkActiveClass =
     "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100";
-
   const childLinkClass =
     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900";
-
   const childLinkActiveClass =
     "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-100";
-
   const renderLinkItem = (item: MenuItem) => {
     return (
       <li key={item.href}>
+        {" "}
         <ActiveLink
           href={item.href}
           className={childLinkClass}
           activeClassName={childLinkActiveClass}
           exact={false}
         >
-          <i className={`pi ${item.icon} text-sm`} />
-          <span className="truncate">{item.label}</span>
-        </ActiveLink>
+          {" "}
+          <i className={`pi ${item.icon} text-sm`} />{" "}
+          <span className="truncate">{item.label}</span>{" "}
+        </ActiveLink>{" "}
       </li>
     );
   };
-
   const renderLinkList = (items: MenuItem[]) => {
     return items.map((item) => renderLinkItem(item));
   };
-
   const renderTopSection = (section: MenuSection) => {
     const isOpen = isTopMenuOpen(section.key, section.items);
-
     return (
       <li key={section.key} className="space-y-1">
+        {" "}
         <button
           type="button"
           className={topButtonClass(isOpen)}
           onClick={() => toggleMenu(section.key)}
         >
+          {" "}
           <span className="flex items-center gap-3">
-            <i className={`pi ${section.icon} text-sm`} />
-            <span>{section.label}</span>
-          </span>
-
+            {" "}
+            <i className={`pi ${section.icon} text-sm`} />{" "}
+            <span>{section.label}</span>{" "}
+          </span>{" "}
           <i
-            className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"
-              } text-xs text-slate-400`}
-          />
-        </button>
-
+            className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"} text-xs text-slate-400`}
+          />{" "}
+        </button>{" "}
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[900px] opacity-100" : "max-h-0 opacity-0"
-            }`}
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[900px] opacity-100" : "max-h-0 opacity-0"}`}
         >
-          <ul className="space-y-1 pl-3">{renderLinkList(section.items)}</ul>
-        </div>
+          {" "}
+          <ul className="space-y-1 pl-3">
+            {renderLinkList(section.items)}
+          </ul>{" "}
+        </div>{" "}
       </li>
     );
   };
-
   const isDashboardVisible = hasPermission("dashboard.read");
   const isMainMenuVisible = visibleTopMenuSections.length > 0;
   const isSettingVisible = visibleSettingSubMenus.length > 0;
-
   const isSettingOpen =
     openMenuKey === "setting" || hasActiveSettingItems(visibleSettingSubMenus);
-
   const settingContent = (
     <li className="space-y-1">
+      {" "}
       <button
         type="button"
         className={topButtonClass(isSettingOpen)}
         onClick={() => toggleMenu("setting")}
       >
+        {" "}
         <span className="flex items-center gap-3">
-          <i className="pi pi-cog text-sm" />
-          <span>Settings</span>
-        </span>
-
+          {" "}
+          <i className="pi pi-cog text-sm" /> <span>Settings</span>{" "}
+        </span>{" "}
         <i
-          className={`pi ${isSettingOpen ? "pi-chevron-down" : "pi-chevron-right"
-            } text-xs text-slate-400`}
-        />
-      </button>
-
+          className={`pi ${isSettingOpen ? "pi-chevron-down" : "pi-chevron-right"} text-xs text-slate-400`}
+        />{" "}
+      </button>{" "}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingOpen ? "mt-2 max-h-[2600px] opacity-100" : "max-h-0 opacity-0"
-          }`}
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingOpen ? "mt-2 max-h-[2600px] opacity-100" : "max-h-0 opacity-0"}`}
       >
+        {" "}
         <ul className="space-y-1 pl-3">
+          {" "}
           {visibleSettingSubMenus.map((submenu) => {
             const isOpen = isSubMenuOpen(submenu.key, submenu.items);
-
             return (
               <li key={submenu.key} className="space-y-1">
+                {" "}
                 <button
                   type="button"
                   className={submenuButtonClass(isOpen)}
                   onClick={() => toggleSubMenu(submenu.key)}
                 >
+                  {" "}
                   <span className="flex items-center gap-3">
-                    <i className={`pi ${submenu.icon} text-sm`} />
-                    <span>{submenu.label}</span>
-                  </span>
-
+                    {" "}
+                    <i className={`pi ${submenu.icon} text-sm`} />{" "}
+                    <span>{submenu.label}</span>{" "}
+                  </span>{" "}
                   <i
-                    className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"
-                      } text-xs text-slate-400`}
-                  />
-                </button>
-
+                    className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"} text-xs text-slate-400`}
+                  />{" "}
+                </button>{" "}
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen
-                    ? "mt-2 max-h-[1000px] opacity-100"
-                    : "max-h-0 opacity-0"
-                    }`}
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "mt-2 max-h-[1000px] opacity-100" : "max-h-0 opacity-0"}`}
                 >
+                  {" "}
                   <ul className="space-y-1 pl-4">
-                    {renderLinkList(submenu.items)}
-                  </ul>
-                </div>
+                    {" "}
+                    {renderLinkList(submenu.items)}{" "}
+                  </ul>{" "}
+                </div>{" "}
               </li>
             );
-          })}
-        </ul>
-      </div>
+          })}{" "}
+        </ul>{" "}
+      </div>{" "}
     </li>
   );
-
   return (
     <div className="flex h-full w-full flex-col bg-white">
+      {" "}
       <div className="shrink-0 border-b border-slate-200 px-4 py-4">
-        <AppLogo />
-      </div>
-
+        {" "}
+        <AppLogo />{" "}
+      </div>{" "}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        {" "}
         <ul className="m-0 list-none space-y-2 p-0">
+          {" "}
           {isDashboardVisible && (
             <li className="space-y-2 pb-1">
+              {" "}
               <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                Summary
-              </p>
-
+                {" "}
+                Summary{" "}
+              </p>{" "}
               <ActiveLink
                 href="/dashboard"
                 className={menuLinkClass}
                 activeClassName={menuLinkActiveClass}
                 exact={false}
               >
-                <i className="pi pi-home text-sm" />
-                <span>Dashboard</span>
-              </ActiveLink>
+                {" "}
+                <i className="pi pi-home text-sm" /> <span>Dashboard</span>{" "}
+              </ActiveLink>{" "}
             </li>
-          )}
-
+          )}{" "}
           {isMainMenuVisible && (
             <>
+              {" "}
               <li className="pt-1">
+                {" "}
                 <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Main Menu
-                </p>
-              </li>
-
+                  {" "}
+                  Main Menu{" "}
+                </p>{" "}
+              </li>{" "}
               {visibleTopMenuSections.map((section) =>
-                renderTopSection(section)
-              )}
+                renderTopSection(section),
+              )}{" "}
             </>
-          )}
-
+          )}{" "}
           {isSettingVisible && (
             <>
+              {" "}
               <li className="pt-2">
+                {" "}
                 <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Configuration
-                </p>
-              </li>
-
-              {settingContent}
+                  {" "}
+                  Configuration{" "}
+                </p>{" "}
+              </li>{" "}
+              {settingContent}{" "}
             </>
-          )}
-        </ul>
-      </div>
+          )}{" "}
+        </ul>{" "}
+      </div>{" "}
     </div>
   );
 }

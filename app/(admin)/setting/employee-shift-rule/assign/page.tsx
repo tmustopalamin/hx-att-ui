@@ -1,9 +1,7 @@
-import EmployeeShiftRuleAssignForm from './EmployeeShiftRuleAssignForm'
+import EmployeeShiftRuleAssignForm from "./EmployeeShiftRuleAssignForm";
 
 const EmployeeShiftRuleAssignPage = () => {
-    return (
-        <EmployeeShiftRuleAssignForm />
-    )
-}
+  return <EmployeeShiftRuleAssignForm />;
+};
 
-export default EmployeeShiftRuleAssignPage
+export default EmployeeShiftRuleAssignPage;

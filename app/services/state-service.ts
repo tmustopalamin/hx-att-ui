@@ -1,16 +1,16 @@
 import { ResponseTypeError } from "../types/response-type";
 import { State } from "../types/state";
 
-const API_URL = '/api/state';
+const API_URL = "/api/state";
 
 export const createState = async (data: State) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -38,38 +38,40 @@ export const createState = async (data: State) => {
   }
 
   return res.json();
-}
+};
 
-export const updateState = async (id: number, rowVersion: number, data: State) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateState = async (
+  id: number,
+  rowVersion: number,
+  data: State,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
     const errorData: ResponseTypeError = await res.json();
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const deleteState = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
@@ -77,14 +79,14 @@ export const deleteState = async (id: number, rowVersion: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgeState = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
@@ -92,15 +94,15 @@ export const purgeState = async (id: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const restoreState = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -129,5 +131,4 @@ export const restoreState = async (id: number, rowVersion: number) => {
   }
 
   return res.json();
-}
-
+};

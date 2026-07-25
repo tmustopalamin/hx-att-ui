@@ -8,11 +8,11 @@ import {
   getReligionOptions,
   updateEmployeePersonalData,
 } from "@/app/services/employee-general-service";
+import { EmployeePersonalData, OptionItem } from "@/app/types/employee-general";
 import {
-  EmployeePersonalData,
-  OptionItem,
-} from "@/app/types/employee-general";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
@@ -76,19 +76,14 @@ const PersonalData = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [
-        personal,
-        genderList,
-        religionList,
-        maritalList,
-        countryList,
-      ] = await Promise.all([
-        getEmployeePersonalData(employeeId),
-        getGenderOptions(),
-        getReligionOptions(),
-        getMaritalOptions(),
-        getCountryOptions(),
-      ]);
+      const [personal, genderList, religionList, maritalList, countryList] =
+        await Promise.all([
+          getEmployeePersonalData(employeeId),
+          getGenderOptions(),
+          getReligionOptions(),
+          getMaritalOptions(),
+          getCountryOptions(),
+        ]);
 
       setGenders(genderList.filter((a) => a.is_active !== false));
       setReligions(religionList.filter((a) => a.is_active !== false));
@@ -118,7 +113,7 @@ const PersonalData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       }
     } finally {
@@ -158,7 +153,7 @@ const PersonalData = () => {
           severity: "success",
           summary: "success",
           detail: "Personal data updated successfully",
-        })
+        }),
       );
       setIsPageEdit(false);
       await loadData();
@@ -170,7 +165,7 @@ const PersonalData = () => {
             severity: "error",
             summary: "error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -179,14 +174,18 @@ const PersonalData = () => {
             severity: "error",
             summary: "error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
   };
 
   if (loading) {
-    return <div className="py-8 text-sm text-slate-500">Loading personal data...</div>;
+    return (
+      <div className="py-8 text-sm text-slate-500">
+        Loading personal data...
+      </div>
+    );
   }
 
   return (
@@ -196,7 +195,9 @@ const PersonalData = () => {
         <div className="flex flex-col gap-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h5 className="text-xl font-semibold text-slate-900">Personal Data</h5>
+              <h5 className="text-xl font-semibold text-slate-900">
+                Personal Data
+              </h5>
               <p className="text-sm text-slate-500">
                 Basic employee identity, contacts, and nationality
               </p>
@@ -244,7 +245,11 @@ const PersonalData = () => {
                     disabled={!isPageEdit}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -255,7 +260,11 @@ const PersonalData = () => {
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
                   <label htmlFor="middle_name">Middle Name</label>
-                  <InputText id="middle_name" {...field} disabled={!isPageEdit} />
+                  <InputText
+                    id="middle_name"
+                    {...field}
+                    disabled={!isPageEdit}
+                  />
                 </div>
               )}
             />
@@ -273,7 +282,11 @@ const PersonalData = () => {
                     disabled={!isPageEdit}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -284,7 +297,11 @@ const PersonalData = () => {
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
                   <label htmlFor="preferred_name">Preferred Name</label>
-                  <InputText id="preferred_name" {...field} disabled={!isPageEdit} />
+                  <InputText
+                    id="preferred_name"
+                    {...field}
+                    disabled={!isPageEdit}
+                  />
                 </div>
               )}
             />
@@ -302,7 +319,11 @@ const PersonalData = () => {
                     disabled={!isPageEdit}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -322,9 +343,15 @@ const PersonalData = () => {
                     showIcon
                     value={field.value}
                     onChange={(e) => field.onChange(e.value)}
-                    className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
+                    className={
+                      fieldState.invalid ? "p-invalid w-full" : "w-full"
+                    }
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -348,7 +375,11 @@ const PersonalData = () => {
                     placeholder="Select gender"
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -372,7 +403,11 @@ const PersonalData = () => {
                     placeholder="Select religion"
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -396,7 +431,11 @@ const PersonalData = () => {
                     placeholder="Select marital status"
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -407,7 +446,11 @@ const PersonalData = () => {
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
                   <label htmlFor="phone_number">Phone Number</label>
-                  <InputText id="phone_number" {...field} disabled={!isPageEdit} />
+                  <InputText
+                    id="phone_number"
+                    {...field}
+                    disabled={!isPageEdit}
+                  />
                 </div>
               )}
             />
@@ -418,7 +461,11 @@ const PersonalData = () => {
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
                   <label htmlFor="personal_email">Personal Email</label>
-                  <InputText id="personal_email" {...field} disabled={!isPageEdit} />
+                  <InputText
+                    id="personal_email"
+                    {...field}
+                    disabled={!isPageEdit}
+                  />
                 </div>
               )}
             />
@@ -429,7 +476,11 @@ const PersonalData = () => {
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
                   <label htmlFor="work_email">Work Email</label>
-                  <InputText id="work_email" {...field} disabled={!isPageEdit} />
+                  <InputText
+                    id="work_email"
+                    {...field}
+                    disabled={!isPageEdit}
+                  />
                 </div>
               )}
             />

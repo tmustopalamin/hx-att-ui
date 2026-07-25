@@ -34,7 +34,6 @@
 // import { InputNumber } from 'primereact/inputnumber';
 // import { PickList, PickListChangeEvent } from 'primereact/picklist';
 
-
 // const EmployeeShiftRuleTableData = () => {
 //     // eslint-disable-next-line @typescript-eslint/no-unused-vars
 //     const [source, setSource] = useState([]);
@@ -252,7 +251,6 @@
 //             }
 
 //             data.employee_id = [...new Set([...target].map((item: Employee) => item.id))]
-
 
 //             handleSubmitNew(data);
 //             return;

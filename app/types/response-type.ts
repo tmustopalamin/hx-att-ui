@@ -1,20 +1,20 @@
 export interface ResponseType<T> {
-    success: boolean;
-    data: T;
-    message: string;
+  success: boolean;
+  data: T;
+  message: string;
 }
 
 export interface ResponseTypeCreateSuccess {
-    id: number;
-    row_version: number;
+  id: number;
+  row_version: number;
 }
 
 export interface ResponseTypeCreateSuccess {
-    id: number;
+  id: number;
 }
 
 export interface ResponseTypeError {
-    success: boolean;
-    code: string;
-    message: string;
+  success: boolean;
+  code: string;
+  message: string;
 }

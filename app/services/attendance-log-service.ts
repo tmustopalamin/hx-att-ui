@@ -1,14 +1,14 @@
 import { AttendanceLog } from "../types/attendance-log";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/attendance-log';
+const API_URL = "/api/attendance-log";
 
 export const remapEmployeeAttendanceLog = async () => {
-  const res = await fetch(API_URL + '/remap-employee', {
-    method: 'POST',
-    credentials: 'include',
+  const res = await fetch(API_URL + "/remap-employee", {
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     // body: JSON.stringify(data)
   });
@@ -38,16 +38,16 @@ export const remapEmployeeAttendanceLog = async () => {
   }
 
   return res.json();
-}
+};
 
 export const createAttendanceLog = async (data: AttendanceLog) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -75,38 +75,40 @@ export const createAttendanceLog = async (data: AttendanceLog) => {
   }
 
   return res.json();
-}
+};
 
-export const updateAttendanceLog = async (id: number, rowVersion: number, data: AttendanceLog) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateAttendanceLog = async (
+  id: number,
+  rowVersion: number,
+  data: AttendanceLog,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
     const errorData: ResponseTypeError = await res.json();
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const deleteAttendanceLog = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
@@ -114,14 +116,14 @@ export const deleteAttendanceLog = async (id: number, rowVersion: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgeAttendanceLog = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
@@ -129,15 +131,15 @@ export const purgeAttendanceLog = async (id: number) => {
     throw errorData;
   }
   return res.json();
-}
+};
 
 export const restoreAttendanceLog = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -166,7 +168,7 @@ export const restoreAttendanceLog = async (id: number, rowVersion: number) => {
   }
 
   return res.json();
-}
+};
 
 export interface AttendanceLogSyncScannerResult {
   scanner_id: number;
@@ -216,10 +218,10 @@ export interface AttendanceLogSyncResult {
 
 export const syncAttendanceLog = async () => {
   const res = await fetch(`${API_URL}/sync`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 
@@ -254,10 +256,10 @@ export const syncAttendanceLog = async () => {
 
 export const syncAttendanceLogByScanner = async (scannerId: number) => {
   const res = await fetch(`${API_URL}/sync/${scannerId}`, {
-    method: 'POST',
-    credentials: 'include',
+    method: "POST",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
   });
 

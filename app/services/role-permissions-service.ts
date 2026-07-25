@@ -3,7 +3,9 @@ import { RolePermissions } from "../types/role-permissions";
 
 const API_URL = "/api/roles";
 
-const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+const parseErrorResponse = async (
+  res: Response,
+): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
   try {

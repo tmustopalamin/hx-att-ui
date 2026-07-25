@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const MyAttendancePage = () => {
-  return (
-    <div>disini history per employee</div>
-  )
-}
+  return <div>disini history per employee</div>;
+};
 
-export default MyAttendancePage
+export default MyAttendancePage;

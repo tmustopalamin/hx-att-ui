@@ -3,7 +3,9 @@ import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/request-leave";
 
-const parseErrorResponse = async (res: Response): Promise<ResponseTypeError> => {
+const parseErrorResponse = async (
+  res: Response,
+): Promise<ResponseTypeError> => {
   const contentType = res.headers.get("Content-Type");
 
   try {
@@ -32,7 +34,7 @@ const validateRowVersion = (rowVersion: number) => {
 };
 
 export const getRequestLeaveAttachments = async (
-  requestLeaveId: number
+  requestLeaveId: number,
 ): Promise<RequestLeaveAttachment[]> => {
   const res = await fetch(`${API_URL}/${requestLeaveId}/attachments`, {
     method: "GET",
@@ -51,7 +53,7 @@ export const getRequestLeaveAttachments = async (
 
 export const uploadRequestLeaveAttachment = async (
   requestLeaveId: number,
-  file: File
+  file: File,
 ) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -72,7 +74,7 @@ export const uploadRequestLeaveAttachment = async (
 export const deleteRequestLeaveAttachment = async (
   requestLeaveId: number,
   attachmentId: number,
-  rowVersion: number
+  rowVersion: number,
 ) => {
   validateRowVersion(rowVersion);
 
@@ -85,7 +87,7 @@ export const deleteRequestLeaveAttachment = async (
         "Content-Type": "application/json",
         "If-Match": String(rowVersion),
       },
-    }
+    },
   );
 
   if (!res.ok) {
@@ -97,7 +99,7 @@ export const deleteRequestLeaveAttachment = async (
 
 export const viewRequestLeaveAttachmentUrl = (
   requestLeaveId: number,
-  attachmentId: number
+  attachmentId: number,
 ) => {
   return `${API_URL}/${requestLeaveId}/attachments/${attachmentId}/view`;
 };

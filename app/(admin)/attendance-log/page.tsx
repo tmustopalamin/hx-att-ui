@@ -1,16 +1,13 @@
-import React from 'react'
-import AttendanceLogTableData from './AttendanceLogTableData';
+import React from "react";
+import AttendanceLogTableData from "./AttendanceLogTableData";
 
 export const metadata = {
-  title: 'Attendance Log - PT. Hexing Technology',
-  description: 'view attendance log',
+  title: "Attendance Log - PT. Hexing Technology",
+  description: "view attendance log",
 };
 
-
 const AttendanceLogPage = () => {
-  return (
-    <AttendanceLogTableData />
-  )
-}
+  return <AttendanceLogTableData />;
+};
 
-export default AttendanceLogPage
+export default AttendanceLogPage;

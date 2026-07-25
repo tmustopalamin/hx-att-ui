@@ -14,7 +14,10 @@ import {
   EmployeeIdentityRow,
   OptionItem,
 } from "@/app/types/employee-general";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
@@ -68,7 +71,9 @@ const PersonalIdentityAndAddress = () => {
   const [isAddMode, setIsAddMode] = useState(true);
   const [identities, setIdentities] = useState<EmployeeIdentityRow[]>([]);
   const [identityTypes, setIdentityTypes] = useState<OptionItem[]>([]);
-  const [selectedRow, setSelectedRow] = useState<EmployeeIdentityRow | null>(null);
+  const [selectedRow, setSelectedRow] = useState<EmployeeIdentityRow | null>(
+    null,
+  );
 
   const { control, handleSubmit, reset, setValue } = useForm<FormData>({
     defaultValues: emptyFormValues,
@@ -81,7 +86,7 @@ const PersonalIdentityAndAddress = () => {
 
   const activeIdentityTypes = useMemo(
     () => identityTypes.filter((item) => item.is_active !== false),
-    [identityTypes]
+    [identityTypes],
   );
 
   const loadData = async () => {
@@ -102,7 +107,7 @@ const PersonalIdentityAndAddress = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       }
     } finally {
@@ -172,7 +177,7 @@ const PersonalIdentityAndAddress = () => {
           employeeId,
           selectedRow.id,
           selectedRow.row_version,
-          payload
+          payload,
         );
       }
 
@@ -184,7 +189,7 @@ const PersonalIdentityAndAddress = () => {
           detail: isAddMode
             ? "Identity created successfully"
             : "Identity updated successfully",
-        })
+        }),
       );
 
       hideDialog();
@@ -197,7 +202,7 @@ const PersonalIdentityAndAddress = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -206,7 +211,7 @@ const PersonalIdentityAndAddress = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -227,7 +232,7 @@ const PersonalIdentityAndAddress = () => {
               severity: "success",
               summary: "Success",
               detail: "Identity deleted successfully",
-            })
+            }),
           );
           await loadData();
         } catch (err: unknown) {
@@ -238,7 +243,7 @@ const PersonalIdentityAndAddress = () => {
                 severity: "error",
                 summary: "Error",
                 detail: getErrorMessage(err, "message"),
-              })
+              }),
             );
           }
         }
@@ -255,7 +260,7 @@ const PersonalIdentityAndAddress = () => {
           severity: "success",
           summary: "Success",
           detail: "Identity restored successfully",
-        })
+        }),
       );
       await loadData();
     } catch (err: unknown) {
@@ -266,7 +271,7 @@ const PersonalIdentityAndAddress = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       }
     }
@@ -274,8 +279,7 @@ const PersonalIdentityAndAddress = () => {
 
   const onPurge = (row: EmployeeIdentityRow) => {
     confirmDialog({
-      message:
-        "This will permanently delete the identity record. Continue?",
+      message: "This will permanently delete the identity record. Continue?",
       header: "Permanent Delete Confirmation",
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
@@ -288,7 +292,7 @@ const PersonalIdentityAndAddress = () => {
               severity: "success",
               summary: "Success",
               detail: "Identity permanently deleted",
-            })
+            }),
           );
           await loadData();
         } catch (err: unknown) {
@@ -299,7 +303,7 @@ const PersonalIdentityAndAddress = () => {
                 severity: "error",
                 summary: "Error",
                 detail: getErrorMessage(err, "message"),
-              })
+              }),
             );
           }
         }
@@ -542,7 +546,8 @@ const PersonalIdentityAndAddress = () => {
                         Valid for lifetime
                       </p>
                       <p className={helperTextClass}>
-                        Enable this if the document does not have an expiration date.
+                        Enable this if the document does not have an expiration
+                        date.
                       </p>
                     </div>
                     <InputSwitch
@@ -593,7 +598,9 @@ const PersonalIdentityAndAddress = () => {
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}
                   className="w-full"
-                  placeholder={isPermanent ? "Lifetime document" : "Select expire date"}
+                  placeholder={
+                    isPermanent ? "Lifetime document" : "Select expire date"
+                  }
                 />
                 <p className={helperTextClass}>
                   Leave empty for documents without expiry.
@@ -634,7 +641,10 @@ const PersonalIdentityAndAddress = () => {
             rules={{ required: "Residential address is required" }}
             render={({ field, fieldState }) => (
               <div>
-                <label htmlFor="residential_address" className={fieldLabelClass}>
+                <label
+                  htmlFor="residential_address"
+                  className={fieldLabelClass}
+                >
                   Residential Address
                 </label>
                 <InputTextarea

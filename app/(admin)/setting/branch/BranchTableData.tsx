@@ -15,7 +15,10 @@ import {
   updateBranch,
 } from "@/app/services/branch-service";
 import { fetcher } from "@/app/utils/fetcher";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
@@ -114,7 +117,9 @@ const BranchFormWatcher = ({
             disabled={!selectedStateId}
             className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
           />
-          {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+          {fieldState.error && (
+            <small className="p-error">{fieldState.error.message}</small>
+          )}
         </div>
       )}
     />
@@ -132,7 +137,8 @@ const BranchTableData = () => {
   const [visible, setVisible] = useState(false);
   const [isAddNew, setIsAddNew] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
 
   const {
     control,
@@ -149,23 +155,34 @@ const BranchTableData = () => {
   const branchKey = `/api/branch?show_all=${isShowDeletedDataChecked}`;
 
   const { data, error, isLoading } = useSWR<Branch[]>(branchKey, fetcher);
-  const { data: agencyData } = useSWR<Agency[]>("/api/agency?show_all=false", fetcher);
-  const { data: stateData } = useSWR<StateOption[]>("/api/state?show_all=false", fetcher);
-  const { data: cityData } = useSWR<CityOption[]>("/api/city?show_all=false", fetcher);
+  const { data: agencyData } = useSWR<Agency[]>(
+    "/api/agency?show_all=false",
+    fetcher,
+  );
+  const { data: stateData } = useSWR<StateOption[]>(
+    "/api/state?show_all=false",
+    fetcher,
+  );
+  const { data: cityData } = useSWR<CityOption[]>(
+    "/api/city?show_all=false",
+    fetcher,
+  );
 
   const activeAgency = useMemo(
     () => (agencyData ?? []).filter((v) => !v.deleted_at && v.is_active),
-    [agencyData]
+    [agencyData],
   );
 
   const activeState = useMemo(
-    () => (stateData ?? []).filter((v) => !v.deleted_at && v.is_active !== false),
-    [stateData]
+    () =>
+      (stateData ?? []).filter((v) => !v.deleted_at && v.is_active !== false),
+    [stateData],
   );
 
   const activeCity = useMemo(
-    () => (cityData ?? []).filter((v) => !v.deleted_at && v.is_active !== false),
-    [cityData]
+    () =>
+      (cityData ?? []).filter((v) => !v.deleted_at && v.is_active !== false),
+    [cityData],
   );
 
   const summary = useMemo(() => {
@@ -252,7 +269,7 @@ const BranchTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Branch created successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -262,7 +279,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -271,7 +288,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -281,19 +298,23 @@ const BranchTableData = () => {
     if (!selectedData) return;
 
     try {
-      const res = await updateBranch(selectedData.id, selectedData.row_version, {
-        ...form,
-        code: form.code.trim(),
-        name: form.name.trim(),
-        agency_id: form.agency_id ?? null,
-        address: form.address?.trim() || null,
-        postal_code: form.postal_code?.trim() || null,
-        phone_number: form.phone_number?.trim() || null,
-        fax_number: form.fax_number?.trim() || null,
-        nitku_number: form.nitku_number?.trim() || null,
-        npwp15_number: form.npwp15_number.trim(),
-        npwp16_number: form.npwp16_number?.trim() || null,
-      });
+      const res = await updateBranch(
+        selectedData.id,
+        selectedData.row_version,
+        {
+          ...form,
+          code: form.code.trim(),
+          name: form.name.trim(),
+          agency_id: form.agency_id ?? null,
+          address: form.address?.trim() || null,
+          postal_code: form.postal_code?.trim() || null,
+          phone_number: form.phone_number?.trim() || null,
+          fax_number: form.fax_number?.trim() || null,
+          nitku_number: form.nitku_number?.trim() || null,
+          npwp15_number: form.npwp15_number.trim(),
+          npwp16_number: form.npwp16_number?.trim() || null,
+        },
+      );
 
       closeDialog();
       await refreshList();
@@ -304,7 +325,7 @@ const BranchTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Branch updated successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -314,7 +335,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -323,7 +344,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -340,7 +361,7 @@ const BranchTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Branch deleted successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -350,7 +371,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -359,7 +380,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -376,7 +397,7 @@ const BranchTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Branch restored successfully",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -386,7 +407,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -395,7 +416,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -412,7 +433,7 @@ const BranchTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message ?? "Branch permanently deleted",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -422,7 +443,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -431,7 +452,7 @@ const BranchTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -502,22 +523,47 @@ const BranchTableData = () => {
     if (rowData.deleted_at) {
       return (
         <div className="flex gap-2">
-          <Button rounded severity="success" icon="pi pi-refresh" size="small" onClick={() => onClickRestore(rowData)} />
-          <Button rounded severity="secondary" icon="pi pi-times" size="small" onClick={() => onClickPurge(rowData)} />
+          <Button
+            rounded
+            severity="success"
+            icon="pi pi-refresh"
+            size="small"
+            onClick={() => onClickRestore(rowData)}
+          />
+          <Button
+            rounded
+            severity="secondary"
+            icon="pi pi-times"
+            size="small"
+            onClick={() => onClickPurge(rowData)}
+          />
         </div>
       );
     }
 
     return (
       <div className="flex gap-2">
-        <Button rounded severity="help" icon="pi pi-pencil" size="small" onClick={() => onClickEdit(rowData)} />
-        <Button rounded severity="danger" icon="pi pi-trash" size="small" onClick={() => onClickDelete(rowData)} />
+        <Button
+          rounded
+          severity="help"
+          icon="pi pi-pencil"
+          size="small"
+          onClick={() => onClickEdit(rowData)}
+        />
+        <Button
+          rounded
+          severity="danger"
+          icon="pi pi-trash"
+          size="small"
+          onClick={() => onClickDelete(rowData)}
+        />
       </div>
     );
   };
 
   if (isLoading) return <LoadingDataTable />;
-  if (error) return <ErrorNotConnectedToApi mutateKey="/api/branch?show_all=true" />;
+  if (error)
+    return <ErrorNotConnectedToApi mutateKey="/api/branch?show_all=true" />;
 
   return (
     <>
@@ -525,10 +571,30 @@ const BranchTableData = () => {
 
       <div className="flex flex-col gap-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="shadow-sm"><div><p className="text-sm text-slate-500">Total</p><h3 className="text-2xl font-semibold">{summary.total}</h3></div></Card>
-          <Card className="shadow-sm"><div><p className="text-sm text-slate-500">Active</p><h3 className="text-2xl font-semibold">{summary.active}</h3></div></Card>
-          <Card className="shadow-sm"><div><p className="text-sm text-slate-500">Inactive</p><h3 className="text-2xl font-semibold">{summary.inactive}</h3></div></Card>
-          <Card className="shadow-sm"><div><p className="text-sm text-slate-500">Deleted</p><h3 className="text-2xl font-semibold">{summary.deleted}</h3></div></Card>
+          <Card className="shadow-sm">
+            <div>
+              <p className="text-sm text-slate-500">Total</p>
+              <h3 className="text-2xl font-semibold">{summary.total}</h3>
+            </div>
+          </Card>
+          <Card className="shadow-sm">
+            <div>
+              <p className="text-sm text-slate-500">Active</p>
+              <h3 className="text-2xl font-semibold">{summary.active}</h3>
+            </div>
+          </Card>
+          <Card className="shadow-sm">
+            <div>
+              <p className="text-sm text-slate-500">Inactive</p>
+              <h3 className="text-2xl font-semibold">{summary.inactive}</h3>
+            </div>
+          </Card>
+          <Card className="shadow-sm">
+            <div>
+              <p className="text-sm text-slate-500">Deleted</p>
+              <h3 className="text-2xl font-semibold">{summary.deleted}</h3>
+            </div>
+          </Card>
         </div>
 
         <Card className="shadow-sm">
@@ -536,7 +602,9 @@ const BranchTableData = () => {
             <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h1 className="text-2xl font-semibold">Branch</h1>
-                <p className="text-sm text-slate-500">Manage branch / work location master under agency.</p>
+                <p className="text-sm text-slate-500">
+                  Manage branch / work location master under agency.
+                </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -544,9 +612,13 @@ const BranchTableData = () => {
                   <Checkbox
                     inputId="showDeletedBranch"
                     checked={isShowDeletedDataChecked}
-                    onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
+                    onChange={() =>
+                      setIsShowDeletedDataChecked((prev) => !prev)
+                    }
                   />
-                  <label htmlFor="showDeletedBranch" className="text-sm">Show deleted data</label>
+                  <label htmlFor="showDeletedBranch" className="text-sm">
+                    Show deleted data
+                  </label>
                 </div>
 
                 <IconField iconPosition="left">
@@ -559,7 +631,11 @@ const BranchTableData = () => {
                   />
                 </IconField>
 
-                <Button label="New Branch" icon="pi pi-plus" onClick={onClickNew} />
+                <Button
+                  label="New Branch"
+                  icon="pi pi-plus"
+                  onClick={onClickNew}
+                />
               </div>
             </div>
 
@@ -571,22 +647,70 @@ const BranchTableData = () => {
               rowsPerPageOptions={[10, 25, 50]}
               dataKey="id"
               filters={filters}
-              globalFilterFields={["code", "name", "agency_name", "city_name", "state_name", "phone_number", "npwp15_number"]}
+              globalFilterFields={[
+                "code",
+                "name",
+                "agency_name",
+                "city_name",
+                "state_name",
+                "phone_number",
+                "npwp15_number",
+              ]}
               emptyMessage="No branch found."
               loading={isLoading}
               scrollable
               tableStyle={{ minWidth: "90rem" }}
             >
-              <Column header="#" body={(_, options) => options.rowIndex + 1} style={{ width: "4rem" }} />
-              <Column field="code" header="Code" style={{ minWidth: "10rem" }} />
-              <Column field="name" header="Name" style={{ minWidth: "14rem" }} />
-              <Column field="agency_name" header="Agency" style={{ minWidth: "14rem" }} />
-              <Column field="state_name" header="State" style={{ minWidth: "12rem" }} />
-              <Column field="city_name" header="City" style={{ minWidth: "12rem" }} />
-              <Column field="phone_number" header="Phone" style={{ minWidth: "10rem" }} />
-              <Column field="npwp15_number" header="NPWP 15" style={{ minWidth: "12rem" }} />
-              <Column header="Active" body={activeBodyTemplate} style={{ minWidth: "8rem" }} />
-              <Column header="Status" body={statusBodyTemplate} style={{ minWidth: "8rem" }} />
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                style={{ width: "4rem" }}
+              />
+              <Column
+                field="code"
+                header="Code"
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                field="name"
+                header="Name"
+                style={{ minWidth: "14rem" }}
+              />
+              <Column
+                field="agency_name"
+                header="Agency"
+                style={{ minWidth: "14rem" }}
+              />
+              <Column
+                field="state_name"
+                header="State"
+                style={{ minWidth: "12rem" }}
+              />
+              <Column
+                field="city_name"
+                header="City"
+                style={{ minWidth: "12rem" }}
+              />
+              <Column
+                field="phone_number"
+                header="Phone"
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                field="npwp15_number"
+                header="NPWP 15"
+                style={{ minWidth: "12rem" }}
+              />
+              <Column
+                header="Active"
+                body={activeBodyTemplate}
+                style={{ minWidth: "8rem" }}
+              />
+              <Column
+                header="Status"
+                body={statusBodyTemplate}
+                style={{ minWidth: "8rem" }}
+              />
               <Column
                 header="Action"
                 body={actionColumnBody}
@@ -609,8 +733,19 @@ const BranchTableData = () => {
           breakpoints={{ "960px": "90vw", "640px": "96vw" }}
           footer={
             <div className="flex justify-end gap-2">
-              <Button type="button" label="Cancel" icon="pi pi-times" className="p-button-text" onClick={closeDialog} />
-              <Button type="submit" label={isAddNew ? "Submit" : "Save"} icon="pi pi-check" disabled={!isValid} />
+              <Button
+                type="button"
+                label="Cancel"
+                icon="pi pi-times"
+                className="p-button-text"
+                onClick={closeDialog}
+              />
+              <Button
+                type="submit"
+                label={isAddNew ? "Submit" : "Save"}
+                icon="pi pi-check"
+                disabled={!isValid}
+              />
             </div>
           }
         >
@@ -626,8 +761,15 @@ const BranchTableData = () => {
               render={({ field, fieldState }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium">Code</label>
-                  <InputText {...field} className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`} />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  <InputText
+                    {...field}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -639,8 +781,15 @@ const BranchTableData = () => {
               render={({ field, fieldState }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium">Name</label>
-                  <InputText {...field} className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`} />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  <InputText
+                    {...field}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -654,7 +803,9 @@ const BranchTableData = () => {
               }}
               render={({ field, fieldState }) => (
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">Agency</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    Agency
+                  </label>
                   <Dropdown
                     value={field.value}
                     options={activeAgency}
@@ -664,7 +815,11 @@ const BranchTableData = () => {
                     placeholder="Select agency"
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -682,7 +837,9 @@ const BranchTableData = () => {
               }}
               render={({ field, fieldState }) => (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">State</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    State
+                  </label>
                   <Dropdown
                     value={field.value}
                     options={activeState}
@@ -692,19 +849,29 @@ const BranchTableData = () => {
                     placeholder="Select state"
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
 
-            <BranchFormWatcher control={control} stateOptions={activeState} cityOptions={activeCity} />
+            <BranchFormWatcher
+              control={control}
+              stateOptions={activeState}
+              cityOptions={activeCity}
+            />
 
             <Controller
               name="postal_code"
               control={control}
               render={({ field }) => (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">Postal Code</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    Postal Code
+                  </label>
                   <InputText {...field} className="w-full" />
                 </div>
               )}
@@ -715,7 +882,9 @@ const BranchTableData = () => {
               control={control}
               render={({ field }) => (
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">Address</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    Address
+                  </label>
                   <InputTextarea {...field} rows={3} className="w-full" />
                 </div>
               )}
@@ -730,7 +899,9 @@ const BranchTableData = () => {
               control={control}
               render={({ field }) => (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">Phone</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    Phone
+                  </label>
                   <InputText {...field} className="w-full" />
                 </div>
               )}
@@ -752,7 +923,9 @@ const BranchTableData = () => {
               control={control}
               render={({ field }) => (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">NITKU Number</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    NITKU Number
+                  </label>
                   <InputText {...field} className="w-full" />
                 </div>
               )}
@@ -764,9 +937,18 @@ const BranchTableData = () => {
               rules={{ required: "NPWP 15 is required" }}
               render={({ field, fieldState }) => (
                 <div>
-                  <label className="mb-2 block text-sm font-medium">NPWP 15 Number</label>
-                  <InputText {...field} className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`} />
-                  {fieldState.error && <small className="p-error">{fieldState.error.message}</small>}
+                  <label className="mb-2 block text-sm font-medium">
+                    NPWP 15 Number
+                  </label>
+                  <InputText
+                    {...field}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
                 </div>
               )}
             />
@@ -776,7 +958,9 @@ const BranchTableData = () => {
               control={control}
               render={({ field }) => (
                 <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">NPWP 16 Number</label>
+                  <label className="mb-2 block text-sm font-medium">
+                    NPWP 16 Number
+                  </label>
                   <InputText {...field} className="w-full" />
                 </div>
               )}
@@ -791,9 +975,15 @@ const BranchTableData = () => {
                     <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                       <div>
                         <p className="text-sm font-semibold">Active</p>
-                        <p className="text-xs text-slate-500">Enable if this branch can be selected in employee employment.</p>
+                        <p className="text-xs text-slate-500">
+                          Enable if this branch can be selected in employee
+                          employment.
+                        </p>
                       </div>
-                      <InputSwitch checked={!!field.value} onChange={(e) => field.onChange(e.value)} />
+                      <InputSwitch
+                        checked={!!field.value}
+                        onChange={(e) => field.onChange(e.value)}
+                      />
                     </div>
                   )}
                 />

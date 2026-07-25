@@ -1,16 +1,16 @@
 import { PayrollFormula } from "../types/payroll-formula";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/payroll-formula';
+const API_URL = "/api/payroll-formula";
 
 export const createPayrollFormula = async (data: PayrollFormula) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -38,69 +38,71 @@ export const createPayrollFormula = async (data: PayrollFormula) => {
   }
 
   return res.json();
-}
+};
 
-export const updatePayrollFormula = async (id: number, rowVersion: number, data: PayrollFormula) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updatePayrollFormula = async (
+  id: number,
+  rowVersion: number,
+  data: PayrollFormula,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const deletePayrollFormula = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgePayrollFormula = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const restorePayrollFormula = async (id: number, rowVersion: number) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -129,5 +131,4 @@ export const restorePayrollFormula = async (id: number, rowVersion: number) => {
   }
 
   return res.json();
-}
-
+};

@@ -1,12 +1,12 @@
-import LeaveTableData from './LeaveTableData';
+import LeaveTableData from "./LeaveTableData";
 
 export const metadata = {
-  title: 'Leave Balance - PT. Hexing Technology',
-  description: 'employee leave balance detail',
+  title: "Leave Balance - PT. Hexing Technology",
+  description: "employee leave balance detail",
 };
 
 const EmployeeTimeLeave = () => {
-  return <LeaveTableData />
-}
+  return <LeaveTableData />;
+};
 
-export default EmployeeTimeLeave
+export default EmployeeTimeLeave;

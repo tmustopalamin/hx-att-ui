@@ -1,18 +1,20 @@
-import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import ShiftRuleTableData from './ShiftRuleTableData';
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import ShiftRuleTableData from "./ShiftRuleTableData";
 
 dayjs.extend(utc);
 
 export const metadata = {
-    title: 'Manage Shift Rule - PT. Hexing Technology',
-    description: 'add, update, delete shift rule data',
+  title: "Manage Shift Rule - PT. Hexing Technology",
+  description: "add, update, delete shift rule data",
 };
 
 const ShiftRuleSettingPage = () => {
-    return <>
-        <ShiftRuleTableData />
+  return (
+    <>
+      <ShiftRuleTableData />
     </>
-}
+  );
+};
 
-export default ShiftRuleSettingPage
+export default ShiftRuleSettingPage;

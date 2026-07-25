@@ -1,16 +1,16 @@
 import PermissionsTableData from "./PermissionsTableData";
 
 export const metadata = {
-    title: 'Manage Permissions - PT. Hexing Technology',
-    description: 'add, update, delete Permission',
+  title: "Manage Permissions - PT. Hexing Technology",
+  description: "add, update, delete Permission",
 };
 
 const RoleSettingPage = () => {
-    return <>
-        <PermissionsTableData />
+  return (
+    <>
+      <PermissionsTableData />
     </>
-}
+  );
+};
 
-
-
-export default RoleSettingPage
+export default RoleSettingPage;

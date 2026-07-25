@@ -1,16 +1,13 @@
-import React from 'react'
-import AttendanceSummaryTableData from './AttendanceSummaryTableData';
+import React from "react";
+import AttendanceSummaryTableData from "./AttendanceSummaryTableData";
 
 export const metadata = {
-  title: 'Attendance Summary - PT. Hexing Technology',
-  description: 'view attendance summary',
+  title: "Attendance Summary - PT. Hexing Technology",
+  description: "view attendance summary",
 };
 
-
 const AttendanceSummaryPage = () => {
-  return (
-    <AttendanceSummaryTableData />
-  )
-}
+  return <AttendanceSummaryTableData />;
+};
 
-export default AttendanceSummaryPage
+export default AttendanceSummaryPage;

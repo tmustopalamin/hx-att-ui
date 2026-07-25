@@ -1,12 +1,12 @@
 import MyProfilePage from "./MyProfilePage";
 
 export const metadata = {
-    title: "My Profile - PT. Hexing Technology",
-    description: "View my employee profile data",
+  title: "My Profile - PT. Hexing Technology",
+  description: "View my employee profile data",
 };
 
 const Page = () => {
-    return <MyProfilePage />;
+  return <MyProfilePage />;
 };
 
 export default Page;

@@ -84,7 +84,7 @@ export const createEmployeeFingerprint = async (data: EmployeeFingerprint) => {
 export const updateEmployeeFingerprint = async (
   id: number,
   rowVersion: number,
-  data: EmployeeFingerprint
+  data: EmployeeFingerprint,
 ) => {
   if (rowVersion <= -1) {
     throw new Error("rowVersion is required");
@@ -114,7 +114,7 @@ export const updateEmployeeFingerprint = async (
 
 export const deleteEmployeeFingerprint = async (
   id: number,
-  data: EmployeeFingerprint
+  data: EmployeeFingerprint,
 ) => {
   if (data.row_version <= -1) {
     throw new Error("rowVersion is required");
@@ -135,7 +135,7 @@ export const deleteEmployeeFingerprint = async (
 
 export const purgeEmployeeFingerprint = async (
   id: number,
-  data: EmployeeFingerprint
+  data: EmployeeFingerprint,
 ) => {
   const res = await fetch(
     `${API_URL}/${data.employee_id}/fingerprint/${id}/purge`,
@@ -145,7 +145,7 @@ export const purgeEmployeeFingerprint = async (
       headers: {
         "Content-Type": "application/json",
       },
-    }
+    },
   );
 
   await ensureOk(res);
@@ -154,7 +154,7 @@ export const purgeEmployeeFingerprint = async (
 
 export const restoreEmployeeFingerprint = async (
   id: number,
-  data: EmployeeFingerprint
+  data: EmployeeFingerprint,
 ) => {
   const res = await fetch(
     `${API_URL}/${data.employee_id}/fingerprint/${id}/restore`,
@@ -165,7 +165,7 @@ export const restoreEmployeeFingerprint = async (
         "Content-Type": "application/json",
         "If-Match": String(data.row_version),
       },
-    }
+    },
   );
 
   await ensureOk(res);
@@ -180,7 +180,7 @@ export const restoreEmployeeFingerprint = async (
  */
 export const checkPinEmployeeFingerprint = async (
   fp_device_id: number,
-  fp_pin: string
+  fp_pin: string,
 ): Promise<CheckFingerprintPin2Response> => {
   const body = {
     fp_device_id,

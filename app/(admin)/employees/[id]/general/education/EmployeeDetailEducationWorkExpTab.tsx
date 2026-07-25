@@ -16,32 +16,32 @@ const tabs: Array<{
   icon: string;
   description: string;
 }> = [
-    {
-      key: "formal",
-      label: "Formal Education",
-      icon: "pi pi-building-columns",
-      description: "School, diploma, bachelor, master, and other formal records.",
-    },
-    {
-      key: "informal",
-      label: "Informal Education",
-      icon: "pi pi-book",
-      description: "Course, workshop, training, and certification records.",
-    },
-    {
-      key: "work-experience",
-      label: "Work Experience",
-      icon: "pi pi-briefcase",
-      description: "Previous company and professional experience records.",
-    },
-  ];
+  {
+    key: "formal",
+    label: "Formal Education",
+    icon: "pi pi-building-columns",
+    description: "School, diploma, bachelor, master, and other formal records.",
+  },
+  {
+    key: "informal",
+    label: "Informal Education",
+    icon: "pi pi-book",
+    description: "Course, workshop, training, and certification records.",
+  },
+  {
+    key: "work-experience",
+    label: "Work Experience",
+    icon: "pi pi-briefcase",
+    description: "Previous company and professional experience records.",
+  },
+];
 
 const EmployeeDetailEducationWorkExpTab = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("formal");
 
   const activeTabMeta = useMemo(
     () => tabs.find((tab) => tab.key === activeTab) ?? tabs[0],
-    [activeTab]
+    [activeTab],
   );
 
   const renderContent = () => {
@@ -70,10 +70,11 @@ const EmployeeDetailEducationWorkExpTab = () => {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`justify-start rounded-xl border px-4 py-3 text-left shadow-none transition ${isActive
+                  className={`justify-start rounded-xl border px-4 py-3 text-left shadow-none transition ${
+                    isActive
                       ? "border-blue-200 bg-blue-600 text-white hover:bg-blue-700"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                    }`}
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className={`${tab.icon} text-sm`} />

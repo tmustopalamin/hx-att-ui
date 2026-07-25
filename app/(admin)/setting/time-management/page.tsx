@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const SettingTimeManagementPage = () => {
-  return (
-    <div>SettingTimeManagementPage</div>
-  )
-}
+  return <div>SettingTimeManagementPage</div>;
+};
 
-export default SettingTimeManagementPage
+export default SettingTimeManagementPage;

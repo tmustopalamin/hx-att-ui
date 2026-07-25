@@ -35,8 +35,6 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-
-
 docker build -t my-nextjs-app:latest .
 docker save my-nextjs-app:latest -o my-nextjs-app.tar
 Compress-Archive -Path my-nextjs-app.tar -DestinationPath my-nextjs-app.zip
@@ -50,11 +48,10 @@ ok-penambahan di fingerprint_scanner, kolom: last_pull_time, type: datetime with
 pending-penambahan table employee_shift_assignment
 pending-add constraint di employee_shift_rule, unique_emp_id_shift_id_rotation_value
 pending-tambahkan unique constract
-  ALTER TABLE employee_shift_assignment
-  ADD CONSTRAINT unique_employee_shift UNIQUE (employee_id, shift_id, shift_date);
+ALTER TABLE employee_shift_assignment
+ADD CONSTRAINT unique_employee_shift UNIQUE (employee_id, shift_id, shift_date);
 
 pending-tambahkan
 ALTER TABLE attendance_summary
 ADD CONSTRAINT uq_attendance_summary_employee_date
 UNIQUE (employee_id, summary_date);
-

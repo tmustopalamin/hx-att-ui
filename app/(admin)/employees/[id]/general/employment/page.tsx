@@ -1,10 +1,8 @@
-import React from 'react'
-import EmployeeDetailEmployment from './EmployeeDetailEmployment'
+import React from "react";
+import EmployeeDetailEmployment from "./EmployeeDetailEmployment";
 
 const EmployeeDetailGeneralEmployment = () => {
-  return (
-    <EmployeeDetailEmployment />
-  )
-}
+  return <EmployeeDetailEmployment />;
+};
 
-export default EmployeeDetailGeneralEmployment
+export default EmployeeDetailGeneralEmployment;

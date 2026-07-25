@@ -25,7 +25,9 @@ const ForgotPasswordPage = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [isOtpFormVisible, setOtpFormVisible] = useState(false);
-  const [otpToken, setOtpToken] = useState<string | number | undefined | null>("");
+  const [otpToken, setOtpToken] = useState<string | number | undefined | null>(
+    "",
+  );
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -65,7 +67,7 @@ const ForgotPasswordPage = () => {
           severity: "success",
           summary: "OTP Sent",
           detail: responseData.message,
-        })
+        }),
       );
     } catch (err: unknown) {
       const errorMessage =
@@ -81,7 +83,7 @@ const ForgotPasswordPage = () => {
           severity: "error",
           summary: "Failed",
           detail: errorMessage,
-        })
+        }),
       );
     } finally {
       setSubmitting(false);
@@ -124,7 +126,7 @@ const ForgotPasswordPage = () => {
           severity: "success",
           summary: "Success",
           detail: responseData.message,
-        })
+        }),
       );
 
       router.replace("/login");
@@ -142,7 +144,7 @@ const ForgotPasswordPage = () => {
           severity: "error",
           summary: "Failed",
           detail: errorMessage,
-        })
+        }),
       );
     } finally {
       setSubmitting(false);
@@ -160,16 +162,18 @@ const ForgotPasswordPage = () => {
       <div className="mb-6 flex items-center justify-center gap-3">
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${!isOtpFormVisible
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-              : "bg-blue-100 text-blue-700"
-              }`}
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+              !isOtpFormVisible
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                : "bg-blue-100 text-blue-700"
+            }`}
           >
             1
           </div>
           <span
-            className={`text-xs font-semibold ${!isOtpFormVisible ? "text-slate-800" : "text-slate-500"
-              }`}
+            className={`text-xs font-semibold ${
+              !isOtpFormVisible ? "text-slate-800" : "text-slate-500"
+            }`}
           >
             Email
           </span>
@@ -179,16 +183,18 @@ const ForgotPasswordPage = () => {
 
         <div className="flex items-center gap-2">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${isOtpFormVisible
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-              : "bg-slate-200 text-slate-500"
-              }`}
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+              isOtpFormVisible
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                : "bg-slate-200 text-slate-500"
+            }`}
           >
             2
           </div>
           <span
-            className={`text-xs font-semibold ${isOtpFormVisible ? "text-slate-800" : "text-slate-500"
-              }`}
+            className={`text-xs font-semibold ${
+              isOtpFormVisible ? "text-slate-800" : "text-slate-500"
+            }`}
           >
             OTP
           </span>
@@ -210,12 +216,8 @@ const ForgotPasswordPage = () => {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-red-700">
-              Process failed
-            </p>
-            <p className="mt-1 text-sm leading-5 text-red-600">
-              {formError}
-            </p>
+            <p className="text-sm font-semibold text-red-700">Process failed</p>
+            <p className="mt-1 text-sm leading-5 text-red-600">{formError}</p>
           </div>
         </div>
       </div>
@@ -271,8 +273,9 @@ const ForgotPasswordPage = () => {
                       placeholder="name@company.com"
                       autoComplete="email"
                       disabled={submitting}
-                      className={`${inputBaseClass} pl-11 pr-4 ${fieldState.invalid ? inputErrorClass : ""
-                        }`}
+                      className={`${inputBaseClass} pl-11 pr-4 ${
+                        fieldState.invalid ? inputErrorClass : ""
+                      }`}
                     />
                   </div>
 
@@ -399,7 +402,8 @@ const ForgotPasswordPage = () => {
         </div>
 
         <p className="mt-5 text-center text-xs text-slate-500">
-          © {new Date().getFullYear()} PT. Hexing Technology. All rights reserved.
+          © {new Date().getFullYear()} PT. Hexing Technology. All rights
+          reserved.
         </p>
       </section>
     </main>

@@ -1,6 +1,6 @@
-import React from 'react'
+import React from "react";
 import Image from "next/image";
-import Link from 'next/link';
+import Link from "next/link";
 
 const AppLogo = () => {
   return (
@@ -18,7 +18,7 @@ const AppLogo = () => {
         </Link>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default AppLogo
+export default AppLogo;

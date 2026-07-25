@@ -36,12 +36,12 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
 
   const { data, error } = useSWR<Employee>(
     id ? `/api/employees/${id}/personal-data` : null,
-    fetcher
+    fetcher,
   );
 
   const { data: employmentData } = useSWR<EmploymentData>(
     id ? `/api/employees/${id}/employment-data` : null,
-    fetcher
+    fetcher,
   );
 
   const pageTitle = useMemo(() => {
@@ -64,7 +64,9 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
 
   if (error && id) {
     return (
-      <ErrorNotConnectedToApi mutateKey={`/api/employees/${id}/personal-data`} />
+      <ErrorNotConnectedToApi
+        mutateKey={`/api/employees/${id}/personal-data`}
+      />
     );
   }
 

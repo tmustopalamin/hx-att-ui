@@ -1,49 +1,62 @@
-'use client'
+"use client";
 
-import { Card } from 'primereact/card'
-import { Column } from 'primereact/column'
-import { DataTable } from 'primereact/datatable'
-import { InputText } from 'primereact/inputtext'
-import { IconField } from 'primereact/iconfield'
-import { InputIcon } from 'primereact/inputicon'
-import { FilterMatchMode } from 'primereact/api'
-import { Button } from 'primereact/button'
-import { Dialog } from 'primereact/dialog'
-import { Controller, useForm } from 'react-hook-form'
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog'
-import { InputSwitch } from 'primereact/inputswitch'
-import { useMemo, useState } from 'react'
-import useSWR, { mutate } from 'swr'
-import dayjs from 'dayjs'
-import { fetcher } from '@/app/utils/fetcher'
-import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type'
-import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages'
-import { showToast } from '@/store/ToastSlice'
-import { useDispatch, useSelector } from 'react-redux'
-import { Tag } from 'primereact/tag'
-import { Checkbox } from 'primereact/checkbox'
-import { RootState } from '@/store/store'
-import { hasRole } from '@/app/utils/role-utils'
-import { Shift } from '@/app/types/shift'
-import { createShift, updateShift, deleteShift, purgeShift, restoreShift } from '@/app/services/shift-service'
-import { Calendar } from 'primereact/calendar'
-import { InputNumber } from 'primereact/inputnumber'
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi'
-import LoadingDataTable from '@/app/_components/LoadingDataTable'
+import { Card } from "primereact/card";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+import { InputText } from "primereact/inputtext";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { FilterMatchMode } from "primereact/api";
+import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
+import { Controller, useForm } from "react-hook-form";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { InputSwitch } from "primereact/inputswitch";
+import { useMemo, useState } from "react";
+import useSWR, { mutate } from "swr";
+import dayjs from "dayjs";
+import { fetcher } from "@/app/utils/fetcher";
+import {
+  ResponseType,
+  ResponseTypeCreateSuccess,
+} from "@/app/types/response-type";
+import {
+  isResponseTypeError,
+  getErrorMessage,
+} from "@/app/utils/error-messages";
+import { showToast } from "@/store/ToastSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { Tag } from "primereact/tag";
+import { Checkbox } from "primereact/checkbox";
+import { RootState } from "@/store/store";
+import { hasRole } from "@/app/utils/role-utils";
+import { Shift } from "@/app/types/shift";
+import {
+  createShift,
+  updateShift,
+  deleteShift,
+  purgeShift,
+  restoreShift,
+} from "@/app/services/shift-service";
+import { Calendar } from "primereact/calendar";
+import { InputNumber } from "primereact/inputnumber";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
 
 const ShiftTableData = () => {
-  const dispatch = useDispatch()
-  const profileState = useSelector((state: RootState) => state.profile)
+  const dispatch = useDispatch();
+  const profileState = useSelector((state: RootState) => state.profile);
 
-  const [selectedData, setSelectedData] = useState<Shift | null>(null)
-  const [globalFilterValue, setGlobalFilterValue] = useState('')
+  const [selectedData, setSelectedData] = useState<Shift | null>(null);
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-  })
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false)
-  const [isAddNew, setIsAddNew] = useState(false)
-  const [visible, setVisible] = useState(false)
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState('')
+    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+  });
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
+  const [isAddNew, setIsAddNew] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
 
   const {
     control,
@@ -57,7 +70,7 @@ const ShiftTableData = () => {
   } = useForm<Shift>({
     defaultValues: {
       id: 0,
-      name: '',
+      name: "",
       work_start: null,
       work_end: null,
       break_start: null,
@@ -70,35 +83,35 @@ const ShiftTableData = () => {
       is_night_shift: false,
       is_day_off: false,
       is_active: true,
-      deleted_at: '',
+      deleted_at: "",
       row_version: 0,
     } as Shift,
-  })
+  });
 
-  const watchedIsDayOff = watch('is_day_off')
+  const watchedIsDayOff = watch("is_day_off");
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    const _filters = { ...filters }
+    const value = e.target.value;
+    const _filters = { ...filters };
 
-    _filters['global'].value = value
+    _filters["global"].value = value;
 
-    setFilters(_filters)
-    setGlobalFilterValue(value)
-  }
+    setFilters(_filters);
+    setGlobalFilterValue(value);
+  };
 
   const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
-  }
+    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
+  };
 
   const onClickNew = () => {
-    clearErrors()
-    setIsAddNew(true)
-    setVisible(true)
-    setPopupHeaderTitle('New Shift')
+    clearErrors();
+    setIsAddNew(true);
+    setVisible(true);
+    setPopupHeaderTitle("New Shift");
     reset({
       id: 0,
-      name: '',
+      name: "",
       work_start: null,
       work_end: null,
       break_start: null,
@@ -111,345 +124,573 @@ const ShiftTableData = () => {
       is_night_shift: false,
       is_day_off: false,
       is_active: true,
-      deleted_at: '',
+      deleted_at: "",
       row_version: 0,
-    } as Shift)
-  }
+    } as Shift);
+  };
 
   const footerContent = (
-    <div className='text-right flex gap-5 justify-end'>
-      <Button type="button" label="Cancel" icon="pi pi-times" onClick={() => { setVisible(false) }} className="p-button-text" />
-      <Button type="submit" label={isAddNew ? 'Submit' : 'Save'} icon="pi pi-check" />
+    <div className="text-right flex gap-5 justify-end">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        onClick={() => {
+          setVisible(false);
+        }}
+        className="p-button-text"
+      />
+      <Button
+        type="submit"
+        label={isAddNew ? "Submit" : "Save"}
+        icon="pi pi-check"
+      />
     </div>
-  )
+  );
 
-  const { data: shiftData, error, isLoading } = useSWR<Shift[]>(
+  const {
+    data: shiftData,
+    error,
+    isLoading,
+  } = useSWR<Shift[]>(
     `/api/shift?show_all=${isShowDeletedDataChecked}`,
-    fetcher
-  )
+    fetcher,
+  );
 
-  const filteredShiftData = useMemo(() => shiftData ?? [], [shiftData])
+  const filteredShiftData = useMemo(() => shiftData ?? [], [shiftData]);
 
-  if (isLoading) return <LoadingDataTable />
+  if (isLoading) return <LoadingDataTable />;
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey='/api/shift?show_all=true' />
+    return <ErrorNotConnectedToApi mutateKey="/api/shift?show_all=true" />;
   }
 
   const handleSubmitNew = async (data: Shift) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createShift(data)
-      setVisible(false)
-      reset()
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`)
-      dispatch(showToast({ visible: true, severity: 'success', summary: 'success', detail: res.message }))
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await createShift(data);
+      setVisible(false);
+      reset();
+      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "success",
+          detail: res.message,
+        }),
+      );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: getErrorMessage(err, 'message') }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          }),
+        );
       } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: err.message }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: err.message,
+          }),
+        );
       }
     }
-  }
+  };
 
   const handleUpdate = async (data: Shift) => {
     if (!selectedData) {
-      dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: 'Please select data' }))
-      return
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "error",
+          detail: "Please select data",
+        }),
+      );
+      return;
     }
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateShift(selectedData.id, selectedData.row_version, data)
+      const res: ResponseType<ResponseTypeCreateSuccess> = await updateShift(
+        selectedData.id,
+        selectedData.row_version,
+        data,
+      );
 
-      setVisible(false)
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`)
-      dispatch(showToast({ visible: true, severity: 'success', summary: 'success', detail: res.message }))
-      reset()
+      setVisible(false);
+      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "success",
+          detail: res.message,
+        }),
+      );
+      reset();
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: getErrorMessage(err, 'message') }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          }),
+        );
       } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: err.message }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: err.message,
+          }),
+        );
       }
     }
-  }
+  };
 
   const handleDelete = async (data: Shift) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteShift(data.id, data.row_version)
-      setVisible(false)
-      reset()
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`)
+      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteShift(
+        data.id,
+        data.row_version,
+      );
+      setVisible(false);
+      reset();
+      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
 
-      dispatch(showToast({ visible: true, severity: 'success', summary: 'success', detail: res.message }))
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "success",
+          detail: res.message,
+        }),
+      );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: getErrorMessage(err, 'message') }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          }),
+        );
       } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: err.message }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: err.message,
+          }),
+        );
       }
     }
-  }
+  };
 
   const handlePurge = async (data: Shift) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeShift(data.id)
-      setVisible(false)
-      reset()
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`)
+      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeShift(
+        data.id,
+      );
+      setVisible(false);
+      reset();
+      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
 
-      dispatch(showToast({ visible: true, severity: 'success', summary: 'success', detail: res.message }))
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "success",
+          detail: res.message,
+        }),
+      );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: getErrorMessage(err, 'message') }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          }),
+        );
       } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: err.message }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: err.message,
+          }),
+        );
       }
     }
-  }
+  };
 
   const handleRestore = async (data: Shift) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreShift(data.id, data.row_version)
-      setVisible(false)
-      reset()
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`)
+      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreShift(
+        data.id,
+        data.row_version,
+      );
+      setVisible(false);
+      reset();
+      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
 
-      dispatch(showToast({ visible: true, severity: 'success', summary: 'success', detail: res.message }))
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "success",
+          detail: res.message,
+        }),
+      );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: getErrorMessage(err, 'message') }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: getErrorMessage(err, "message"),
+          }),
+        );
       } else if (err instanceof Error) {
-        dispatch(showToast({ visible: true, severity: 'error', summary: 'error', detail: err.message }))
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "error",
+            detail: err.message,
+          }),
+        );
       }
     }
-  }
+  };
 
   const onSubmit = (data: Shift) => {
-    if (!isValid) return
+    if (!isValid) return;
 
     if (isAddNew) {
-      handleSubmitNew(data)
-      return
+      handleSubmitNew(data);
+      return;
     }
 
     if (selectedData) {
-      handleUpdate(data)
+      handleUpdate(data);
     }
-  }
+  };
 
   const onClickUpdate = (data: Shift) => {
-    setVisible(true)
-    setIsAddNew(false)
-    setPopupHeaderTitle('Update Shift')
+    setVisible(true);
+    setIsAddNew(false);
+    setPopupHeaderTitle("Update Shift");
 
     const updateData = {
       ...data,
-      work_start: data.work_start ? new Date(`1970-01-01T${data.work_start}`) : null,
+      work_start: data.work_start
+        ? new Date(`1970-01-01T${data.work_start}`)
+        : null,
       work_end: data.work_end ? new Date(`1970-01-01T${data.work_end}`) : null,
-      break_start: data.break_start ? new Date(`1970-01-01T${data.break_start}`) : null,
-      break_end: data.break_end ? new Date(`1970-01-01T${data.break_end}`) : null,
-      checkin_start: data.checkin_start ? new Date(`1970-01-01T${data.checkin_start}`) : null,
-      checkin_end: data.checkin_end ? new Date(`1970-01-01T${data.checkin_end}`) : null,
-      checkout_start: data.checkout_start ? new Date(`1970-01-01T${data.checkout_start}`) : null,
-      checkout_end: data.checkout_end ? new Date(`1970-01-01T${data.checkout_end}`) : null,
-    }
+      break_start: data.break_start
+        ? new Date(`1970-01-01T${data.break_start}`)
+        : null,
+      break_end: data.break_end
+        ? new Date(`1970-01-01T${data.break_end}`)
+        : null,
+      checkin_start: data.checkin_start
+        ? new Date(`1970-01-01T${data.checkin_start}`)
+        : null,
+      checkin_end: data.checkin_end
+        ? new Date(`1970-01-01T${data.checkin_end}`)
+        : null,
+      checkout_start: data.checkout_start
+        ? new Date(`1970-01-01T${data.checkout_start}`)
+        : null,
+      checkout_end: data.checkout_end
+        ? new Date(`1970-01-01T${data.checkout_end}`)
+        : null,
+    };
 
-    reset(updateData)
-    setSelectedData(updateData)
-  }
+    reset(updateData);
+    setSelectedData(updateData);
+  };
 
   const activeColumnBody = (rowData: Shift) => {
     return rowData.is_active ? (
       <Tag value="Active" severity="success" />
     ) : (
       <Tag value="Inactive" severity="danger" />
-    )
-  }
+    );
+  };
 
   const shiftTypeColumnBody = (rowData: Shift) => {
     if (rowData.is_day_off) {
-      return <Tag value="Day Off" severity="warning" />
+      return <Tag value="Day Off" severity="warning" />;
     }
 
     if (rowData.is_night_shift) {
-      return <Tag value="Night Shift" severity="info" />
+      return <Tag value="Night Shift" severity="info" />;
     }
 
-    return <Tag value="Regular Shift" severity="secondary" />
-  }
+    return <Tag value="Regular Shift" severity="secondary" />;
+  };
 
   const formatTimeValue = (value?: string | Date | null) => {
-    if (!value) return '-'
+    if (!value) return "-";
 
     if (value instanceof Date) {
-      return dayjs(value).format('HH:mm')
+      return dayjs(value).format("HH:mm");
     }
 
-    return dayjs(`2000-01-01 ${value}`).format('HH:mm')
-  }
+    return dayjs(`2000-01-01 ${value}`).format("HH:mm");
+  };
 
-  const formatTimeRange = (start?: string | Date | null, end?: string | Date | null) => {
-    if (!start && !end) return '-'
-    return `${formatTimeValue(start)} - ${formatTimeValue(end)}`
-  }
+  const formatTimeRange = (
+    start?: string | Date | null,
+    end?: string | Date | null,
+  ) => {
+    if (!start && !end) return "-";
+    return `${formatTimeValue(start)} - ${formatTimeValue(end)}`;
+  };
 
   const workTimeColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return '-'
-    return formatTimeRange(rowData.work_start, rowData.work_end)
-  }
+    if (rowData.is_day_off) return "-";
+    return formatTimeRange(rowData.work_start, rowData.work_end);
+  };
 
   const breakTimeColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return '-'
-    return formatTimeRange(rowData.break_start, rowData.break_end)
-  }
+    if (rowData.is_day_off) return "-";
+    return formatTimeRange(rowData.break_start, rowData.break_end);
+  };
 
   const checkinWindowColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return '-'
-    return formatTimeRange(rowData.checkin_start, rowData.checkin_end)
-  }
+    if (rowData.is_day_off) return "-";
+    return formatTimeRange(rowData.checkin_start, rowData.checkin_end);
+  };
 
   const checkoutWindowColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return '-'
-    return formatTimeRange(rowData.checkout_start, rowData.checkout_end)
-  }
+    if (rowData.is_day_off) return "-";
+    return formatTimeRange(rowData.checkout_start, rowData.checkout_end);
+  };
 
   const gracePeriodColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return '-'
-    return `${rowData.grace_period_minutes ?? 0} min`
-  }
+    if (rowData.is_day_off) return "-";
+    return `${rowData.grace_period_minutes ?? 0} min`;
+  };
 
   const actionColumnBody = (rowData: Shift) => {
     return (
       <div className="flex gap-2">
-        {hasRole(profileState.role, ['superadmin']) && (
+        {hasRole(profileState.role, ["superadmin"]) && (
           <Button
-            tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
-            tooltip='Delete Forever'
+            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+            tooltip="Delete Forever"
             rounded
-            severity='secondary'
+            severity="secondary"
             icon="pi pi-times"
             size="small"
-            onClick={() => { onClickPurge(rowData) }}
+            onClick={() => {
+              onClickPurge(rowData);
+            }}
           />
         )}
 
-        {hasRole(profileState.role, ['superadmin']) && rowData.deleted_at && (
+        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
           <Button
-            tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
-            tooltip='Restore'
+            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+            tooltip="Restore"
             rounded
-            severity='success'
+            severity="success"
             icon="pi pi-refresh"
             size="small"
-            onClick={() => { onClickRestore(rowData) }}
+            onClick={() => {
+              onClickRestore(rowData);
+            }}
           />
         )}
 
         {!rowData.deleted_at && (
           <Button
-            tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
-            tooltip='Delete'
+            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+            tooltip="Delete"
             rounded
-            severity='danger'
+            severity="danger"
             icon="pi pi-trash"
             size="small"
-            onClick={() => { onClickDelete(rowData) }}
+            onClick={() => {
+              onClickDelete(rowData);
+            }}
           />
         )}
 
         <Button
-          tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
-          tooltip='Update'
+          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
+          tooltip="Update"
           rounded
-          severity='help'
+          severity="help"
           icon="pi pi-pencil"
           size="small"
-          onClick={() => { onClickUpdate(rowData) }}
+          onClick={() => {
+            onClickUpdate(rowData);
+          }}
         />
       </div>
-    )
-  }
+    );
+  };
 
   const onClickDelete = (data: Shift) => {
     confirmDialog({
-      message: 'Do you want to delete this record?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to delete this record?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => {
         const updateData = {
           ...data,
-          work_start: data.work_start ? new Date(`1970-01-01T${data.work_start}`) : null,
-          work_end: data.work_end ? new Date(`1970-01-01T${data.work_end}`) : null,
-          break_start: data.break_start ? new Date(`1970-01-01T${data.break_start}`) : null,
-          break_end: data.break_end ? new Date(`1970-01-01T${data.break_end}`) : null,
-          checkin_start: data.checkin_start ? new Date(`1970-01-01T${data.checkin_start}`) : null,
-          checkin_end: data.checkin_end ? new Date(`1970-01-01T${data.checkin_end}`) : null,
-          checkout_start: data.checkout_start ? new Date(`1970-01-01T${data.checkout_start}`) : null,
-          checkout_end: data.checkout_end ? new Date(`1970-01-01T${data.checkout_end}`) : null,
-        }
-        setSelectedData(updateData)
-        handleDelete(data)
+          work_start: data.work_start
+            ? new Date(`1970-01-01T${data.work_start}`)
+            : null,
+          work_end: data.work_end
+            ? new Date(`1970-01-01T${data.work_end}`)
+            : null,
+          break_start: data.break_start
+            ? new Date(`1970-01-01T${data.break_start}`)
+            : null,
+          break_end: data.break_end
+            ? new Date(`1970-01-01T${data.break_end}`)
+            : null,
+          checkin_start: data.checkin_start
+            ? new Date(`1970-01-01T${data.checkin_start}`)
+            : null,
+          checkin_end: data.checkin_end
+            ? new Date(`1970-01-01T${data.checkin_end}`)
+            : null,
+          checkout_start: data.checkout_start
+            ? new Date(`1970-01-01T${data.checkout_start}`)
+            : null,
+          checkout_end: data.checkout_end
+            ? new Date(`1970-01-01T${data.checkout_end}`)
+            : null,
+        };
+        setSelectedData(updateData);
+        handleDelete(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes"
+            icon="pi pi-check"
+            onClick={options.accept}
+            className="p-button-danger"
+          />
         </div>
-      )
-    })
-  }
+      ),
+    });
+  };
 
   const onClickRestore = (data: Shift) => {
     confirmDialog({
-      message: 'Do you want to restore this record?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to restore this record?",
+      header: "Restore Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => {
         const updateData = {
           ...data,
-          work_start: data.work_start ? new Date(`1970-01-01T${data.work_start}`) : null,
-          work_end: data.work_end ? new Date(`1970-01-01T${data.work_end}`) : null,
-          break_start: data.break_start ? new Date(`1970-01-01T${data.break_start}`) : null,
-          break_end: data.break_end ? new Date(`1970-01-01T${data.break_end}`) : null,
-          checkin_start: data.checkin_start ? new Date(`1970-01-01T${data.checkin_start}`) : null,
-          checkin_end: data.checkin_end ? new Date(`1970-01-01T${data.checkin_end}`) : null,
-          checkout_start: data.checkout_start ? new Date(`1970-01-01T${data.checkout_start}`) : null,
-          checkout_end: data.checkout_end ? new Date(`1970-01-01T${data.checkout_end}`) : null,
-        }
-        setSelectedData(updateData)
-        handleRestore(data)
+          work_start: data.work_start
+            ? new Date(`1970-01-01T${data.work_start}`)
+            : null,
+          work_end: data.work_end
+            ? new Date(`1970-01-01T${data.work_end}`)
+            : null,
+          break_start: data.break_start
+            ? new Date(`1970-01-01T${data.break_start}`)
+            : null,
+          break_end: data.break_end
+            ? new Date(`1970-01-01T${data.break_end}`)
+            : null,
+          checkin_start: data.checkin_start
+            ? new Date(`1970-01-01T${data.checkin_start}`)
+            : null,
+          checkin_end: data.checkin_end
+            ? new Date(`1970-01-01T${data.checkin_end}`)
+            : null,
+          checkout_start: data.checkout_start
+            ? new Date(`1970-01-01T${data.checkout_start}`)
+            : null,
+          checkout_end: data.checkout_end
+            ? new Date(`1970-01-01T${data.checkout_end}`)
+            : null,
+        };
+        setSelectedData(updateData);
+        handleRestore(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-success" />
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes"
+            icon="pi pi-check"
+            onClick={options.accept}
+            className="p-button-success"
+          />
         </div>
-      )
-    })
-  }
+      ),
+    });
+  };
 
   const onClickPurge = (data: Shift) => {
     confirmDialog({
-      message: 'Do you want to delete this record forever?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to delete this record forever?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => {
-        handlePurge(data)
+        handlePurge(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex gap-3 justify-end">
-          <Button label="No" icon="pi pi-times" onClick={options.reject} className="p-button-text" />
-          <Button label="Yes" icon="pi pi-check" onClick={options.accept} className="p-button-danger" />
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes"
+            icon="pi pi-check"
+            onClick={options.accept}
+            className="p-button-danger"
+          />
         </div>
-      )
-    })
-  }
+      ),
+    });
+  };
 
   return (
     <>
@@ -457,7 +698,6 @@ const ShiftTableData = () => {
 
       <Card>
         <div className="p-4 flex flex-col gap-4">
-
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
             <div>
               <div className="text-2xl font-semibold">Shift</div>
@@ -475,7 +715,9 @@ const ShiftTableData = () => {
                   onChange={onIngredientsChange}
                   checked={isShowDeletedDataChecked}
                 />
-                <label htmlFor="showDeletedData" className="ml-2">Show deleted data</label>
+                <label htmlFor="showDeletedData" className="ml-2">
+                  Show deleted data
+                </label>
               </div>
 
               <IconField iconPosition="left">
@@ -488,13 +730,20 @@ const ShiftTableData = () => {
                 />
               </IconField>
 
-              <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+              <Button
+                label="New"
+                icon="pi pi-plus"
+                size="small"
+                onClick={() => {
+                  onClickNew();
+                }}
+              />
             </div>
           </div>
 
           <DataTable
             value={filteredShiftData}
-            tableStyle={{ minWidth: '78rem' }}
+            tableStyle={{ minWidth: "78rem" }}
             stripedRows
             paginator
             scrollable
@@ -502,7 +751,7 @@ const ShiftTableData = () => {
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={['name']}
+            globalFilterFields={["name"]}
             emptyMessage="No shift found."
             header={<></>}
             filters={filters}
@@ -510,25 +759,38 @@ const ShiftTableData = () => {
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
           >
-            <Column header="#" headerStyle={{ width: '3rem' }} body={(rowData, options) => options.rowIndex + 1}></Column>
+            <Column
+              header="#"
+              headerStyle={{ width: "3rem" }}
+              body={(rowData, options) => options.rowIndex + 1}
+            ></Column>
             <Column field="name" header="Name" sortable></Column>
             <Column header="Shift Type" body={shiftTypeColumnBody}></Column>
             <Column header="Work Time" body={workTimeColumnBody}></Column>
             <Column header="Break Time" body={breakTimeColumnBody}></Column>
-            <Column header="Check-In Window" body={checkinWindowColumnBody}></Column>
-            <Column header="Check-Out Window" body={checkoutWindowColumnBody}></Column>
-            <Column header="Grace Period" body={gracePeriodColumnBody}></Column>
-            <Column field="is_active" header="Active" body={activeColumnBody}></Column>
             <Column
-              headerClassName='bg-white'
-              className='bg-white'
+              header="Check-In Window"
+              body={checkinWindowColumnBody}
+            ></Column>
+            <Column
+              header="Check-Out Window"
+              body={checkoutWindowColumnBody}
+            ></Column>
+            <Column header="Grace Period" body={gracePeriodColumnBody}></Column>
+            <Column
+              field="is_active"
+              header="Active"
+              body={activeColumnBody}
+            ></Column>
+            <Column
+              headerClassName="bg-white"
+              className="bg-white"
               header="Action"
               body={(rowData) => actionColumnBody(rowData)}
               frozen={true}
               alignFrozen="right"
             ></Column>
           </DataTable>
-
         </div>
       </Card>
 
@@ -536,11 +798,15 @@ const ShiftTableData = () => {
         <Dialog
           header={popupHeaderTitle}
           visible={visible}
-          style={{ width: '50vw' }}
-          onHide={() => { if (!visible) return; setVisible(false); reset() }}
+          style={{ width: "50vw" }}
+          onHide={() => {
+            if (!visible) return;
+            setVisible(false);
+            reset();
+          }}
           footer={footerContent}
           onShow={() => {
-            setFocus('name')
+            setFocus("name");
           }}
         >
           <div className="flex flex-col gap-5">
@@ -549,17 +815,22 @@ const ShiftTableData = () => {
               <Controller
                 name="name"
                 control={control}
-                rules={{ required: '*required', maxLength: { value: 50, message: 'maximum 50 character' } }}
+                rules={{
+                  required: "*required",
+                  maxLength: { value: 50, message: "maximum 50 character" },
+                }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
                       id="name"
-                      placeholder='Example: Morning Shift'
+                      placeholder="Example: Morning Shift"
                       {...field}
-                      className={fieldState.invalid ? 'p-invalid' : ''}
+                      className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && (
-                      <small className="font-bold p-error">{fieldState.error.message}</small>
+                      <small className="font-bold p-error">
+                        {fieldState.error.message}
+                      </small>
                     )}
                   </>
                 )}
@@ -573,32 +844,34 @@ const ShiftTableData = () => {
                 defaultValue={false}
                 render={({ field, fieldState }) => (
                   <>
-                    <div className='flex flex-row gap-2'>
+                    <div className="flex flex-row gap-2">
                       <Checkbox
                         inputId="is_day_off"
                         checked={field.value}
                         onChange={(e) => {
-                          const checked = !!e.checked
-                          field.onChange(checked)
+                          const checked = !!e.checked;
+                          field.onChange(checked);
 
                           if (checked) {
-                            setValue('work_start', null as any)
-                            setValue('work_end', null as any)
-                            setValue('break_start', null as any)
-                            setValue('break_end', null as any)
-                            setValue('checkin_start', null as any)
-                            setValue('checkin_end', null as any)
-                            setValue('checkout_start', null as any)
-                            setValue('checkout_end', null as any)
-                            setValue('grace_period_minutes', 0 as any)
-                            setValue('is_night_shift', false as any)
+                            setValue("work_start", null as any);
+                            setValue("work_end", null as any);
+                            setValue("break_start", null as any);
+                            setValue("break_end", null as any);
+                            setValue("checkin_start", null as any);
+                            setValue("checkin_end", null as any);
+                            setValue("checkout_start", null as any);
+                            setValue("checkout_end", null as any);
+                            setValue("grace_period_minutes", 0 as any);
+                            setValue("is_night_shift", false as any);
                           }
                         }}
                       />
                       <label htmlFor="is_day_off">Day Off Shift</label>
                     </div>
                     {fieldState.error && (
-                      <small className="font-bold p-error">{fieldState.error.message}</small>
+                      <small className="font-bold p-error">
+                        {fieldState.error.message}
+                      </small>
                     )}
                   </>
                 )}
@@ -607,7 +880,8 @@ const ShiftTableData = () => {
 
             {watchedIsDayOff && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                Day off shifts do not require work time, break time, or attendance windows.
+                Day off shifts do not require work time, break time, or
+                attendance windows.
               </div>
             )}
 
@@ -629,10 +903,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -656,10 +934,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -685,10 +967,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -712,10 +998,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -741,10 +1031,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -768,10 +1062,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -797,10 +1095,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -824,10 +1126,14 @@ const ShiftTableData = () => {
                         timeOnly
                         hourFormat="24"
                         disabled={watchedIsDayOff}
-                        className={fieldState.invalid ? 'w-full p-invalid' : 'w-full'}
+                        className={
+                          fieldState.invalid ? "w-full p-invalid" : "w-full"
+                        }
                       />
                       {fieldState.error && (
-                        <small className="font-bold p-error">{fieldState.error.message}</small>
+                        <small className="font-bold p-error">
+                          {fieldState.error.message}
+                        </small>
                       )}
                     </>
                   )}
@@ -845,15 +1151,17 @@ const ShiftTableData = () => {
                   <>
                     <InputNumber
                       id="grace_period_minutes"
-                      placeholder='Example: 15'
+                      placeholder="Example: 15"
                       inputRef={field.ref}
                       onValueChange={(e) => field.onChange(e.value)}
                       value={Number(field.value ? field.value : 0)}
                       disabled={watchedIsDayOff}
-                      className={fieldState.invalid ? 'p-invalid' : ''}
+                      className={fieldState.invalid ? "p-invalid" : ""}
                     />
                     {fieldState.error && (
-                      <small className="font-bold p-error">{fieldState.error.message}</small>
+                      <small className="font-bold p-error">
+                        {fieldState.error.message}
+                      </small>
                     )}
                   </>
                 )}
@@ -867,7 +1175,7 @@ const ShiftTableData = () => {
                 defaultValue={false}
                 render={({ field, fieldState }) => (
                   <>
-                    <div className='flex flex-row gap-2'>
+                    <div className="flex flex-row gap-2">
                       <Checkbox
                         inputId="is_night_shift"
                         checked={field.value}
@@ -877,7 +1185,9 @@ const ShiftTableData = () => {
                       <label htmlFor="is_night_shift">Night Shift</label>
                     </div>
                     {fieldState.error && (
-                      <small className="font-bold p-error">{fieldState.error.message}</small>
+                      <small className="font-bold p-error">
+                        {fieldState.error.message}
+                      </small>
                     )}
                   </>
                 )}
@@ -903,7 +1213,7 @@ const ShiftTableData = () => {
         </Dialog>
       </form>
     </>
-  )
-}
+  );
+};
 
-export default ShiftTableData
+export default ShiftTableData;

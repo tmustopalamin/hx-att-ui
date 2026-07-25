@@ -5,15 +5,24 @@ export const ERROR_MESSAGES: Record<string, string> = {
   PINAlreadyUsed: "Pin Already Used",
 };
 
-export function getErrorMessage(err: ResponseTypeError, source: 'code' | 'message'): string {
-  if (source === 'code') {
+export function getErrorMessage(
+  err: ResponseTypeError,
+  source: "code" | "message",
+): string {
+  if (source === "code") {
     if (err.code) {
       return ERROR_MESSAGES[err.code];
     } else {
-      return err.message || "A system error has occurred, please contact the administrator";
+      return (
+        err.message ||
+        "A system error has occurred, please contact the administrator"
+      );
     }
   } else {
-    return err.message || "A system error has occurred, please contact the administrator";
+    return (
+      err.message ||
+      "A system error has occurred, please contact the administrator"
+    );
   }
 }
 

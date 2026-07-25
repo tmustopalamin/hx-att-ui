@@ -1,17 +1,17 @@
-import React from 'react'
-import ComponentCategoryDataTable from './ComponentCategoryDataTable';
+import React from "react";
+import ComponentCategoryDataTable from "./ComponentCategoryDataTable";
 
 export const metadata = {
-    title: 'Manage Component Category - PT. Hexing Technology',
-    description: 'add, update, delete Component Category data',
+  title: "Manage Component Category - PT. Hexing Technology",
+  description: "add, update, delete Component Category data",
 };
 
 const ComponentCategoryPage = () => {
-    return <>
-        <ComponentCategoryDataTable />
+  return (
+    <>
+      <ComponentCategoryDataTable />
     </>
-}
+  );
+};
 
-
-
-export default ComponentCategoryPage
+export default ComponentCategoryPage;

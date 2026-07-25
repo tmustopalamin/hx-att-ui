@@ -13,10 +13,16 @@ import { Dropdown } from "primereact/dropdown";
 import { fetcher } from "@/app/utils/fetcher";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import { isResponseTypeError, getErrorMessage } from "@/app/utils/error-messages";
+import {
+  isResponseTypeError,
+  getErrorMessage,
+} from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 
-import { ResponseType, ResponseTypeCreateSuccess } from "@/app/types/response-type";
+import {
+  ResponseType,
+  ResponseTypeCreateSuccess,
+} from "@/app/types/response-type";
 import { Role } from "@/app/types/role";
 import { Permissions } from "@/app/types/permissions";
 import { RolePermissions } from "@/app/types/role-permissions";
@@ -76,16 +82,18 @@ const RolePermissionsTableData = () => {
     isLoading: rolePermissionIsLoading,
   } = useSWR<RolePermissionsResponse[]>(
     selectedRoleCode ? `/api/roles/${selectedRoleCode}/permissions` : null,
-    fetcher
+    fetcher,
   );
 
   const activeRoles = useMemo(() => {
-    return (roleData ?? []).filter((role) => role.is_active && !role.deleted_at);
+    return (roleData ?? []).filter(
+      (role) => role.is_active && !role.deleted_at,
+    );
   }, [roleData]);
 
   const activePermissions = useMemo(() => {
     return (permissionData ?? []).filter(
-      (permission) => permission.is_active && !permission.deleted_at
+      (permission) => permission.is_active && !permission.deleted_at,
     );
   }, [permissionData]);
 
@@ -108,7 +116,7 @@ const RolePermissionsTableData = () => {
     });
 
     return Object.values(map).sort((a, b) =>
-      a.group_name.localeCompare(b.group_name)
+      a.group_name.localeCompare(b.group_name),
     );
   }, [activePermissions]);
 
@@ -141,7 +149,7 @@ const RolePermissionsTableData = () => {
           severity: "error",
           summary: "Error",
           detail: "Please select a role first.",
-        })
+        }),
       );
       return;
     }
@@ -161,7 +169,7 @@ const RolePermissionsTableData = () => {
           severity: "success",
           summary: "Success",
           detail: res.message || "Role permissions updated successfully.",
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -171,7 +179,7 @@ const RolePermissionsTableData = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -180,7 +188,7 @@ const RolePermissionsTableData = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -246,8 +254,9 @@ const RolePermissionsTableData = () => {
                       placeholder={
                         roleIsLoading ? "Loading roles..." : "Select a role"
                       }
-                      className={`w-full md:w-96 ${fieldState.invalid ? "p-invalid" : ""
-                        }`}
+                      className={`w-full md:w-96 ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
                       filter
                       showClear
                     />
@@ -319,7 +328,7 @@ const RolePermissionsTableData = () => {
                       render={({ field }) => {
                         const value = field.value ?? [];
                         const groupCodes = group.permissions.map(
-                          (permission) => permission.code
+                          (permission) => permission.code,
                         );
 
                         const isAllChecked =
@@ -334,14 +343,14 @@ const RolePermissionsTableData = () => {
                               onChange={(e) => {
                                 if (e.checked) {
                                   const merged = Array.from(
-                                    new Set([...value, ...groupCodes])
+                                    new Set([...value, ...groupCodes]),
                                   );
                                   field.onChange(merged);
                                 } else {
                                   field.onChange(
                                     value.filter(
-                                      (code) => !groupCodes.includes(code)
-                                    )
+                                      (code) => !groupCodes.includes(code),
+                                    ),
                                   );
                                 }
                               }}
@@ -375,15 +384,12 @@ const RolePermissionsTableData = () => {
                                 checked={checked}
                                 onChange={(e) => {
                                   if (e.checked) {
-                                    field.onChange([
-                                      ...value,
-                                      permission.code,
-                                    ]);
+                                    field.onChange([...value, permission.code]);
                                   } else {
                                     field.onChange(
                                       value.filter(
-                                        (code) => code !== permission.code
-                                      )
+                                        (code) => code !== permission.code,
+                                      ),
                                     );
                                   }
                                 }}

@@ -1,45 +1,51 @@
-'use client'
+"use client";
 
-import { useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import useSWR, { mutate } from 'swr';
-import { useDispatch, useSelector } from 'react-redux';
+import { useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import useSWR, { mutate } from "swr";
+import { useDispatch, useSelector } from "react-redux";
 
-import { Card } from 'primereact/card';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import { InputText } from 'primereact/inputtext';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { FilterMatchMode } from 'primereact/api';
-import { Button } from 'primereact/button';
-import { Dialog } from 'primereact/dialog';
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { InputSwitch } from 'primereact/inputswitch';
-import { Tag } from 'primereact/tag';
-import { Checkbox, CheckboxChangeEvent } from 'primereact/checkbox';
-import { Dropdown } from 'primereact/dropdown';
-import { Password } from 'primereact/password';
+import { Card } from "primereact/card";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+import { InputText } from "primereact/inputtext";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { FilterMatchMode } from "primereact/api";
+import { Button } from "primereact/button";
+import { Dialog } from "primereact/dialog";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { InputSwitch } from "primereact/inputswitch";
+import { Tag } from "primereact/tag";
+import { Checkbox, CheckboxChangeEvent } from "primereact/checkbox";
+import { Dropdown } from "primereact/dropdown";
+import { Password } from "primereact/password";
 
-import { RootState } from '@/store/store';
-import { showToast } from '@/store/ToastSlice';
-import { fetcher } from '@/app/utils/fetcher';
-import { isResponseTypeError, getErrorMessage } from '@/app/utils/error-messages';
-import { hasRole } from '@/app/utils/role-utils';
-import LoadingDataTable from '@/app/_components/LoadingDataTable';
-import ErrorNotConnectedToApi from '@/app/_components/ErrorNotConnectedToApi';
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+import { fetcher } from "@/app/utils/fetcher";
+import {
+  isResponseTypeError,
+  getErrorMessage,
+} from "@/app/utils/error-messages";
+import { hasRole } from "@/app/utils/role-utils";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 
-import { ResponseType, ResponseTypeCreateSuccess } from '@/app/types/response-type';
-import { User } from '@/app/types/User';
-import { Employee } from '@/app/types/employee';
-import { Role } from '@/app/types/role';
+import {
+  ResponseType,
+  ResponseTypeCreateSuccess,
+} from "@/app/types/response-type";
+import { User } from "@/app/types/User";
+import { Employee } from "@/app/types/employee";
+import { Role } from "@/app/types/role";
 import {
   createUser,
   updateUser,
   deleteUser,
   purgeUser,
   restoreUser,
-} from '@/app/services/user-service';
+} from "@/app/services/user-service";
 
 type UserForm = User & {
   confirm_password: string;
@@ -48,10 +54,10 @@ type UserForm = User & {
 const defaultFormValue: UserForm = {
   id: 0,
   employee_id: 0,
-  email: '',
-  username: '',
-  password: '',
-  confirm_password: '',
+  email: "",
+  username: "",
+  password: "",
+  confirm_password: "",
   role: [],
   is_active: true,
   deleted_at: null,
@@ -60,15 +66,15 @@ const defaultFormValue: UserForm = {
 
 const passwordPassThrough = {
   root: {
-    style: { width: '100%' },
+    style: { width: "100%" },
   },
   iconField: {
     root: {
-      style: { width: '100%' },
+      style: { width: "100%" },
     },
   },
   input: {
-    style: { width: '100%' },
+    style: { width: "100%" },
   },
 };
 
@@ -77,35 +83,34 @@ const UserTableData = () => {
   const profileState = useSelector((state: RootState) => state.profile);
 
   const [selectedData, setSelectedData] = useState<User | null>(null);
-  const [globalFilterValue, setGlobalFilterValue] = useState('');
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState('New User');
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New User");
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const currentUserKey = `/api/user?show_all=${isShowDeletedDataChecked}`;
   const allUserKey = `/api/user?show_all=true`;
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setFocus,
-    watch,
-    getValues,
-  } = useForm<UserForm>({
-    defaultValues: defaultFormValue,
-    mode: 'onTouched',
-  });
+  const { control, handleSubmit, reset, setFocus, watch, getValues } =
+    useForm<UserForm>({
+      defaultValues: defaultFormValue,
+      mode: "onTouched",
+    });
 
-  const selectedRoles = watch('role') ?? [];
+  const selectedRoles = watch("role") ?? [];
 
   const [filters, setFilters] = useState({
-    global: { value: '', matchMode: FilterMatchMode.CONTAINS },
+    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
 
-  const { data: userData, error, isLoading } = useSWR<User[]>(currentUserKey, fetcher);
+  const {
+    data: userData,
+    error,
+    isLoading,
+  } = useSWR<User[]>(currentUserKey, fetcher);
   const { data: allUserData } = useSWR<User[]>(allUserKey, fetcher);
   const {
     data: employeeData,
@@ -119,7 +124,9 @@ const UserTableData = () => {
   } = useSWR<Role[]>(`/api/roles`, fetcher);
 
   const activeRole = useMemo(() => {
-    return (roleData ?? []).filter((item) => item.is_active && !item.deleted_at);
+    return (roleData ?? []).filter(
+      (item) => item.is_active && !item.deleted_at,
+    );
   }, [roleData]);
 
   const employeeDataFiltered = useMemo(() => {
@@ -136,17 +143,16 @@ const UserTableData = () => {
 
     if (isAddNew) {
       const assignedEmployeeIds = allUsers.map((item) => item.employee_id);
-      return allEmployees.filter((item) => !assignedEmployeeIds.includes(item.id));
+      return allEmployees.filter(
+        (item) => !assignedEmployeeIds.includes(item.id),
+      );
     }
 
     return allEmployees;
   }, [employeeData, allUserData, visible, isAddNew]);
 
   const refreshUserData = async () => {
-    await Promise.all([
-      mutate(currentUserKey),
-      mutate(allUserKey),
-    ]);
+    await Promise.all([mutate(currentUserKey), mutate(allUserKey)]);
   };
 
   const handleDialogHide = () => {
@@ -169,7 +175,7 @@ const UserTableData = () => {
   const onClickNew = () => {
     setSelectedData(null);
     setIsAddNew(true);
-    setPopupHeaderTitle('New User');
+    setPopupHeaderTitle("New User");
     reset(defaultFormValue);
     setVisible(true);
   };
@@ -177,12 +183,12 @@ const UserTableData = () => {
   const onClickUpdate = (data: User) => {
     setSelectedData(data);
     setIsAddNew(false);
-    setPopupHeaderTitle('Update User');
+    setPopupHeaderTitle("Update User");
 
     reset({
       ...data,
-      password: '',
-      confirm_password: '',
+      password: "",
+      confirm_password: "",
     });
 
     setVisible(true);
@@ -191,8 +197,10 @@ const UserTableData = () => {
   const buildSubmitPayload = (data: UserForm): User => {
     return {
       ...data,
-      password: data.password?.trim() ?? '',
-      employee_id: isAddNew ? data.employee_id : selectedData?.employee_id ?? data.employee_id,
+      password: data.password?.trim() ?? "",
+      employee_id: isAddNew
+        ? data.employee_id
+        : (selectedData?.employee_id ?? data.employee_id),
     };
   };
 
@@ -201,7 +209,8 @@ const UserTableData = () => {
       setIsSaving(true);
 
       const payload = buildSubmitPayload(data);
-      const res: ResponseType<ResponseTypeCreateSuccess> = await createUser(payload);
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await createUser(payload);
 
       await refreshUserData();
       handleDialogHide();
@@ -209,29 +218,29 @@ const UserTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'User created successfully.',
-        })
+          severity: "success",
+          summary: "Success",
+          detail: res.message || "User created successfully.",
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
+            severity: "error",
+            summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     } finally {
@@ -244,10 +253,10 @@ const UserTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Please select data first.',
-        })
+          severity: "error",
+          summary: "Error",
+          detail: "Please select data first.",
+        }),
       );
       return;
     }
@@ -260,10 +269,11 @@ const UserTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Row version is missing. Please refresh the page and try again.',
-        })
+          severity: "error",
+          summary: "Error",
+          detail:
+            "Row version is missing. Please refresh the page and try again.",
+        }),
       );
       return;
     }
@@ -280,7 +290,7 @@ const UserTableData = () => {
       const res: ResponseType<ResponseTypeCreateSuccess> = await updateUser(
         selectedData.id,
         selectedData.row_version,
-        payload
+        payload,
       );
 
       await refreshUserData();
@@ -289,29 +299,29 @@ const UserTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'User updated successfully.',
-        })
+          severity: "success",
+          summary: "Success",
+          detail: res.message || "User updated successfully.",
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
+            severity: "error",
+            summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     } finally {
@@ -323,7 +333,7 @@ const UserTableData = () => {
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await deleteUser(
         data.id,
-        data.row_version
+        data.row_version,
       );
 
       await refreshUserData();
@@ -331,29 +341,29 @@ const UserTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'User deleted successfully.',
-        })
+          severity: "success",
+          summary: "Success",
+          detail: res.message || "User deleted successfully.",
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
+            severity: "error",
+            summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -361,36 +371,38 @@ const UserTableData = () => {
 
   const handlePurge = async (data: User) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeUser(data.id);
+      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeUser(
+        data.id,
+      );
 
       await refreshUserData();
 
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'User deleted permanently.',
-        })
+          severity: "success",
+          summary: "Success",
+          detail: res.message || "User deleted permanently.",
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
+            severity: "error",
+            summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -400,7 +412,7 @@ const UserTableData = () => {
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await restoreUser(
         data.id,
-        data.row_version
+        data.row_version,
       );
 
       await refreshUserData();
@@ -408,29 +420,29 @@ const UserTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity: 'success',
-          summary: 'Success',
-          detail: res.message || 'User restored successfully.',
-        })
+          severity: "success",
+          summary: "Success",
+          detail: res.message || "User restored successfully.",
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
-            detail: getErrorMessage(err, 'message'),
-          })
+            severity: "error",
+            summary: "Error",
+            detail: getErrorMessage(err, "message"),
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
           showToast({
             visible: true,
-            severity: 'error',
-            summary: 'Error',
+            severity: "error",
+            summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -451,14 +463,14 @@ const UserTableData = () => {
 
   const onClickDelete = (data: User) => {
     confirmDialog({
-      message: 'Do you want to delete this user?',
-      header: 'Delete Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to delete this user?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => {
         handleDelete(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -480,14 +492,14 @@ const UserTableData = () => {
 
   const onClickRestore = (data: User) => {
     confirmDialog({
-      message: 'Do you want to restore this user?',
-      header: 'Restore Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to restore this user?",
+      header: "Restore Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => {
         handleRestore(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -509,14 +521,14 @@ const UserTableData = () => {
 
   const onClickPurge = (data: User) => {
     confirmDialog({
-      message: 'Do you want to permanently delete this user?',
-      header: 'Delete Forever Confirmation',
-      icon: 'pi pi-info-circle',
-      defaultFocus: 'accept',
+      message: "Do you want to permanently delete this user?",
+      header: "Delete Forever Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
       accept: () => {
         handlePurge(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -539,7 +551,7 @@ const UserTableData = () => {
   const onRoleChange = (
     e: CheckboxChangeEvent,
     currentValue: string[],
-    onChange: (value: string[]) => void
+    onChange: (value: string[]) => void,
   ) => {
     let nextValue = [...currentValue];
 
@@ -582,14 +594,17 @@ const UserTableData = () => {
 
   const actionColumnBody = (rowData: User) => {
     const isSelf = profileState.employee_id === rowData.employee_id;
-    const canPurge = hasRole(profileState.role, ['superadmin']);
+    const canPurge = hasRole(profileState.role, ["superadmin"]);
 
     if (rowData.deleted_at) {
       return (
         <div className="flex gap-2">
           {canPurge && (
             <Button
-              tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
+              tooltipOptions={{
+                appendTo: () => document.body,
+                position: "top",
+              }}
               tooltip="restore"
               rounded
               severity="success"
@@ -601,7 +616,10 @@ const UserTableData = () => {
 
           {canPurge && (
             <Button
-              tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
+              tooltipOptions={{
+                appendTo: () => document.body,
+                position: "top",
+              }}
               tooltip="delete forever"
               rounded
               severity="secondary"
@@ -618,7 +636,7 @@ const UserTableData = () => {
     return (
       <div className="flex gap-2">
         <Button
-          tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
+          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
           tooltip="update"
           rounded
           severity="help"
@@ -628,7 +646,7 @@ const UserTableData = () => {
         />
 
         <Button
-          tooltipOptions={{ appendTo: () => document.body, position: 'top' }}
+          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
           tooltip="delete"
           rounded
           severity="danger"
@@ -656,13 +674,13 @@ const UserTableData = () => {
         label={
           isSaving
             ? isAddNew
-              ? 'Submitting...'
-              : 'Saving...'
+              ? "Submitting..."
+              : "Saving..."
             : isAddNew
-              ? 'Submit'
-              : 'Save'
+              ? "Submit"
+              : "Save"
         }
-        icon={isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'}
+        icon={isSaving ? "pi pi-spin pi-spinner" : "pi pi-check"}
         disabled={isSaving}
       />
     </div>
@@ -698,7 +716,10 @@ const UserTableData = () => {
                   onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
                   checked={isShowDeletedDataChecked}
                 />
-                <label htmlFor="showDeletedData" className="text-sm text-slate-600">
+                <label
+                  htmlFor="showDeletedData"
+                  className="text-sm text-slate-600"
+                >
                   Show deleted data
                 </label>
               </div>
@@ -713,25 +734,26 @@ const UserTableData = () => {
                 />
               </IconField>
 
-              <Button
-                label="New User"
-                icon="pi pi-plus"
-                onClick={onClickNew}
-              />
+              <Button label="New User" icon="pi pi-plus" onClick={onClickNew} />
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <DataTable
               value={userData}
-              tableStyle={{ minWidth: '78rem' }}
+              tableStyle={{ minWidth: "78rem" }}
               stripedRows
               paginator
               rows={10}
               rowsPerPageOptions={[10, 25, 50]}
               dataKey="id"
               filters={filters}
-              globalFilterFields={['employee_code', 'full_name', 'username', 'email']}
+              globalFilterFields={[
+                "employee_code",
+                "full_name",
+                "username",
+                "email",
+              ]}
               emptyMessage="No user found."
               currentPageReportTemplate="{first} to {last} of {totalRecords}"
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
@@ -741,56 +763,56 @@ const UserTableData = () => {
             >
               <Column
                 header="#"
-                headerStyle={{ width: '4rem', minWidth: '4rem' }}
-                bodyStyle={{ minWidth: '4rem' }}
+                headerStyle={{ width: "4rem", minWidth: "4rem" }}
+                bodyStyle={{ minWidth: "4rem" }}
                 body={(_, options) => options.rowIndex + 1}
               />
               <Column
                 field="employee_code"
                 header="Employee ID"
-                style={{ minWidth: '10rem' }}
+                style={{ minWidth: "10rem" }}
               />
               <Column
                 field="full_name"
                 header="Full Name"
-                style={{ minWidth: '16rem' }}
+                style={{ minWidth: "16rem" }}
               />
               <Column
                 field="username"
                 header="Username"
-                style={{ minWidth: '12rem' }}
+                style={{ minWidth: "12rem" }}
               />
               <Column
                 field="email"
                 header="Email"
-                style={{ minWidth: '16rem' }}
+                style={{ minWidth: "16rem" }}
               />
               <Column
                 field="role"
                 header="Role"
                 body={renderRoleColumn}
-                style={{ minWidth: '14rem' }}
+                style={{ minWidth: "14rem" }}
               />
               <Column
                 field="is_active"
                 header="Status"
                 body={renderStatusColumn}
-                style={{ minWidth: '10rem' }}
+                style={{ minWidth: "10rem" }}
               />
               <Column
                 header="Action"
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
-                style={{ minWidth: '10rem' }}
+                style={{ minWidth: "10rem" }}
                 headerStyle={{
-                  minWidth: '10rem',
-                  background: '#ffffff',
+                  minWidth: "10rem",
+                  background: "#ffffff",
                   zIndex: 1,
                 }}
                 bodyStyle={{
-                  minWidth: '10rem',
-                  background: '#ffffff',
+                  minWidth: "10rem",
+                  background: "#ffffff",
                 }}
               />
             </DataTable>
@@ -805,27 +827,27 @@ const UserTableData = () => {
           modal
           draggable={false}
           resizable={false}
-          style={{ width: '95vw', maxWidth: '860px' }}
-          breakpoints={{ '960px': '95vw' }}
+          style={{ width: "95vw", maxWidth: "860px" }}
+          breakpoints={{ "960px": "95vw" }}
           onHide={handleDialogHide}
           footer={footerContent}
           onShow={() => {
             if (isAddNew) {
-              setFocus('employee_id');
+              setFocus("employee_id");
             } else {
-              setFocus('email');
+              setFocus("email");
             }
           }}
         >
           <div className="flex flex-col gap-5">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <div className="text-sm font-semibold text-slate-800">
-                {isAddNew ? 'Create New User Account' : 'Update User Account'}
+                {isAddNew ? "Create New User Account" : "Update User Account"}
               </div>
               <div className="mt-1 text-sm leading-6 text-slate-500">
                 {isAddNew
-                  ? 'Select an employee, then create login credentials and assign role access.'
-                  : 'Employee assignment is locked. You can update login credentials, roles, and account status only.'}
+                  ? "Select an employee, then create login credentials and assign role access."
+                  : "Employee assignment is locked. You can update login credentials, roles, and account status only."}
               </div>
             </div>
 
@@ -843,12 +865,16 @@ const UserTableData = () => {
                 name="employee_id"
                 control={control}
                 rules={{
-                  required: 'Employee is required',
-                  validate: (value) => Number(value) > 0 || 'Employee is required',
+                  required: "Employee is required",
+                  validate: (value) =>
+                    Number(value) > 0 || "Employee is required",
                 }}
                 render={({ field, fieldState }) => (
                   <div className="flex flex-col gap-2">
-                    <label htmlFor="employee_id" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="employee_id"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Employee
                     </label>
 
@@ -858,18 +884,23 @@ const UserTableData = () => {
                       value={field.value}
                       options={employeeDataFiltered}
                       loading={employeeIsLoading}
-                      disabled={!isAddNew || employeeIsLoading || !!employeeError || isSaving}
+                      disabled={
+                        !isAddNew ||
+                        employeeIsLoading ||
+                        !!employeeError ||
+                        isSaving
+                      }
                       onChange={(e) => field.onChange(e.value)}
                       optionLabel="full_name"
                       optionValue="id"
                       placeholder={
                         employeeIsLoading
-                          ? 'Loading employees...'
+                          ? "Loading employees..."
                           : isAddNew
-                            ? 'Select employee'
-                            : 'Employee cannot be changed'
+                            ? "Select employee"
+                            : "Employee cannot be changed"
                       }
-                      className={`w-full ${fieldState.invalid ? 'p-invalid' : ''}`}
+                      className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                       filter={isAddNew}
                       showClear={isAddNew}
                     />
@@ -888,13 +919,15 @@ const UserTableData = () => {
 
                     {!isAddNew && (
                       <small className="text-slate-500">
-                        Employee assignment cannot be changed after user creation.
+                        Employee assignment cannot be changed after user
+                        creation.
                       </small>
                     )}
 
                     {isAddNew && (
                       <small className="text-slate-500">
-                        Only employees without an existing user account are shown.
+                        Only employees without an existing user account are
+                        shown.
                       </small>
                     )}
                   </div>
@@ -908,7 +941,8 @@ const UserTableData = () => {
                   Login Information
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Username and email are used for login and account identification.
+                  Username and email are used for login and account
+                  identification.
                 </p>
               </div>
 
@@ -917,16 +951,22 @@ const UserTableData = () => {
                   name="email"
                   control={control}
                   rules={{
-                    required: 'Email is required',
-                    maxLength: { value: 150, message: 'Maximum 150 characters' },
+                    required: "Email is required",
+                    maxLength: {
+                      value: 150,
+                      message: "Maximum 150 characters",
+                    },
                     pattern: {
                       value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: 'Invalid email format',
+                      message: "Invalid email format",
                     },
                   }}
                   render={({ field, fieldState }) => (
                     <div className="flex flex-col gap-2">
-                      <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                      <label
+                        htmlFor="email"
+                        className="text-sm font-medium text-slate-700"
+                      >
                         Email
                       </label>
 
@@ -934,9 +974,9 @@ const UserTableData = () => {
                         id="email"
                         type="email"
                         placeholder="example: hello@gmail.com"
-                        value={field.value ?? ''}
+                        value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value)}
-                        className={fieldState.invalid ? 'p-invalid' : ''}
+                        className={fieldState.invalid ? "p-invalid" : ""}
                         disabled={isSaving}
                       />
 
@@ -953,21 +993,27 @@ const UserTableData = () => {
                   name="username"
                   control={control}
                   rules={{
-                    required: 'Username is required',
-                    maxLength: { value: 100, message: 'Maximum 100 characters' },
+                    required: "Username is required",
+                    maxLength: {
+                      value: 100,
+                      message: "Maximum 100 characters",
+                    },
                   }}
                   render={({ field, fieldState }) => (
                     <div className="flex flex-col gap-2">
-                      <label htmlFor="username" className="text-sm font-medium text-slate-700">
+                      <label
+                        htmlFor="username"
+                        className="text-sm font-medium text-slate-700"
+                      >
                         Username
                       </label>
 
                       <InputText
                         id="username"
                         placeholder="example: user.abc"
-                        value={field.value ?? ''}
+                        value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value)}
-                        className={fieldState.invalid ? 'p-invalid' : ''}
+                        className={fieldState.invalid ? "p-invalid" : ""}
                         disabled={isSaving}
                       />
 
@@ -985,18 +1031,18 @@ const UserTableData = () => {
                   control={control}
                   rules={{
                     validate: (value) => {
-                      const passwordValue = value?.trim() ?? '';
+                      const passwordValue = value?.trim() ?? "";
 
                       if (isAddNew && !passwordValue) {
-                        return 'Password is required for new user';
+                        return "Password is required for new user";
                       }
 
                       if (passwordValue && passwordValue.length < 8) {
-                        return 'Password must be at least 8 characters';
+                        return "Password must be at least 8 characters";
                       }
 
                       if (passwordValue && passwordValue.length > 50) {
-                        return 'Maximum 50 characters';
+                        return "Maximum 50 characters";
                       }
 
                       return true;
@@ -1004,7 +1050,10 @@ const UserTableData = () => {
                   }}
                   render={({ field, fieldState }) => (
                     <div className="flex flex-col gap-2">
-                      <label htmlFor="password" className="text-sm font-medium text-slate-700">
+                      <label
+                        htmlFor="password"
+                        className="text-sm font-medium text-slate-700"
+                      >
                         Password
                       </label>
 
@@ -1012,15 +1061,15 @@ const UserTableData = () => {
                         id="password"
                         placeholder={
                           isAddNew
-                            ? 'Enter password'
-                            : 'Leave blank to keep current password'
+                            ? "Enter password"
+                            : "Leave blank to keep current password"
                         }
-                        value={field.value ?? ''}
+                        value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value)}
                         feedback={isAddNew}
                         toggleMask
                         inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? 'p-invalid' : ''}`}
+                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                         disabled={isSaving}
                         pt={passwordPassThrough}
                       />
@@ -1045,19 +1094,19 @@ const UserTableData = () => {
                   control={control}
                   rules={{
                     validate: (value) => {
-                      const passwordValue = getValues('password')?.trim() ?? '';
-                      const confirmValue = value?.trim() ?? '';
+                      const passwordValue = getValues("password")?.trim() ?? "";
+                      const confirmValue = value?.trim() ?? "";
 
                       if (isAddNew && !confirmValue) {
-                        return 'Confirm password is required for new user';
+                        return "Confirm password is required for new user";
                       }
 
                       if (!isAddNew && passwordValue && !confirmValue) {
-                        return 'Confirm password is required when changing password';
+                        return "Confirm password is required when changing password";
                       }
 
                       if (passwordValue && confirmValue !== passwordValue) {
-                        return 'Password and confirm password must be the same';
+                        return "Password and confirm password must be the same";
                       }
 
                       return true;
@@ -1065,23 +1114,24 @@ const UserTableData = () => {
                   }}
                   render={({ field, fieldState }) => (
                     <div className="flex flex-col gap-2">
-                      <label htmlFor="confirm_password" className="text-sm font-medium text-slate-700">
+                      <label
+                        htmlFor="confirm_password"
+                        className="text-sm font-medium text-slate-700"
+                      >
                         Confirm Password
                       </label>
 
                       <Password
                         id="confirm_password"
                         placeholder={
-                          isAddNew
-                            ? 'Retype password'
-                            : 'Retype new password'
+                          isAddNew ? "Retype password" : "Retype new password"
                         }
-                        value={field.value ?? ''}
+                        value={field.value ?? ""}
                         onChange={(e) => field.onChange(e.target.value)}
                         feedback={false}
                         toggleMask
                         inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? 'p-invalid' : ''}`}
+                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                         disabled={isSaving}
                         pt={passwordPassThrough}
                       />
@@ -1109,7 +1159,8 @@ const UserTableData = () => {
                   Role Access
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Assign one or more roles to determine what this user can access.
+                  Assign one or more roles to determine what this user can
+                  access.
                 </p>
               </div>
 
@@ -1118,32 +1169,37 @@ const UserTableData = () => {
                 control={control}
                 rules={{
                   validate: (value) =>
-                    value && value.length > 0 ? true : 'Role is required',
+                    value && value.length > 0 ? true : "Role is required",
                 }}
                 render={({ field, fieldState }) => (
                   <div className="flex flex-col gap-3">
                     <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
                       {roleIsLoading && (
-                        <small className="text-slate-500">Loading roles...</small>
+                        <small className="text-slate-500">
+                          Loading roles...
+                        </small>
                       )}
 
                       {!roleIsLoading && activeRole.length === 0 && (
-                        <small className="text-slate-500">No active role found.</small>
+                        <small className="text-slate-500">
+                          No active role found.
+                        </small>
                       )}
 
                       {!roleIsLoading &&
                         activeRole.map((role: Role) => {
                           const checked = (field.value ?? []).some(
-                            (item: string) => item === role.code.toString()
+                            (item: string) => item === role.code.toString(),
                           );
 
                           return (
                             <div
                               key={role.code}
-                              className={`rounded-xl border bg-white p-3 transition ${checked
-                                ? 'border-blue-300 ring-1 ring-blue-200'
-                                : 'border-slate-200'
-                                }`}
+                              className={`rounded-xl border bg-white p-3 transition ${
+                                checked
+                                  ? "border-blue-300 ring-1 ring-blue-200"
+                                  : "border-slate-200"
+                              }`}
                             >
                               <div className="flex items-start gap-3">
                                 <Checkbox
@@ -1151,7 +1207,11 @@ const UserTableData = () => {
                                   name="role"
                                   value={role.code}
                                   onChange={(e) =>
-                                    onRoleChange(e, field.value ?? [], field.onChange)
+                                    onRoleChange(
+                                      e,
+                                      field.value ?? [],
+                                      field.onChange,
+                                    )
                                   }
                                   checked={checked}
                                   disabled={isSaving}
@@ -1219,12 +1279,14 @@ const UserTableData = () => {
                   <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                     <div>
                       <div className="text-sm font-medium text-slate-800">
-                        {field.value ? 'Account is active' : 'Account is inactive'}
+                        {field.value
+                          ? "Account is active"
+                          : "Account is inactive"}
                       </div>
                       <div className="mt-1 text-xs text-slate-500">
                         {field.value
-                          ? 'This user can login and access permitted menus.'
-                          : 'This user cannot login until reactivated.'}
+                          ? "This user can login and access permitted menus."
+                          : "This user cannot login until reactivated."}
                       </div>
                     </div>
 

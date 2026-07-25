@@ -20,9 +20,16 @@ import {
 } from "@/app/types/response-type";
 
 import { fetcher } from "@/app/utils/fetcher";
-import { getErrorMessage, isResponseTypeError } from "@/app/utils/error-messages";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
 
-import { deleteEmployee, purgeEmployee, restoreEmployee } from "@/app/services/employee-service";
+import {
+  deleteEmployee,
+  purgeEmployee,
+  restoreEmployee,
+} from "@/app/services/employee-service";
 import { quickCreateEmployee } from "@/app/services/employee-quick-create-service";
 
 import { showToast } from "@/store/ToastSlice";
@@ -105,11 +112,13 @@ const EmployeesDataTable = () => {
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] = useState(false);
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
 
   const [visible, setVisible] = useState(false);
   const [credentialDialogVisible, setCredentialDialogVisible] = useState(false);
-  const [createdResult, setCreatedResult] = useState<QuickCreateEmployeeResult | null>(null);
+  const [createdResult, setCreatedResult] =
+    useState<QuickCreateEmployeeResult | null>(null);
 
   const {
     control,
@@ -142,12 +151,16 @@ const EmployeesDataTable = () => {
 
   const listKey = `/api/employees/list?show_all=${isShowDeletedDataChecked}`;
 
-  const { data: employeesData, error, isLoading } = useSWR<EmployeeListRow[]>(
-    listKey,
-    fetcher
-  );
-  const { data: genderData, error: genderError, isLoading: genderIsLoading } =
-    useSWR<Gender[]>(`/api/gender`, fetcher);
+  const {
+    data: employeesData,
+    error,
+    isLoading,
+  } = useSWR<EmployeeListRow[]>(listKey, fetcher);
+  const {
+    data: genderData,
+    error: genderError,
+    isLoading: genderIsLoading,
+  } = useSWR<Gender[]>(`/api/gender`, fetcher);
   const {
     data: religionData,
     error: religionError,
@@ -161,7 +174,8 @@ const EmployeesDataTable = () => {
 
   const genderActive = genderData?.filter((a) => a.is_active) ?? [];
   const religionActive = religionData?.filter((a) => a.is_active) ?? [];
-  const maritalStatusActive = maritalStatusData?.filter((a) => a.is_active) ?? [];
+  const maritalStatusActive =
+    maritalStatusData?.filter((a) => a.is_active) ?? [];
 
   const summary = useMemo(() => {
     const rows = employeesData ?? [];
@@ -171,7 +185,7 @@ const EmployeesDataTable = () => {
       active: rows.filter((item) => !item.deleted_at).length,
       deleted: rows.filter((item) => !!item.deleted_at).length,
       noOrganization: rows.filter(
-        (item) => !item.position_name && !item.branch_name && !item.agency_name
+        (item) => !item.position_name && !item.branch_name && !item.agency_name,
       ).length,
     };
   }, [employeesData]);
@@ -232,12 +246,12 @@ const EmployeesDataTable = () => {
         },
         user: createUser
           ? {
-            username: form.username.trim(),
-            email: form.email.trim(),
-            password: null,
-            role: ["employee"],
-            is_active: form.user_is_active,
-          }
+              username: form.username.trim(),
+              email: form.email.trim(),
+              password: null,
+              role: ["employee"],
+              is_active: form.user_is_active,
+            }
           : null,
       });
 
@@ -250,7 +264,7 @@ const EmployeesDataTable = () => {
           severity: "success",
           summary: "Success",
           detail: response.message,
-        })
+        }),
       );
 
       if (response.data?.user_created) {
@@ -265,7 +279,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -274,7 +288,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -290,7 +304,7 @@ const EmployeesDataTable = () => {
       accept: () => {
         void handleDelete(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -319,7 +333,7 @@ const EmployeesDataTable = () => {
       accept: () => {
         void handleRestore(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -349,7 +363,7 @@ const EmployeesDataTable = () => {
       accept: () => {
         void handlePurge(data);
       },
-      reject: () => { },
+      reject: () => {},
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
@@ -373,7 +387,7 @@ const EmployeesDataTable = () => {
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployee(
         data.id,
-        data.row_version
+        data.row_version,
       );
 
       await mutate(listKey);
@@ -384,7 +398,7 @@ const EmployeesDataTable = () => {
           severity: "success",
           summary: "Success",
           detail: res.message,
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -394,7 +408,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -403,7 +417,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -412,7 +426,7 @@ const EmployeesDataTable = () => {
   const handlePurge = async (data: EmployeeListRow) => {
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployee(
-        data.id
+        data.id,
       );
 
       await mutate(listKey);
@@ -423,7 +437,7 @@ const EmployeesDataTable = () => {
           severity: "success",
           summary: "Success",
           detail: res.message,
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -433,7 +447,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -442,7 +456,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -450,10 +464,8 @@ const EmployeesDataTable = () => {
 
   const handleRestore = async (data: EmployeeListRow) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreEmployee(
-        data.id,
-        data.row_version
-      );
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await restoreEmployee(data.id, data.row_version);
 
       await mutate(listKey);
 
@@ -463,7 +475,7 @@ const EmployeesDataTable = () => {
           severity: "success",
           summary: "Success",
           detail: res.message,
-        })
+        }),
       );
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
@@ -473,7 +485,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: getErrorMessage(err, "message"),
-          })
+          }),
         );
       } else if (err instanceof Error) {
         dispatch(
@@ -482,7 +494,7 @@ const EmployeesDataTable = () => {
             severity: "error",
             summary: "Error",
             detail: err.message,
-          })
+          }),
         );
       }
     }
@@ -532,11 +544,15 @@ const EmployeesDataTable = () => {
       <div className="flex flex-col gap-1">
         <span className="text-sm text-slate-800">
           {rowData.gender_name || "-"}
-          {rowData.marital_status_name ? ` • ${rowData.marital_status_name}` : ""}
+          {rowData.marital_status_name
+            ? ` • ${rowData.marital_status_name}`
+            : ""}
         </span>
         <span className="text-sm text-slate-500">
           {rowData.birth_place || "-"}
-          {rowData.dob ? ` • ${new Date(rowData.dob).toLocaleDateString()}` : ""}
+          {rowData.dob
+            ? ` • ${new Date(rowData.dob).toLocaleDateString()}`
+            : ""}
         </span>
       </div>
     );
@@ -746,7 +762,11 @@ const EmployeesDataTable = () => {
                   />
                 </IconField>
 
-                <Button label="New Employee" icon="pi pi-plus" onClick={onClickNew} />
+                <Button
+                  label="New Employee"
+                  icon="pi pi-plus"
+                  onClick={onClickNew}
+                />
               </div>
             </div>
 
@@ -861,7 +881,8 @@ const EmployeesDataTable = () => {
                         Creation Mode
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Choose whether to create employee only or employee with login account.
+                        Choose whether to create employee only or employee with
+                        login account.
                       </p>
                     </div>
 
@@ -912,7 +933,9 @@ const EmployeesDataTable = () => {
                             placeholder="Enter first name"
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -938,7 +961,9 @@ const EmployeesDataTable = () => {
                             placeholder="Enter middle name"
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -965,7 +990,9 @@ const EmployeesDataTable = () => {
                             placeholder="Enter last name"
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -992,7 +1019,9 @@ const EmployeesDataTable = () => {
                             placeholder="Enter birth place"
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -1016,7 +1045,9 @@ const EmployeesDataTable = () => {
                             className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -1027,7 +1058,8 @@ const EmployeesDataTable = () => {
                       control={control}
                       rules={{
                         required: "Gender is required",
-                        validate: (value) => Number(value) > 0 || "Gender is required",
+                        validate: (value) =>
+                          Number(value) > 0 || "Gender is required",
                       }}
                       render={({ field, fieldState }) => (
                         <div>
@@ -1047,7 +1079,9 @@ const EmployeesDataTable = () => {
                             className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -1058,7 +1092,8 @@ const EmployeesDataTable = () => {
                       control={control}
                       rules={{
                         required: "Religion is required",
-                        validate: (value) => Number(value) > 0 || "Religion is required",
+                        validate: (value) =>
+                          Number(value) > 0 || "Religion is required",
                       }}
                       render={({ field, fieldState }) => (
                         <div>
@@ -1078,7 +1113,9 @@ const EmployeesDataTable = () => {
                             className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -1097,7 +1134,9 @@ const EmployeesDataTable = () => {
                             appendTo={getBody}
                             value={field.value}
                             options={maritalStatusActive}
-                            disabled={maritalStatusIsLoading || !!maritalStatusError}
+                            disabled={
+                              maritalStatusIsLoading || !!maritalStatusError
+                            }
                             loading={maritalStatusIsLoading}
                             onChange={(e) => field.onChange(e.value)}
                             optionLabel="name"
@@ -1106,7 +1145,9 @@ const EmployeesDataTable = () => {
                             className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                           />
                           {fieldState.error && (
-                            <small className="p-error">{fieldState.error.message}</small>
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
                           )}
                         </div>
                       )}
@@ -1120,8 +1161,10 @@ const EmployeesDataTable = () => {
                           Login Account
                         </p>
                         <p className="mt-1 text-xs text-slate-500">
-                          Default role will be assigned as <span className="font-semibold">employee</span>.
-                          Password will be generated automatically and user must change it on first login.
+                          Default role will be assigned as{" "}
+                          <span className="font-semibold">employee</span>.
+                          Password will be generated automatically and user must
+                          change it on first login.
                         </p>
                       </div>
 
@@ -1131,8 +1174,11 @@ const EmployeesDataTable = () => {
                           control={control}
                           rules={{
                             validate: (value) => {
-                              if (creationMode !== "employee_with_user") return true;
-                              return value.trim() !== "" || "Username is required";
+                              if (creationMode !== "employee_with_user")
+                                return true;
+                              return (
+                                value.trim() !== "" || "Username is required"
+                              );
                             },
                           }}
                           render={({ field, fieldState }) => (
@@ -1154,7 +1200,7 @@ const EmployeesDataTable = () => {
                                   onClick={() => {
                                     const generated = buildUsername(
                                       getValues("first_name"),
-                                      getValues("last_name")
+                                      getValues("last_name"),
                                     );
                                     setValue("username", generated, {
                                       shouldValidate: true,
@@ -1163,7 +1209,9 @@ const EmployeesDataTable = () => {
                                 />
                               </div>
                               {fieldState.error && (
-                                <small className="p-error">{fieldState.error.message}</small>
+                                <small className="p-error">
+                                  {fieldState.error.message}
+                                </small>
                               )}
                             </div>
                           )}
@@ -1174,13 +1222,15 @@ const EmployeesDataTable = () => {
                           control={control}
                           rules={{
                             validate: (value) => {
-                              if (creationMode !== "employee_with_user") return true;
-                              if (value.trim() === "") return "Email is required";
+                              if (creationMode !== "employee_with_user")
+                                return true;
+                              if (value.trim() === "")
+                                return "Email is required";
 
-                              const emailRegex =
-                                /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                               return (
-                                emailRegex.test(value.trim()) || "Email format is not valid"
+                                emailRegex.test(value.trim()) ||
+                                "Email format is not valid"
                               );
                             },
                           }}
@@ -1195,7 +1245,9 @@ const EmployeesDataTable = () => {
                                 placeholder="Enter login email"
                               />
                               {fieldState.error && (
-                                <small className="p-error">{fieldState.error.message}</small>
+                                <small className="p-error">
+                                  {fieldState.error.message}
+                                </small>
                               )}
                             </div>
                           )}
@@ -1213,7 +1265,8 @@ const EmployeesDataTable = () => {
                                       Active Login
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                      Turn off if account should be created but not active yet.
+                                      Turn off if account should be created but
+                                      not active yet.
                                     </p>
                                   </div>
                                   <InputSwitch
@@ -1257,22 +1310,31 @@ const EmployeesDataTable = () => {
 
           <div className="grid grid-cols-[140px_1fr] gap-3 text-sm">
             <span className="font-medium text-slate-600">Employee ID</span>
-            <span className="text-slate-900">{createdResult?.employee_id ?? "-"}</span>
+            <span className="text-slate-900">
+              {createdResult?.employee_id ?? "-"}
+            </span>
 
             <span className="font-medium text-slate-600">User ID</span>
-            <span className="text-slate-900">{createdResult?.user_id ?? "-"}</span>
+            <span className="text-slate-900">
+              {createdResult?.user_id ?? "-"}
+            </span>
 
             <span className="font-medium text-slate-600">Username</span>
-            <span className="text-slate-900">{createdResult?.username ?? "-"}</span>
+            <span className="text-slate-900">
+              {createdResult?.username ?? "-"}
+            </span>
 
-            <span className="font-medium text-slate-600">Temporary Password</span>
+            <span className="font-medium text-slate-600">
+              Temporary Password
+            </span>
             <span className="rounded-md bg-slate-100 px-3 py-2 font-mono text-slate-900">
               {createdResult?.temporary_password ?? "-"}
             </span>
           </div>
 
           <p className="text-xs text-slate-500">
-            Save this password now. User will be required to change password on first login.
+            Save this password now. User will be required to change password on
+            first login.
           </p>
         </div>
       </Dialog>

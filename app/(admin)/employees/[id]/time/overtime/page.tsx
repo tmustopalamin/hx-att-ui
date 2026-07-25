@@ -1,9 +1,7 @@
-import React from 'react'
+import React from "react";
 
 const TimeOvertimeDetail = () => {
-  return (
-    <div>TimeOvertimeDetail</div>
-  )
-}
+  return <div>TimeOvertimeDetail</div>;
+};
 
-export default TimeOvertimeDetail
+export default TimeOvertimeDetail;

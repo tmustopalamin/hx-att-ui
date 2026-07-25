@@ -1,12 +1,12 @@
-import ApprovalSettingsTableData from './ApprovalSettingsTableData';
+import ApprovalSettingsTableData from "./ApprovalSettingsTableData";
 
 export const metadata = {
-    title: 'Approval Settings - PT. Hexing Technology',
-    description: 'approval settings',
+  title: "Approval Settings - PT. Hexing Technology",
+  description: "approval settings",
 };
 
 const ApprovalSettingsPage = () => {
-    return <ApprovalSettingsTableData />;
+  return <ApprovalSettingsTableData />;
 };
 
 export default ApprovalSettingsPage;

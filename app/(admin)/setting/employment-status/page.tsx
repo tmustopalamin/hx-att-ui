@@ -1,312 +1,398 @@
-'use client'
+"use client";
 
-import CardTitle from '@/app/_components/CardTitle';
-import { FilterMatchMode } from 'primereact/api';
-import { Button } from 'primereact/button';
-import { Card } from 'primereact/card';
-import { Column } from 'primereact/column';
-import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
-import { DataTable } from 'primereact/datatable';
-import { Dialog } from 'primereact/dialog';
-import { IconField } from 'primereact/iconfield';
-import { InputIcon } from 'primereact/inputicon';
-import { InputSwitch } from 'primereact/inputswitch';
-import { InputText } from 'primereact/inputtext';
-import { Toast } from 'primereact/toast';
-import React, { useEffect, useRef, useState } from 'react'
-import { useForm } from 'react-hook-form';
+import CardTitle from "@/app/_components/CardTitle";
+import { FilterMatchMode } from "primereact/api";
+import { Button } from "primereact/button";
+import { Card } from "primereact/card";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputSwitch } from "primereact/inputswitch";
+import { InputText } from "primereact/inputtext";
+import { Toast } from "primereact/toast";
+import React, { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface EmploymentStatus {
-    id: number;
-    name: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
+  id: number;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 const EmploymentStatusSettingPage = () => {
-    const [data, setData] = useState([]);
+  const [data, setData] = useState([]);
 
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
-    const [filters, setFilters] = useState({
-        global: { value: '', matchMode: FilterMatchMode.CONTAINS },
-    });
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+  const [filters, setFilters] = useState({
+    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+  });
 
+  const [isAddNew, setIsAddNew] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
 
-    const [isAddNew, setIsAddNew] = useState(false);
-    const [tableLoading, setTableLoading] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
+  const toast = useRef<Toast>(null!);
 
-    const [visible, setVisible] = useState(false);
-    const [popupHeaderTitle, setPopupHeaderTitle] = useState('');
-    const toast = useRef<Toast>(null!);
+  const {
+    register,
+    handleSubmit,
+    setFocus,
+    formState: { errors, isValid },
+    reset,
+    setValue,
+    watch,
+  } = useForm({
+    defaultValues: {
+      name: "",
+      is_active: true,
+    },
+  });
 
-    const { register, handleSubmit, setFocus, formState: { errors, isValid }, reset, setValue, watch } = useForm({
-        defaultValues: {
-            name: '',
-            is_active: true,
-        }
+  const getData = () => {
+    setTableLoading(true);
+
+    fetch("http://localhost:3050/api/employment-status", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
     })
+      .then((res) => res.json())
+      .then((data) => {
+        setData(data);
+        setTableLoading(false);
+      });
+  };
 
-    const getData = () => {
-        setTableLoading(true);
+  useEffect(() => {
+    document.title = "Employment Status Setting";
 
-        fetch("http://localhost:3050/api/employment-status", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setData(data);
-                setTableLoading(false);
-            });
-    };
+    getData();
+  }, []);
 
+  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const _filters = { ...filters };
 
-    useEffect(() => {
-        document.title = 'Employment Status Setting';
+    _filters["global"].value = value;
 
-        getData()
-    }, []);
+    setFilters(_filters);
+    setGlobalFilterValue(value);
+  };
 
-    const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        const _filters = { ...filters };
+  const renderTableHeader = () => {
+    return <></>;
+  };
+  const header = renderTableHeader();
 
-        _filters['global'].value = value;
+  const onClickNew = () => {
+    setIsAddNew(true);
+    setVisible(true);
+    setPopupHeaderTitle("New Employment Status");
+  };
 
-        setFilters(_filters);
-        setGlobalFilterValue(value);
-    };
+  const footerContent = (
+    <div>
+      <Button
+        label="Cancel"
+        icon="pi pi-times"
+        onClick={() => setVisible(false)}
+        className="p-button-text"
+      />
+      <Button
+        label={isAddNew ? "Submit" : "Save"}
+        icon="pi pi-check"
+        disabled={!isValid}
+        type="submit"
+      />
+    </div>
+  );
 
-    const renderTableHeader = () => {
-        return (
-            <></>
-        );
-    };
-    const header = renderTableHeader();
+  const handleSubmitNew = async (data: {
+    name: string;
+    is_active: boolean;
+  }) => {
+    try {
+      const res = await fetch("http://localhost:3050/api/employment-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-    const onClickNew = () => {
-        setIsAddNew(true);
-        setVisible(true);
-        setPopupHeaderTitle("New Employment Status");
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
+
+      setVisible(false);
+      reset();
+      getData();
+
+      toast.current?.show({
+        severity: "success",
+        summary: "success",
+        detail: "add success",
+        life: 3000,
+      });
+    } catch (err: unknown) {
+      toast.current?.show({
+        severity: "error",
+        summary: "error",
+        detail: "Failed to submit the form. Please try again later" + err,
+        life: 3000,
+      });
+    }
+  };
+
+  const handleSubmitUpdate = async (data: {
+    name: string;
+    is_active: boolean;
+  }) => {
+    try {
+      const res = await fetch("http://localhost:3050/api/employment-status", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...data, id: selectedId }),
+      });
+
+      if (!res.ok) throw new Error(`Failed to update: ${res.status}`);
+      const data_res = await res.json();
+
+      setVisible(false);
+      reset();
+      getData();
+
+      toast.current?.show({
+        severity: "success",
+        summary: "success",
+        detail: "update success",
+        life: 3000,
+      });
+    } catch (err: unknown) {
+      toast.current?.show({
+        severity: "error",
+        summary: "error",
+        detail: "Failed to update the form. Please try again later" + err,
+        life: 3000,
+      });
+    }
+  };
+
+  const handleSubmitDelete = async (id: number) => {
+    setSelectedId(id);
+
+    try {
+      const res = await fetch("http://localhost:3050/api/employment-status", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: selectedId }),
+      });
+
+      if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
+      const data_res = await res.json();
+
+      setVisible(false);
+      reset();
+      getData();
+
+      toast.current?.show({
+        severity: "success",
+        summary: "success",
+        detail: "delete success",
+        life: 3000,
+      });
+    } catch (err: unknown) {
+      toast.current?.show({
+        severity: "error",
+        summary: "error",
+        detail: "Failed to delete the form. Please try again later" + err,
+        life: 3000,
+      });
+    }
+  };
+
+  const onSubmit = (data: { name: string; is_active: boolean }) => {
+    if (!isValid) {
+      return;
     }
 
-
-
-    const footerContent = (
-        <div>
-            <Button label="Cancel" icon="pi pi-times" onClick={() => setVisible(false)} className="p-button-text" />
-            <Button label={isAddNew ? 'Submit' : 'Save'} icon="pi pi-check" disabled={!isValid} type='submit' />
-        </div>
-    );
-
-    const handleSubmitNew = async (data: { name: string; is_active: boolean }) => {
-        try {
-
-            const res = await fetch("http://localhost:3050/api/employment-status", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(data),
-            });
-
-            if (!res.ok) {
-                throw new Error(`HTTP error! Status: ${res.status}`);
-            }
-
-            setVisible(false);
-            reset();
-            getData();
-
-            toast.current?.show({ severity: 'success', summary: 'success', detail: 'add success', life: 3000 });
-
-        } catch (err: unknown) {
-
-            toast.current?.show({ severity: 'error', summary: 'error', detail: 'Failed to submit the form. Please try again later' + err, life: 3000 });
-
-        }
+    if (isAddNew) {
+      handleSubmitNew(data);
+      return;
     }
 
-    const handleSubmitUpdate = async (data: { name: string; is_active: boolean }) => {
-        try {
+    handleSubmitUpdate(data);
+  };
 
-            const res = await fetch("http://localhost:3050/api/employment-status", {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ ...data, id: selectedId }),
-            });
+  const [selectedId, setSelectedId] = useState(0);
+  const onClickUpdate = (rowData: EmploymentStatus) => {
+    setVisible(true);
+    setIsAddNew(false);
+    setPopupHeaderTitle("Update Employment Status");
 
-            if (!res.ok) throw new Error(`Failed to update: ${res.status}`);
-            const data_res = await res.json();
+    setSelectedId(rowData.id);
+    setValue("name", rowData.name);
+    setValue("is_active", rowData.is_active);
+  };
 
-            setVisible(false);
-            reset();
-            getData();
+  const activeColumnBody = (value: EmploymentStatus) => {
+    return value.is_active ? "Active" : "Not Active";
+  };
 
-            toast.current?.show({ severity: 'success', summary: 'success', detail: 'update success', life: 3000 });
-
-        } catch (err: unknown) {
-
-            toast.current?.show({ severity: 'error', summary: 'error', detail: 'Failed to update the form. Please try again later' + err, life: 3000 });
-
-        }
-    }
-
-    const handleSubmitDelete = async (id: number) => {
-        setSelectedId(id);
-
-        try {
-
-            const res = await fetch("http://localhost:3050/api/employment-status", {
-                method: "DELETE",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ id: selectedId }),
-            });
-
-            if (!res.ok) throw new Error(`Failed to delete: ${res.status}`);
-            const data_res = await res.json();
-
-            setVisible(false);
-            reset();
-            getData();
-
-            toast.current?.show({ severity: 'success', summary: 'success', detail: 'delete success', life: 3000 });
-
-        } catch (err: unknown) {
-
-            toast.current?.show({ severity: 'error', summary: 'error', detail: 'Failed to delete the form. Please try again later' + err, life: 3000 });
-
-        }
-    }
-
-    const onSubmit = (data: { name: string; is_active: boolean }) => {
-        if (!isValid) {
-            return;
-        }
-
-        if (isAddNew) {
-            handleSubmitNew(data);
-            return;
-        }
-
-        handleSubmitUpdate(data);
-    };
-
-    const [selectedId, setSelectedId] = useState(0);
-    const onClickUpdate = (rowData: EmploymentStatus) => {
-        setVisible(true);
-        setIsAddNew(false);
-        setPopupHeaderTitle('Update Employment Status');
-
-        setSelectedId(rowData.id);
-        setValue('name', rowData.name);
-        setValue('is_active', rowData.is_active);
-    }
-
-    const activeColumnBody = (value: EmploymentStatus) => {
-        return value.is_active ? 'Active' : 'Not Active';
-    };
-
-    const actionColumnBody = (rowData: EmploymentStatus) => {
-        return <>
-            <div className="flex gap-2">
-                <Button severity='danger' label="" icon="pi pi-trash" size="small" onClick={() => { onClickDelete(rowData.id) }} />
-                <Button severity='help' label="" icon="pi pi-pencil" size="small" onClick={() => { onClickUpdate(rowData) }} />
-            </div>
-        </>
-    };
-
-    const onClickDelete = (id: number) => {
-        confirmDialog({
-            message: 'Do you want to delete this record?',
-            header: 'Delete Confirmation',
-            icon: 'pi pi-info-circle',
-            defaultFocus: 'reject',
-            acceptClassName: "p-button-danger ml-3",
-            accept: () => {
-                handleSubmitDelete(id);
-            },
-            reject: () => { },
-        });
-    };
-
+  const actionColumnBody = (rowData: EmploymentStatus) => {
     return (
-        <>
-            <Toast ref={toast} position="top-center" />
-            <ConfirmDialog />
-            <Card title={<CardTitle title='Employment Status' url='' />}>
+      <>
+        <div className="flex gap-2">
+          <Button
+            severity="danger"
+            label=""
+            icon="pi pi-trash"
+            size="small"
+            onClick={() => {
+              onClickDelete(rowData.id);
+            }}
+          />
+          <Button
+            severity="help"
+            label=""
+            icon="pi pi-pencil"
+            size="small"
+            onClick={() => {
+              onClickUpdate(rowData);
+            }}
+          />
+        </div>
+      </>
+    );
+  };
 
-                <div className="p-3 flex flex-col gap-5">
-                    <div className="flex items-center justify-between">
-                        <Button label="New" icon="pi pi-plus" size="small" onClick={() => { onClickNew() }} />
+  const onClickDelete = (id: number) => {
+    confirmDialog({
+      message: "Do you want to delete this record?",
+      header: "Delete Confirmation",
+      icon: "pi pi-info-circle",
+      defaultFocus: "reject",
+      acceptClassName: "p-button-danger ml-3",
+      accept: () => {
+        handleSubmitDelete(id);
+      },
+      reject: () => {},
+    });
+  };
 
-                        <IconField iconPosition="left">
-                            <InputIcon className="pi pi-search" />
-                            <InputText className="p-inputtext-sm" value={globalFilterValue} onChange={onGlobalFilterChange} placeholder="Keyword Search" />
-                        </IconField>
-                    </div>
+  return (
+    <>
+      <Toast ref={toast} position="top-center" />
+      <ConfirmDialog />
+      <Card title={<CardTitle title="Employment Status" url="" />}>
+        <div className="p-3 flex flex-col gap-5">
+          <div className="flex items-center justify-between">
+            <Button
+              label="New"
+              icon="pi pi-plus"
+              size="small"
+              onClick={() => {
+                onClickNew();
+              }}
+            />
 
-                    <DataTable
-                        value={data}
-                        tableStyle={{ minWidth: "50rem" }}
-                        stripedRows
-                        paginator
-                        rows={5}
-                        rowsPerPageOptions={[5, 10, 25, 50]}
-                        dataKey="id"
-                        globalFilterFields={['name']}
-                        emptyMessage="No Employment Status found."
-                        header={header}
-                        filters={filters}
-                        currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                        loading={tableLoading}
-                    >
-                        <Column header="#" headerStyle={{ width: '3rem' }} body={(data, options) => options.rowIndex + 1}></Column>
-                        <Column field="name" header="Name"></Column>
-                        <Column field="is_active" header="Status" body={activeColumnBody}></Column>
-                        <Column header="Action" body={(rowData) => actionColumnBody(rowData)}></Column>
-                    </DataTable>
-                </div>
+            <IconField iconPosition="left">
+              <InputIcon className="pi pi-search" />
+              <InputText
+                className="p-inputtext-sm"
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Keyword Search"
+              />
+            </IconField>
+          </div>
 
-            </Card>
+          <DataTable
+            value={data}
+            tableStyle={{ minWidth: "50rem" }}
+            stripedRows
+            paginator
+            rows={5}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            dataKey="id"
+            globalFilterFields={["name"]}
+            emptyMessage="No Employment Status found."
+            header={header}
+            filters={filters}
+            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            loading={tableLoading}
+          >
+            <Column
+              header="#"
+              headerStyle={{ width: "3rem" }}
+              body={(data, options) => options.rowIndex + 1}
+            ></Column>
+            <Column field="name" header="Name"></Column>
+            <Column
+              field="is_active"
+              header="Status"
+              body={activeColumnBody}
+            ></Column>
+            <Column
+              header="Action"
+              body={(rowData) => actionColumnBody(rowData)}
+            ></Column>
+          </DataTable>
+        </div>
+      </Card>
 
-            <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-                <Dialog
-                    header={popupHeaderTitle}
-                    visible={visible}
-                    style={{ width: '50vw' }}
-                    onHide={() => { if (!visible) return; setVisible(false); reset(); }}
-                    footer={footerContent}
-                    onShow={() => {
-                        setFocus('name');
-                    }}
-                >
-                    <div className="flex flex-col gap-5">
-                        <div className="m-0 flex flex-col gap-2">
-                            <label htmlFor="name">Name</label>
-                            <InputText {...register('name', { required: 'this is required', maxLength: { value: 50, message: 'maximum 50 character' } })} />
-                            <small className="font-bold">{errors.name?.message}</small>
-                        </div>
+      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
+        <Dialog
+          header={popupHeaderTitle}
+          visible={visible}
+          style={{ width: "50vw" }}
+          onHide={() => {
+            if (!visible) return;
+            setVisible(false);
+            reset();
+          }}
+          footer={footerContent}
+          onShow={() => {
+            setFocus("name");
+          }}
+        >
+          <div className="flex flex-col gap-5">
+            <div className="m-0 flex flex-col gap-2">
+              <label htmlFor="name">Name</label>
+              <InputText
+                {...register("name", {
+                  required: "this is required",
+                  maxLength: { value: 50, message: "maximum 50 character" },
+                })}
+              />
+              <small className="font-bold">{errors.name?.message}</small>
+            </div>
 
-                        <div className="m-0 flex flex-col gap-2">
-                            <label htmlFor="is_active">Active</label>
-                            <InputSwitch {...register('is_active')} checked={watch('is_active')} onChange={(e) => setValue('is_active', e.value)} />
-                        </div>
-                    </div>
-                </Dialog>
-            </form>
-        </>
-    )
-}
+            <div className="m-0 flex flex-col gap-2">
+              <label htmlFor="is_active">Active</label>
+              <InputSwitch
+                {...register("is_active")}
+                checked={watch("is_active")}
+                onChange={(e) => setValue("is_active", e.value)}
+              />
+            </div>
+          </div>
+        </Dialog>
+      </form>
+    </>
+  );
+};
 
-
-
-export default EmploymentStatusSettingPage
+export default EmploymentStatusSettingPage;

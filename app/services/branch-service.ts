@@ -45,7 +45,11 @@ export const createBranch = async (data: Branch) => {
   return res.json();
 };
 
-export const updateBranch = async (id: number, rowVersion: number, data: Branch) => {
+export const updateBranch = async (
+  id: number,
+  rowVersion: number,
+  data: Branch,
+) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {

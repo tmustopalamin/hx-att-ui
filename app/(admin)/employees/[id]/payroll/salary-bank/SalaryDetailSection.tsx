@@ -16,7 +16,7 @@ type FormData = {
   lastName: string;
   birthplace: string;
   dob: string;
-  gender: number,
+  gender: number;
   religion: number;
   marital: string;
 };
@@ -27,24 +27,29 @@ const SalaryDetailSection = () => {
   const params = useParams();
   const id = params.id;
 
-  const { control, handleSubmit, setValue } = useForm<FormData>({ mode: "onChange" });
+  const { control, handleSubmit, setValue } = useForm<FormData>({
+    mode: "onChange",
+  });
   const [isPageEdit, setIsPageEdit] = React.useState<boolean>(false);
   const toast = useRef<Toast>(null!);
 
   const getPersonalData = async () => {
-    console.clear()
+    console.clear();
 
-    const response = await fetch(`http://localhost:3050/api/employees/${id}/personal-data`, { credentials: "include", });
+    const response = await fetch(
+      `http://localhost:3050/api/employees/${id}/personal-data`,
+      { credentials: "include" },
+    );
     const data = await response.json();
 
-    setValue('firstName', data.first_name);
-    setValue('lastName', data.last_name);
-    setValue('dob', data.dob);
-    setValue('gender', data.gender_id);
-    setValue('religion', data.religion_id);
-    setValue('marital', data.marital_status_id);
-    setValue('birthplace', data.birth_place);
-  }
+    setValue("firstName", data.first_name);
+    setValue("lastName", data.last_name);
+    setValue("dob", data.dob);
+    setValue("gender", data.gender_id);
+    setValue("religion", data.religion_id);
+    setValue("marital", data.marital_status_id);
+    setValue("birthplace", data.birth_place);
+  };
 
   const onSubmit = async (data: FormData) => {
     const putData = {
@@ -55,24 +60,26 @@ const SalaryDetailSection = () => {
       gender_id: data.gender,
       religion_id: data.religion,
       marital_status_id: data.marital,
-    }
+    };
 
-    const res = await fetch(`http://localhost:3050/api/employees/${id}/personal-data`, {
-      method: 'PUT',
-      credentials: "include",
-      headers: {
-        'Content-Type': 'application/json',
+    const res = await fetch(
+      `http://localhost:3050/api/employees/${id}/personal-data`,
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(putData),
       },
-      body: JSON.stringify(putData),
-    });
+    );
 
     const result = await res.json();
 
     getPersonalData();
   };
 
-  const onInvalid = (errors: FieldErrors<FormData>) => {
-  };
+  const onInvalid = (errors: FieldErrors<FormData>) => {};
 
   return (
     <>

@@ -1,19 +1,21 @@
-import dayjs from 'dayjs';
-import React from 'react'
-import utc from 'dayjs/plugin/utc';
-import ShiftTableData from './ShiftTableData';
+import dayjs from "dayjs";
+import React from "react";
+import utc from "dayjs/plugin/utc";
+import ShiftTableData from "./ShiftTableData";
 
 dayjs.extend(utc);
 
 export const metadata = {
-    title: 'Manage Shift - PT. Hexing Technology',
-    description: 'add, update, delete shift data',
+  title: "Manage Shift - PT. Hexing Technology",
+  description: "add, update, delete shift data",
 };
 
 const ShiftSettingPage = () => {
-    return <>
-        <ShiftTableData />
+  return (
+    <>
+      <ShiftTableData />
     </>
-}
+  );
+};
 
-export default ShiftSettingPage
+export default ShiftSettingPage;

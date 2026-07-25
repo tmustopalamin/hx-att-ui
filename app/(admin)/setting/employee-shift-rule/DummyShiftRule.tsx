@@ -115,7 +115,6 @@
 //             </div>
 //           </div>
 
-
 //           <div className="flex">
 //             <div className="flex align-items-center">
 //               <Checkbox inputId="ingredient1" name="pizza" value="Cheese" onChange={() => { }} checked={true} />

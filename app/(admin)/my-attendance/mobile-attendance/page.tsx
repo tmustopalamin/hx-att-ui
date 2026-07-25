@@ -1,14 +1,12 @@
 import MobileAttendancePage from "./MobileAttendancePage";
 
 export const metadata = {
-  title: 'Mobile Attendance - PT. Hexing Technology',
-  description: 'Check In and Check Out using GPS and Photo Capture',
+  title: "Mobile Attendance - PT. Hexing Technology",
+  description: "Check In and Check Out using GPS and Photo Capture",
 };
 
 const GpsPhotoTrackerPage = () => {
-  return (
-    <MobileAttendancePage />
-  )
-}
+  return <MobileAttendancePage />;
+};
 
-export default GpsPhotoTrackerPage
+export default GpsPhotoTrackerPage;

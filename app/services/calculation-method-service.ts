@@ -1,16 +1,16 @@
 import { CalculationMethod } from "../types/calculation-method";
 import { ResponseTypeError } from "../types/response-type";
 
-const API_URL = '/api/calculation-method';
+const API_URL = "/api/calculation-method";
 
 export const createCalculationMethod = async (data: CalculationMethod) => {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
-    body: JSON.stringify(data)    
+    body: JSON.stringify(data),
   });
 
   const contentType = res.headers.get("Content-Type");
@@ -38,69 +38,77 @@ export const createCalculationMethod = async (data: CalculationMethod) => {
   }
 
   return res.json();
-}
+};
 
-export const updateCalculationMethod = async (id: number, rowVersion: number, data: CalculationMethod) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const updateCalculationMethod = async (
+  id: number,
+  rowVersion: number,
+  data: CalculationMethod,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PUT',
-    credentials: 'include',
+    method: "PUT",
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
-export const deleteCalculationMethod = async (id: number, rowVersion: number) => {
-  if (rowVersion <= -1)
-    throw new Error('rowVersion is required');
+export const deleteCalculationMethod = async (
+  id: number,
+  rowVersion: number,
+) => {
+  if (rowVersion <= -1) throw new Error("rowVersion is required");
 
   const res = await fetch(`${API_URL}/${id}`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
 export const purgeCalculationMethod = async (id: number) => {
   const res = await fetch(`${API_URL}/${id}/purge`, {
-    method: 'DELETE',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
   });
   if (!res.ok) {
-      const errorData: ResponseTypeError = await res.json();
-      throw errorData;
+    const errorData: ResponseTypeError = await res.json();
+    throw errorData;
   }
   return res.json();
-}
+};
 
-export const restoreCalculationMethod = async (id: number, rowVersion: number) => {
+export const restoreCalculationMethod = async (
+  id: number,
+  rowVersion: number,
+) => {
   const res = await fetch(`${API_URL}/${id}/restore`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 
-      'Content-Type': 'application/json',
-      'If-Match': String(rowVersion),
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
   });
 
@@ -129,5 +137,4 @@ export const restoreCalculationMethod = async (id: number, rowVersion: number) =
   }
 
   return res.json();
-}
-
+};

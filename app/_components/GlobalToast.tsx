@@ -23,7 +23,7 @@ const GlobalToast = () => {
       // Auto-hide state agar tidak show terus
       dispatch(hideToast());
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toastState.visible]);
 
   return <Toast ref={toastRef} position="top-center" />;

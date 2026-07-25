@@ -1,6 +1,6 @@
-import { Badge } from 'primereact/badge';
-import { Button } from 'primereact/button';
-import React, { useEffect, useRef, useState } from 'react'
+import { Badge } from "primereact/badge";
+import { Button } from "primereact/button";
+import React, { useEffect, useRef, useState } from "react";
 
 const Notification = () => {
   const [open, setOpen] = useState(false);
@@ -15,7 +15,10 @@ const Notification = () => {
   // close kalau klik di luar
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     }
@@ -70,6 +73,6 @@ const Notification = () => {
       )}
     </div>
   );
-}
+};
 
-export default Notification
+export default Notification;

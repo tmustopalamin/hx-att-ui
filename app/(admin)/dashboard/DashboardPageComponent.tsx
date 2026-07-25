@@ -77,7 +77,7 @@ const getProfilePermissions = (profileState: unknown): string[] => {
   }
 
   return profile.permissions.filter(
-    (permission): permission is string => typeof permission === "string"
+    (permission): permission is string => typeof permission === "string",
   );
 };
 
@@ -126,7 +126,7 @@ const DashboardPageComponent = () => {
 
   const { data, error, isLoading } = useSWR<AdminDashboardResponse>(
     "/api/dashboard/admin",
-    getAdminDashboard
+    getAdminDashboard,
   );
 
   const profile = profileState as {
@@ -193,7 +193,7 @@ const DashboardPageComponent = () => {
   ];
 
   const visibleQuickAccessItems = quickAccessItems.filter((item) =>
-    hasPermission(item.permission)
+    hasPermission(item.permission),
   );
 
   const todayCards: DashboardCard[] = useMemo(() => {
@@ -394,7 +394,7 @@ const DashboardPageComponent = () => {
           data: rows.map((item) => item.value),
           backgroundColor: rows.map(
             (_, index) =>
-              fallbackDepartmentColors[index % fallbackDepartmentColors.length]
+              fallbackDepartmentColors[index % fallbackDepartmentColors.length],
           ),
           borderWidth: 2,
           borderColor: "#ffffff",
@@ -478,10 +478,11 @@ const DashboardPageComponent = () => {
       return (
         <Card
           key={item.label}
-          className={`shadow-sm transition-all duration-200 ${canOpen
+          className={`shadow-sm transition-all duration-200 ${
+            canOpen
               ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md"
               : "cursor-default"
-            }`}
+          }`}
           onClick={() => {
             if (canOpen && item.href) {
               router.push(item.href);
@@ -527,7 +528,10 @@ const DashboardPageComponent = () => {
 
   return (
     <div className="flex w-full flex-col gap-5">
-      <Card className="w-full overflow-hidden" pt={{ content: { className: "p-0" } }}>
+      <Card
+        className="w-full overflow-hidden"
+        pt={{ content: { className: "p-0" } }}
+      >
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-500 p-6 text-white">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-white/10 blur-3xl" />

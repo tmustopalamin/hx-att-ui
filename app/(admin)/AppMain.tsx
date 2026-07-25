@@ -73,10 +73,11 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
     <main className="flex h-screen w-full overflow-hidden bg-slate-100">
       {/* Desktop sidebar */}
       <aside
-        className={`hidden h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out md:block ${isDesktopSidebarCollapsed
-          ? "w-0 border-r-0 opacity-0"
-          : "w-[17rem] border-r border-slate-200 opacity-100"
-          }`}
+        className={`hidden h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out md:block ${
+          isDesktopSidebarCollapsed
+            ? "w-0 border-r-0 opacity-0"
+            : "w-[17rem] border-r border-slate-200 opacity-100"
+        }`}
       >
         <div className="h-full bg-white">
           <SidebarMenu />
