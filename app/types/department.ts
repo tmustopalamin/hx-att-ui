@@ -6,4 +6,5 @@ export interface Department {
   is_active: boolean;
   deleted_at: string;
   row_version: number;
+  parent_name?: string | null;
 }

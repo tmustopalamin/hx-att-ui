@@ -1,479 +1,346 @@
 "use client";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { ChangeEvent, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import useSWR from "swr";
+
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Controller, useForm } from "react-hook-form";
-import CardTitle from "@/app/_components/CardTitle";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
 import { InputSwitch } from "primereact/inputswitch";
-import { useState } from "react";
-import useSWR, { mutate } from "swr";
-import { fetcher } from "@/app/utils/fetcher";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import {
+  createCity,
+  deleteCity,
+  purgeCity,
+  restoreCity,
+  updateCity,
+} from "@/app/services/city-service";
+
+import { City } from "@/app/types/city";
 import {
   ResponseType,
   ResponseTypeCreateSuccess,
 } from "@/app/types/response-type";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import {
-  isResponseTypeError,
-  getErrorMessage,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { Tag } from "primereact/tag";
-import { Checkbox } from "primereact/checkbox";
-import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
-import {
-  createCity,
-  updateCity,
-  deleteCity,
-  purgeCity,
-  restoreCity,
-} from "@/app/services/city-service";
-import { City } from "@/app/types/city";
-import { Dropdown } from "primereact/dropdown";
 import { State } from "@/app/types/state";
+
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
+const EMPTY_CITY: City = {
+  id: 0,
+  code: "",
+  name: "",
+  state_id: 0,
+  is_active: true,
+  deleted_at: "",
+  row_version: 0,
+};
+
+const getBody = () => document.body;
 
 const CityTableData = () => {
   const dispatch = useDispatch();
+
   const profileState = useSelector((state: RootState) => state.profile);
+
   const [selectedData, setSelectedData] = useState<City | null>(null);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
+
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
   });
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const {
-    control,
-    handleSubmit,
-    setFocus,
-    formState: { isValid },
-    reset,
-    clearErrors,
-  } = useForm<City>();
+
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
+  const [isAddNew, setIsAddNew] = useState(false);
+  const [visible, setVisible] = useState(false);
 
-    _filters["global"].value = value;
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New City");
 
-    setFilters(_filters);
-    setGlobalFilterValue(value);
-  };
+  const [isSaving, setIsSaving] = useState(false);
 
-  const onClickNew = () => {
-    clearErrors();
-    setIsAddNew(true);
-    setVisible(true);
-    setPopupHeaderTitle("New City");
-    reset({
-      id: 0,
-      code: "",
-      name: "",
-      state_id: 0,
-      is_active: true,
-      deleted_at: "",
-      row_version: 0,
-    });
-  };
-
-  const footerContent = (
-    <div className="text-right flex gap-5 justify-end">
-      <Button
-        type="button"
-        label="Cancel"
-        icon="pi pi-times"
-        onClick={() => {
-          setVisible(false);
-        }}
-        className="p-button-text"
-      />
-      <Button
-        type="submit"
-        label={isAddNew ? "Submit" : "Save"}
-        icon="pi pi-check"
-      />
-    </div>
-  );
+  const currentKey = `/api/city?show_all=${isShowDeletedDataChecked}`;
+  const stateKey = "/api/state";
 
   const {
     data: cityData,
     error,
     isLoading,
-  } = useSWR<City[]>(`/api/city?show_all=${isShowDeletedDataChecked}`, fetcher);
+    isValidating,
+    mutate: refreshCityData,
+  } = useSWR<City[]>(currentKey, fetcher);
+
   const {
     data: stateData,
     error: stateError,
     isLoading: stateIsLoading,
-  } = useSWR<State[]>(`/api/state`, fetcher);
-  const activeState = stateData?.filter((a) => a.is_active);
+    isValidating: stateIsValidating,
+    mutate: refreshStateData,
+  } = useSWR<State[]>(stateKey, fetcher);
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey="/api/city?show_all=true" />;
-  }
+  const activeStates = (stateData ?? []).filter(
+    (state) => state.is_active && !state.deleted_at,
+  );
 
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
+  const { control, handleSubmit, setFocus, reset, clearErrors } = useForm<City>(
+    {
+      defaultValues: EMPTY_CITY,
+      mode: "onTouched",
+    },
+  );
+
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
+  };
+
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const handleCloseDialog = () => {
+    setVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+    setPopupHeaderTitle("New City");
+    clearErrors();
+    reset(EMPTY_CITY);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([refreshCityData(), refreshStateData()]);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    setFilters({
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
+
+    setGlobalFilterValue(value);
+  };
+
+  const onShowDeletedChange = (checked: boolean) => {
+    setIsShowDeletedDataChecked(checked);
+  };
+
+  const onClickNew = () => {
+    clearErrors();
+    setSelectedData(null);
+    setIsAddNew(true);
+    setPopupHeaderTitle("New City");
+    reset(EMPTY_CITY);
+    setVisible(true);
+  };
+
+  const onClickUpdate = (data: City) => {
+    clearErrors();
+    setSelectedData(data);
+    setIsAddNew(false);
+    setPopupHeaderTitle("Edit City");
+    reset(data);
+    setVisible(true);
   };
 
   const handleSubmitNew = async (data: City) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
+      setIsSaving(true);
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
         await createCity(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/city?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+
+      await refreshCityData();
+
+      handleCloseDialog();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleUpdate = async (data: City) => {
     if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail: "please select data",
-        }),
-      );
+      showError(new Error("City data is not selected."));
       return;
     }
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateCity(
-        selectedData.id,
-        selectedData.row_version,
-        data,
-      );
+      setIsSaving(true);
 
-      setVisible(false);
-      mutate(`/api/city?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-      reset();
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await updateCity(selectedData.id, selectedData.row_version, data);
+
+      await refreshCityData();
+
+      handleCloseDialog();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (data: City) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteCity(
-        data.id,
-        data.row_version,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/city?show_all=${isShowDeletedDataChecked}`);
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await deleteCity(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      await refreshCityData();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: City) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeCity(
-        data.id,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/city?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
   const handleRestore = async (data: City) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreCity(
-        data.id,
-        data.row_version,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/city?show_all=${isShowDeletedDataChecked}`);
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await restoreCity(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      await refreshCityData();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
-  const onSubmit = (data: City) => {
-    if (!isValid) return;
+  const handlePurge = async (data: City) => {
+    try {
+      const response: ResponseType<ResponseTypeCreateSuccess> = await purgeCity(
+        data.id,
+      );
 
-    if (isAddNew) {
-      handleSubmitNew(data);
+      await refreshCityData();
+      showSuccess(response.message);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onSubmit = async (data: City) => {
+    if (isSaving) {
       return;
     }
 
-    if (selectedData) {
-      handleUpdate(data);
+    if (isAddNew) {
+      await handleSubmitNew(data);
+      return;
     }
-  };
 
-  const onClickUpdate = (data: City) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle("Update City");
-
-    reset(data);
-    setSelectedData(data);
-  };
-
-  const activeColumnBody = (rowData: City) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
-  };
-
-  const actionColumnBody = (rowData: City) => {
-    return (
-      <>
-        <div className="flex gap-2">
-          {hasRole(profileState.role, ["superadmin"]) && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              label=""
-              icon="pi pi-times"
-              size="small"
-              onClick={() => {
-                onClickPurge(rowData);
-              }}
-            />
-          )}
-
-          {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              label=""
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => {
-                onClickRestore(rowData);
-              }}
-            />
-          )}
-
-          {!rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete"
-              rounded
-              severity="danger"
-              label=""
-              icon="pi pi-trash"
-              size="small"
-              onClick={() => {
-                onClickDelete(rowData);
-              }}
-            />
-          )}
-
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="update"
-            rounded
-            severity="help"
-            label=""
-            icon="pi pi-pencil"
-            size="small"
-            onClick={() => {
-              onClickUpdate(rowData);
-            }}
-          />
-        </div>
-      </>
-    );
+    await handleUpdate(data);
   };
 
   const onClickDelete = (data: City) => {
     confirmDialog({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => {},
+      header: "Delete City",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to delete this city?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handleDelete(data),
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className="p-button-danger"
           />
         </div>
       ),
@@ -482,28 +349,37 @@ const CityTableData = () => {
 
   const onClickRestore = (data: City) => {
     confirmDialog({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
+      header: "Restore City",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to restore this city?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-refresh",
       defaultFocus: "accept",
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => {},
+      accept: () => handleRestore(data),
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
             onClick={options.accept}
-            className="p-button-success"
           />
         </div>
       ),
@@ -512,257 +388,588 @@ const CityTableData = () => {
 
   const onClickPurge = (data: City) => {
     confirmDialog({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => {},
+      header: "Delete City Permanently",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handlePurge(data),
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className="p-button-danger"
           />
         </div>
       ),
     });
   };
 
+  const statusColumnBody = (rowData: City) => {
+    if (rowData.deleted_at) {
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    }
+
+    if (rowData.is_active) {
+      return (
+        <Tag
+          value="Active"
+          severity="success"
+          icon="pi pi-check-circle"
+          rounded
+        />
+      );
+    }
+
+    return (
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
+    );
+  };
+
+  const actionColumnBody = (rowData: City) => {
+    const isDeleted = Boolean(rowData.deleted_at);
+
+    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+    if (isDeleted) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
+      return (
+        <div className="flex flex-nowrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickRestore(rowData)}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickPurge(rowData)}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        <Button
+          type="button"
+          icon="pi pi-pencil"
+          rounded
+          outlined
+          severity="secondary"
+          size="small"
+          tooltip="Edit"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickUpdate(rowData)}
+        />
+
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickDelete(rowData)}
+        />
+      </div>
+    );
+  };
+
+  const dialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={handleCloseDialog}
+      />
+
+      <Button
+        type="submit"
+        form="city-form"
+        label={isAddNew ? "Create City" : "Save Changes"}
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={isSaving || stateIsLoading || Boolean(stateError)}
+        className="w-full sm:w-auto"
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
+
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={currentKey} />;
+  }
+
   return (
     <>
       <ConfirmDialog />
 
-      <Card>
-        <div className="p-4 flex flex-col gap-4">
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
-            <div>
-              <div className="text-2xl font-semibold">City</div>
-              <div className="text-sm text-gray-500">
-                Manage city master data
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-map-marker text-xl" />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  City
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage city data for each province or state.
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  show deleted data
-                </label>
-              </div>
-
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <InputText
-                  className="p-inputtext-sm"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Keyword Search"
-                />
-              </IconField>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating || stateIsValidating}
+                disabled={isValidating || stateIsValidating}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
 
               <Button
-                label="New"
+                type="button"
+                label="New City"
                 icon="pi pi-plus"
                 size="small"
-                onClick={() => {
-                  onClickNew();
-                }}
+                className="w-full sm:w-auto"
+                onClick={onClickNew}
               />
             </div>
           </div>
 
-          {/* TABLE */}
-          <DataTable
-            value={cityData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={["name"]}
-            emptyMessage="No City found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: "3rem" }}
-              body={(data, options) => options.rowIndex + 1}
-            ></Column>
-            <Column field="code" header="Code"></Column>
-            <Column field="name" header="Name"></Column>
-            <Column field="state_name" header="Province"></Column>
-            <Column
-              field="is_active"
-              header="Active"
-              body={activeColumnBody}
-            ></Column>
-            <Column
-              headerClassName="bg-white"
-              className="bg-white"
-              header="Action"
-              body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
-              alignFrozen="right"
-            ></Column>
-          </DataTable>
+          {/* Table Toolbar */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="showDeletedData"
+                checked={isShowDeletedDataChecked}
+                onChange={(event) =>
+                  onShowDeletedChange(Boolean(event.checked))
+                }
+              />
+
+              <label
+                htmlFor="showDeletedData"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+
+            <IconField iconPosition="left" className="w-full md:w-80">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Search code, city, or province"
+                className="w-full"
+              />
+            </IconField>
+          </div>
+
+          {/* City Table */}
+          <div className="w-full overflow-hidden">
+            <DataTable
+              value={cityData ?? []}
+              dataKey="id"
+              filters={filters}
+              globalFilterFields={["code", "name", "state_name"]}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{
+                minWidth: "60rem",
+              }}
+              emptyMessage="No city data found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            >
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                headerStyle={{
+                  width: "4rem",
+                }}
+                bodyStyle={{
+                  width: "4rem",
+                }}
+              />
+
+              <Column
+                field="code"
+                header="Code"
+                sortable
+                style={{
+                  minWidth: "10rem",
+                }}
+                body={(rowData: City) => (
+                  <span className="font-mono text-sm font-semibold text-slate-700">
+                    {rowData.code}
+                  </span>
+                )}
+              />
+
+              <Column
+                field="name"
+                header="City Name"
+                sortable
+                style={{
+                  minWidth: "18rem",
+                }}
+                body={(rowData: City) => (
+                  <span className="font-medium text-slate-800">
+                    {rowData.name}
+                  </span>
+                )}
+              />
+
+              <Column
+                field="state_name"
+                header="Province / State"
+                sortable
+                style={{
+                  minWidth: "18rem",
+                }}
+                body={(rowData: City) => (
+                  <span className="text-sm text-slate-700">
+                    {rowData.name || "-"}
+                  </span>
+                )}
+              />
+
+              <Column
+                field="is_active"
+                header="Status"
+                sortable
+                body={statusColumnBody}
+                style={{
+                  minWidth: "10rem",
+                }}
+              />
+
+              <Column
+                header="Action"
+                body={actionColumnBody}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                }}
+              />
+            </DataTable>
+          </div>
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "50vw" }}
-          onHide={() => {
-            if (!visible) return;
-            setVisible(false);
-            reset();
-          }}
-          footer={footerContent}
-          onShow={() => {
-            setFocus("name");
-          }}
+      {/* City Form Dialog */}
+      <Dialog
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{
+          width: "95vw",
+          maxWidth: "34rem",
+        }}
+        breakpoints={{
+          "640px": "95vw",
+        }}
+        footer={dialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!isSaving}
+        closable={!isSaving}
+        onHide={handleCloseDialog}
+        onShow={() => {
+          setTimeout(() => {
+            setFocus("code");
+          }, 0);
+        }}
+      >
+        <form
+          id="city-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-5 pt-2"
         >
-          <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
-              <Controller
-                name="code"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) =>
-                    !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="code"
-                      placeholder="example: city_abc"
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="code"
+              className="text-sm font-medium text-slate-700"
+            >
+              City Code
+              <span className="ml-1 text-red-500">*</span>
+            </label>
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="name"
-                      placeholder="example: city abc"
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+            <Controller
+              name="code"
+              control={control}
+              rules={{
+                required: "City code is required.",
+                validate: {
+                  noSpaces: (value) =>
+                    !/\s/.test(value) || "City code must not contain spaces.",
+                },
+                maxLength: {
+                  value: 50,
+                  message: "City code cannot exceed 50 characters.",
+                },
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <InputText
+                    {...field}
+                    id="code"
+                    autoComplete="off"
+                    placeholder="Example: BANDUNG"
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
+                  />
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="state_id">Province</label>
-              <Controller
-                name="state_id"
-                control={control}
-                rules={{ required: "province is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="state_id"
-                      appendTo={() => document.body}
-                      value={field.value}
-                      options={activeState}
-                      loading={isLoading}
-                      disabled={stateIsLoading || !!stateError}
-                      onChange={(e) => field.onChange(e.value)}
-                      optionLabel="name"
-                      optionValue="id"
-                      placeholder={
-                        isLoading ? "Loading provinces..." : "Select a province"
-                      }
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                    {stateError && (
-                      <small className="p-error font-bold">
-                        We couldn’t load the list of provinces. Please try again
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+                  {fieldState.error ? (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  ) : (
+                    <small className="text-slate-500">
+                      Use a short and unique city code.
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="name"
+              className="text-sm font-medium text-slate-700"
+            >
+              City Name
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+
+            <Controller
+              name="name"
+              control={control}
+              rules={{
+                required: "City name is required.",
+                maxLength: {
+                  value: 50,
+                  message: "City name cannot exceed 50 characters.",
+                },
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <InputText
+                    {...field}
+                    id="name"
+                    autoComplete="off"
+                    placeholder="Example: Bandung"
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
+                  />
+
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="state_id"
+              className="text-sm font-medium text-slate-700"
+            >
+              Province / State
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+
+            <Controller
+              name="state_id"
+              control={control}
+              rules={{
+                required: "Province / state is required.",
+                validate: (value) =>
+                  Number(value) > 0 || "Province / state is required.",
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    id="state_id"
+                    appendTo={getBody}
+                    value={field.value || null}
+                    options={activeStates}
+                    optionLabel="name"
+                    optionValue="id"
+                    filter
+                    showClear
+                    loading={stateIsLoading}
+                    disabled={stateIsLoading || Boolean(stateError)}
+                    placeholder={
+                      stateIsLoading
+                        ? "Loading provinces..."
+                        : "Select a province / state"
+                    }
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
+                    onChange={(event) => field.onChange(event.value)}
+                  />
+
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+
+                  {!fieldState.error && !stateError && (
+                    <small className="text-slate-500">
+                      Select the province or state that contains this city.
+                    </small>
+                  )}
+
+                  {stateError && (
+                    <small className="p-error">
+                      Provinces could not be loaded. Refresh the page and try
+                      again.
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <Controller
+              name="is_active"
+              control={control}
+              defaultValue
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active Status
+                    </label>
+
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive cities remain stored but should not be available
+                      for new records.
+                    </p>
+                  </div>
+
                   <InputSwitch
                     id="is_active"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
+                    checked={Boolean(field.value)}
+                    onChange={(event) => field.onChange(event.value)}
                   />
-                )}
-              />
-            </div>
+                </div>
+              )}
+            />
           </div>
-        </Dialog>
-      </form>
+        </form>
+      </Dialog>
     </>
   );
 };

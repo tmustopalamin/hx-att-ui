@@ -1,655 +1,1532 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { InputText } from "primereact/inputtext";
-import { Checkbox } from "primereact/checkbox";
-import { Button } from "primereact/button";
-import { Dropdown } from "primereact/dropdown";
-import { Calendar } from "primereact/calendar";
-import { DataTable } from "primereact/datatable";
-import { Column } from "primereact/column";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
-import { Tag } from "primereact/tag";
+import { ChangeEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
-import { fetcher } from "@/app/utils/fetcher";
-import { Employee } from "@/app/types/employee";
-import { ShiftRule } from "@/app/types/shift-rule";
 import dayjs from "dayjs";
+
+import { Button } from "primereact/button";
+import { Calendar } from "primereact/calendar";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dropdown } from "primereact/dropdown";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+
+import { useDispatch } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import { createEmployeeShiftRule } from "@/app/services/employee-shift-rule-service";
+
+import { Employee } from "@/app/types/employee";
 import {
   ResponseType,
   ResponseTypeCreateSuccess,
 } from "@/app/types/response-type";
-import { createEmployeeShiftRule } from "@/app/services/employee-shift-rule-service";
-import { useDispatch } from "react-redux";
+import { ShiftRule } from "@/app/types/shift-rule";
+
 import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+
 import { showToast } from "@/store/ToastSlice";
-import { useRouter } from "next/navigation";
+
+type EmployeeListRow = Employee & {
+  deleted_at?: string | null;
+  is_active?: boolean;
+
+  first_name?: string | null;
+  middle_name?: string | null;
+  last_name?: string | null;
+
+  department_name?: string | null;
+  position_name?: string | null;
+  agency_name?: string | null;
+  branch_name?: string | null;
+};
+
+type ShiftRuleListRow = ShiftRule & {
+  deleted_at?: string | null;
+  is_active?: boolean;
+};
+
+type AssignmentMode = "smart_insert" | "overwrite";
+
+const EMPLOYEE_API_KEY = "/api/employees/list";
+
+const SHIFT_RULE_API_KEY = "/api/shift-rule";
+
+const getBody = () => document.body;
+
+const formatDate = (value: Date | null) => {
+  if (!value) {
+    return "-";
+  }
+
+  return dayjs(value).format("DD MMM YYYY");
+};
+
+const getEmployeeName = (employee: EmployeeListRow) => {
+  return (
+    employee.full_name ||
+    [employee.first_name, employee.middle_name, employee.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    `Employee #${employee.id}`
+  );
+};
+
+const getEmployeeCode = (employee: EmployeeListRow) => {
+  return employee.code || "-";
+};
 
 const EmployeeShiftRuleAssignForm = () => {
   const router = useRouter();
   const dispatch = useDispatch();
 
   const [search, setSearch] = useState("");
+
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+
   const [shiftRule, setShiftRule] = useState<number | null>(null);
+
   const [effectiveFrom, setEffectiveFrom] = useState<Date | null>(null);
+
   const [effectiveTo, setEffectiveTo] = useState<Date | null>(null);
+
   const [overwrite, setOverwrite] = useState(false);
+
   const [showAssignmentModeInfo, setShowAssignmentModeInfo] = useState(false);
 
-  const { data: employeesData } = useSWR<Employee[]>(
-    `/api/employees/list`,
-    fetcher,
-  );
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  const { data: shiftRuleData, isLoading: shiftRuleIsloading } = useSWR<
-    ShiftRule[]
-  >(`/api/shift-rule`, fetcher);
+  const {
+    data: employeesData,
+    error: employeesError,
+    isLoading: employeesIsLoading,
+    isValidating: employeesIsValidating,
+    mutate: refreshEmployeesData,
+  } = useSWR<EmployeeListRow[]>(EMPLOYEE_API_KEY, fetcher, {
+    revalidateOnFocus: false,
+  });
 
-  const employees = employeesData ?? [];
-  const shiftRules = shiftRuleData ?? [];
+  const {
+    data: shiftRuleData,
+    error: shiftRuleError,
+    isLoading: shiftRuleIsLoading,
+    isValidating: shiftRuleIsValidating,
+    mutate: refreshShiftRuleData,
+  } = useSWR<ShiftRuleListRow[]>(SHIFT_RULE_API_KEY, fetcher, {
+    revalidateOnFocus: false,
+  });
+
+  const employees = useMemo(() => {
+    return (employeesData ?? [])
+      .filter(
+        (employee) => !employee.deleted_at && employee.is_active !== false,
+      )
+      .sort((first, second) =>
+        getEmployeeName(first).localeCompare(getEmployeeName(second), "id"),
+      );
+  }, [employeesData]);
+
+  const shiftRules = useMemo(() => {
+    return (shiftRuleData ?? [])
+      .filter((rule) => !rule.deleted_at && rule.is_active !== false)
+      .sort((first, second) =>
+        String(first.name ?? "").localeCompare(String(second.name ?? "")),
+      );
+  }, [shiftRuleData]);
 
   const departments = useMemo(() => {
-    return [
-      ...new Set(employees.map((e) => e.department_name).filter(Boolean)),
-    ] as string[];
+    return Array.from(
+      new Set(
+        employees
+          .map((employee) => employee.department_name?.trim())
+          .filter((department): department is string => Boolean(department)),
+      ),
+    ).sort((first, second) => first.localeCompare(second, "id"));
   }, [employees]);
 
-  const filteredEmployees = useMemo(() => {
-    return employees.filter((e: Employee) => {
-      const keyword = search.toLowerCase().trim();
+  const positions = useMemo(() => {
+    return Array.from(
+      new Set(
+        employees
+          .map((employee) => employee.position_name?.trim())
+          .filter((position): position is string => Boolean(position)),
+      ),
+    ).sort((first, second) => first.localeCompare(second, "id"));
+  }, [employees]);
 
-      return (
-        !keyword ||
-        (e.full_name ?? "").toLowerCase().includes(keyword) ||
-        (e.code ?? "").toLowerCase().includes(keyword) ||
-        (e.department_name ?? "").toLowerCase().includes(keyword) ||
-        (e.position_name ?? "").toLowerCase().includes(keyword) ||
-        (e.agency_name ?? "").toLowerCase().includes(keyword)
+  const departmentEmployeeMap = useMemo(() => {
+    const employeeMap = new Map<string, number[]>();
+
+    for (const department of departments) {
+      employeeMap.set(
+        department,
+        employees
+          .filter((employee) => employee.department_name?.trim() === department)
+          .map((employee) => employee.id),
+      );
+    }
+
+    return employeeMap;
+  }, [departments, employees]);
+
+  const positionEmployeeMap = useMemo(() => {
+    const employeeMap = new Map<string, number[]>();
+
+    for (const position of positions) {
+      employeeMap.set(
+        position,
+        employees
+          .filter((employee) => employee.position_name?.trim() === position)
+          .map((employee) => employee.id),
+      );
+    }
+
+    return employeeMap;
+  }, [positions, employees]);
+
+  const filteredEmployees = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    if (!keyword) {
+      return employees;
+    }
+
+    return employees.filter((employee) => {
+      const searchableValues = [
+        getEmployeeName(employee),
+        employee.code,
+        employee.department_name,
+        employee.position_name,
+        employee.agency_name,
+        employee.branch_name,
+      ];
+
+      return searchableValues.some((value) =>
+        String(value ?? "")
+          .toLowerCase()
+          .includes(keyword),
       );
     });
   }, [employees, search]);
 
-  const assignmentSummary = useMemo(() => {
-    if (!shiftRule || !effectiveFrom) return null;
+  const selectedRule = useMemo(() => {
+    if (!shiftRule) {
+      return null;
+    }
 
-    const selectedRule = shiftRules.find((r) => r.id === shiftRule);
-
-    const fromText = dayjs(effectiveFrom).format("DD-MM-YYYY");
-    const toText = effectiveTo
-      ? dayjs(effectiveTo).format("DD-MM-YYYY")
-      : "No end date";
-
-    return `${selectedRule?.name ?? "-"} • ${fromText} → ${toText}`;
-  }, [shiftRule, shiftRules, effectiveFrom, effectiveTo]);
-
-  const selectedRuleName = useMemo(() => {
-    if (!shiftRule) return "-";
-
-    return shiftRules.find((r) => r.id === shiftRule)?.name ?? "-";
+    return shiftRules.find((rule) => rule.id === shiftRule) ?? null;
   }, [shiftRule, shiftRules]);
 
+  const selectedEmployees = useMemo(() => {
+    return employees.filter((employee) => selectedIds.has(employee.id));
+  }, [employees, selectedIds]);
+
+  const selectedDepartmentCount = useMemo(() => {
+    return departments.filter((department) => {
+      const employeeIds = departmentEmployeeMap.get(department) ?? [];
+
+      return (
+        employeeIds.length > 0 && employeeIds.every((id) => selectedIds.has(id))
+      );
+    }).length;
+  }, [departments, departmentEmployeeMap, selectedIds]);
+
+  const selectedPositionCount = useMemo(() => {
+    return positions.filter((position) => {
+      const employeeIds = positionEmployeeMap.get(position) ?? [];
+
+      return (
+        employeeIds.length > 0 && employeeIds.every((id) => selectedIds.has(id))
+      );
+    }).length;
+  }, [positions, positionEmployeeMap, selectedIds]);
+
+  const visibleSelectedCount = useMemo(() => {
+    return filteredEmployees.filter((employee) => selectedIds.has(employee.id))
+      .length;
+  }, [filteredEmployees, selectedIds]);
+
+  const allVisibleSelected =
+    filteredEmployees.length > 0 &&
+    visibleSelectedCount === filteredEmployees.length;
+
+  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected;
+
+  const hasInvalidDateRange = Boolean(
+    effectiveFrom &&
+    effectiveTo &&
+    dayjs(effectiveFrom).isAfter(dayjs(effectiveTo), "day"),
+  );
+
+  const assignmentMode: AssignmentMode = overwrite
+    ? "overwrite"
+    : "smart_insert";
+
+  const assignmentSummary = useMemo(() => {
+    if (!selectedRule || !effectiveFrom) {
+      return null;
+    }
+
+    return {
+      ruleName: selectedRule.name || "-",
+
+      period: `${formatDate(effectiveFrom)} – ${
+        effectiveTo ? formatDate(effectiveTo) : "No end date"
+      }`,
+    };
+  }, [selectedRule, effectiveFrom, effectiveTo]);
+
   const isFormValid =
-    selectedIds.size > 0 && Boolean(shiftRule) && Boolean(effectiveFrom);
+    selectedIds.size > 0 &&
+    Boolean(shiftRule) &&
+    Boolean(effectiveFrom) &&
+    !hasInvalidDateRange;
 
-  const toggleEmployee = (id: number) => {
-    const newSet = new Set(selectedIds);
+  const isRefreshing = employeesIsValidating || shiftRuleIsValidating;
 
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
-    }
-
-    setSelectedIds(newSet);
-  };
-
-  const selectAll = () => {
-    setSelectedIds(new Set(filteredEmployees.map((e) => e.id)));
-  };
-
-  const clearAll = () => {
-    setSelectedIds(new Set());
-    setSelectedDepartments([]);
-  };
-
-  const toggleDepartment = (dept: string) => {
-    let newDepartments = [...selectedDepartments];
-
-    if (newDepartments.includes(dept)) {
-      newDepartments = newDepartments.filter((d) => d !== dept);
-    } else {
-      newDepartments.push(dept);
-    }
-
-    setSelectedDepartments(newDepartments);
-
-    const newSet = new Set(selectedIds);
-
-    employees
-      .filter((e) => e.department_name === dept)
-      .forEach((e) => {
-        if (newDepartments.includes(dept)) {
-          newSet.add(e.id);
-        } else {
-          newSet.delete(e.id);
-        }
-      });
-
-    setSelectedIds(newSet);
-  };
-
-  const checkboxBody = (row: Employee) => {
-    const inputId = `emp_${row.id}`;
-
-    return (
-      <div className="flex items-center gap-2">
-        <Checkbox
-          inputId={inputId}
-          checked={selectedIds.has(row.id)}
-          onChange={(e) => {
-            e.originalEvent?.stopPropagation();
-            toggleEmployee(row.id);
-          }}
-        />
-        <label htmlFor={inputId} className="cursor-pointer select-none" />
-      </div>
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
     );
   };
 
-  const headerCheckbox = () => {
-    const inputId = "select_all";
-
-    const allSelected =
-      filteredEmployees.length > 0 &&
-      filteredEmployees.every((e) => selectedIds.has(e.id));
-
-    return (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          inputId={inputId}
-          checked={allSelected}
-          onChange={(e) => {
-            e.originalEvent?.stopPropagation();
-
-            if (allSelected) {
-              clearAll();
-            } else {
-              selectAll();
-            }
-          }}
-        />
-      </div>
+  const showWarning = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "warn",
+        summary: "Validation",
+        detail: message,
+      }),
     );
   };
 
-  const doAssign = async () => {
-    if (selectedIds.size === 0) {
-      console.warn("No employee selected");
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
       return;
     }
 
-    if (!shiftRule || !effectiveFrom) {
-      console.warn("Shift rule and effective date are required");
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([refreshEmployeesData(), refreshShiftRuleData()]);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const toggleEmployee = (id: number) => {
+    if (isAssigning) {
+      return;
+    }
+
+    setSelectedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      if (nextIds.has(id)) {
+        nextIds.delete(id);
+      } else {
+        nextIds.add(id);
+      }
+
+      return nextIds;
+    });
+  };
+
+  const selectVisibleEmployees = () => {
+    setSelectedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      for (const employee of filteredEmployees) {
+        nextIds.add(employee.id);
+      }
+
+      return nextIds;
+    });
+  };
+
+  const clearVisibleEmployees = () => {
+    setSelectedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      for (const employee of filteredEmployees) {
+        nextIds.delete(employee.id);
+      }
+
+      return nextIds;
+    });
+  };
+
+  const clearAllEmployees = () => {
+    setSelectedIds(new Set());
+  };
+
+  const toggleDepartment = (department: string) => {
+    const departmentEmployeeIds = departmentEmployeeMap.get(department) ?? [];
+
+    if (departmentEmployeeIds.length === 0) {
+      return;
+    }
+
+    const allDepartmentSelected = departmentEmployeeIds.every((id) =>
+      selectedIds.has(id),
+    );
+
+    setSelectedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      for (const id of departmentEmployeeIds) {
+        if (allDepartmentSelected) {
+          nextIds.delete(id);
+        } else {
+          nextIds.add(id);
+        }
+      }
+
+      return nextIds;
+    });
+  };
+
+  const togglePosition = (position: string) => {
+    const positionEmployeeIds = positionEmployeeMap.get(position) ?? [];
+
+    if (positionEmployeeIds.length === 0) {
+      return;
+    }
+
+    const allPositionSelected = positionEmployeeIds.every((id) =>
+      selectedIds.has(id),
+    );
+
+    setSelectedIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      for (const id of positionEmployeeIds) {
+        if (allPositionSelected) {
+          nextIds.delete(id);
+        } else {
+          nextIds.add(id);
+        }
+      }
+
+      return nextIds;
+    });
+  };
+
+  const resetPage = () => {
+    setSearch("");
+    setSelectedIds(new Set());
+
+    setShiftRule(null);
+    setEffectiveFrom(null);
+    setEffectiveTo(null);
+
+    setOverwrite(false);
+
+    setShowAssignmentModeInfo(false);
+  };
+
+  const validateAssignment = () => {
+    if (selectedIds.size === 0) {
+      showWarning("Select at least one employee.");
+
+      return false;
+    }
+
+    if (!shiftRule) {
+      showWarning("Shift rule is required.");
+
+      return false;
+    }
+
+    if (!effectiveFrom) {
+      showWarning("Effective From is required.");
+
+      return false;
+    }
+
+    if (hasInvalidDateRange) {
+      showWarning("Effective From cannot be later than Effective To.");
+
+      return false;
+    }
+
+    return true;
+  };
+
+  const doAssign = async () => {
+    if (isAssigning || !validateAssignment() || !shiftRule || !effectiveFrom) {
       return;
     }
 
     const payload = {
       employee_id: Array.from(selectedIds),
+
       shift_rule_id: shiftRule,
+
       effective_from: dayjs(effectiveFrom).format("YYYY-MM-DD"),
+
       effective_to: effectiveTo
         ? dayjs(effectiveTo).format("YYYY-MM-DD")
         : null,
+
       overwrite,
+
       is_active: true,
       row_version: 1,
     };
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
+      setIsAssigning(true);
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
         await createEmployeeShiftRule(payload);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
+      showSuccess(
+        response.message || "Employee shift rule assigned successfully.",
       );
 
       resetPage();
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsAssigning(false);
     }
   };
 
   const handleAssign = () => {
-    if (!isFormValid || !effectiveFrom) {
+    if (!validateAssignment() || !effectiveFrom) {
       return;
     }
 
-    const fromText = dayjs(effectiveFrom).format("DD-MM-YYYY");
-    const toText = effectiveTo
-      ? dayjs(effectiveTo).format("DD-MM-YYYY")
-      : "No end date";
-
-    const modeText = overwrite
-      ? "Replace overlapping rules"
-      : "Smart insert: fill empty gaps and keep existing rules";
-
     confirmDialog({
       header: "Assign Shift Rule",
-      message: `Assign "${selectedRuleName}" for ${selectedIds.size} employee${
-        selectedIds.size > 1 ? "s" : ""
-      } with period ${fromText} - ${toText}? Mode: ${modeText}.`,
-      icon: overwrite ? "pi pi-exclamation-triangle" : "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => doAssign(),
-      reject: () => {},
+
+      message: (
+        <div className="flex flex-col gap-3">
+          <span className="text-slate-600">
+            Assign this shift rule configuration?
+          </span>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+              <span className="text-slate-500">Shift Rule</span>
+
+              <span className="font-semibold text-slate-800">
+                {selectedRule?.name || "-"}
+              </span>
+
+              <span className="text-slate-500">Employees</span>
+
+              <span className="font-semibold text-slate-800">
+                {selectedIds.size}
+              </span>
+
+              <span className="text-slate-500">Period</span>
+
+              <span className="font-semibold text-slate-800">
+                {formatDate(effectiveFrom)} –{" "}
+                {effectiveTo ? formatDate(effectiveTo) : "No end date"}
+              </span>
+
+              <span className="text-slate-500">Mode</span>
+
+              <span
+                className={`font-semibold ${
+                  overwrite ? "text-amber-700" : "text-green-700"
+                }`}
+              >
+                {overwrite
+                  ? "Replace overlapping rules"
+                  : "Smart insert / fill gaps"}
+              </span>
+            </div>
+          </div>
+
+          {overwrite && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
+              <i className="pi pi-exclamation-triangle mt-0.5" />
+
+              <span>
+                Existing employee shift rules that overlap this period will be
+                replaced.
+              </span>
+            </div>
+          )}
+        </div>
+      ),
+
+      icon: overwrite ? "pi pi-exclamation-triangle" : "pi pi-check-circle",
+
+      defaultFocus: "reject",
+
+      accept: () => {
+        void doAssign();
+      },
+
+      reject: () => undefined,
+
       footer: (options) => (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
+            type="button"
             label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
-            type="button"
           />
+
           <Button
+            type="button"
             label="Assign"
             icon="pi pi-check"
+            severity={overwrite ? "warning" : "success"}
             onClick={options.accept}
-            severity={overwrite ? "warning" : undefined}
-            type="button"
           />
         </div>
       ),
     });
   };
 
-  const resetPage = () => {
-    setSelectedIds(new Set());
-    setSelectedDepartments([]);
-    setShiftRule(null);
-    setEffectiveFrom(null);
-    setEffectiveTo(null);
-    setOverwrite(false);
-    setShowAssignmentModeInfo(false);
+  const checkboxBody = (row: EmployeeListRow) => {
+    const inputId = `employee_${row.id}`;
+
+    return (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          inputId={inputId}
+          checked={selectedIds.has(row.id)}
+          disabled={isAssigning}
+          onChange={(event) => {
+            event.originalEvent?.stopPropagation();
+
+            toggleEmployee(row.id);
+          }}
+        />
+      </div>
+    );
   };
 
+  const headerCheckbox = () => {
+    return (
+      <div className="flex items-center justify-center">
+        <Checkbox
+          inputId="select_visible_employees"
+          checked={allVisibleSelected}
+          indeterminate={someVisibleSelected}
+          disabled={filteredEmployees.length === 0 || isAssigning}
+          onChange={(event) => {
+            event.originalEvent?.stopPropagation();
+
+            if (allVisibleSelected || someVisibleSelected) {
+              clearVisibleEmployees();
+            } else {
+              selectVisibleEmployees();
+            }
+          }}
+        />
+      </div>
+    );
+  };
+
+  const employeeBody = (row: EmployeeListRow) => {
+    return (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-sm font-medium text-slate-800">
+          {getEmployeeName(row)}
+        </span>
+
+        <span className="font-mono text-xs text-slate-500">
+          {getEmployeeCode(row)}
+        </span>
+      </div>
+    );
+  };
+
+  const organizationBody = (row: EmployeeListRow) => {
+    return (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-sm font-medium text-slate-700">
+          {row.department_name || "No department"}
+        </span>
+
+        <span className="truncate text-xs text-slate-500">
+          {row.position_name || "No position"}
+        </span>
+      </div>
+    );
+  };
+
+  const locationBody = (row: EmployeeListRow) => {
+    const locations = [row.branch_name, row.agency_name].filter(Boolean);
+
+    return (
+      <span className="text-sm text-slate-700">
+        {locations.join(" • ") || "-"}
+      </span>
+    );
+  };
+
+  const selectedBody = (row: EmployeeListRow) => {
+    return selectedIds.has(row.id) ? (
+      <Tag value="Selected" severity="success" icon="pi pi-check" rounded />
+    ) : (
+      <span className="text-sm text-slate-400">Not selected</span>
+    );
+  };
+
+  const rowClassName = (row: EmployeeListRow) => {
+    return selectedIds.has(row.id) ? "bg-blue-50/50" : "";
+  };
+
+  if (employeesIsLoading || shiftRuleIsLoading) {
+    return <LoadingDataTable />;
+  }
+
+  if (employeesError) {
+    return <ErrorNotConnectedToApi mutateKey={EMPLOYEE_API_KEY} />;
+  }
+
+  if (shiftRuleError) {
+    return <ErrorNotConnectedToApi mutateKey={SHIFT_RULE_API_KEY} />;
+  }
+
   return (
-    <div className="space-y-6 p-4">
+    <>
       <ConfirmDialog />
 
-      <div className="rounded-xl bg-white p-5 shadow">
-        <div className="flex items-start gap-3 pb-5">
-          <button
-            onClick={() => router.push("/setting/employee-shift-rule")}
-            className="mt-1 text-gray-500 transition hover:cursor-pointer hover:text-gray-800"
-            type="button"
-          >
-            <i className="pi pi-arrow-left text-lg" />
-          </button>
-
-          <div className="min-w-0">
-            <div className="text-2xl font-semibold">Shift Rule Assignment</div>
-            <div className="text-sm text-gray-500">
-              Assign employee shift rules based on date range. These rules will
-              be used later when generating employee shift assignments.
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Tag value="Employee Shift Rule" severity="info" />
-              <Tag value="No overlap after assignment" severity="success" />
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="flex items-start gap-3">
-            <span className="pi pi-info-circle mt-1 text-blue-600" />
-            <div className="text-sm leading-6 text-blue-800">
-              <p className="font-semibold">How this assignment works</p>
-              <p>
-                This page assigns{" "}
-                <span className="font-semibold">Employee Shift Rule</span>, not
-                daily schedules. After this setup, use{" "}
-                <span className="font-semibold">Employee Shift Assignment</span>{" "}
-                generation to create daily schedules for attendance processing.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <h2 className="mb-4 font-semibold">Filter & Quick Select</h2>
-
-        <div className="mb-4">
-          <div className="relative w-full">
-            <i className="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" />
-            <InputText
-              autoFocus
-              placeholder="Search employee"
-              className="w-full pl-10"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="mb-4">
-          <div className="mb-2 flex items-start gap-2 text-xs text-gray-500">
-            <i className="pi pi-info-circle mt-[2px]" />
-            <span>
-              Check a department to select all employees in that department. You
-              can still adjust selections manually.
-            </span>
-          </div>
-
-          <div className="flex flex-wrap gap-4">
-            {departments.map((dept) => {
-              const inputId = `dept_${dept}`;
-
-              return (
-                <div key={dept} className="flex items-center gap-2">
-                  <Checkbox
-                    inputId={inputId}
-                    checked={selectedDepartments.includes(dept)}
-                    onChange={() => toggleDepartment(dept)}
-                  />
-                  <label htmlFor={inputId} className="cursor-pointer">
-                    {dept}
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button label="Select All" onClick={selectAll} type="button" />
-          <Button
-            label="Clear All"
-            severity="secondary"
-            onClick={clearAll}
-            type="button"
-          />
-        </div>
-      </div>
-
-      <div className="rounded-xl bg-white p-4 shadow">
-        <DataTable
-          value={filteredEmployees}
-          paginator
-          rows={5}
-          rowsPerPageOptions={[5, 10, 25, 50]}
-          className="text-sm"
-          emptyMessage="No data found"
-          onRowClick={(e) => toggleEmployee(e.data.id)}
-          scrollable
-          tableStyle={{ minWidth: "64rem" }}
-        >
-          <Column
-            header={headerCheckbox}
-            body={checkboxBody}
-            style={{ width: "60px" }}
-          />
-          <Column field="code" header="Employee Code" sortable />
-          <Column field="full_name" header="Employee" sortable />
-          <Column field="department_name" header="Department" sortable />
-          <Column field="position_name" header="Position" sortable />
-          <Column field="agency_name" header="Agency" />
-        </DataTable>
-      </div>
-
-      <div className="rounded-xl bg-white p-4 shadow">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h2 className="font-semibold">Shift Configuration</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Select shift rule, effective period, and assignment mode.
-            </p>
-          </div>
-
-          <Tag
-            value={overwrite ? "Replace Overlap" : "Smart Insert"}
-            severity={overwrite ? "warning" : "success"}
-          />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <Dropdown
-            value={shiftRule}
-            options={shiftRules}
-            onChange={(e) => setShiftRule(e.value)}
-            className="w-full"
-            optionValue="id"
-            optionLabel="name"
-            loading={shiftRuleIsloading}
-            showClear={true}
-            placeholder={
-              shiftRuleIsloading ? "Loading Shift Rule..." : "Select Shift Rule"
-            }
-          />
-
-          <Calendar
-            value={effectiveFrom}
-            onChange={(e) => {
-              const newFrom = e.value as Date | null;
-              setEffectiveFrom(newFrom);
-
-              if (
-                newFrom &&
-                effectiveTo &&
-                dayjs(effectiveTo).isBefore(dayjs(newFrom), "day")
-              ) {
-                setEffectiveTo(null);
-              }
-            }}
-            showIcon
-            placeholder="Effective From"
-            dateFormat="dd-mm-yy"
-            maxDate={effectiveTo ?? undefined}
-          />
-
-          <Calendar
-            value={effectiveTo}
-            onChange={(e) => setEffectiveTo(e.value as Date | null)}
-            showIcon
-            placeholder="Effective To"
-            dateFormat="dd-mm-yy"
-            minDate={effectiveFrom ?? undefined}
-          />
-        </div>
-
-        {assignmentSummary && (
-          <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
-            <div className="text-xs font-medium uppercase tracking-wide text-indigo-500">
-              Assignment Preview
-            </div>
-            <div className="mt-1 text-sm font-semibold text-indigo-900">
-              {assignmentSummary}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-5">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              inputId="overwrite"
-              checked={overwrite}
-              onChange={(e) => setOverwrite(e.checked ?? false)}
-            />
-            <label htmlFor="overwrite" className="cursor-pointer font-medium">
-              Overwrite Existing Rule
-            </label>
-          </div>
-
-          <p className="ml-6 mt-1 text-xs text-gray-500">
-            Enable this only when you want the new rule to replace existing
-            rules in the selected period.
-          </p>
-
-          <div className="ml-6 mt-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex items-start gap-3">
-                <span
-                  className={`pi ${
-                    overwrite
-                      ? "pi-exclamation-triangle text-amber-600"
-                      : "pi-check-circle text-emerald-600"
-                  } mt-1`}
+      <div className="flex flex-col gap-5">
+        {/* Header */}
+        <Card className="border border-slate-200 shadow-sm">
+          <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <Button
+                  type="button"
+                  icon="pi pi-arrow-left"
+                  rounded
+                  text
+                  severity="secondary"
+                  aria-label="Back"
+                  tooltip="Back to Employee Shift Rule"
+                  tooltipOptions={{
+                    appendTo: getBody,
+                    position: "top",
+                  }}
+                  onClick={() => router.push("/setting/employee-shift-rule")}
                 />
 
-                <div className="text-sm leading-6">
-                  <p className="font-semibold text-slate-900">
-                    {overwrite
-                      ? "Replace overlapping rules"
-                      : "Smart insert mode"}
+                <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                  <i className="pi pi-users text-xl" />
+                </div>
+
+                <div className="min-w-0">
+                  <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                    Shift Rule Assignment
+                  </h1>
+
+                  <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                    Assign employee shift rules for a specific effective period
+                    before generating daily shift assignments.
                   </p>
 
-                  <p className="text-slate-600">
-                    {overwrite
-                      ? "Existing rules that overlap with the selected period will be replaced."
-                      : "Existing rules will be kept. The new rule will only fill empty gaps or become a specific exception."}
-                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Tag value="Employee Shift Rule" severity="info" rounded />
+
+                    <Tag
+                      value="No overlapping result"
+                      severity="success"
+                      rounded
+                    />
+                  </div>
                 </div>
               </div>
 
               <Button
                 type="button"
-                label={showAssignmentModeInfo ? "Hide info" : "More info"}
-                icon={
-                  showAssignmentModeInfo
-                    ? "pi pi-chevron-up"
-                    : "pi pi-chevron-down"
-                }
-                className="p-button-text p-button-sm self-start"
-                onClick={() => setShowAssignmentModeInfo((prev) => !prev)}
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isRefreshing}
+                disabled={isRefreshing || isAssigning}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
               />
             </div>
 
-            {showAssignmentModeInfo && !overwrite && (
-              <div className="mt-4 border-t border-slate-200 pt-4">
-                <div className="grid gap-3 lg:grid-cols-2">
-                  <div className="rounded-xl bg-white p-3 text-xs leading-6 text-slate-700">
-                    <p className="font-semibold text-slate-900">
-                      Example 1: fill empty gaps
-                    </p>
-                    <p>Existing: 01 Apr 2026 - 31 May 2026 = Night Shift</p>
-                    <p>New: 01 Jan 2026 - 31 Dec 2026 = Morning Shift</p>
-                    <p className="mt-2 font-semibold text-slate-900">Result:</p>
-                    <p>01 Jan 2026 - 31 Mar 2026 = Morning Shift</p>
-                    <p>01 Apr 2026 - 31 May 2026 = Night Shift</p>
-                    <p>01 Jun 2026 - 31 Dec 2026 = Morning Shift</p>
-                  </div>
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+              <i className="pi pi-info-circle mt-1 shrink-0" />
 
-                  <div className="rounded-xl bg-white p-3 text-xs leading-6 text-slate-700">
-                    <p className="font-semibold text-slate-900">
-                      Example 2: create exception
-                    </p>
-                    <p>Existing: 01 Jan 2026 - 31 Dec 2026 = Morning Shift</p>
-                    <p>New: 01 Apr 2026 - 31 May 2026 = Rotation Shift</p>
-                    <p className="mt-2 font-semibold text-slate-900">Result:</p>
-                    <p>01 Jan 2026 - 31 Mar 2026 = Morning Shift</p>
-                    <p>01 Apr 2026 - 31 May 2026 = Rotation Shift</p>
-                    <p>01 Jun 2026 - 31 Dec 2026 = Morning Shift</p>
-                  </div>
-                </div>
-              </div>
-            )}
+              <div>
+                <p className="m-0 font-semibold">
+                  Employee Shift Rule, not daily schedule
+                </p>
 
-            {showAssignmentModeInfo && overwrite && (
-              <div className="mt-4 border-t border-slate-200 pt-4">
-                <div className="rounded-xl bg-white p-3 text-xs leading-6 text-slate-700">
-                  <p className="font-semibold text-slate-900">
-                    What overwrite does
-                  </p>
-                  <p>
-                    Existing employee shift rules that overlap with the selected
-                    period will be soft-deleted.
-                  </p>
-                  <p>
-                    Then the new rule will be inserted for the full selected
-                    period.
-                  </p>
-                  <p className="mt-2 text-amber-700">
-                    Use this mode only when you really want to replace existing
-                    employee shift rules.
-                  </p>
-                </div>
+                <p className="m-0 mt-1">
+                  This page defines which shift rule applies to each employee
+                  during a date range. Generate daily schedules afterward from
+                  Employee Shift Assignment.
+                </p>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-      </div>
+        </Card>
 
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow md:flex-row md:items-center md:justify-between">
-        <div className="text-sm text-gray-600">
-          <span className="font-semibold text-gray-900">
-            {selectedIds.size}
-          </span>{" "}
-          employee{selectedIds.size > 1 ? "s" : ""} selected
-          {assignmentSummary && (
-            <>
-              {" "}
-              ·{" "}
-              <span className="font-semibold text-gray-900">
-                {assignmentSummary}
-              </span>
-            </>
-          )}
-          <div className="mt-1 text-xs text-gray-500">
-            Mode:{" "}
-            <span className="font-semibold">
-              {overwrite
-                ? "Replace overlapping rules"
-                : "Smart insert / fill gaps"}
-            </span>
+        {/* Summary */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="m-0 text-xs text-slate-500">Available Employees</p>
+
+            <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+              {employees.length}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
+            <p className="m-0 text-xs text-blue-700">Selected Employees</p>
+
+            <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
+              {selectedIds.size}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm">
+            <p className="m-0 text-xs text-green-700">Selected Departments</p>
+
+            <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
+              {selectedDepartmentCount}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
+            <p className="m-0 text-xs text-indigo-700">Selected Positions</p>
+
+            <p className="m-0 mt-1 text-2xl font-semibold text-indigo-800">
+              {selectedPositionCount}
+            </p>
+          </div>
+
+          <div className="col-span-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:col-span-1">
+            <p className="m-0 text-xs text-slate-500">Filtered Employees</p>
+
+            <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+              {filteredEmployees.length}
+            </p>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            label="Cancel"
-            severity="secondary"
-            onClick={resetPage}
-            type="button"
-          />
-          <Button
-            label="Assign Shift Rule"
-            icon="pi pi-check"
-            disabled={!isFormValid}
-            severity={overwrite ? "warning" : undefined}
-            onClick={handleAssign}
-            type="button"
-          />
-        </div>
+        {/* Employee Selection */}
+        <Card className="border border-slate-200 shadow-sm">
+          <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+            <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="m-0 text-base font-semibold text-slate-800">
+                  Employee Selection
+                </h2>
+
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Search employees, select employees by department or position,
+                  then adjust individual selections manually.
+                </p>
+              </div>
+
+              <Tag
+                value={`${selectedIds.size} selected`}
+                severity={selectedIds.size > 0 ? "success" : "secondary"}
+                rounded
+              />
+            </div>
+
+            <IconField iconPosition="left" className="w-full">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={search}
+                autoFocus
+                placeholder="Search employee, code, department, position, branch, or agency"
+                className="w-full"
+                disabled={isAssigning}
+                onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                  setSearch(event.target.value)
+                }
+              />
+            </IconField>
+
+            {/* Select by Department */}
+            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3">
+                <h3 className="m-0 text-sm font-semibold text-slate-800">
+                  Select by Department
+                </h3>
+
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Selecting a department selects all employees in that
+                  department. Manual and position selections remain
+                  synchronized.
+                </p>
+              </div>
+
+              {departments.length === 0 ? (
+                <p className="m-0 text-sm text-slate-500">
+                  No department data is available.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {departments.map((department) => {
+                    const inputId = `department_${department}`;
+
+                    const employeeIds =
+                      departmentEmployeeMap.get(department) ?? [];
+
+                    const selectedCount = employeeIds.filter((id) =>
+                      selectedIds.has(id),
+                    ).length;
+
+                    const allSelected =
+                      employeeIds.length > 0 &&
+                      selectedCount === employeeIds.length;
+
+                    const partiallySelected = selectedCount > 0 && !allSelected;
+
+                    return (
+                      <label
+                        key={department}
+                        htmlFor={inputId}
+                        className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
+                          allSelected
+                            ? "border-blue-300 bg-blue-50 text-blue-800"
+                            : partiallySelected
+                              ? "border-amber-300 bg-amber-50 text-amber-800"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        <Checkbox
+                          inputId={inputId}
+                          checked={allSelected}
+                          indeterminate={partiallySelected}
+                          disabled={isAssigning}
+                          onChange={() => toggleDepartment(department)}
+                        />
+
+                        <span>{department}</span>
+
+                        <span className="text-xs opacity-70">
+                          {selectedCount}/{employeeIds.length}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* Select by Position */}
+            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3">
+                <h3 className="m-0 text-sm font-semibold text-slate-800">
+                  Select by Position
+                </h3>
+
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Selecting a position selects all employees assigned to that
+                  position across all departments.
+                </p>
+              </div>
+
+              {positions.length === 0 ? (
+                <p className="m-0 text-sm text-slate-500">
+                  No position data is available.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {positions.map((position) => {
+                    const inputId = `position_${position}`;
+
+                    const employeeIds = positionEmployeeMap.get(position) ?? [];
+
+                    const selectedCount = employeeIds.filter((id) =>
+                      selectedIds.has(id),
+                    ).length;
+
+                    const allSelected =
+                      employeeIds.length > 0 &&
+                      selectedCount === employeeIds.length;
+
+                    const partiallySelected = selectedCount > 0 && !allSelected;
+
+                    return (
+                      <label
+                        key={position}
+                        htmlFor={inputId}
+                        className={`flex cursor-pointer items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
+                          allSelected
+                            ? "border-indigo-300 bg-indigo-50 text-indigo-800"
+                            : partiallySelected
+                              ? "border-amber-300 bg-amber-50 text-amber-800"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        <Checkbox
+                          inputId={inputId}
+                          checked={allSelected}
+                          indeterminate={partiallySelected}
+                          disabled={isAssigning}
+                          onChange={() => togglePosition(position)}
+                        />
+
+                        <span>{position}</span>
+
+                        <span className="text-xs opacity-70">
+                          {selectedCount}/{employeeIds.length}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                label="Select Filtered"
+                icon="pi pi-check-square"
+                severity="secondary"
+                outlined
+                size="small"
+                disabled={filteredEmployees.length === 0 || isAssigning}
+                onClick={selectVisibleEmployees}
+              />
+
+              <Button
+                type="button"
+                label="Clear Filtered"
+                icon="pi pi-minus-circle"
+                severity="secondary"
+                outlined
+                size="small"
+                disabled={visibleSelectedCount === 0 || isAssigning}
+                onClick={clearVisibleEmployees}
+              />
+
+              <Button
+                type="button"
+                label="Clear All"
+                icon="pi pi-filter-slash"
+                severity="danger"
+                text
+                size="small"
+                disabled={selectedIds.size === 0 || isAssigning}
+                onClick={clearAllEmployees}
+              />
+            </div>
+
+            <div className="w-full overflow-hidden">
+              <DataTable
+                value={filteredEmployees}
+                dataKey="id"
+                paginator
+                rows={10}
+                rowsPerPageOptions={[10, 25, 50, 100]}
+                stripedRows
+                rowHover
+                scrollable
+                removableSort
+                responsiveLayout="scroll"
+                size="small"
+                rowClassName={rowClassName}
+                tableStyle={{
+                  minWidth: "76rem",
+                }}
+                emptyMessage="No employee data found."
+                currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                onRowClick={(event) =>
+                  toggleEmployee((event.data as EmployeeListRow).id)
+                }
+              >
+                <Column
+                  header={headerCheckbox()}
+                  body={checkboxBody}
+                  headerStyle={{
+                    width: "4rem",
+                  }}
+                  bodyStyle={{
+                    width: "4rem",
+                  }}
+                />
+
+                <Column
+                  field="full_name"
+                  header="Employee"
+                  sortable
+                  body={employeeBody}
+                  style={{
+                    minWidth: "20rem",
+                  }}
+                />
+
+                <Column
+                  field="department_name"
+                  header="Organization"
+                  sortable
+                  body={organizationBody}
+                  style={{
+                    minWidth: "20rem",
+                  }}
+                />
+
+                <Column
+                  field="agency_name"
+                  header="Branch / Agency"
+                  sortable
+                  body={locationBody}
+                  style={{
+                    minWidth: "18rem",
+                  }}
+                />
+
+                <Column
+                  header="Selection"
+                  body={selectedBody}
+                  style={{
+                    minWidth: "12rem",
+                  }}
+                />
+              </DataTable>
+            </div>
+          </div>
+        </Card>
+
+        {/* Shift Configuration */}
+        <Card className="border border-slate-200 shadow-sm">
+          <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+            <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="m-0 text-base font-semibold text-slate-800">
+                  Shift Configuration
+                </h2>
+
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Select the shift rule, effective period, and how overlapping
+                  rules should be handled.
+                </p>
+              </div>
+
+              <Tag
+                value={overwrite ? "Replace Overlap" : "Smart Insert"}
+                severity={overwrite ? "warning" : "success"}
+                icon={
+                  overwrite
+                    ? "pi pi-exclamation-triangle"
+                    : "pi pi-check-circle"
+                }
+                rounded
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="shift_rule_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Shift Rule
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Dropdown
+                  id="shift_rule_id"
+                  appendTo={getBody}
+                  value={shiftRule}
+                  options={shiftRules}
+                  optionValue="id"
+                  optionLabel="name"
+                  filter
+                  showClear
+                  loading={shiftRuleIsLoading}
+                  disabled={shiftRuleIsLoading || isAssigning}
+                  placeholder="Select shift rule"
+                  className="w-full"
+                  onChange={(event) => setShiftRule(event.value ?? null)}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="effective_from"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Effective From
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Calendar
+                  id="effective_from"
+                  appendTo={getBody}
+                  value={effectiveFrom}
+                  dateFormat="dd M yy"
+                  showIcon
+                  maxDate={effectiveTo ?? undefined}
+                  disabled={isAssigning}
+                  placeholder="Select start date"
+                  className="w-full"
+                  onChange={(event) => {
+                    const newDate = (event.value as Date | null) ?? null;
+
+                    setEffectiveFrom(newDate);
+
+                    if (
+                      newDate &&
+                      effectiveTo &&
+                      dayjs(effectiveTo).isBefore(dayjs(newDate), "day")
+                    ) {
+                      setEffectiveTo(null);
+                    }
+                  }}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="effective_to"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Effective To
+                </label>
+
+                <Calendar
+                  id="effective_to"
+                  appendTo={getBody}
+                  value={effectiveTo}
+                  dateFormat="dd M yy"
+                  showIcon
+                  minDate={effectiveFrom ?? undefined}
+                  disabled={isAssigning}
+                  placeholder="No end date"
+                  className="w-full"
+                  onChange={(event) =>
+                    setEffectiveTo((event.value as Date | null) ?? null)
+                  }
+                />
+              </div>
+            </div>
+
+            {hasInvalidDateRange && (
+              <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                <i className="pi pi-exclamation-circle mt-0.5" />
+
+                <span>Effective From cannot be later than Effective To.</span>
+              </div>
+            )}
+
+            {assignmentSummary && (
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                <p className="m-0 text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                  Assignment Preview
+                </p>
+
+                <p className="m-0 mt-2 text-sm font-semibold text-indigo-900">
+                  {assignmentSummary.ruleName} • {assignmentSummary.period}
+                </p>
+
+                <p className="m-0 mt-1 text-xs text-indigo-700">
+                  {selectedIds.size} employee
+                  {selectedIds.size === 1 ? "" : "s"} selected
+                </p>
+              </div>
+            )}
+
+            {/* Assignment Mode */}
+            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  inputId="overwrite"
+                  checked={overwrite}
+                  disabled={isAssigning}
+                  onChange={(event) => setOverwrite(Boolean(event.checked))}
+                />
+
+                <div className="min-w-0 flex-1">
+                  <label
+                    htmlFor="overwrite"
+                    className="cursor-pointer text-sm font-semibold text-slate-800"
+                  >
+                    Overwrite Existing Rule
+                  </label>
+
+                  <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                    Enable this only when the new rule must replace existing
+                    rules during the selected period.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className={`mt-4 rounded-xl border p-4 ${
+                  overwrite
+                    ? "border-amber-200 bg-amber-50"
+                    : "border-green-200 bg-green-50"
+                }`}
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <i
+                      className={`pi mt-1 ${
+                        overwrite
+                          ? "pi-exclamation-triangle text-amber-600"
+                          : "pi-check-circle text-green-600"
+                      }`}
+                    />
+
+                    <div>
+                      <p
+                        className={`m-0 text-sm font-semibold ${
+                          overwrite ? "text-amber-900" : "text-green-900"
+                        }`}
+                      >
+                        {overwrite
+                          ? "Replace overlapping rules"
+                          : "Smart insert mode"}
+                      </p>
+
+                      <p
+                        className={`m-0 mt-1 text-xs leading-5 ${
+                          overwrite ? "text-amber-800" : "text-green-800"
+                        }`}
+                      >
+                        {overwrite
+                          ? "Existing rules overlapping the selected period will be replaced by the new rule."
+                          : "Existing rules remain intact. The new rule fills empty gaps or creates a specific exception."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    label={showAssignmentModeInfo ? "Hide Info" : "More Info"}
+                    icon={
+                      showAssignmentModeInfo
+                        ? "pi pi-chevron-up"
+                        : "pi pi-chevron-down"
+                    }
+                    text
+                    severity="secondary"
+                    size="small"
+                    disabled={isAssigning}
+                    className="self-start"
+                    onClick={() =>
+                      setShowAssignmentModeInfo((currentValue) => !currentValue)
+                    }
+                  />
+                </div>
+
+                {showAssignmentModeInfo &&
+                  assignmentMode === "smart_insert" && (
+                    <div className="mt-4 grid gap-3 border-t border-green-200 pt-4 lg:grid-cols-2">
+                      <div className="rounded-xl border border-green-100 bg-white p-4 text-xs leading-6 text-slate-700">
+                        <p className="m-0 font-semibold text-slate-900">
+                          Example 1: Fill Empty Gaps
+                        </p>
+
+                        <p className="m-0 mt-2">
+                          Existing: 01 Apr 2026 – 31 May 2026 = Night Shift
+                        </p>
+
+                        <p className="m-0">
+                          New: 01 Jan 2026 – 31 Dec 2026 = Morning Shift
+                        </p>
+
+                        <p className="m-0 mt-2 font-semibold text-slate-900">
+                          Result
+                        </p>
+
+                        <p className="m-0">01 Jan – 31 Mar = Morning Shift</p>
+
+                        <p className="m-0">01 Apr – 31 May = Night Shift</p>
+
+                        <p className="m-0">01 Jun – 31 Dec = Morning Shift</p>
+                      </div>
+
+                      <div className="rounded-xl border border-green-100 bg-white p-4 text-xs leading-6 text-slate-700">
+                        <p className="m-0 font-semibold text-slate-900">
+                          Example 2: Create Exception
+                        </p>
+
+                        <p className="m-0 mt-2">
+                          Existing: 01 Jan 2026 – 31 Dec 2026 = Morning Shift
+                        </p>
+
+                        <p className="m-0">
+                          New: 01 Apr 2026 – 31 May 2026 = Rotation Shift
+                        </p>
+
+                        <p className="m-0 mt-2 font-semibold text-slate-900">
+                          Result
+                        </p>
+
+                        <p className="m-0">01 Jan – 31 Mar = Morning Shift</p>
+
+                        <p className="m-0">01 Apr – 31 May = Rotation Shift</p>
+
+                        <p className="m-0">01 Jun – 31 Dec = Morning Shift</p>
+                      </div>
+                    </div>
+                  )}
+
+                {showAssignmentModeInfo && assignmentMode === "overwrite" && (
+                  <div className="mt-4 border-t border-amber-200 pt-4">
+                    <div className="rounded-xl border border-amber-100 bg-white p-4 text-xs leading-6 text-slate-700">
+                      <p className="m-0 font-semibold text-slate-900">
+                        What Overwrite Does
+                      </p>
+
+                      <p className="m-0 mt-2">
+                        Existing employee shift rules that overlap the selected
+                        period are soft-deleted.
+                      </p>
+
+                      <p className="m-0">
+                        The new rule is then inserted for the full selected
+                        period.
+                      </p>
+
+                      <p className="m-0 mt-2 font-medium text-amber-700">
+                        Use overwrite only when the existing rules must
+                        genuinely be replaced.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </Card>
+
+        {/* Final Action */}
+        <Card className="border border-slate-200 shadow-sm">
+          <div className="flex flex-col gap-4 p-3 sm:p-4 md:flex-row md:items-center md:justify-between md:p-5">
+            <div className="min-w-0">
+              <p className="m-0 text-sm text-slate-600">
+                <span className="font-semibold text-slate-900">
+                  {selectedIds.size}
+                </span>{" "}
+                employee
+                {selectedIds.size === 1 ? "" : "s"} selected
+              </p>
+
+              {assignmentSummary && (
+                <p className="m-0 mt-1 text-sm font-medium text-slate-800">
+                  {assignmentSummary.ruleName} • {assignmentSummary.period}
+                </p>
+              )}
+
+              <p className="m-0 mt-1 text-xs text-slate-500">
+                Fully selected groups:{" "}
+                <span className="font-semibold text-slate-700">
+                  {selectedDepartmentCount} department
+                  {selectedDepartmentCount === 1 ? "" : "s"}
+                </span>
+                {" • "}
+                <span className="font-semibold text-slate-700">
+                  {selectedPositionCount} position
+                  {selectedPositionCount === 1 ? "" : "s"}
+                </span>
+              </p>
+
+              <p className="m-0 mt-1 text-xs text-slate-500">
+                Mode:{" "}
+                <span
+                  className={`font-semibold ${
+                    overwrite ? "text-amber-700" : "text-green-700"
+                  }`}
+                >
+                  {overwrite
+                    ? "Replace overlapping rules"
+                    : "Smart insert / fill gaps"}
+                </span>
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                label="Reset"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                disabled={isAssigning}
+                className="w-full sm:w-auto"
+                onClick={resetPage}
+              />
+
+              <Button
+                type="button"
+                label="Assign Shift Rule"
+                icon="pi pi-check"
+                severity={overwrite ? "warning" : "success"}
+                loading={isAssigning}
+                disabled={!isFormValid || isAssigning}
+                className="w-full sm:w-auto"
+                onClick={handleAssign}
+              />
+            </div>
+          </div>
+        </Card>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -1,687 +1,1275 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import useSWR, { mutate } from "swr";
-import { useDispatch, useSelector } from "react-redux";
+import useSWR from "swr";
+import dayjs from "dayjs";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
-import { InputSwitch } from "primereact/inputswitch";
-import { Tag } from "primereact/tag";
-import { Checkbox, CheckboxChangeEvent } from "primereact/checkbox";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputSwitch } from "primereact/inputswitch";
+import { InputText } from "primereact/inputtext";
+import { MultiSelect } from "primereact/multiselect";
 import { Password } from "primereact/password";
+import { Tag } from "primereact/tag";
+
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
-import { fetcher } from "@/app/utils/fetcher";
-import {
-  isResponseTypeError,
-  getErrorMessage,
-} from "@/app/utils/error-messages";
-import { hasRole } from "@/app/utils/role-utils";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 
-import {
-  ResponseType,
-  ResponseTypeCreateSuccess,
-} from "@/app/types/response-type";
-import { User } from "@/app/types/User";
-import { Employee } from "@/app/types/employee";
-import { Role } from "@/app/types/role";
-import {
-  createUser,
-  updateUser,
-  deleteUser,
-  purgeUser,
-  restoreUser,
-} from "@/app/services/user-service";
-
-type UserForm = User & {
-  confirm_password: string;
+type ApiResponse<T> = {
+  success?: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  code?: string;
 };
 
-const defaultFormValue: UserForm = {
-  id: 0,
-  employee_id: 0,
-  email: "",
+type UserListRow = {
+  id: number;
+  username: string;
+  email: string;
+
+  role?: string[] | null;
+  roles?: string[] | null;
+
+  employee_id?: number | null;
+  employee_name?: string | null;
+  full_name?: string | null;
+  name?: string | null;
+
+  employee_code?: string | null;
+  code?: string | null;
+
+  department_name?: string | null;
+  position_name?: string | null;
+
+  is_active: boolean;
+  must_change_password?: boolean;
+
+  deleted_at?: string | null;
+  row_version: number;
+};
+
+type EmployeeOptionRow = {
+  id: number;
+
+  code?: string | null;
+  employee_code?: string | null;
+
+  full_name?: string | null;
+  employee_name?: string | null;
+
+  first_name?: string | null;
+  middle_name?: string | null;
+  last_name?: string | null;
+
+  department_name?: string | null;
+  position_name?: string | null;
+
+  deleted_at?: string | null;
+};
+
+type RoleOptionRow = {
+  id?: number | string;
+  name?: string | null;
+  code?: string | null;
+  description?: string | null;
+  is_active?: boolean;
+  deleted_at?: string | null;
+};
+
+type UserForm = {
+  employee_id: number | null;
+
+  username: string;
+  email: string;
+
+  role: string[];
+
+  password: string;
+  confirm_password: string;
+
+  is_active: boolean;
+};
+
+type ProcessingAction = "delete" | "restore" | "purge" | null;
+
+const USER_API_URL = "/api/user";
+
+const ROLE_API_KEY = "/api/roles?show_all=false";
+
+const EMPLOYEE_API_KEY = "/api/employees/list?show_all=false";
+
+const EMPTY_USER_FORM: UserForm = {
+  employee_id: null,
+
   username: "",
+  email: "",
+
+  role: [],
+
   password: "",
   confirm_password: "",
-  role: [],
+
   is_active: true,
-  deleted_at: null,
-  row_version: 0,
 };
 
-const passwordPassThrough = {
-  root: {
-    style: { width: "100%" },
-  },
-  iconField: {
-    root: {
-      style: { width: "100%" },
+const getBody = () => document.body;
+
+const normalizeListResponse = <T,>(response?: T[] | ApiResponse<T[]>): T[] => {
+  if (!response) {
+    return [];
+  }
+
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  if (Array.isArray(response.data)) {
+    return response.data;
+  }
+
+  return [];
+};
+
+const parseApiError = async (response: Response) => {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return response.json().catch(() => ({
+      message: "An unexpected error occurred.",
+    }));
+  }
+
+  const text = await response.text().catch(() => "");
+
+  return {
+    message: text || "An unexpected error occurred.",
+  };
+};
+
+const getEmployeeFullName = (employee: EmployeeOptionRow) => {
+  return (
+    employee.full_name ||
+    employee.employee_name ||
+    [employee.first_name, employee.middle_name, employee.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    `Employee #${employee.id}`
+  );
+};
+
+const getUserEmployeeName = (user: UserListRow) => {
+  return user.employee_name || user.full_name || user.name || "-";
+};
+
+const getEmployeeCode = (user: UserListRow) => {
+  return user.employee_code || user.code || "-";
+};
+
+const getUserRoles = (user: UserListRow) => {
+  if (Array.isArray(user.role)) {
+    return user.role;
+  }
+
+  if (Array.isArray(user.roles)) {
+    return user.roles;
+  }
+
+  return [];
+};
+
+const formatRoleLabel = (role: string) => {
+  return role
+    .split("_")
+    .map((part) => {
+      const lower = part.toLowerCase();
+
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+};
+
+const createUserApi = async (data: UserForm) => {
+  const response = await fetch(USER_API_URL, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
     },
-  },
-  input: {
-    style: { width: "100%" },
-  },
+    body: JSON.stringify({
+      employee_id: data.employee_id,
+
+      username: data.username.trim().toLowerCase(),
+
+      email: data.email.trim().toLowerCase(),
+
+      role: data.role,
+
+      password: data.password.trim(),
+
+      is_active: Boolean(data.is_active),
+    }),
+  });
+
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+
+  return response.json() as Promise<ApiResponse<unknown>>;
+};
+
+const updateUserApi = async (
+  id: number,
+  rowVersion: number,
+  data: UserForm,
+) => {
+  const password = data.password.trim();
+
+  const payload: Record<string, unknown> = {
+    employee_id: data.employee_id,
+
+    username: data.username.trim().toLowerCase(),
+
+    email: data.email.trim().toLowerCase(),
+
+    role: data.role,
+
+    is_active: Boolean(data.is_active),
+  };
+
+  if (password) {
+    payload.password = password;
+  }
+
+  const response = await fetch(`${USER_API_URL}/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+
+  return response.json() as Promise<ApiResponse<unknown>>;
+};
+
+const deleteUserApi = async (id: number, rowVersion: number) => {
+  const response = await fetch(`${USER_API_URL}/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+  });
+
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+
+  return response.json() as Promise<ApiResponse<unknown>>;
+};
+
+const restoreUserApi = async (id: number, rowVersion: number) => {
+  const response = await fetch(`${USER_API_URL}/${id}/restore`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+  });
+
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+
+  return response.json() as Promise<ApiResponse<unknown>>;
+};
+
+const purgeUserApi = async (id: number) => {
+  const response = await fetch(`${USER_API_URL}/${id}/purge`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw await parseApiError(response);
+  }
+
+  return response.json() as Promise<ApiResponse<unknown>>;
 };
 
 const UserTableData = () => {
   const dispatch = useDispatch();
+
   const profileState = useSelector((state: RootState) => state.profile);
 
-  const [selectedData, setSelectedData] = useState<User | null>(null);
+  const profileRecord = profileState as unknown as Record<string, unknown>;
+
+  const currentUserId = Number(profileRecord.user_id ?? profileRecord.id ?? 0);
+
+  const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+  const [showDeleted, setShowDeleted] = useState(false);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New User");
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
-    useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const currentUserKey = `/api/user?show_all=${isShowDeletedDataChecked}`;
-  const allUserKey = `/api/user?show_all=true`;
-
-  const { control, handleSubmit, reset, setFocus, watch, getValues } =
-    useForm<UserForm>({
-      defaultValues: defaultFormValue,
-      mode: "onTouched",
-    });
-
-  const selectedRoles = watch("role") ?? [];
 
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
+  });
+
+  const [selectedData, setSelectedData] = useState<UserListRow | null>(null);
+
+  const [dialogVisible, setDialogVisible] = useState(false);
+
+  const [isAddNew, setIsAddNew] = useState(false);
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const [processingRowId, setProcessingRowId] = useState<number | null>(null);
+
+  const [processingAction, setProcessingAction] =
+    useState<ProcessingAction>(null);
+
+  const userKey = `${USER_API_URL}?show_all=${showDeleted}`;
+
+  const {
+    data: userResponse,
+    error,
+    isLoading,
+    isValidating,
+    mutate: refreshUserData,
+  } = useSWR<UserListRow[] | ApiResponse<UserListRow[]>>(userKey, fetcher, {
+    revalidateOnFocus: false,
   });
 
   const {
-    data: userData,
-    error,
-    isLoading,
-  } = useSWR<User[]>(currentUserKey, fetcher);
-  const { data: allUserData } = useSWR<User[]>(allUserKey, fetcher);
-  const {
-    data: employeeData,
-    error: employeeError,
+    data: employeeResponse,
     isLoading: employeeIsLoading,
-  } = useSWR<Employee[]>(`/api/employees`, fetcher);
+    error: employeeError,
+    mutate: refreshEmployeeData,
+  } = useSWR<EmployeeOptionRow[] | ApiResponse<EmployeeOptionRow[]>>(
+    EMPLOYEE_API_KEY,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    },
+  );
+
   const {
-    data: roleData,
-    error: roleError,
+    data: roleResponse,
     isLoading: roleIsLoading,
-  } = useSWR<Role[]>(`/api/roles`, fetcher);
+    error: roleError,
+    mutate: refreshRoleData,
+  } = useSWR<RoleOptionRow[] | ApiResponse<RoleOptionRow[]>>(
+    ROLE_API_KEY,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    },
+  );
 
-  const activeRole = useMemo(() => {
-    return (roleData ?? []).filter(
-      (item) => item.is_active && !item.deleted_at,
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setFocus,
+    getValues,
+    formState: { errors },
+  } = useForm<UserForm>({
+    defaultValues: EMPTY_USER_FORM,
+    mode: "onTouched",
+  });
+
+  const rawUserRows = useMemo(() => {
+    return normalizeListResponse(userResponse);
+  }, [userResponse]);
+
+  const employeeRows = useMemo(() => {
+    return normalizeListResponse(employeeResponse);
+  }, [employeeResponse]);
+
+  const employeeById = useMemo(() => {
+    return new Map(
+      employeeRows.map((employee) => [Number(employee.id), employee]),
     );
-  }, [roleData]);
+  }, [employeeRows]);
 
-  const employeeDataFiltered = useMemo(() => {
-    const allEmployees = employeeData ?? [];
-    const allUsers = allUserData ?? [];
+  const rows = useMemo<UserListRow[]>(() => {
+    return rawUserRows.map((user) => {
+      const employeeId =
+        user.employee_id != null ? Number(user.employee_id) : null;
 
-    if (!allEmployees.length) {
-      return [];
-    }
+      const employee =
+        employeeId != null ? employeeById.get(employeeId) : undefined;
 
-    if (!visible) {
-      return allEmployees;
-    }
+      if (!employee) {
+        return user;
+      }
 
-    if (isAddNew) {
-      const assignedEmployeeIds = allUsers.map((item) => item.employee_id);
-      return allEmployees.filter(
-        (item) => !assignedEmployeeIds.includes(item.id),
-      );
-    }
+      return {
+        ...user,
 
-    return allEmployees;
-  }, [employeeData, allUserData, visible, isAddNew]);
+        employee_name:
+          user.employee_name ||
+          user.full_name ||
+          employee.full_name ||
+          employee.employee_name ||
+          [employee.first_name, employee.middle_name, employee.last_name]
+            .filter(Boolean)
+            .join(" ") ||
+          null,
 
-  const refreshUserData = async () => {
-    await Promise.all([mutate(currentUserKey), mutate(allUserKey)]);
-  };
+        employee_code:
+          user.employee_code ||
+          user.code ||
+          employee.employee_code ||
+          employee.code ||
+          null,
 
-  const handleDialogHide = () => {
-    setVisible(false);
-    setSelectedData(null);
-    setIsAddNew(false);
-    reset(defaultFormValue);
-  };
+        department_name:
+          user.department_name || employee.department_name || null,
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    setFilters({
-      global: { value, matchMode: FilterMatchMode.CONTAINS },
+        position_name: user.position_name || employee.position_name || null,
+      };
     });
+  }, [rawUserRows, employeeById]);
+
+  const roleRows = normalizeListResponse(roleResponse);
+
+  const employeeOptions = useMemo(() => {
+    return employeeRows
+      .filter((employee) => !employee.deleted_at)
+      .map((employee) => {
+        const employeeCode = employee.employee_code || employee.code || "-";
+
+        const employeeName = getEmployeeFullName(employee);
+
+        const organization = [employee.department_name, employee.position_name]
+          .filter(Boolean)
+          .join(" • ");
+
+        return {
+          label: organization
+            ? `${employeeName} (${employeeCode}) • ${organization}`
+            : `${employeeName} (${employeeCode})`,
+
+          value: employee.id,
+        };
+      })
+      .sort((first, second) => first.label.localeCompare(second.label, "id"));
+  }, [employeeRows]);
+
+  const roleOptions = useMemo(() => {
+    return roleRows
+      .filter((role) => !role.deleted_at && role.is_active !== false)
+      .map((role) => {
+        const value = role.name || role.code || "";
+
+        return {
+          label: role.description || formatRoleLabel(value),
+
+          value,
+        };
+      })
+      .filter((role) => role.value.trim() !== "")
+      .sort((first, second) => first.label.localeCompare(second.label));
+  }, [roleRows]);
+
+  const summary = useMemo(() => {
+    const existingRows = rows.filter((user) => !user.deleted_at);
+
+    return {
+      total: existingRows.length,
+
+      active: existingRows.filter((user) => user.is_active).length,
+
+      inactive: existingRows.filter((user) => !user.is_active).length,
+
+      deleted: rows.filter((user) => Boolean(user.deleted_at)).length,
+
+      linkedEmployee: existingRows.filter((user) => Boolean(user.employee_id))
+        .length,
+    };
+  }, [rows]);
+
+  const isProcessing = processingRowId !== null;
+
+  const isEditingSelf = selectedData?.id === currentUserId;
+
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
+  };
+
+  const showWarning = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "warn",
+        summary: "Warning",
+        detail: message,
+      }),
+    );
+  };
+
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    if (typeof err === "object" && err !== null) {
+      const errorRecord = err as Record<string, unknown>;
+
+      const message = errorRecord.message ?? errorRecord.error;
+
+      if (typeof message === "string") {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Error",
+            detail: message,
+          }),
+        );
+
+        return;
+      }
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refreshUserData(),
+        refreshEmployeeData(),
+        refreshRoleData(),
+      ]);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
 
     setGlobalFilterValue(value);
+
+    setFilters({
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
   };
 
-  const onClickNew = () => {
+  const openNew = () => {
     setSelectedData(null);
     setIsAddNew(true);
-    setPopupHeaderTitle("New User");
-    reset(defaultFormValue);
-    setVisible(true);
+
+    reset(EMPTY_USER_FORM);
+
+    setDialogVisible(true);
   };
 
-  const onClickUpdate = (data: User) => {
+  const openEdit = (data: UserListRow) => {
+    if (data.deleted_at) {
+      showWarning("Deleted user cannot be edited.");
+
+      return;
+    }
+
     setSelectedData(data);
     setIsAddNew(false);
-    setPopupHeaderTitle("Update User");
 
     reset({
-      ...data,
+      employee_id: data.employee_id ?? null,
+
+      username: data.username ?? "",
+
+      email: data.email ?? "",
+
+      role: getUserRoles(data),
+
       password: "",
       confirm_password: "",
+
+      is_active: Boolean(data.is_active),
     });
 
-    setVisible(true);
+    setDialogVisible(true);
   };
 
-  const buildSubmitPayload = (data: UserForm): User => {
-    return {
-      ...data,
-      password: data.password?.trim() ?? "",
-      employee_id: isAddNew
-        ? data.employee_id
-        : (selectedData?.employee_id ?? data.employee_id),
-    };
+  const resetDialogState = () => {
+    setDialogVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+
+    reset(EMPTY_USER_FORM);
   };
 
-  const handleSubmitNew = async (data: UserForm) => {
-    try {
-      setIsSaving(true);
-
-      const payload = buildSubmitPayload(data);
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createUser(payload);
-
-      await refreshUserData();
-      handleDialogHide();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message || "User created successfully.",
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdate = async (data: UserForm) => {
-    if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "Error",
-          detail: "Please select data first.",
-        }),
-      );
-      return;
-    }
-
-    if (
-      selectedData.row_version === null ||
-      selectedData.row_version === undefined ||
-      Number.isNaN(Number(selectedData.row_version))
-    ) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "Error",
-          detail:
-            "Row version is missing. Please refresh the page and try again.",
-        }),
-      );
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      const payload: User = {
-        ...buildSubmitPayload(data),
-        employee_id: selectedData.employee_id,
-        row_version: selectedData.row_version,
-      };
-
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateUser(
-        selectedData.id,
-        selectedData.row_version,
-        payload,
-      );
-
-      await refreshUserData();
-      handleDialogHide();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message || "User updated successfully.",
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async (data: User) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteUser(
-        data.id,
-        data.row_version,
-      );
-
-      await refreshUserData();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message || "User deleted successfully.",
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: User) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeUser(
-        data.id,
-      );
-
-      await refreshUserData();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message || "User deleted permanently.",
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleRestore = async (data: User) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreUser(
-        data.id,
-        data.row_version,
-      );
-
-      await refreshUserData();
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message || "User restored successfully.",
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const onSubmit = async (data: UserForm) => {
+  const closeDialog = () => {
     if (isSaving) {
       return;
     }
 
-    if (isAddNew) {
-      await handleSubmitNew(data);
+    resetDialogState();
+  };
+
+  const handleSave = async (formData: UserForm) => {
+    if (isSaving) {
       return;
     }
 
-    await handleUpdate(data);
-  };
+    if (roleError || employeeError) {
+      showError(new Error("User reference data could not be loaded."));
 
-  const onClickDelete = (data: User) => {
-    confirmDialog({
-      message: "Do you want to delete this user?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        handleDelete(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex justify-end gap-3">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
-  };
+      return;
+    }
 
-  const onClickRestore = (data: User) => {
-    confirmDialog({
-      message: "Do you want to restore this user?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        handleRestore(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex justify-end gap-3">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-success"
-          />
-        </div>
-      ),
-    });
-  };
+    if (isEditingSelf && !formData.is_active) {
+      showWarning("You cannot deactivate your own account.");
 
-  const onClickPurge = (data: User) => {
-    confirmDialog({
-      message: "Do you want to permanently delete this user?",
-      header: "Delete Forever Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex justify-end gap-3">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
-  };
+      return;
+    }
 
-  const onRoleChange = (
-    e: CheckboxChangeEvent,
-    currentValue: string[],
-    onChange: (value: string[]) => void,
-  ) => {
-    let nextValue = [...currentValue];
+    if (
+      isEditingSelf &&
+      isSuperadmin &&
+      !formData.role.some((role) => role.toLowerCase() === "superadmin")
+    ) {
+      showWarning(
+        "You cannot remove the superadmin role from your own account.",
+      );
 
-    if (e.checked) {
-      if (!nextValue.includes(String(e.value))) {
-        nextValue.push(String(e.value));
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+
+      let response: ApiResponse<unknown> | undefined;
+
+      if (isAddNew) {
+        response = await createUserApi(formData);
+      } else if (selectedData) {
+        response = await updateUserApi(
+          selectedData.id,
+          selectedData.row_version,
+          formData,
+        );
       }
-    } else {
-      nextValue = nextValue.filter((item) => item !== String(e.value));
-    }
 
-    onChange(nextValue);
+      await refreshUserData();
+
+      showSuccess(
+        response?.message ||
+          (isAddNew
+            ? "User created successfully."
+            : "User updated successfully."),
+      );
+
+      /*
+       * Jangan memanggil
+       * closeDialog() saat
+       * isSaving masih true.
+       */
+      resetDialogState();
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const renderStatusColumn = (rowData: User) => {
-    if (rowData.deleted_at) {
-      return <Tag value="Deleted" severity="secondary" />;
+  const handleDelete = async (data: UserListRow) => {
+    if (data.id === currentUserId) {
+      showWarning("You cannot delete your own account.");
+
+      return;
     }
 
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
+    try {
+      setProcessingRowId(data.id);
+      setProcessingAction("delete");
+
+      const response = await deleteUserApi(data.id, data.row_version);
+
+      await refreshUserData();
+
+      showSuccess(response.message || "User deleted successfully.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleRestore = async (data: UserListRow) => {
+    try {
+      setProcessingRowId(data.id);
+      setProcessingAction("restore");
+
+      const response = await restoreUserApi(data.id, data.row_version);
+
+      await refreshUserData();
+
+      showSuccess(response.message || "User restored successfully.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handlePurge = async (data: UserListRow) => {
+    if (!data.deleted_at) {
+      showWarning("Only deleted users can be permanently removed.");
+
+      return;
+    }
+
+    if (data.id === currentUserId) {
+      showWarning("You cannot permanently delete your own account.");
+
+      return;
+    }
+
+    try {
+      setProcessingRowId(data.id);
+      setProcessingAction("purge");
+
+      const response = await purgeUserApi(data.id);
+
+      await refreshUserData();
+
+      showSuccess(response.message || "User permanently deleted.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const onClickDelete = (data: UserListRow) => {
+    confirmDialog({
+      header: "Delete User",
+
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">Delete this user account?</span>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="m-0 text-sm font-semibold text-slate-800">
+              {getUserEmployeeName(data)}
+            </p>
+
+            <p className="m-0 mt-1 text-xs text-slate-500">
+              {data.username} • {data.email}
+            </p>
+          </div>
+        </div>
+      ),
+
+      icon: "pi pi-exclamation-triangle",
+
+      defaultFocus: "reject",
+
+      accept: () => {
+        void handleDelete(data);
+      },
+
+      reject: () => undefined,
+
+      footer: (options) => (
+        <div className="flex justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
+    });
+  };
+
+  const onClickRestore = (data: UserListRow) => {
+    confirmDialog({
+      header: "Restore User",
+
+      message: "Restore this user account?",
+
+      icon: "pi pi-refresh",
+
+      defaultFocus: "accept",
+
+      accept: () => {
+        void handleRestore(data);
+      },
+
+      reject: () => undefined,
+    });
+  };
+
+  const onClickPurge = (data: UserListRow) => {
+    confirmDialog({
+      header: "Delete User Permanently",
+
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="m-0 text-sm font-semibold text-red-800">
+              {data.username}
+            </p>
+
+            <p className="m-0 mt-1 text-xs text-red-600">{data.email}</p>
+          </div>
+        </div>
+      ),
+
+      icon: "pi pi-exclamation-triangle",
+
+      defaultFocus: "reject",
+
+      accept: () => {
+        void handlePurge(data);
+      },
+
+      reject: () => undefined,
+
+      footer: (options) => (
+        <div className="flex justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
+    });
+  };
+
+  const exportExistingUsers = () => {
+    if (isExporting) {
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+
+      /*
+       * Export seluruh user
+       * non-delete dari data API,
+       * tidak mengikuti pencarian
+       * DataTable.
+       */
+      const existingUsers = rows
+        .filter((user) => !user.deleted_at)
+        .sort((first, second) =>
+          getUserEmployeeName(first).localeCompare(
+            getUserEmployeeName(second),
+            "id",
+          ),
+        );
+
+      if (existingUsers.length === 0) {
+        showWarning("No existing user data is available to export.");
+
+        return;
+      }
+
+      const excelRows = existingUsers.map((user, index) => ({
+        No: index + 1,
+
+        Name: getUserEmployeeName(user),
+
+        "Employee Code": getEmployeeCode(user),
+
+        Department: user.department_name || "-",
+
+        Position: user.position_name || "-",
+
+        Email: user.email || "-",
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelRows);
+
+      worksheet["!cols"] = [
+        { wch: 6 },
+        { wch: 32 },
+        { wch: 18 },
+        { wch: 30 },
+        { wch: 30 },
+        { wch: 38 },
+      ];
+
+      worksheet["!autofilter"] = {
+        ref: `A1:F${excelRows.length + 1}`,
+      };
+
+      const workbook = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Existing Users");
+
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+
+      const fileBlob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+
+      const fileName = `existing_users_${dayjs().format(
+        "YYYYMMDD_HHmmss",
+      )}.xlsx`;
+
+      saveAs(fileBlob, fileName);
+
+      showSuccess(
+        `${existingUsers.length} existing users exported successfully.`,
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const userBody = (rowData: UserListRow) => {
+    return (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-sm font-semibold text-slate-800">
+          {rowData.username}
+        </span>
+
+        <span className="truncate text-xs text-slate-500">
+          {rowData.email || "-"}
+        </span>
+      </div>
     );
   };
 
-  const renderRoleColumn = (rowData: User) => {
-    if (!rowData.role?.length) {
+  const employeeBody = (rowData: UserListRow) => {
+    const employeeName = getUserEmployeeName(rowData);
+
+    if (employeeName === "-" && !rowData.employee_id) {
+      return <Tag value="Not linked" severity="warning" rounded />;
+    }
+
+    return (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-sm font-medium text-slate-800">
+          {employeeName}
+        </span>
+
+        <span className="font-mono text-xs text-slate-500">
+          {getEmployeeCode(rowData)}
+        </span>
+      </div>
+    );
+  };
+
+  const organizationBody = (rowData: UserListRow) => {
+    return (
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-sm font-medium text-slate-700">
+          {rowData.department_name || "-"}
+        </span>
+
+        <span className="truncate text-xs text-slate-500">
+          {rowData.position_name || "-"}
+        </span>
+      </div>
+    );
+  };
+
+  const roleBody = (rowData: UserListRow) => {
+    const roles = getUserRoles(rowData);
+
+    if (roles.length === 0) {
       return <span className="text-sm text-slate-400">No role</span>;
     }
 
     return (
-      <div className="flex flex-wrap gap-2">
-        {rowData.role.map((item) => (
-          <Tag key={item} value={item} severity="info" />
+      <div className="flex max-w-sm flex-wrap gap-1">
+        {roles.map((role) => (
+          <Tag
+            key={role}
+            value={formatRoleLabel(role)}
+            severity={
+              role.toLowerCase() === "superadmin"
+                ? "danger"
+                : role.toLowerCase() === "admin"
+                  ? "warning"
+                  : "info"
+            }
+            rounded
+          />
         ))}
       </div>
     );
   };
 
-  const actionColumnBody = (rowData: User) => {
-    const isSelf = profileState.employee_id === rowData.employee_id;
-    const canPurge = hasRole(profileState.role, ["superadmin"]);
-
+  const activeBody = (rowData: UserListRow) => {
     if (rowData.deleted_at) {
       return (
-        <div className="flex gap-2">
-          {canPurge && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => onClickRestore(rowData)}
-            />
-          )}
+        <Tag value="Deleted" severity="danger" icon="pi pi-trash" rounded />
+      );
+    }
 
-          {canPurge && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              icon="pi pi-times"
-              size="small"
-              disabled={isSelf}
-              onClick={() => onClickPurge(rowData)}
-            />
-          )}
+    return rowData.is_active ? (
+      <Tag
+        value="Active"
+        severity="success"
+        icon="pi pi-check-circle"
+        rounded
+      />
+    ) : (
+      <Tag value="Inactive" severity="secondary" icon="pi pi-ban" rounded />
+    );
+  };
+
+  const passwordStatusBody = (rowData: UserListRow) => {
+    return rowData.must_change_password ? (
+      <Tag value="Must Change" severity="warning" rounded />
+    ) : (
+      <Tag value="Normal" severity="success" rounded />
+    );
+  };
+
+  const actionBody = (rowData: UserListRow) => {
+    const isCurrentRow = processingRowId === rowData.id;
+
+    if (rowData.deleted_at) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
+      return (
+        <div className="flex flex-nowrap justify-end gap-2">
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            size="small"
+            severity="success"
+            loading={isCurrentRow && processingAction === "restore"}
+            disabled={isProcessing}
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickRestore(rowData)}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            size="small"
+            severity="danger"
+            loading={isCurrentRow && processingAction === "purge"}
+            disabled={isProcessing}
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickPurge(rowData)}
+          />
         </div>
       );
     }
 
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-nowrap justify-end gap-2">
         <Button
-          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-          tooltip="update"
-          rounded
-          severity="help"
+          type="button"
           icon="pi pi-pencil"
+          rounded
+          outlined
           size="small"
-          onClick={() => onClickUpdate(rowData)}
+          severity="help"
+          disabled={isProcessing}
+          tooltip="Edit"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => openEdit(rowData)}
         />
 
         <Button
-          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-          tooltip="delete"
-          rounded
-          severity="danger"
+          type="button"
           icon="pi pi-trash"
+          rounded
+          outlined
           size="small"
-          disabled={isSelf}
+          severity="danger"
+          loading={isCurrentRow && processingAction === "delete"}
+          disabled={isProcessing || rowData.id === currentUserId}
+          tooltip={
+            rowData.id === currentUserId
+              ? "You cannot delete your own account"
+              : "Delete"
+          }
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
           onClick={() => onClickDelete(rowData)}
         />
       </div>
     );
   };
 
-  const footerContent = (
-    <div className="flex justify-end gap-3">
+  const rowClassName = (rowData: UserListRow) => {
+    if (rowData.deleted_at) {
+      return "bg-red-50/20 text-slate-500";
+    }
+
+    if (!rowData.is_active) {
+      return "bg-slate-50";
+    }
+
+    if (!rowData.employee_id) {
+      return "bg-amber-50/30";
+    }
+
+    return "";
+  };
+
+  const dialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
         label="Cancel"
         icon="pi pi-times"
-        onClick={handleDialogHide}
-        className="p-button-text"
+        text
+        severity="secondary"
         disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={closeDialog}
       />
+
       <Button
         type="submit"
-        label={
-          isSaving
-            ? isAddNew
-              ? "Submitting..."
-              : "Saving..."
-            : isAddNew
-              ? "Submit"
-              : "Save"
+        form="user-form"
+        label={isAddNew ? "Create User" : "Save Changes"}
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={
+          isSaving || roleIsLoading || employeeIsLoading || Boolean(roleError)
         }
-        icon={isSaving ? "pi pi-spin pi-spinner" : "pi pi-check"}
-        disabled={isSaving}
+        className="w-full sm:w-auto"
       />
     </div>
   );
@@ -691,128 +1279,270 @@ const UserTableData = () => {
   }
 
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey={currentUserKey} />;
+    return <ErrorNotConnectedToApi mutateKey={userKey} />;
   }
 
   return (
     <>
       <ConfirmDialog />
 
-      <Card>
-        <div className="flex flex-col gap-5 p-4 md:p-5">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <div className="text-2xl font-semibold text-slate-800">User</div>
-              <div className="mt-1 text-sm text-slate-500">
-                Manage system user accounts and assign them to employees.
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-users text-xl" />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Users
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage login accounts, employee assignments, roles, and
+                  account status.
+                </p>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label
-                  htmlFor="showDeletedData"
-                  className="text-sm text-slate-600"
-                >
-                  Show deleted data
-                </label>
-              </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                disabled={
+                  isValidating || isProcessing || isSaving || isExporting
+                }
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
 
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <InputText
-                  className="w-full sm:w-[18rem]"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Search employee, username, or email"
-                />
-              </IconField>
+              <Button
+                type="button"
+                label="Export Excel"
+                icon="pi pi-file-excel"
+                severity="success"
+                outlined
+                size="small"
+                loading={isExporting}
+                disabled={
+                  isExporting ||
+                  isLoading ||
+                  rows.filter((user) => !user.deleted_at).length === 0
+                }
+                className="w-full sm:w-auto"
+                onClick={exportExistingUsers}
+              />
 
-              <Button label="New User" icon="pi pi-plus" onClick={onClickNew} />
+              <Button
+                type="button"
+                label="New User"
+                icon="pi pi-plus"
+                size="small"
+                disabled={isProcessing || isSaving || isExporting}
+                className="w-full sm:w-auto"
+                onClick={openNew}
+              />
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Summary */}
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="m-0 text-xs text-slate-500">Existing Users</p>
+
+              <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+                {summary.total}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+              <p className="m-0 text-xs text-green-700">Active</p>
+
+              <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
+                {summary.active}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="m-0 text-xs text-slate-600">Inactive</p>
+
+              <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+                {summary.inactive}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <p className="m-0 text-xs text-blue-700">Linked Employees</p>
+
+              <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
+                {summary.linkedEmployee}
+              </p>
+            </div>
+          </div>
+
+          {/* Search */}
+          <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
+            {isSuperadmin ? (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="show_deleted_users"
+                  checked={showDeleted}
+                  onChange={(event) => setShowDeleted(Boolean(event.checked))}
+                />
+
+                <label
+                  htmlFor="show_deleted_users"
+                  className="cursor-pointer text-sm text-slate-600"
+                >
+                  Show deleted users
+                </label>
+              </div>
+            ) : (
+              <span className="text-xs text-slate-500">
+                Showing existing user accounts.
+              </span>
+            )}
+
+            <IconField iconPosition="left" className="w-full md:w-96">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Search user, employee, code, department, position, or email"
+                className="w-full"
+              />
+            </IconField>
+          </section>
+
+          {/* Table */}
+          <div className="w-full overflow-hidden">
             <DataTable
-              value={userData}
-              tableStyle={{ minWidth: "78rem" }}
-              stripedRows
-              paginator
-              rows={10}
-              rowsPerPageOptions={[10, 25, 50]}
+              value={rows}
               dataKey="id"
               filters={filters}
               globalFilterFields={[
-                "employee_code",
-                "full_name",
                 "username",
                 "email",
+                "employee_name",
+                "full_name",
+                "name",
+                "employee_code",
+                "code",
+                "department_name",
+                "position_name",
+                "role",
+                "roles",
               ]}
-              emptyMessage="No user found."
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              rowClassName={rowClassName}
+              tableStyle={{
+                minWidth: "100rem",
+              }}
+              emptyMessage="No user data found."
               currentPageReportTemplate="{first} to {last} of {totalRecords}"
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-              loading={isLoading}
-              scrollable
-              scrollHeight="500px"
             >
               <Column
                 header="#"
-                headerStyle={{ width: "4rem", minWidth: "4rem" }}
-                bodyStyle={{ minWidth: "4rem" }}
                 body={(_, options) => options.rowIndex + 1}
-              />
-              <Column
-                field="employee_code"
-                header="Employee ID"
-                style={{ minWidth: "10rem" }}
-              />
-              <Column
-                field="full_name"
-                header="Full Name"
-                style={{ minWidth: "16rem" }}
-              />
-              <Column
-                field="username"
-                header="Username"
-                style={{ minWidth: "12rem" }}
-              />
-              <Column
-                field="email"
-                header="Email"
-                style={{ minWidth: "16rem" }}
-              />
-              <Column
-                field="role"
-                header="Role"
-                body={renderRoleColumn}
-                style={{ minWidth: "14rem" }}
-              />
-              <Column
-                field="is_active"
-                header="Status"
-                body={renderStatusColumn}
-                style={{ minWidth: "10rem" }}
-              />
-              <Column
-                header="Action"
-                body={actionColumnBody}
-                frozen
-                alignFrozen="right"
-                style={{ minWidth: "10rem" }}
                 headerStyle={{
-                  minWidth: "10rem",
-                  background: "#ffffff",
-                  zIndex: 1,
+                  width: "4rem",
                 }}
                 bodyStyle={{
+                  width: "4rem",
+                }}
+              />
+
+              <Column
+                field="username"
+                header="Login Account"
+                sortable
+                body={userBody}
+                style={{
+                  minWidth: "19rem",
+                }}
+              />
+
+              <Column
+                field="employee_name"
+                header="Employee"
+                sortable
+                body={employeeBody}
+                style={{
+                  minWidth: "20rem",
+                }}
+              />
+
+              <Column
+                field="department_name"
+                header="Organization"
+                sortable
+                body={organizationBody}
+                style={{
+                  minWidth: "20rem",
+                }}
+              />
+
+              <Column
+                header="Roles"
+                body={roleBody}
+                style={{
+                  minWidth: "20rem",
+                }}
+              />
+
+              <Column
+                field="is_active"
+                header="Account Status"
+                sortable
+                body={activeBody}
+                style={{
+                  minWidth: "13rem",
+                }}
+              />
+
+              <Column
+                field="must_change_password"
+                header="Password Status"
+                sortable
+                body={passwordStatusBody}
+                style={{
+                  minWidth: "14rem",
+                }}
+              />
+
+              <Column
+                header="Action"
+                body={actionBody}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                className="bg-white"
+                headerStyle={{
+                  width: "10rem",
                   minWidth: "10rem",
-                  background: "#ffffff",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "10rem",
+                  minWidth: "10rem",
                 }}
               />
             </DataTable>
@@ -820,489 +1550,393 @@ const UserTableData = () => {
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          modal
-          draggable={false}
-          resizable={false}
-          style={{ width: "95vw", maxWidth: "860px" }}
-          breakpoints={{ "960px": "95vw" }}
-          onHide={handleDialogHide}
-          footer={footerContent}
-          onShow={() => {
-            if (isAddNew) {
-              setFocus("employee_id");
-            } else {
-              setFocus("email");
-            }
-          }}
+      {/* User Form */}
+      <Dialog
+        header={isAddNew ? "New User" : "Edit User"}
+        visible={dialogVisible}
+        style={{
+          width: "95vw",
+          maxWidth: "48rem",
+        }}
+        breakpoints={{
+          "960px": "95vw",
+        }}
+        footer={dialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closable={!isSaving}
+        closeOnEscape={!isSaving}
+        onHide={closeDialog}
+        onShow={() => {
+          setTimeout(() => {
+            setFocus("username");
+          }, 0);
+        }}
+      >
+        <form
+          id="user-form"
+          onSubmit={handleSubmit(handleSave)}
+          className="flex flex-col gap-5 pt-2"
         >
-          <div className="flex flex-col gap-5">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="text-sm font-semibold text-slate-800">
-                {isAddNew ? "Create New User Account" : "Update User Account"}
-              </div>
-              <div className="mt-1 text-sm leading-6 text-slate-500">
-                {isAddNew
-                  ? "Select an employee, then create login credentials and assign role access."
-                  : "Employee assignment is locked. You can update login credentials, roles, and account status only."}
-              </div>
-            </div>
+          {(roleError || employeeError) && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <i className="pi pi-exclamation-circle mt-0.5" />
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Employee Assignment
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  One employee can only have one user account.
-                </p>
-              </div>
+              <span>
+                Role or employee reference data could not be loaded. Refresh the
+                page before saving.
+              </span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label
+                htmlFor="employee_id"
+                className="text-sm font-medium text-slate-700"
+              >
+                Employee
+              </label>
 
               <Controller
                 name="employee_id"
                 control={control}
+                render={({ field }) => (
+                  <Dropdown
+                    id="employee_id"
+                    appendTo={getBody}
+                    value={field.value}
+                    options={employeeOptions}
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select employee"
+                    filter
+                    showClear
+                    loading={employeeIsLoading}
+                    disabled={
+                      isSaving || employeeIsLoading || Boolean(employeeError)
+                    }
+                    className="w-full"
+                    onChange={(event) => field.onChange(event.value ?? null)}
+                  />
+                )}
+              />
+
+              <small className="text-slate-500">
+                Employee assignment can be empty when this is a system-only
+                account.
+              </small>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="username"
+                className="text-sm font-medium text-slate-700"
+              >
+                Username
+                <span className="ml-1 text-red-500">*</span>
+              </label>
+
+              <Controller
+                name="username"
+                control={control}
                 rules={{
-                  required: "Employee is required",
-                  validate: (value) =>
-                    Number(value) > 0 || "Employee is required",
+                  required: "Username is required.",
+
+                  minLength: {
+                    value: 3,
+                    message: "Username must contain at least 3 characters.",
+                  },
+
+                  maxLength: {
+                    value: 50,
+                    message: "Username cannot exceed 50 characters.",
+                  },
+
+                  pattern: {
+                    value: /^[a-zA-Z0-9._-]+$/,
+                    message:
+                      "Username may only contain letters, numbers, dot, underscore, and hyphen.",
+                  },
                 }}
                 render={({ field, fieldState }) => (
-                  <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="employee_id"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Employee
-                    </label>
-
-                    <Dropdown
-                      id="employee_id"
-                      appendTo={() => document.body}
-                      value={field.value}
-                      options={employeeDataFiltered}
-                      loading={employeeIsLoading}
-                      disabled={
-                        !isAddNew ||
-                        employeeIsLoading ||
-                        !!employeeError ||
-                        isSaving
+                  <>
+                    <InputText
+                      {...field}
+                      id="username"
+                      value={field.value ?? ""}
+                      autoComplete="off"
+                      disabled={isSaving}
+                      placeholder="Enter username"
+                      className={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toLowerCase())
                       }
-                      onChange={(e) => field.onChange(e.value)}
-                      optionLabel="full_name"
-                      optionValue="id"
-                      placeholder={
-                        employeeIsLoading
-                          ? "Loading employees..."
-                          : isAddNew
-                            ? "Select employee"
-                            : "Employee cannot be changed"
-                      }
-                      className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                      filter={isAddNew}
-                      showClear={isAddNew}
                     />
 
                     {fieldState.error && (
-                      <small className="font-medium text-red-500">
+                      <small className="p-error">
                         {fieldState.error.message}
                       </small>
                     )}
-
-                    {employeeError && (
-                      <small className="font-medium text-red-500">
-                        We couldn’t load the employee list. Please try again.
-                      </small>
-                    )}
-
-                    {!isAddNew && (
-                      <small className="text-slate-500">
-                        Employee assignment cannot be changed after user
-                        creation.
-                      </small>
-                    )}
-
-                    {isAddNew && (
-                      <small className="text-slate-500">
-                        Only employees without an existing user account are
-                        shown.
-                      </small>
-                    )}
-                  </div>
+                  </>
                 )}
               />
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Login Information
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Username and email are used for login and account
-                  identification.
-                </p>
-              </div>
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-slate-700"
+              >
+                Email
+                <span className="ml-1 text-red-500">*</span>
+              </label>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <Controller
-                  name="email"
-                  control={control}
-                  rules={{
-                    required: "Email is required",
-                    maxLength: {
-                      value: 150,
-                      message: "Maximum 150 characters",
-                    },
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Invalid email format",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="email"
-                        className="text-sm font-medium text-slate-700"
-                      >
-                        Email
-                      </label>
+              <Controller
+                name="email"
+                control={control}
+                rules={{
+                  required: "Email is required.",
 
-                      <InputText
-                        id="email"
-                        type="email"
-                        placeholder="example: hello@gmail.com"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className={fieldState.invalid ? "p-invalid" : ""}
-                        disabled={isSaving}
-                      />
+                  maxLength: {
+                    value: 254,
+                    message: "Email cannot exceed 254 characters.",
+                  },
 
-                      {fieldState.error && (
-                        <small className="font-medium text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="username"
-                  control={control}
-                  rules={{
-                    required: "Username is required",
-                    maxLength: {
-                      value: 100,
-                      message: "Maximum 100 characters",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="username"
-                        className="text-sm font-medium text-slate-700"
-                      >
-                        Username
-                      </label>
-
-                      <InputText
-                        id="username"
-                        placeholder="example: user.abc"
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        className={fieldState.invalid ? "p-invalid" : ""}
-                        disabled={isSaving}
-                      />
-
-                      {fieldState.error && (
-                        <small className="font-medium text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="password"
-                  control={control}
-                  rules={{
-                    validate: (value) => {
-                      const passwordValue = value?.trim() ?? "";
-
-                      if (isAddNew && !passwordValue) {
-                        return "Password is required for new user";
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Email format is not valid.",
+                  },
+                }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <InputText
+                      {...field}
+                      id="email"
+                      type="email"
+                      value={field.value ?? ""}
+                      autoComplete="off"
+                      disabled={isSaving}
+                      placeholder="user@company.com"
+                      className={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
+                      onChange={(event) =>
+                        field.onChange(event.target.value.toLowerCase())
                       }
+                    />
 
-                      if (passwordValue && passwordValue.length < 8) {
-                        return "Password must be at least 8 characters";
-                      }
-
-                      if (passwordValue && passwordValue.length > 50) {
-                        return "Maximum 50 characters";
-                      }
-
-                      return true;
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="password"
-                        className="text-sm font-medium text-slate-700"
-                      >
-                        Password
-                      </label>
-
-                      <Password
-                        id="password"
-                        placeholder={
-                          isAddNew
-                            ? "Enter password"
-                            : "Leave blank to keep current password"
-                        }
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        feedback={isAddNew}
-                        toggleMask
-                        inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                        disabled={isSaving}
-                        pt={passwordPassThrough}
-                      />
-
-                      {fieldState.error && (
-                        <small className="font-medium text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-
-                      {!isAddNew && !fieldState.error && (
-                        <small className="text-slate-500">
-                          Leave password blank if you do not want to change it.
-                        </small>
-                      )}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="confirm_password"
-                  control={control}
-                  rules={{
-                    validate: (value) => {
-                      const passwordValue = getValues("password")?.trim() ?? "";
-                      const confirmValue = value?.trim() ?? "";
-
-                      if (isAddNew && !confirmValue) {
-                        return "Confirm password is required for new user";
-                      }
-
-                      if (!isAddNew && passwordValue && !confirmValue) {
-                        return "Confirm password is required when changing password";
-                      }
-
-                      if (passwordValue && confirmValue !== passwordValue) {
-                        return "Password and confirm password must be the same";
-                      }
-
-                      return true;
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="confirm_password"
-                        className="text-sm font-medium text-slate-700"
-                      >
-                        Confirm Password
-                      </label>
-
-                      <Password
-                        id="confirm_password"
-                        placeholder={
-                          isAddNew ? "Retype password" : "Retype new password"
-                        }
-                        value={field.value ?? ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        feedback={false}
-                        toggleMask
-                        inputClassName="w-full"
-                        className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                        disabled={isSaving}
-                        pt={passwordPassThrough}
-                      />
-
-                      {fieldState.error && (
-                        <small className="font-medium text-red-500">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-
-                      {!isAddNew && !fieldState.error && (
-                        <small className="text-slate-500">
-                          Required only if you fill the password field.
-                        </small>
-                      )}
-                    </div>
-                  )}
-                />
-              </div>
+                    {fieldState.error && (
+                      <small className="p-error">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+                  </>
+                )}
+              />
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Role Access
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Assign one or more roles to determine what this user can
-                  access.
-                </p>
-              </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <label
+                htmlFor="role"
+                className="text-sm font-medium text-slate-700"
+              >
+                Roles
+                <span className="ml-1 text-red-500">*</span>
+              </label>
 
               <Controller
                 name="role"
                 control={control}
                 rules={{
                   validate: (value) =>
-                    value && value.length > 0 ? true : "Role is required",
+                    value.length > 0 || "At least one role is required.",
                 }}
                 render={({ field, fieldState }) => (
-                  <div className="flex flex-col gap-3">
-                    <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
-                      {roleIsLoading && (
-                        <small className="text-slate-500">
-                          Loading roles...
-                        </small>
-                      )}
-
-                      {!roleIsLoading && activeRole.length === 0 && (
-                        <small className="text-slate-500">
-                          No active role found.
-                        </small>
-                      )}
-
-                      {!roleIsLoading &&
-                        activeRole.map((role: Role) => {
-                          const checked = (field.value ?? []).some(
-                            (item: string) => item === role.code.toString(),
-                          );
-
-                          return (
-                            <div
-                              key={role.code}
-                              className={`rounded-xl border bg-white p-3 transition ${
-                                checked
-                                  ? "border-blue-300 ring-1 ring-blue-200"
-                                  : "border-slate-200"
-                              }`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <Checkbox
-                                  inputId={role.code.toString()}
-                                  name="role"
-                                  value={role.code}
-                                  onChange={(e) =>
-                                    onRoleChange(
-                                      e,
-                                      field.value ?? [],
-                                      field.onChange,
-                                    )
-                                  }
-                                  checked={checked}
-                                  disabled={isSaving}
-                                />
-
-                                <label
-                                  htmlFor={role.code.toString()}
-                                  className="cursor-pointer"
-                                >
-                                  <div className="text-sm font-semibold text-slate-800">
-                                    {role.name || role.code}
-                                  </div>
-                                  <div className="mt-1 text-xs text-slate-500">
-                                    {role.description || role.code}
-                                  </div>
-                                  <div className="mt-2">
-                                    <Tag value={role.code} severity="info" />
-                                  </div>
-                                </label>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-
-                    {!!selectedRoles.length && (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedRoles.map((item) => (
-                          <Tag key={item} value={item} severity="info" />
-                        ))}
-                      </div>
-                    )}
+                  <>
+                    <MultiSelect
+                      inputId="role"
+                      appendTo={getBody}
+                      value={field.value}
+                      options={roleOptions}
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Select roles"
+                      filter
+                      display="chip"
+                      loading={roleIsLoading}
+                      disabled={isSaving || roleIsLoading || Boolean(roleError)}
+                      className={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
+                      onChange={(event) => field.onChange(event.value ?? [])}
+                    />
 
                     {fieldState.error && (
-                      <small className="font-medium text-red-500">
+                      <small className="p-error">
                         {fieldState.error.message}
                       </small>
                     )}
-
-                    {roleError && (
-                      <small className="font-medium text-red-500">
-                        We couldn’t load the role list. Please try again.
-                      </small>
-                    )}
-                  </div>
+                  </>
                 )}
               />
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-800">
-                  Account Status
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Inactive users cannot use the system.
-                </p>
-              </div>
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-slate-700"
+              >
+                Password
+                {isAddNew && <span className="ml-1 text-red-500">*</span>}
+              </label>
 
+              <Controller
+                name="password"
+                control={control}
+                rules={{
+                  validate: (value) => {
+                    if (isAddNew && !value.trim()) {
+                      return "Password is required.";
+                    }
+
+                    if (value && value.length < 8) {
+                      return "Password must contain at least 8 characters.";
+                    }
+
+                    return true;
+                  },
+                }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Password
+                      inputId="password"
+                      value={field.value}
+                      feedback={isAddNew}
+                      toggleMask
+                      disabled={isSaving}
+                      autoComplete="new-password"
+                      placeholder={
+                        isAddNew
+                          ? "Enter password"
+                          : "Leave empty to keep current password"
+                      }
+                      className="w-full"
+                      inputClassName={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
+                      onChange={(event) => field.onChange(event.target.value)}
+                    />
+
+                    {fieldState.error && (
+                      <small className="p-error">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="confirm_password"
+                className="text-sm font-medium text-slate-700"
+              >
+                Confirm Password
+                {isAddNew && <span className="ml-1 text-red-500">*</span>}
+              </label>
+
+              <Controller
+                name="confirm_password"
+                control={control}
+                rules={{
+                  validate: (value) => {
+                    const password = getValues("password");
+
+                    if (isAddNew && !value.trim()) {
+                      return "Password confirmation is required.";
+                    }
+
+                    if (password || value) {
+                      return (
+                        password === value ||
+                        "Password confirmation does not match."
+                      );
+                    }
+
+                    return true;
+                  },
+                }}
+                render={({ field, fieldState }) => (
+                  <>
+                    <Password
+                      inputId="confirm_password"
+                      value={field.value}
+                      feedback={false}
+                      toggleMask
+                      disabled={isSaving}
+                      autoComplete="new-password"
+                      placeholder="Confirm password"
+                      className="w-full"
+                      inputClassName={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
+                      onChange={(event) => field.onChange(event.target.value)}
+                    />
+
+                    {fieldState.error && (
+                      <small className="p-error">
+                        {fieldState.error.message}
+                      </small>
+                    )}
+                  </>
+                )}
+              />
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
               <Controller
                 name="is_active"
                 control={control}
-                defaultValue={true}
                 render={({ field }) => (
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="flex items-center justify-between gap-4">
                     <div>
-                      <div className="text-sm font-medium text-slate-800">
-                        {field.value
-                          ? "Account is active"
-                          : "Account is inactive"}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        {field.value
-                          ? "This user can login and access permitted menus."
-                          : "This user cannot login until reactivated."}
-                      </div>
+                      <label
+                        htmlFor="user_is_active"
+                        className="cursor-pointer text-sm font-medium text-slate-700"
+                      >
+                        Active User
+                      </label>
+
+                      <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                        Inactive users cannot log in to the application.
+                      </p>
+
+                      {isEditingSelf && (
+                        <p className="m-0 mt-1 text-xs text-amber-700">
+                          You cannot deactivate your own account.
+                        </p>
+                      )}
                     </div>
 
                     <InputSwitch
-                      id="is_active"
-                      checked={field.value}
-                      onChange={(e) => field.onChange(e.value)}
-                      disabled={isSaving}
+                      inputId="user_is_active"
+                      checked={Boolean(field.value)}
+                      disabled={isSaving || isEditingSelf}
+                      onChange={(event) => field.onChange(event.value)}
                     />
                   </div>
                 )}
               />
             </div>
           </div>
-        </Dialog>
-      </form>
+        </form>
+      </Dialog>
     </>
   );
 };

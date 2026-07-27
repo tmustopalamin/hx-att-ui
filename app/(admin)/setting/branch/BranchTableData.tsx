@@ -1,27 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import useSWR, { mutate } from "swr";
+import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useDispatch } from "react-redux";
-
-import { Branch } from "@/app/types/branch";
-import { Agency } from "@/app/types/agency";
-import {
-  createBranch,
-  deleteBranch,
-  purgeBranch,
-  restoreBranch,
-  updateBranch,
-} from "@/app/services/branch-service";
-import { fetcher } from "@/app/utils/fetcher";
-import {
-  getErrorMessage,
-  isResponseTypeError,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import useSWR from "swr";
 
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -39,6 +20,32 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import {
+  createBranch,
+  deleteBranch,
+  purgeBranch,
+  restoreBranch,
+  updateBranch,
+} from "@/app/services/branch-service";
+
+import { Agency } from "@/app/types/agency";
+import { Branch } from "@/app/types/branch";
+
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
 type StateOption = {
   id: number;
   name: string;
@@ -55,7 +62,7 @@ type CityOption = {
   deleted_at?: string | null;
 };
 
-const emptyForm: Branch = {
+const EMPTY_BRANCH: Branch = {
   id: 0,
   code: "",
   name: "",
@@ -77,154 +84,235 @@ const emptyForm: Branch = {
   row_version: 0,
 };
 
-const BranchFormWatcher = ({
-  control,
-  stateOptions,
-  cityOptions,
-}: {
-  control: any;
-  stateOptions: StateOption[];
-  cityOptions: CityOption[];
-}) => {
+const getBody = () => document.body;
+
+const BranchTableData = () => {
+  const dispatch = useDispatch();
+
+  const profileState = useSelector((state: RootState) => state.profile);
+
+  const [selectedData, setSelectedData] = useState<Branch | null>(null);
+
+  const [globalFilterValue, setGlobalFilterValue] = useState("");
+
+  const [filters, setFilters] = useState({
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
+  });
+
+  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
+    useState(false);
+
+  const [isAddNew, setIsAddNew] = useState(false);
+
+  const [visible, setVisible] = useState(false);
+
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New Branch");
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const currentKey = `/api/branch?show_all=${isShowDeletedDataChecked}`;
+  const agencyKey = "/api/agency?show_all=false";
+  const stateKey = "/api/state?show_all=false";
+  const cityKey = "/api/city?show_all=false";
+
+  const {
+    data: branchData,
+    error,
+    isLoading,
+    isValidating,
+    mutate: refreshBranchData,
+  } = useSWR<Branch[]>(currentKey, fetcher);
+
+  const {
+    data: agencyData,
+    error: agencyError,
+    isLoading: agencyIsLoading,
+    isValidating: agencyIsValidating,
+    mutate: refreshAgencyData,
+  } = useSWR<Agency[]>(agencyKey, fetcher);
+
+  const {
+    data: stateData,
+    error: stateError,
+    isLoading: stateIsLoading,
+    isValidating: stateIsValidating,
+    mutate: refreshStateData,
+  } = useSWR<StateOption[]>(stateKey, fetcher);
+
+  const {
+    data: cityData,
+    error: cityError,
+    isLoading: cityIsLoading,
+    isValidating: cityIsValidating,
+    mutate: refreshCityData,
+  } = useSWR<CityOption[]>(cityKey, fetcher);
+
+  const { control, handleSubmit, setFocus, setValue, reset, clearErrors } =
+    useForm<Branch>({
+      defaultValues: EMPTY_BRANCH,
+      mode: "onTouched",
+    });
+
   const selectedStateId = useWatch({
     control,
     name: "state_id",
   });
 
-  const filteredCities = useMemo(() => {
-    if (!selectedStateId) return [];
-    return cityOptions.filter((city) => city.state_id === selectedStateId);
-  }, [selectedStateId, cityOptions]);
-
-  return (
-    <Controller
-      name="city_id"
-      control={control}
-      rules={{
-        required: "City is required",
-        validate: (value: number) => Number(value) > 0 || "City is required",
-      }}
-      render={({ field, fieldState }) => (
-        <div>
-          <label className="mb-2 block text-sm font-medium">City</label>
-          <Dropdown
-            value={field.value}
-            options={filteredCities}
-            onChange={(e) => field.onChange(e.value)}
-            optionLabel="name"
-            optionValue="id"
-            placeholder={selectedStateId ? "Select city" : "Select state first"}
-            disabled={!selectedStateId}
-            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-          />
-          {fieldState.error && (
-            <small className="p-error">{fieldState.error.message}</small>
-          )}
-        </div>
-      )}
-    />
-  );
-};
-
-const BranchTableData = () => {
-  const dispatch = useDispatch();
-
-  const [selectedData, setSelectedData] = useState<Branch | null>(null);
-  const [globalFilterValue, setGlobalFilterValue] = useState("");
-  const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
-  });
-  const [visible, setVisible] = useState(false);
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
-    useState(false);
-
-  const {
-    control,
-    handleSubmit,
-    formState: { isValid },
-    reset,
-    clearErrors,
-    setFocus,
-  } = useForm<Branch>({
-    defaultValues: emptyForm,
-    mode: "onChange",
-  });
-
-  const branchKey = `/api/branch?show_all=${isShowDeletedDataChecked}`;
-
-  const { data, error, isLoading } = useSWR<Branch[]>(branchKey, fetcher);
-  const { data: agencyData } = useSWR<Agency[]>(
-    "/api/agency?show_all=false",
-    fetcher,
-  );
-  const { data: stateData } = useSWR<StateOption[]>(
-    "/api/state?show_all=false",
-    fetcher,
-  );
-  const { data: cityData } = useSWR<CityOption[]>(
-    "/api/city?show_all=false",
-    fetcher,
-  );
-
-  const activeAgency = useMemo(
-    () => (agencyData ?? []).filter((v) => !v.deleted_at && v.is_active),
+  const activeAgencies = useMemo(
+    () =>
+      (agencyData ?? []).filter(
+        (agency) => agency.is_active && !agency.deleted_at,
+      ),
     [agencyData],
   );
 
-  const activeState = useMemo(
+  const activeStates = useMemo(
     () =>
-      (stateData ?? []).filter((v) => !v.deleted_at && v.is_active !== false),
+      (stateData ?? []).filter(
+        (state) => state.is_active !== false && !state.deleted_at,
+      ),
     [stateData],
   );
 
-  const activeCity = useMemo(
+  const activeCities = useMemo(
     () =>
-      (cityData ?? []).filter((v) => !v.deleted_at && v.is_active !== false),
+      (cityData ?? []).filter(
+        (city) => city.is_active !== false && !city.deleted_at,
+      ),
     [cityData],
   );
 
-  const summary = useMemo(() => {
-    const rows = data ?? [];
-    return {
-      total: rows.length,
-      active: rows.filter((v) => !v.deleted_at && v.is_active).length,
-      inactive: rows.filter((v) => !v.deleted_at && !v.is_active).length,
-      deleted: rows.filter((v) => !!v.deleted_at).length,
-    };
-  }, [data]);
+  const filteredCities = useMemo(() => {
+    const stateId = Number(selectedStateId);
 
-  const refreshList = async () => {
-    await mutate(branchKey);
+    if (stateId <= 0) {
+      return [];
+    }
+
+    return activeCities.filter((city) => Number(city.state_id) === stateId);
+  }, [activeCities, selectedStateId]);
+
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
   };
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setGlobalFilterValue(value);
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const normalizeBranchForm = (data: Branch): Branch => {
+    return {
+      ...data,
+      code: data.code.trim(),
+      name: data.name.trim(),
+      agency_id: data.agency_id ?? null,
+      address: data.address?.trim() || null,
+      postal_code: data.postal_code?.trim() || null,
+      phone_number: data.phone_number?.trim() || null,
+      fax_number: data.fax_number?.trim() || null,
+      nitku_number: data.nitku_number?.trim() || null,
+      npwp15_number: data.npwp15_number.trim(),
+      npwp16_number: data.npwp16_number?.trim() || null,
+    };
+  };
+
+  const handleCloseDialog = () => {
+    setVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+    setPopupHeaderTitle("New Branch");
+    clearErrors();
+    reset(EMPTY_BRANCH);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refreshBranchData(),
+        refreshAgencyData(),
+        refreshStateData(),
+        refreshCityData(),
+      ]);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
     setFilters({
-      global: { value, matchMode: FilterMatchMode.CONTAINS },
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
     });
+
+    setGlobalFilterValue(value);
+  };
+
+  const onShowDeletedChange = (checked: boolean) => {
+    setIsShowDeletedDataChecked(checked);
   };
 
   const onClickNew = () => {
     clearErrors();
     setSelectedData(null);
     setIsAddNew(true);
-    setVisible(true);
     setPopupHeaderTitle("New Branch");
-    reset(emptyForm);
-
-    setTimeout(() => {
-      setFocus("code");
-    }, 0);
+    reset(EMPTY_BRANCH);
+    setVisible(true);
   };
 
-  const onClickEdit = (data: Branch) => {
+  const onClickUpdate = (data: Branch) => {
+    clearErrors();
     setSelectedData(data);
     setIsAddNew(false);
-    setVisible(true);
     setPopupHeaderTitle("Edit Branch");
+
     reset({
       ...data,
       agency_id: data.agency_id ?? null,
@@ -233,308 +321,301 @@ const BranchTableData = () => {
       phone_number: data.phone_number ?? "",
       fax_number: data.fax_number ?? "",
       nitku_number: data.nitku_number ?? "",
+      npwp15_number: data.npwp15_number ?? "",
       npwp16_number: data.npwp16_number ?? "",
       deleted_at: data.deleted_at ?? null,
     });
+
+    setVisible(true);
   };
 
-  const closeDialog = () => {
-    setVisible(false);
-    setSelectedData(null);
-    reset(emptyForm);
-  };
-
-  const handleSubmitNew = async (form: Branch) => {
+  const handleSubmitNew = async (data: Branch) => {
     try {
-      const res = await createBranch({
-        ...form,
-        code: form.code.trim(),
-        name: form.name.trim(),
-        agency_id: form.agency_id ?? null,
-        address: form.address?.trim() || null,
-        postal_code: form.postal_code?.trim() || null,
-        phone_number: form.phone_number?.trim() || null,
-        fax_number: form.fax_number?.trim() || null,
-        nitku_number: form.nitku_number?.trim() || null,
-        npwp15_number: form.npwp15_number.trim(),
-        npwp16_number: form.npwp16_number?.trim() || null,
-      });
+      setIsSaving(true);
 
-      closeDialog();
-      await refreshList();
+      const response = await createBranch(normalizeBranchForm(data));
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Branch created successfully",
-        }),
-      );
+      await refreshBranchData();
+
+      handleCloseDialog();
+
+      showSuccess(response.message ?? "Branch created successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleUpdate = async (form: Branch) => {
-    if (!selectedData) return;
+  const handleUpdate = async (data: Branch) => {
+    if (!selectedData) {
+      showError(new Error("Branch data is not selected."));
+
+      return;
+    }
 
     try {
-      const res = await updateBranch(
+      setIsSaving(true);
+
+      const response = await updateBranch(
         selectedData.id,
         selectedData.row_version,
-        {
-          ...form,
-          code: form.code.trim(),
-          name: form.name.trim(),
-          agency_id: form.agency_id ?? null,
-          address: form.address?.trim() || null,
-          postal_code: form.postal_code?.trim() || null,
-          phone_number: form.phone_number?.trim() || null,
-          fax_number: form.fax_number?.trim() || null,
-          nitku_number: form.nitku_number?.trim() || null,
-          npwp15_number: form.npwp15_number.trim(),
-          npwp16_number: form.npwp16_number?.trim() || null,
-        },
+        normalizeBranchForm(data),
       );
 
-      closeDialog();
-      await refreshList();
+      await refreshBranchData();
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Branch updated successfully",
-        }),
-      );
+      handleCloseDialog();
+
+      showSuccess(response.message ?? "Branch updated successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (data: Branch) => {
     try {
-      const res = await deleteBranch(data.id, data.row_version);
-      await refreshList();
+      const response = await deleteBranch(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Branch deleted successfully",
-        }),
-      );
+      await refreshBranchData();
+
+      showSuccess(response.message ?? "Branch deleted successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
   const handleRestore = async (data: Branch) => {
     try {
-      const res = await restoreBranch(data.id, data.row_version);
-      await refreshList();
+      const response = await restoreBranch(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Branch restored successfully",
-        }),
-      );
+      await refreshBranchData();
+
+      showSuccess(response.message ?? "Branch restored successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
   const handlePurge = async (data: Branch) => {
     try {
-      const res = await purgeBranch(data.id);
-      await refreshList();
+      const response = await purgeBranch(data.id);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Branch permanently deleted",
-        }),
-      );
+      await refreshBranchData();
+
+      showSuccess(response.message ?? "Branch permanently deleted.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
-  const onSubmit = (form: Branch) => {
-    if (!isValid) return;
-    if (isAddNew) {
-      void handleSubmitNew(form);
+  const onSubmit = async (data: Branch) => {
+    if (isSaving) {
       return;
     }
-    void handleUpdate(form);
+
+    if (isAddNew) {
+      await handleSubmitNew(data);
+      return;
+    }
+
+    await handleUpdate(data);
   };
 
   const onClickDelete = (data: Branch) => {
     confirmDialog({
-      message: "Do you want to delete this branch?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      acceptClassName: "p-button-danger",
-      accept: () => {
-        void handleDelete(data);
-      },
+      header: "Delete Branch",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to delete this branch?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handleDelete(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
 
   const onClickRestore = (data: Branch) => {
     confirmDialog({
-      message: "Do you want to restore this branch?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
-      acceptClassName: "p-button-success",
-      accept: () => {
-        void handleRestore(data);
-      },
+      header: "Restore Branch",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to restore this branch?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-refresh",
+      defaultFocus: "accept",
+      accept: () => handleRestore(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
 
   const onClickPurge = (data: Branch) => {
     confirmDialog({
-      message: "Do you want to permanently delete this branch?",
-      header: "Permanent Delete Confirmation",
+      header: "Delete Branch Permanently",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
       icon: "pi pi-exclamation-triangle",
-      acceptClassName: "p-button-danger",
-      accept: () => {
-        void handlePurge(data);
-      },
+      defaultFocus: "reject",
+      accept: () => handlePurge(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
 
-  const activeBodyTemplate = (rowData: Branch) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="warning" />
+  const statusColumnBody = (rowData: Branch) => {
+    if (rowData.deleted_at) {
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    }
+
+    if (rowData.is_active) {
+      return (
+        <Tag
+          value="Active"
+          severity="success"
+          icon="pi pi-check-circle"
+          rounded
+        />
+      );
+    }
+
+    return (
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
     );
   };
 
-  const statusBodyTemplate = (rowData: Branch) => {
-    return rowData.deleted_at ? (
-      <Tag value="Deleted" severity="danger" />
-    ) : (
-      <Tag value="Normal" severity="info" />
-    );
+  const textColumnBody = (value: string | null | undefined) => {
+    if (!value) {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    return <span className="text-sm text-slate-700">{value}</span>;
   };
 
   const actionColumnBody = (rowData: Branch) => {
-    if (rowData.deleted_at) {
+    const isDeleted = Boolean(rowData.deleted_at);
+
+    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+    if (isDeleted) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
       return (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           <Button
-            rounded
-            severity="success"
+            type="button"
             icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
             size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
             onClick={() => onClickRestore(rowData)}
           />
+
           <Button
+            type="button"
+            icon="pi pi-trash"
             rounded
-            severity="secondary"
-            icon="pi pi-times"
+            outlined
+            severity="danger"
             size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
             onClick={() => onClickPurge(rowData)}
           />
         </div>
@@ -542,109 +623,167 @@ const BranchTableData = () => {
     }
 
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
-          rounded
-          severity="help"
+          type="button"
           icon="pi pi-pencil"
-          size="small"
-          onClick={() => onClickEdit(rowData)}
-        />
-        <Button
           rounded
-          severity="danger"
-          icon="pi pi-trash"
+          outlined
+          severity="secondary"
           size="small"
+          tooltip="Edit"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickUpdate(rowData)}
+        />
+
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
           onClick={() => onClickDelete(rowData)}
         />
       </div>
     );
   };
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error)
-    return <ErrorNotConnectedToApi mutateKey="/api/branch?show_all=true" />;
+  const referenceDataLoading =
+    agencyIsLoading || stateIsLoading || cityIsLoading;
+
+  const referenceDataError =
+    Boolean(agencyError) || Boolean(stateError) || Boolean(cityError);
+
+  const allDataValidating =
+    isValidating || agencyIsValidating || stateIsValidating || cityIsValidating;
+
+  const dialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={handleCloseDialog}
+      />
+
+      <Button
+        type="submit"
+        form="branch-form"
+        label={isAddNew ? "Create Branch" : "Save Changes"}
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={isSaving || referenceDataLoading || referenceDataError}
+        className="w-full sm:w-auto"
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
+
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={currentKey} />;
+  }
 
   return (
     <>
       <ConfirmDialog />
 
-      <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Total</p>
-              <h3 className="text-2xl font-semibold">{summary.total}</h3>
-            </div>
-          </Card>
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Active</p>
-              <h3 className="text-2xl font-semibold">{summary.active}</h3>
-            </div>
-          </Card>
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Inactive</p>
-              <h3 className="text-2xl font-semibold">{summary.inactive}</h3>
-            </div>
-          </Card>
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Deleted</p>
-              <h3 className="text-2xl font-semibold">{summary.deleted}</h3>
-            </div>
-          </Card>
-        </div>
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-sitemap text-xl" />
+              </div>
 
-        <Card className="shadow-sm">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Branch</h1>
-                <p className="text-sm text-slate-500">
-                  Manage branch / work location master under agency.
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Branch
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage branch locations, agencies, contact details, and tax
+                  information.
                 </p>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <Checkbox
-                    inputId="showDeletedBranch"
-                    checked={isShowDeletedDataChecked}
-                    onChange={() =>
-                      setIsShowDeletedDataChecked((prev) => !prev)
-                    }
-                  />
-                  <label htmlFor="showDeletedBranch" className="text-sm">
-                    Show deleted data
-                  </label>
-                </div>
-
-                <IconField iconPosition="left">
-                  <InputIcon className="pi pi-search" />
-                  <InputText
-                    value={globalFilterValue}
-                    onChange={onGlobalFilterChange}
-                    placeholder="Search branch"
-                    className="w-full sm:w-72"
-                  />
-                </IconField>
-
-                <Button
-                  label="New Branch"
-                  icon="pi pi-plus"
-                  onClick={onClickNew}
-                />
-              </div>
             </div>
 
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={allDataValidating}
+                disabled={allDataValidating}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
+
+              <Button
+                type="button"
+                label="New Branch"
+                icon="pi pi-plus"
+                size="small"
+                className="w-full sm:w-auto"
+                onClick={onClickNew}
+              />
+            </div>
+          </div>
+
+          {/* Table Toolbar */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="showDeletedData"
+                checked={isShowDeletedDataChecked}
+                onChange={(event) =>
+                  onShowDeletedChange(Boolean(event.checked))
+                }
+              />
+
+              <label
+                htmlFor="showDeletedData"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+
+            <IconField iconPosition="left" className="w-full md:w-80">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Search branch, agency, or location"
+                className="w-full"
+              />
+            </IconField>
+          </div>
+
+          {/* Branch Table */}
+          <div className="w-full overflow-hidden">
             <DataTable
-              value={data ?? []}
-              stripedRows
-              paginator
-              rows={10}
-              rowsPerPageOptions={[10, 25, 50]}
+              value={branchData ?? []}
               dataKey="id"
               filters={filters}
               globalFilterFields={[
@@ -656,342 +795,729 @@ const BranchTableData = () => {
                 "phone_number",
                 "npwp15_number",
               ]}
-              emptyMessage="No branch found."
-              loading={isLoading}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
               scrollable
-              tableStyle={{ minWidth: "90rem" }}
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{
+                minWidth: "86rem",
+              }}
+              emptyMessage="No branch data found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
                 header="#"
                 body={(_, options) => options.rowIndex + 1}
-                style={{ width: "4rem" }}
+                headerStyle={{
+                  width: "4rem",
+                }}
+                bodyStyle={{
+                  width: "4rem",
+                }}
               />
+
               <Column
                 field="code"
                 header="Code"
-                style={{ minWidth: "10rem" }}
+                sortable
+                style={{
+                  minWidth: "10rem",
+                }}
+                body={(rowData: Branch) => (
+                  <span className="font-mono text-sm font-semibold text-slate-700">
+                    {rowData.code}
+                  </span>
+                )}
               />
+
               <Column
                 field="name"
-                header="Name"
-                style={{ minWidth: "14rem" }}
+                header="Branch Name"
+                sortable
+                style={{
+                  minWidth: "18rem",
+                }}
+                body={(rowData: Branch) => (
+                  <span className="font-medium text-slate-800">
+                    {rowData.name}
+                  </span>
+                )}
               />
+
               <Column
                 field="agency_name"
                 header="Agency"
-                style={{ minWidth: "14rem" }}
+                sortable
+                style={{
+                  minWidth: "16rem",
+                }}
+                body={(rowData: Branch) => textColumnBody(rowData.agency_name)}
               />
+
               <Column
                 field="state_name"
-                header="State"
-                style={{ minWidth: "12rem" }}
+                header="Province / State"
+                sortable
+                style={{
+                  minWidth: "16rem",
+                }}
+                body={(rowData: Branch) => textColumnBody(rowData.state_name)}
               />
+
               <Column
                 field="city_name"
                 header="City"
-                style={{ minWidth: "12rem" }}
+                sortable
+                style={{
+                  minWidth: "14rem",
+                }}
+                body={(rowData: Branch) => textColumnBody(rowData.city_name)}
               />
+
               <Column
                 field="phone_number"
                 header="Phone"
-                style={{ minWidth: "10rem" }}
+                sortable
+                style={{
+                  minWidth: "13rem",
+                }}
+                body={(rowData: Branch) => textColumnBody(rowData.phone_number)}
               />
+
               <Column
                 field="npwp15_number"
                 header="NPWP 15"
-                style={{ minWidth: "12rem" }}
+                sortable
+                style={{
+                  minWidth: "15rem",
+                }}
+                body={(rowData: Branch) =>
+                  textColumnBody(rowData.npwp15_number)
+                }
               />
+
               <Column
-                header="Active"
-                body={activeBodyTemplate}
-                style={{ minWidth: "8rem" }}
-              />
-              <Column
+                field="is_active"
                 header="Status"
-                body={statusBodyTemplate}
-                style={{ minWidth: "8rem" }}
+                sortable
+                body={statusColumnBody}
+                style={{
+                  minWidth: "10rem",
+                }}
               />
+
               <Column
                 header="Action"
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
-                style={{ minWidth: "10rem" }}
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                }}
               />
             </DataTable>
           </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "68rem", maxWidth: "95vw" }}
-          onHide={closeDialog}
-          onShow={() => setTimeout(() => setFocus("code"), 0)}
-          breakpoints={{ "960px": "90vw", "640px": "96vw" }}
-          footer={
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                label="Cancel"
-                icon="pi pi-times"
-                className="p-button-text"
-                onClick={closeDialog}
-              />
-              <Button
-                type="submit"
-                label={isAddNew ? "Submit" : "Save"}
-                icon="pi pi-check"
-                disabled={!isValid}
-              />
-            </div>
-          }
+      {/* Branch Form Dialog */}
+      <Dialog
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{
+          width: "95vw",
+          maxWidth: "68rem",
+        }}
+        breakpoints={{
+          "960px": "90vw",
+          "640px": "95vw",
+        }}
+        footer={dialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!isSaving}
+        closable={!isSaving}
+        onHide={handleCloseDialog}
+        onShow={() => {
+          setTimeout(() => {
+            setFocus("code");
+          }, 0);
+        }}
+      >
+        <form
+          id="branch-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-6 pt-2"
         >
-          <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <p className="text-sm font-semibold">Basic Information</p>
+          {/* Basic Information */}
+          <section className="flex flex-col gap-4">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Basic Information
+              </h2>
+
+              <p className="m-0 mt-1 text-xs text-slate-500">
+                Main identification and owning agency.
+              </p>
             </div>
 
-            <Controller
-              name="code"
-              control={control}
-              rules={{ required: "Code is required" }}
-              render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Code</label>
-                  <InputText
-                    {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </div>
-              )}
-            />
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="code"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Branch Code
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
 
-            <Controller
-              name="name"
-              control={control}
-              rules={{ required: "Name is required" }}
-              render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Name</label>
-                  <InputText
-                    {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </div>
-              )}
-            />
-
-            <Controller
-              name="agency_id"
-              control={control}
-              rules={{
-                required: "Agency is required",
-                validate: (value) => !!value || "Agency is required",
-              }}
-              render={({ field, fieldState }) => (
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">
-                    Agency
-                  </label>
-                  <Dropdown
-                    value={field.value}
-                    options={activeAgency}
-                    onChange={(e) => field.onChange(e.value)}
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Select agency"
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </div>
-              )}
-            />
-
-            <div className="md:col-span-2">
-              <p className="text-sm font-semibold">Location</p>
-            </div>
-
-            <Controller
-              name="state_id"
-              control={control}
-              rules={{
-                required: "State is required",
-                validate: (value) => Number(value) > 0 || "State is required",
-              }}
-              render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    State
-                  </label>
-                  <Dropdown
-                    value={field.value}
-                    options={activeState}
-                    onChange={(e) => field.onChange(e.value)}
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder="Select state"
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </div>
-              )}
-            />
-
-            <BranchFormWatcher
-              control={control}
-              stateOptions={activeState}
-              cityOptions={activeCity}
-            />
-
-            <Controller
-              name="postal_code"
-              control={control}
-              render={({ field }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Postal Code
-                  </label>
-                  <InputText {...field} className="w-full" />
-                </div>
-              )}
-            />
-
-            <Controller
-              name="address"
-              control={control}
-              render={({ field }) => (
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">
-                    Address
-                  </label>
-                  <InputTextarea {...field} rows={3} className="w-full" />
-                </div>
-              )}
-            />
-
-            <div className="md:col-span-2">
-              <p className="text-sm font-semibold">Contact & Tax</p>
-            </div>
-
-            <Controller
-              name="phone_number"
-              control={control}
-              render={({ field }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Phone
-                  </label>
-                  <InputText {...field} className="w-full" />
-                </div>
-              )}
-            />
-
-            <Controller
-              name="fax_number"
-              control={control}
-              render={({ field }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Fax</label>
-                  <InputText {...field} className="w-full" />
-                </div>
-              )}
-            />
-
-            <Controller
-              name="nitku_number"
-              control={control}
-              render={({ field }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    NITKU Number
-                  </label>
-                  <InputText {...field} className="w-full" />
-                </div>
-              )}
-            />
-
-            <Controller
-              name="npwp15_number"
-              control={control}
-              rules={{ required: "NPWP 15 is required" }}
-              render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    NPWP 15 Number
-                  </label>
-                  <InputText
-                    {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </div>
-              )}
-            />
-
-            <Controller
-              name="npwp16_number"
-              control={control}
-              render={({ field }) => (
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">
-                    NPWP 16 Number
-                  </label>
-                  <InputText {...field} className="w-full" />
-                </div>
-              )}
-            />
-
-            <div className="md:col-span-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <Controller
-                  name="is_active"
+                  name="code"
                   control={control}
-                  render={({ field }) => (
-                    <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
-                      <div>
-                        <p className="text-sm font-semibold">Active</p>
-                        <p className="text-xs text-slate-500">
-                          Enable if this branch can be selected in employee
-                          employment.
-                        </p>
-                      </div>
-                      <InputSwitch
-                        checked={!!field.value}
-                        onChange={(e) => field.onChange(e.value)}
+                  rules={{
+                    required: "Branch code is required.",
+                    validate: {
+                      noSpaces: (value) =>
+                        !/\s/.test(value) ||
+                        "Branch code must not contain spaces.",
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        id="code"
+                        autoComplete="off"
+                        placeholder="Example: JKT01"
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
                       />
-                    </div>
+
+                      {fieldState.error ? (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      ) : (
+                        <small className="text-slate-500">
+                          Use a short and unique branch code.
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Branch Name
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="name"
+                  control={control}
+                  rules={{
+                    required: "Branch name is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        id="name"
+                        autoComplete="off"
+                        placeholder="Example: Jakarta Head Office"
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label
+                  htmlFor="agency_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Agency
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="agency_id"
+                  control={control}
+                  rules={{
+                    required: "Agency is required.",
+                    validate: (value) =>
+                      Number(value) > 0 || "Agency is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="agency_id"
+                        appendTo={getBody}
+                        value={field.value ?? null}
+                        options={activeAgencies}
+                        optionLabel="name"
+                        optionValue="id"
+                        filter
+                        loading={agencyIsLoading}
+                        disabled={agencyIsLoading || Boolean(agencyError)}
+                        placeholder={
+                          agencyIsLoading
+                            ? "Loading agencies..."
+                            : "Select an agency"
+                        }
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) => field.onChange(event.value)}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+
+                      {!fieldState.error && !agencyError && (
+                        <small className="text-slate-500">
+                          Select the agency that owns this branch.
+                        </small>
+                      )}
+
+                      {agencyError && (
+                        <small className="p-error">
+                          Agencies could not be loaded. Refresh the page and try
+                          again.
+                        </small>
+                      )}
+                    </>
                   )}
                 />
               </div>
             </div>
+          </section>
+
+          {/* Location */}
+          <section className="flex flex-col gap-4">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Location
+              </h2>
+
+              <p className="m-0 mt-1 text-xs text-slate-500">
+                Province, city, postal code, and complete address.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="state_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Province / State
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="state_id"
+                  control={control}
+                  rules={{
+                    required: "Province / state is required.",
+                    validate: (value) =>
+                      Number(value) > 0 || "Province / state is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="state_id"
+                        appendTo={getBody}
+                        value={field.value || null}
+                        options={activeStates}
+                        optionLabel="name"
+                        optionValue="id"
+                        filter
+                        loading={stateIsLoading}
+                        disabled={stateIsLoading || Boolean(stateError)}
+                        placeholder={
+                          stateIsLoading
+                            ? "Loading provinces..."
+                            : "Select a province / state"
+                        }
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) => {
+                          field.onChange(event.value);
+
+                          setValue("city_id", 0, {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          });
+                        }}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+
+                      {stateError && (
+                        <small className="p-error">
+                          Provinces could not be loaded. Refresh the page and
+                          try again.
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="city_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  City
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="city_id"
+                  control={control}
+                  rules={{
+                    required: "City is required.",
+                    validate: (value) =>
+                      Number(value) > 0 || "City is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="city_id"
+                        appendTo={getBody}
+                        value={field.value || null}
+                        options={filteredCities}
+                        optionLabel="name"
+                        optionValue="id"
+                        filter
+                        loading={cityIsLoading}
+                        disabled={
+                          !selectedStateId ||
+                          Number(selectedStateId) <= 0 ||
+                          cityIsLoading ||
+                          Boolean(cityError)
+                        }
+                        placeholder={
+                          cityIsLoading
+                            ? "Loading cities..."
+                            : Number(selectedStateId) > 0
+                              ? "Select a city"
+                              : "Select province / state first"
+                        }
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) => field.onChange(event.value)}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+
+                      {cityError && (
+                        <small className="p-error">
+                          Cities could not be loaded. Refresh the page and try
+                          again.
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="postal_code"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Postal Code
+                </label>
+
+                <Controller
+                  name="postal_code"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        value={field.value ?? ""}
+                        id="postal_code"
+                        autoComplete="off"
+                        placeholder="Example: 12930"
+                        className="w-full"
+                      />
+
+                      <small className="text-slate-500">
+                        Optional branch postal code.
+                      </small>
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label
+                  htmlFor="address"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Address
+                </label>
+
+                <Controller
+                  name="address"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <InputTextarea
+                        {...field}
+                        value={field.value ?? ""}
+                        id="address"
+                        rows={3}
+                        autoResize
+                        placeholder="Enter the branch's complete address"
+                        className="w-full"
+                      />
+
+                      <small className="text-slate-500">
+                        Complete street and location information.
+                      </small>
+                    </>
+                  )}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Contact and Tax */}
+          <section className="flex flex-col gap-4">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Contact & Tax
+              </h2>
+
+              <p className="m-0 mt-1 text-xs text-slate-500">
+                Contact numbers and branch tax identifiers.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="phone_number"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Phone Number
+                </label>
+
+                <Controller
+                  name="phone_number"
+                  control={control}
+                  render={({ field }) => (
+                    <InputText
+                      {...field}
+                      value={field.value ?? ""}
+                      id="phone_number"
+                      autoComplete="off"
+                      placeholder="Example: +62 21 1234 5678"
+                      className="w-full"
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="fax_number"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Fax Number
+                </label>
+
+                <Controller
+                  name="fax_number"
+                  control={control}
+                  render={({ field }) => (
+                    <InputText
+                      {...field}
+                      value={field.value ?? ""}
+                      id="fax_number"
+                      autoComplete="off"
+                      placeholder="Optional fax number"
+                      className="w-full"
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="nitku_number"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  NITKU Number
+                </label>
+
+                <Controller
+                  name="nitku_number"
+                  control={control}
+                  render={({ field }) => (
+                    <InputText
+                      {...field}
+                      value={field.value ?? ""}
+                      id="nitku_number"
+                      autoComplete="off"
+                      placeholder="Enter NITKU number"
+                      className="w-full"
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="npwp15_number"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  NPWP 15 Number
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="npwp15_number"
+                  control={control}
+                  rules={{
+                    required: "NPWP 15 number is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        value={field.value ?? ""}
+                        id="npwp15_number"
+                        autoComplete="off"
+                        placeholder="Enter NPWP 15 number"
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label
+                  htmlFor="npwp16_number"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  NPWP 16 Number
+                </label>
+
+                <Controller
+                  name="npwp16_number"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        value={field.value ?? ""}
+                        id="npwp16_number"
+                        autoComplete="off"
+                        placeholder="Enter NPWP 16 number"
+                        className="w-full"
+                      />
+
+                      <small className="text-slate-500">
+                        Optional 16-digit NPWP identifier.
+                      </small>
+                    </>
+                  )}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Active Status */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <Controller
+              name="is_active"
+              control={control}
+              defaultValue
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active Status
+                    </label>
+
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive branches remain stored but should not be
+                      available for new employee employment records.
+                    </p>
+                  </div>
+
+                  <InputSwitch
+                    id="is_active"
+                    checked={Boolean(field.value)}
+                    onChange={(event) => field.onChange(event.value)}
+                  />
+                </div>
+              )}
+            />
           </div>
-        </Dialog>
-      </form>
+        </form>
+      </Dialog>
     </>
   );
 };

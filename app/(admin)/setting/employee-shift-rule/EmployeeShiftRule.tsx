@@ -1,526 +1,949 @@
 "use client";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { ChangeEvent, useMemo, useState } from "react";
+import useSWR from "swr";
+import { useRouter } from "next/navigation";
+import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
-import { useState } from "react";
-import useSWR, { mutate } from "swr";
-import { fetcher } from "@/app/utils/fetcher";
-import { useDispatch, useSelector } from "react-redux";
-import { Tag } from "primereact/tag";
+import { Calendar } from "primereact/calendar";
+import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
-import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+
+import { useDispatch, useSelector } from "react-redux";
+
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import { EmployeeShiftRule } from "@/app/types/employee-shift-rule";
-import dayjs from "dayjs";
-import {
-  ResponseType,
-  ResponseTypeCreateSuccess,
-} from "@/app/types/response-type";
+
 import {
   deleteEmployeeShiftRule,
   restoreEmployeeShiftRule,
 } from "@/app/services/employee-shift-rule-service";
-import { showToast } from "@/store/ToastSlice";
+
+import { EmployeeShiftRule } from "@/app/types/employee-shift-rule";
 import {
-  isResponseTypeError,
+  ResponseType,
+  ResponseTypeCreateSuccess,
+} from "@/app/types/response-type";
+
+import {
   getErrorMessage,
+  isResponseTypeError,
 } from "@/app/utils/error-messages";
-import { useRouter } from "next/navigation";
-import { Calendar } from "primereact/calendar";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
-// Quick filter preset type
 type QuickFilter =
-  "this_week" | "this_month" | "next_month" | "last_month" | null;
+  "this_week" | "this_month" | "last_month" | "next_month" | null;
+
+type DateRangeValue = (Date | null)[] | null;
+
+type ProcessingAction = "delete" | "restore" | null;
+
+const QUICK_FILTERS: {
+  label: string;
+  value: Exclude<QuickFilter, null>;
+}[] = [
+  {
+    label: "This Week",
+    value: "this_week",
+  },
+  {
+    label: "This Month",
+    value: "this_month",
+  },
+  {
+    label: "Last Month",
+    value: "last_month",
+  },
+  {
+    label: "Next Month",
+    value: "next_month",
+  },
+];
+
+const getBody = () => document.body;
 
 const getQuickFilterRange = (type: QuickFilter): [Date, Date] | null => {
-  if (!type) return null;
+  if (!type) {
+    return null;
+  }
+
   const now = dayjs();
+
   switch (type) {
     case "this_week":
       return [now.startOf("week").toDate(), now.endOf("week").toDate()];
+
     case "this_month":
       return [now.startOf("month").toDate(), now.endOf("month").toDate()];
-    case "next_month":
+
+    case "last_month": {
+      const previousMonth = now.subtract(1, "month");
+
       return [
-        now.add(1, "month").startOf("month").toDate(),
-        now.add(1, "month").endOf("month").toDate(),
+        previousMonth.startOf("month").toDate(),
+        previousMonth.endOf("month").toDate(),
       ];
-    case "last_month":
+    }
+
+    case "next_month": {
+      const followingMonth = now.add(1, "month");
+
       return [
-        now.subtract(1, "month").startOf("month").toDate(),
-        now.subtract(1, "month").endOf("month").toDate(),
+        followingMonth.startOf("month").toDate(),
+        followingMonth.endOf("month").toDate(),
       ];
+    }
+
     default:
       return null;
   }
 };
 
-const QUICK_FILTERS: { label: string; value: QuickFilter }[] = [
-  { label: "This Week", value: "this_week" },
-  { label: "This Month", value: "this_month" },
-  { label: "Last Month", value: "last_month" },
-  { label: "Next Month", value: "next_month" },
-];
-
 const EmployeeShiftRuleTableData = () => {
   const router = useRouter();
   const dispatch = useDispatch();
+
   const profileState = useSelector((state: RootState) => state.profile);
 
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
-  const [dateRange, setDateRange] = useState<Date[] | null>(null);
+
+  const [dateRange, setDateRange] = useState<DateRangeValue>(null);
+
   const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>(null);
 
+  const [processingRowId, setProcessingRowId] = useState<number | null>(null);
+
+  const [processingAction, setProcessingAction] =
+    useState<ProcessingAction>(null);
+
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
   });
 
-  const { data, error, isLoading } = useSWR<EmployeeShiftRule[]>(
-    `/api/shift-employee?show_all=${isShowDeletedDataChecked}`,
-    fetcher,
-  );
+  const currentKey = `/api/shift-employee?show_all=${isShowDeletedDataChecked}`;
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return (
-      <ErrorNotConnectedToApi
-        mutateKey={`/api/shift-employee?show_all=${isShowDeletedDataChecked}`}
-      />
-    );
-  }
+  const {
+    data: employeeShiftRuleData,
+    error,
+    isLoading,
+    isValidating,
+    mutate: refreshEmployeeShiftRuleData,
+  } = useSWR<EmployeeShiftRule[]>(currentKey, fetcher);
 
-  // ─── Filtered Data ───────────────────────────────────────────────────────────
-  const activeDateRange: Date[] | null = (() => {
+  const activeDateRange = useMemo<[Date, Date] | null>(() => {
     if (activeQuickFilter) {
-      const range = getQuickFilterRange(activeQuickFilter);
-      return range ? range : null;
+      return getQuickFilterRange(activeQuickFilter);
     }
-    return dateRange;
-  })();
 
-  const filteredData = data?.filter((item) => {
-    if (!activeDateRange || activeDateRange.length !== 2) return true;
+    const start = dateRange?.[0];
+    const end = dateRange?.[1];
+
+    if (start instanceof Date && end instanceof Date) {
+      return [start, end];
+    }
+
+    return null;
+  }, [activeQuickFilter, dateRange]);
+
+  const filteredData = useMemo(() => {
+    const data = employeeShiftRuleData ?? [];
+
+    if (!activeDateRange) {
+      return data;
+    }
+
+    const [rangeStart, rangeEnd] = activeDateRange;
+
+    const startDate = dayjs(rangeStart).startOf("day");
+
+    const endDate = dayjs(rangeEnd).endOf("day");
+
+    return data.filter((item) => {
+      if (!item.effective_from) {
+        return false;
+      }
+
+      const effectiveFrom = dayjs(item.effective_from);
+
+      const effectiveTo = item.effective_to ? dayjs(item.effective_to) : null;
+
+      if (!effectiveFrom.isValid()) {
+        return false;
+      }
+
+      if (effectiveTo && !effectiveTo.isValid()) {
+        return false;
+      }
+
+      /*
+       * Menampilkan assignment yang
+       * periodenya beririsan dengan
+       * periode filter.
+       */
+      return (
+        effectiveFrom.isSameOrBefore(endDate) &&
+        (effectiveTo === null || effectiveTo.isSameOrAfter(startDate))
+      );
+    });
+  }, [employeeShiftRuleData, activeDateRange]);
+
+  const dateRangeLabel = useMemo(() => {
+    if (!activeDateRange) {
+      return null;
+    }
+
     const [start, end] = activeDateRange;
-    if (!start || !end) return true;
 
-    const startDate = dayjs(start).startOf("day");
-    const endDate = dayjs(end).endOf("day");
-    const effectiveFrom = dayjs(item.effective_from);
-    // Handle null effective_to → berlaku selamanya
-    const effectiveTo = item.effective_to ? dayjs(item.effective_to) : null;
+    return `${dayjs(start).format("DD MMM YYYY")} – ${dayjs(end).format(
+      "DD MMM YYYY",
+    )}`;
+  }, [activeDateRange]);
 
-    return (
-      effectiveFrom.isSameOrBefore(endDate) &&
-      (effectiveTo === null || effectiveTo.isSameOrAfter(startDate))
+  const isFilterActive =
+    Boolean(globalFilterValue) ||
+    Boolean(activeQuickFilter) ||
+    Boolean(dateRange?.some((value) => value instanceof Date));
+
+  const isProcessing = processingRowId !== null;
+
+  const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
     );
-  });
+  };
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFilters({ ...filters, global: { ...filters.global, value } });
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshEmployeeShiftRuleData();
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    setFilters({
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
+
     setGlobalFilterValue(value);
   };
 
-  const handleQuickFilter = (type: QuickFilter) => {
-    if (activeQuickFilter === type) {
-      // toggle off
-      setActiveQuickFilter(null);
-    } else {
-      setActiveQuickFilter(type);
-      setDateRange(null); // clear manual range
-    }
+  const handleQuickFilter = (type: Exclude<QuickFilter, null>) => {
+    setActiveQuickFilter((currentValue) =>
+      currentValue === type ? null : type,
+    );
+
+    setDateRange(null);
   };
 
-  const handleManualDateChange = (value: Date[]) => {
+  const handleManualDateChange = (value: DateRangeValue) => {
     setDateRange(value);
-    setActiveQuickFilter(null); // clear quick filter
+    setActiveQuickFilter(null);
   };
 
   const handleClearFilter = () => {
     setGlobalFilterValue("");
     setDateRange(null);
     setActiveQuickFilter(null);
-    setFilters({ global: { value: "", matchMode: FilterMatchMode.CONTAINS } });
+
+    setFilters({
+      global: {
+        value: "",
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
   };
 
-  const isFilterActive =
-    !!globalFilterValue ||
-    !!activeQuickFilter ||
-    (dateRange && dateRange.some(Boolean));
+  const handleDelete = async (rowData: EmployeeShiftRule) => {
+    try {
+      setProcessingRowId(rowData.id);
+      setProcessingAction("delete");
 
-  // ─── Column Bodies ────────────────────────────────────────────────────────────
-  const activeColumnBody = (rowData: EmployeeShiftRule) =>
-    rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await deleteEmployeeShiftRule(rowData.id, rowData.row_version);
 
-  const columnFormatDateEffectiveFrom = (rowData: EmployeeShiftRule) =>
-    rowData.effective_from
-      ? dayjs(rowData.effective_from).format("DD-MM-YYYY")
-      : "";
+      await refreshEmployeeShiftRuleData();
 
-  const columnFormatDateEffectiveTo = (rowData: EmployeeShiftRule) =>
-    rowData.effective_to
-      ? dayjs(rowData.effective_to).format("DD-MM-YYYY")
-      : "∞";
+      showSuccess(
+        response.message || "Employee shift rule deleted successfully.",
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
 
-  // ─── Delete / Restore ─────────────────────────────────────────────────────────
-  const showConfirmDialog = (
-    message: string,
-    header: string,
-    acceptSeverity: "danger" | "success",
-    onAccept: () => void,
-  ) => {
+  const handleRestore = async (rowData: EmployeeShiftRule) => {
+    try {
+      setProcessingRowId(rowData.id);
+      setProcessingAction("restore");
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await restoreEmployeeShiftRule(rowData.id, rowData.row_version);
+
+      await refreshEmployeeShiftRuleData();
+
+      showSuccess(
+        response.message || "Employee shift rule restored successfully.",
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const onClickDelete = (rowData: EmployeeShiftRule) => {
     confirmDialog({
-      message,
-      header,
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: onAccept,
-      reject: () => {},
+      header: "Delete Employee Shift Rule",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to delete this employee shift assignment?
+          </span>
+
+          <span className="font-semibold text-slate-800">
+            {rowData.employee_name}
+          </span>
+
+          <span className="text-sm text-slate-500">
+            {rowData.shift_rule_name}
+          </span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => {
+        void handleDelete(rowData);
+      },
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className={
-              acceptSeverity === "danger"
-                ? "p-button-danger"
-                : "p-button-success"
-            }
           />
         </div>
       ),
     });
   };
 
-  const handleDelete = async (rowData: EmployeeShiftRule) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await deleteEmployeeShiftRule(rowData.id, rowData.row_version);
-      mutate(`/api/shift-employee?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      const detail = isResponseTypeError(err)
-        ? getErrorMessage(err, "message")
-        : err instanceof Error
-          ? err.message
-          : "Unknown error";
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail,
-        }),
-      );
-    }
+  const onClickRestore = (rowData: EmployeeShiftRule) => {
+    confirmDialog({
+      header: "Restore Employee Shift Rule",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to restore this employee shift assignment?
+          </span>
+
+          <span className="font-semibold text-slate-800">
+            {rowData.employee_name}
+          </span>
+
+          <span className="text-sm text-slate-500">
+            {rowData.shift_rule_name}
+          </span>
+        </div>
+      ),
+      icon: "pi pi-refresh",
+      defaultFocus: "accept",
+      accept: () => {
+        void handleRestore(rowData);
+      },
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
+            onClick={options.accept}
+          />
+        </div>
+      ),
+    });
   };
 
-  const handleRestore = async (rowData: EmployeeShiftRule) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await restoreEmployeeShiftRule(rowData.id, rowData.row_version);
-      mutate(`/api/shift-employee?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      const detail = isResponseTypeError(err)
-        ? getErrorMessage(err, "message")
-        : err instanceof Error
-          ? err.message
-          : "Unknown error";
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail,
-        }),
-      );
+  const employeeColumnBody = (rowData: EmployeeShiftRule) => {
+    if (!rowData.employee_name) {
+      return <span className="text-sm text-slate-400">Unknown employee</span>;
     }
+
+    return (
+      <span className="font-medium text-slate-800">
+        {rowData.employee_name}
+      </span>
+    );
   };
 
-  const onClickDelete = (rowData: EmployeeShiftRule) =>
-    showConfirmDialog(
-      "Do you want to delete this record?",
-      "Delete Confirmation",
-      "danger",
-      () => handleDelete(rowData),
-    );
+  const shiftRuleColumnBody = (rowData: EmployeeShiftRule) => {
+    if (!rowData.shift_rule_name) {
+      return <span className="text-sm text-slate-400">Unknown shift rule</span>;
+    }
 
-  const onClickRestore = (rowData: EmployeeShiftRule) =>
-    showConfirmDialog(
-      "Do you want to restore this record?",
-      "Restore Confirmation",
-      "success",
-      () => handleRestore(rowData),
+    return (
+      <span className="text-sm text-slate-700">{rowData.shift_rule_name}</span>
     );
+  };
 
-  const actionColumnBody = (rowData: EmployeeShiftRule) => (
-    <div className="flex gap-2">
-      {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
-        <Button
-          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-          tooltip="restore"
+  const effectiveFromColumnBody = (rowData: EmployeeShiftRule) => {
+    if (!rowData.effective_from) {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    const date = dayjs(rowData.effective_from);
+
+    if (!date.isValid()) {
+      return <span className="text-sm text-slate-400">Invalid date</span>;
+    }
+
+    return (
+      <span className="whitespace-nowrap text-sm text-slate-700">
+        {date.format("DD MMM YYYY")}
+      </span>
+    );
+  };
+
+  const effectiveToColumnBody = (rowData: EmployeeShiftRule) => {
+    if (!rowData.effective_to) {
+      return (
+        <Tag
+          value="No end date"
+          severity="info"
+          icon="pi pi-infinity"
           rounded
-          severity="success"
-          icon="pi pi-refresh"
-          size="small"
-          onClick={() => onClickRestore(rowData)}
         />
-      )}
-      {!rowData.deleted_at && (
-        <Button
-          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-          tooltip="delete"
+      );
+    }
+
+    const date = dayjs(rowData.effective_to);
+
+    if (!date.isValid()) {
+      return <span className="text-sm text-slate-400">Invalid date</span>;
+    }
+
+    return (
+      <span className="whitespace-nowrap text-sm text-slate-700">
+        {date.format("DD MMM YYYY")}
+      </span>
+    );
+  };
+
+  const periodColumnBody = (rowData: EmployeeShiftRule) => {
+    const effectiveFrom = rowData.effective_from
+      ? dayjs(rowData.effective_from)
+      : null;
+
+    const effectiveTo = rowData.effective_to
+      ? dayjs(rowData.effective_to)
+      : null;
+
+    if (!effectiveFrom || !effectiveFrom.isValid()) {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    if (!effectiveTo || !effectiveTo.isValid()) {
+      return (
+        <span className="whitespace-nowrap text-sm text-slate-700">
+          {effectiveFrom.format("DD MMM YYYY")} onward
+        </span>
+      );
+    }
+
+    return (
+      <span className="whitespace-nowrap text-sm text-slate-700">
+        {effectiveFrom.format("DD MMM YYYY")} –{" "}
+        {effectiveTo.format("DD MMM YYYY")}
+      </span>
+    );
+  };
+
+  const statusColumnBody = (rowData: EmployeeShiftRule) => {
+    if (rowData.deleted_at) {
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    }
+
+    if (rowData.is_active) {
+      return (
+        <Tag
+          value="Active"
+          severity="success"
+          icon="pi pi-check-circle"
           rounded
-          severity="danger"
+        />
+      );
+    }
+
+    return (
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
+    );
+  };
+
+  const actionColumnBody = (rowData: EmployeeShiftRule) => {
+    const isDeleted = Boolean(rowData.deleted_at);
+
+    const isCurrentRowProcessing = processingRowId === rowData.id;
+
+    if (isDeleted) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
+      return (
+        <div className="flex flex-nowrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            loading={isCurrentRowProcessing && processingAction === "restore"}
+            disabled={isProcessing}
+            onClick={() => onClickRestore(rowData)}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        <Button
+          type="button"
           icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
           size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          loading={isCurrentRowProcessing && processingAction === "delete"}
+          disabled={isProcessing}
           onClick={() => onClickDelete(rowData)}
         />
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
-  // ─── Date range label for display ─────────────────────────────────────────────
-  const dateRangeLabel = (() => {
-    if (activeQuickFilter) {
-      const range = getQuickFilterRange(activeQuickFilter);
-      if (range) {
-        return `${dayjs(range[0]).format("DD MMM YYYY")} – ${dayjs(range[1]).format("DD MMM YYYY")}`;
-      }
-    }
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      return `${dayjs(dateRange[0]).format("DD MMM YYYY")} – ${dayjs(dateRange[1]).format("DD MMM YYYY")}`;
-    }
-    return null;
-  })();
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={currentKey} />;
+  }
+
   return (
     <>
       <ConfirmDialog />
-      <Card>
-        <div className="p-4 flex flex-col gap-4">
-          {/* HEADER */}
-          <div className="border-b pb-4 space-y-4">
-            {/* TOP: TITLE + ACTION */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div>
-                <div className="text-2xl font-semibold">
-                  Employee Shift Rule
-                </div>
-                <div className="text-sm text-gray-500">
-                  Manage employee shift configurations
-                </div>
+
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-calendar-clock text-xl" />
               </div>
-              <div className="flex justify-end">
-                <Button
-                  label="Assign"
-                  icon="pi pi-link"
-                  size="small"
-                  onClick={() =>
-                    router.push("/setting/employee-shift-rule/assign")
-                  }
-                />
+
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Employee Shift Rule
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage employee shift assignments and their effective periods.
+                </p>
               </div>
             </div>
 
-            {/* FILTER SECTION */}
-            <div className="flex flex-col gap-3">
-              {/* ROW 1: Label + Quick Filters */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2">
-                <span className="text-sm font-medium text-gray-600 whitespace-nowrap">
-                  Effective Period:
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {QUICK_FILTERS.map((qf) => (
-                    <Button
-                      key={qf.value}
-                      label={qf.label}
-                      size="small"
-                      severity={
-                        activeQuickFilter === qf.value ? undefined : "secondary"
-                      }
-                      outlined={activeQuickFilter !== qf.value}
-                      onClick={() => handleQuickFilter(qf.value)}
-                      className="text-xs"
-                    />
-                  ))}
-                </div>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                disabled={isValidating || isProcessing}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
+
+              <Button
+                type="button"
+                label="Assign Shift Rule"
+                icon="pi pi-link"
+                size="small"
+                disabled={isProcessing}
+                className="w-full sm:w-auto"
+                onClick={() =>
+                  router.push("/setting/employee-shift-rule/assign")
+                }
+              />
+            </div>
+          </div>
+
+          {/* Period Filter */}
+          <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div>
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Effective Period Filter
+              </h2>
+
+              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                Show assignments whose effective periods overlap the selected
+                date range.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {QUICK_FILTERS.map((quickFilter) => {
+                const isActive = activeQuickFilter === quickFilter.value;
+
+                return (
+                  <Button
+                    key={quickFilter.value}
+                    type="button"
+                    label={quickFilter.label}
+                    size="small"
+                    severity={isActive ? undefined : "secondary"}
+                    outlined={!isActive}
+                    onClick={() => handleQuickFilter(quickFilter.value)}
+                  />
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(16rem,22rem)_minmax(16rem,1fr)_auto] lg:items-end">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="effective_period"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Custom Date Range
+                </label>
+
+                <Calendar
+                  id="effective_period"
+                  appendTo={getBody}
+                  value={dateRange}
+                  selectionMode="range"
+                  readOnlyInput
+                  hideOnRangeSelection
+                  showIcon
+                  dateFormat="dd M yy"
+                  placeholder="Select date range"
+                  className="w-full"
+                  onChange={(event) =>
+                    handleManualDateChange(
+                      (event.value as DateRangeValue) ?? null,
+                    )
+                  }
+                />
               </div>
 
-              {/* ROW 2: Manual Date Range + Search + Show Deleted + Clear */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2 flex-wrap justify-between">
-                {/* LEFT: Manual range + search */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 whitespace-nowrap">
-                      Custom range:
-                    </span>
-                    <Calendar
-                      value={dateRange as Date[]}
-                      onChange={(e) =>
-                        handleManualDateChange(e.value as Date[])
-                      }
-                      selectionMode="range"
-                      readOnlyInput
-                      hideOnRangeSelection
-                      placeholder="Pick date range"
-                      dateFormat="dd-mm-yy"
-                      className="p-inputtext-sm w-full md:w-[220px]"
-                    />
-                  </div>
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="employee_shift_search"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Search
+                </label>
 
-                  <div className="w-full md:w-[220px]">
-                    <IconField iconPosition="left">
-                      <InputIcon className="pi pi-search" />
-                      <InputText
-                        className="p-inputtext-sm w-full"
-                        value={globalFilterValue}
-                        onChange={onGlobalFilterChange}
-                        placeholder="Search employee / shift"
-                      />
-                    </IconField>
-                  </div>
-                </div>
+                <IconField iconPosition="left" className="w-full">
+                  <InputIcon className="pi pi-search" />
 
-                {/* RIGHT: Show deleted + Clear */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 whitespace-nowrap">
-                    <Checkbox
-                      inputId="showDeletedData"
-                      checked={isShowDeletedDataChecked}
-                      onChange={() =>
-                        setIsShowDeletedDataChecked(!isShowDeletedDataChecked)
-                      }
-                    />
-                    <label htmlFor="showDeletedData" className="text-sm">
-                      Show deleted
-                    </label>
-                  </div>
-
-                  {isFilterActive && (
-                    <Button
-                      label="Clear"
-                      icon="pi pi-times"
-                      severity="secondary"
-                      size="small"
-                      onClick={handleClearFilter}
-                    />
-                  )}
-                </div>
+                  <InputText
+                    id="employee_shift_search"
+                    value={globalFilterValue}
+                    onChange={onGlobalFilterChange}
+                    placeholder="Search employee or shift rule"
+                    className="w-full"
+                  />
+                </IconField>
               </div>
 
-              {/* ROW 3: Active filter info badge */}
+              <Button
+                type="button"
+                label="Clear Filters"
+                icon="pi pi-filter-slash"
+                severity="secondary"
+                outlined
+                disabled={!isFilterActive}
+                className="w-full lg:w-auto"
+                onClick={handleClearFilter}
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="showDeletedData"
+                  checked={isShowDeletedDataChecked}
+                  onChange={(event) =>
+                    setIsShowDeletedDataChecked(Boolean(event.checked))
+                  }
+                />
+
+                <label
+                  htmlFor="showDeletedData"
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Show deleted records
+                </label>
+              </div>
+
               {dateRangeLabel && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">
-                    Showing shift active during:
-                  </span>
-                  <span className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">
-                    📅 {dateRangeLabel}
-                  </span>
-                  <span className="text-xs text-gray-400">
-                    ({filteredData?.length ?? 0} result
-                    {filteredData?.length !== 1 ? "s" : ""})
+                <div className="flex flex-wrap items-center gap-2">
+                  <Tag
+                    value={dateRangeLabel}
+                    severity="info"
+                    icon="pi pi-calendar"
+                    rounded
+                  />
+
+                  <span className="text-xs text-slate-500">
+                    {filteredData.length} result
+                    {filteredData.length === 1 ? "" : "s"}
                   </span>
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* TABLE */}
-          <DataTable
-            value={filteredData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={[
-              "employee_name",
-              "shift_rule_name",
-              "effective_from",
-              "effective_to",
-              "is_active",
-            ]}
-            emptyMessage="No data found."
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: "3rem" }}
-              body={(_data, options) => options.rowIndex + 1}
-            />
-            <Column field="employee_name" header="Employee Name" />
-            <Column field="shift_rule_name" header="Shift Rule Name" />
-            <Column
-              field="effective_from"
-              header="Effective From"
-              body={columnFormatDateEffectiveFrom}
-            />
-            <Column
-              field="effective_to"
-              header="Effective To"
-              body={columnFormatDateEffectiveTo}
-            />
-            <Column field="is_active" header="Active" body={activeColumnBody} />
-            <Column
-              headerClassName="bg-white"
-              className="bg-white"
-              header="Action"
-              body={actionColumnBody}
-              frozen
-              alignFrozen="right"
-            />
-          </DataTable>
+          {/* Employee Shift Rule Table */}
+          <div className="w-full overflow-hidden">
+            <DataTable
+              value={filteredData}
+              dataKey="id"
+              filters={filters}
+              globalFilterFields={[
+                "employee_name",
+                "shift_rule_name",
+                "effective_from",
+                "effective_to",
+              ]}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{
+                minWidth: "74rem",
+              }}
+              emptyMessage="No employee shift rule data found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            >
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                headerStyle={{
+                  width: "4rem",
+                }}
+                bodyStyle={{
+                  width: "4rem",
+                }}
+              />
+
+              <Column
+                field="employee_name"
+                header="Employee"
+                sortable
+                body={employeeColumnBody}
+                style={{
+                  minWidth: "20rem",
+                }}
+              />
+
+              <Column
+                field="shift_rule_name"
+                header="Shift Rule"
+                sortable
+                body={shiftRuleColumnBody}
+                style={{
+                  minWidth: "19rem",
+                }}
+              />
+
+              <Column
+                field="effective_from"
+                header="Effective From"
+                sortable
+                body={effectiveFromColumnBody}
+                style={{
+                  minWidth: "13rem",
+                }}
+              />
+
+              <Column
+                field="effective_to"
+                header="Effective To"
+                sortable
+                body={effectiveToColumnBody}
+                style={{
+                  minWidth: "13rem",
+                }}
+              />
+
+              <Column
+                header="Effective Period"
+                body={periodColumnBody}
+                style={{
+                  minWidth: "20rem",
+                }}
+              />
+
+              <Column
+                field="is_active"
+                header="Status"
+                sortable
+                body={statusColumnBody}
+                style={{
+                  minWidth: "10rem",
+                }}
+              />
+
+              <Column
+                header="Action"
+                body={actionColumnBody}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                className="bg-white"
+                headerStyle={{
+                  width: "8rem",
+                  minWidth: "8rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "8rem",
+                  minWidth: "8rem",
+                }}
+              />
+            </DataTable>
+          </div>
         </div>
       </Card>
     </>

@@ -1,41 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import useSWR, { mutate } from "swr";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 
-import { Employee } from "@/app/types/employee";
-import { Gender } from "@/app/types/gender";
-import { ReligionType } from "@/app/types/religion-type";
-import { MaritalStatus } from "@/app/types/marital-status";
-import {
-  QuickCreateEmployeeResult,
-  QuickCreateMode,
-} from "@/app/types/employee-quick-create";
-import {
-  ResponseType,
-  ResponseTypeCreateSuccess,
-} from "@/app/types/response-type";
-
-import { fetcher } from "@/app/utils/fetcher";
-import {
-  getErrorMessage,
-  isResponseTypeError,
-} from "@/app/utils/error-messages";
-
-import {
-  deleteEmployee,
-  purgeEmployee,
-  restoreEmployee,
-} from "@/app/services/employee-service";
-import { quickCreateEmployee } from "@/app/services/employee-quick-create-service";
-
-import { showToast } from "@/store/ToastSlice";
-
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import dayjs from "dayjs";
 
 import { FilterMatchMode } from "primereact/api";
 import { Avatar } from "primereact/avatar";
@@ -55,6 +25,41 @@ import { InputText } from "primereact/inputtext";
 import { SelectButton } from "primereact/selectbutton";
 import { Tag } from "primereact/tag";
 
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import { quickCreateEmployee } from "@/app/services/employee-quick-create-service";
+import {
+  deleteEmployee,
+  purgeEmployee,
+  restoreEmployee,
+} from "@/app/services/employee-service";
+
+import { Employee } from "@/app/types/employee";
+import {
+  QuickCreateEmployeeResult,
+  QuickCreateMode,
+} from "@/app/types/employee-quick-create";
+import { Gender } from "@/app/types/gender";
+import { MaritalStatus } from "@/app/types/marital-status";
+import { ReligionType } from "@/app/types/religion-type";
+import {
+  ResponseType,
+  ResponseTypeCreateSuccess,
+} from "@/app/types/response-type";
+
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
 type EmployeeListRow = Employee & {
   gender_name?: string | null;
   religion_name?: string | null;
@@ -63,91 +68,131 @@ type EmployeeListRow = Employee & {
 
 type QuickCreateEmployeeForm = {
   creation_mode: QuickCreateMode;
+
   first_name: string;
   middle_name: string;
   last_name: string;
+
   birth_place: string;
   dob: Date | null;
+
   gender_id: number | null;
   religion_id: number | null;
   marital_status_id: string;
+
   username: string;
   email: string;
   user_is_active: boolean;
 };
 
-const getBody = () => document.body;
+type ProcessingAction = "delete" | "restore" | "purge" | null;
 
-const emptyQuickCreateForm: QuickCreateEmployeeForm = {
+const CREATION_MODE_OPTIONS: {
+  label: string;
+  value: QuickCreateMode;
+}[] = [
+  {
+    label: "Employee Only",
+    value: "employee_only",
+  },
+  {
+    label: "Employee + User",
+    value: "employee_with_user",
+  },
+];
+
+const EMPTY_QUICK_CREATE_FORM: QuickCreateEmployeeForm = {
   creation_mode: "employee_only",
+
   first_name: "",
   middle_name: "",
   last_name: "",
+
   birth_place: "",
   dob: null,
+
   gender_id: null,
   religion_id: null,
   marital_status_id: "",
+
   username: "",
   email: "",
   user_is_active: true,
 };
 
+const getBody = () => document.body;
+
 const buildUsername = (firstName: string, lastName: string) => {
-  const combined = `${firstName}.${lastName}`
+  return `${firstName}.${lastName}`
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9.]+/g, ".")
     .replace(/\.+/g, ".")
     .replace(/^\.|\.$/g, "");
+};
 
-  return combined || "";
+const getEmployeeFullName = (employee: EmployeeListRow) => {
+  return (
+    employee.full_name ||
+    [employee.first_name, employee.middle_name, employee.last_name]
+      .filter(Boolean)
+      .join(" ") ||
+    "Unknown employee"
+  );
+};
+
+const formatDate = (value?: string | Date | null) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = dayjs(value);
+
+  return date.isValid() ? date.format("DD MMM YYYY") : "-";
+};
+
+const formatDateTime = (value?: string | Date | null) => {
+  if (!value) {
+    return "-";
+  }
+
+  const date = dayjs(value);
+
+  return date.isValid() ? date.format("DD MMM YYYY HH:mm") : "-";
 };
 
 const EmployeesDataTable = () => {
   const router = useRouter();
   const dispatch = useDispatch();
 
+  const profileState = useSelector((state: RootState) => state.profile);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
+
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
   });
+
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
-  const [visible, setVisible] = useState(false);
+  const [quickCreateDialogVisible, setQuickCreateDialogVisible] =
+    useState(false);
+
   const [credentialDialogVisible, setCredentialDialogVisible] = useState(false);
+
   const [createdResult, setCreatedResult] =
     useState<QuickCreateEmployeeResult | null>(null);
 
-  const {
-    control,
-    handleSubmit,
-    setFocus,
-    formState: { isValid },
-    reset,
-    clearErrors,
-    setValue,
-    getValues,
-  } = useForm<QuickCreateEmployeeForm>({
-    defaultValues: emptyQuickCreateForm,
-    mode: "onChange",
-  });
+  const [isSaving, setIsSaving] = useState(false);
 
-  const creationMode = useWatch({
-    control,
-    name: "creation_mode",
-  });
+  const [processingRowId, setProcessingRowId] = useState<number | null>(null);
 
-  const firstName = useWatch({
-    control,
-    name: "first_name",
-  });
-
-  const lastName = useWatch({
-    control,
-    name: "last_name",
-  });
+  const [processingAction, setProcessingAction] =
+    useState<ProcessingAction>(null);
 
   const listKey = `/api/employees/list?show_all=${isShowDeletedDataChecked}`;
 
@@ -155,169 +200,486 @@ const EmployeesDataTable = () => {
     data: employeesData,
     error,
     isLoading,
+    isValidating,
+    mutate: refreshEmployeesData,
   } = useSWR<EmployeeListRow[]>(listKey, fetcher);
+
   const {
     data: genderData,
     error: genderError,
     isLoading: genderIsLoading,
-  } = useSWR<Gender[]>(`/api/gender`, fetcher);
+    mutate: refreshGenderData,
+  } = useSWR<Gender[]>("/api/gender", fetcher);
+
   const {
     data: religionData,
     error: religionError,
     isLoading: religionIsLoading,
-  } = useSWR<ReligionType[]>(`/api/religion`, fetcher);
+    mutate: refreshReligionData,
+  } = useSWR<ReligionType[]>("/api/religion", fetcher);
+
   const {
     data: maritalStatusData,
     error: maritalStatusError,
     isLoading: maritalStatusIsLoading,
-  } = useSWR<MaritalStatus[]>(`/api/marital`, fetcher);
+    mutate: refreshMaritalStatusData,
+  } = useSWR<MaritalStatus[]>("/api/marital", fetcher);
 
-  const genderActive = genderData?.filter((a) => a.is_active) ?? [];
-  const religionActive = religionData?.filter((a) => a.is_active) ?? [];
-  const maritalStatusActive =
-    maritalStatusData?.filter((a) => a.is_active) ?? [];
+  const {
+    control,
+    handleSubmit,
+    setFocus,
+    reset,
+    clearErrors,
+    setValue,
+    getValues,
+    trigger,
+  } = useForm<QuickCreateEmployeeForm>({
+    defaultValues: EMPTY_QUICK_CREATE_FORM,
+    mode: "onTouched",
+  });
+
+  const creationMode =
+    useWatch({
+      control,
+      name: "creation_mode",
+    }) ?? "employee_only";
+
+  const firstName =
+    useWatch({
+      control,
+      name: "first_name",
+    }) ?? "";
+
+  const lastName =
+    useWatch({
+      control,
+      name: "last_name",
+    }) ?? "";
+
+  const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+  const isProcessing = processingRowId !== null;
+
+  const referenceDataLoading =
+    genderIsLoading || religionIsLoading || maritalStatusIsLoading;
+
+  const referenceDataError = genderError || religionError || maritalStatusError;
+
+  const activeGenderOptions = useMemo(() => {
+    return (genderData ?? []).filter((item) => item.is_active);
+  }, [genderData]);
+
+  const activeReligionOptions = useMemo(() => {
+    return (religionData ?? []).filter((item) => item.is_active);
+  }, [religionData]);
+
+  const activeMaritalStatusOptions = useMemo(() => {
+    return (maritalStatusData ?? [])
+      .filter((item) => item.is_active)
+      .map((item) => ({
+        ...item,
+        option_value: String(item.id),
+      }));
+  }, [maritalStatusData]);
 
   const summary = useMemo(() => {
     const rows = employeesData ?? [];
 
     return {
       total: rows.length,
+
       active: rows.filter((item) => !item.deleted_at).length,
-      deleted: rows.filter((item) => !!item.deleted_at).length,
+
+      deleted: rows.filter((item) => Boolean(item.deleted_at)).length,
+
       noOrganization: rows.filter(
-        (item) => !item.position_name && !item.branch_name && !item.agency_name,
+        (item) =>
+          !item.deleted_at &&
+          !item.position_name &&
+          !item.department_name &&
+          !item.branch_name &&
+          !item.agency_name,
       ).length,
     };
   }, [employeesData]);
 
   useEffect(() => {
-    if (creationMode !== "employee_with_user") return;
-
-    const currentUsername = getValues("username");
-    if (currentUsername && currentUsername.trim() !== "") return;
-
-    const generated = buildUsername(firstName ?? "", lastName ?? "");
-    if (generated) {
-      setValue("username", generated, {
-        shouldValidate: true,
-      });
+    if (creationMode !== "employee_with_user") {
+      return;
     }
+
+    const currentUsername = getValues("username").trim();
+
+    if (currentUsername) {
+      return;
+    }
+
+    const generatedUsername = buildUsername(firstName, lastName);
+
+    if (!generatedUsername) {
+      return;
+    }
+
+    setValue("username", generatedUsername, {
+      shouldValidate: true,
+    });
   }, [creationMode, firstName, lastName, getValues, setValue]);
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const nextFilters = { ...filters };
-    nextFilters.global.value = value;
-    setFilters(nextFilters);
+  useEffect(() => {
+    if (creationMode === "employee_with_user") {
+      void trigger(["username", "email"]);
+
+      return;
+    }
+
+    clearErrors(["username", "email"]);
+  }, [creationMode, clearErrors, trigger]);
+
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
+  };
+
+  const showWarning = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "warn",
+        summary: "Warning",
+        detail: message,
+      }),
+    );
+  };
+
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const copyToClipboard = async (
+    value: string | null | undefined,
+    label: string,
+  ) => {
+    if (!value) {
+      showWarning(`${label} is not available.`);
+
+      return;
+    }
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const textarea = document.createElement("textarea");
+
+        textarea.value = value;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+
+        textarea.focus();
+        textarea.select();
+
+        const copied = document.execCommand("copy");
+
+        textarea.remove();
+
+        if (!copied) {
+          throw new Error("Clipboard copy failed.");
+        }
+      }
+
+      showSuccess(`${label} copied to clipboard.`);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refreshEmployeesData(),
+        refreshGenderData(),
+        refreshReligionData(),
+        refreshMaritalStatusData(),
+      ]);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    setFilters({
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
+
     setGlobalFilterValue(value);
   };
 
-  const onClickNew = () => {
+  const openQuickCreateDialog = () => {
     clearErrors();
-    setVisible(true);
-    reset(emptyQuickCreateForm);
+    reset(EMPTY_QUICK_CREATE_FORM);
 
-    setTimeout(() => {
-      setFocus("first_name");
-    }, 0);
+    setQuickCreateDialogVisible(true);
   };
 
-  const closeDialog = () => {
-    setVisible(false);
-    reset(emptyQuickCreateForm);
+  const closeQuickCreateDialog = () => {
+    if (isSaving) {
+      return;
+    }
+
+    setQuickCreateDialogVisible(false);
+
+    clearErrors();
+    reset(EMPTY_QUICK_CREATE_FORM);
+  };
+
+  const closeCredentialDialog = () => {
+    setCredentialDialogVisible(false);
+
+    setCreatedResult(null);
   };
 
   const handleQuickCreate = async (form: QuickCreateEmployeeForm) => {
+    if (isSaving) {
+      return;
+    }
+
+    if (referenceDataError) {
+      showError(new Error("Employee reference data could not be loaded."));
+
+      return;
+    }
+
     const createUser = form.creation_mode === "employee_with_user";
 
+    if (!form.dob) {
+      showError(new Error("Birth date is required."));
+
+      return;
+    }
+
     try {
+      setIsSaving(true);
+
       const response = await quickCreateEmployee({
         create_user: createUser,
+
         employee: {
           first_name: form.first_name.trim(),
+
           middle_name: form.middle_name.trim() || null,
+
           last_name: form.last_name.trim(),
-          dob: form.dob ? form.dob.toISOString().slice(0, 10) : "",
+
+          /*
+           * Gunakan format lokal
+           * agar tanggal lahir tidak
+           * bergeser karena konversi
+           * UTC dari toISOString().
+           */
+          dob: dayjs(form.dob).format("YYYY-MM-DD"),
+
           gender_id: Number(form.gender_id),
+
           religion_id: Number(form.religion_id),
+
           birth_place: form.birth_place.trim(),
+
           marital_status_id: form.marital_status_id,
+
           photo_url: null,
         },
+
         user: createUser
           ? {
-              username: form.username.trim(),
-              email: form.email.trim(),
+              username: form.username.trim().toLowerCase(),
+
+              email: form.email.trim().toLowerCase(),
+
               password: null,
+
               role: ["employee"],
-              is_active: form.user_is_active,
+
+              is_active: Boolean(form.user_is_active),
             }
           : null,
       });
 
-      await mutate(listKey);
-      closeDialog();
+      await refreshEmployeesData();
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: response.message,
-        }),
-      );
+      setQuickCreateDialogVisible(false);
+
+      clearErrors();
+      reset(EMPTY_QUICK_CREATE_FORM);
+
+      showSuccess(response.message || "Employee created successfully.");
 
       if (response.data?.user_created) {
         setCreatedResult(response.data);
+
         setCredentialDialogVisible(true);
       }
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (data: EmployeeListRow) => {
+    try {
+      setProcessingRowId(data.id);
+      setProcessingAction("delete");
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await deleteEmployee(data.id, data.row_version);
+
+      await refreshEmployeesData();
+
+      showSuccess(response.message || "Employee deleted successfully.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handleRestore = async (data: EmployeeListRow) => {
+    try {
+      setProcessingRowId(data.id);
+      setProcessingAction("restore");
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await restoreEmployee(data.id, data.row_version);
+
+      await refreshEmployeesData();
+
+      showSuccess(response.message || "Employee restored successfully.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
+  };
+
+  const handlePurge = async (data: EmployeeListRow) => {
+    if (!data.deleted_at) {
+      showError(
+        new Error("Only deleted employee records can be permanently removed."),
+      );
+
+      return;
+    }
+
+    try {
+      setProcessingRowId(data.id);
+      setProcessingAction("purge");
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await purgeEmployee(data.id);
+
+      await refreshEmployeesData();
+
+      showSuccess(response.message || "Employee permanently deleted.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
     }
   };
 
   const onClickDelete = (data: EmployeeListRow) => {
     confirmDialog({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      acceptClassName: "p-button-danger ml-3",
+      header: "Delete Employee",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            Are you sure you want to delete this employee?
+          </span>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="m-0 text-sm font-semibold text-slate-800">
+              {getEmployeeFullName(data)}
+            </p>
+
+            <p className="m-0 mt-1 font-mono text-xs text-slate-500">
+              {data.code || `Employee ID: ${data.id}`}
+            </p>
+          </div>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
       accept: () => {
         void handleDelete(data);
       },
-      reject: () => {},
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className="p-button-danger"
           />
         </div>
       ),
@@ -326,27 +688,45 @@ const EmployeesDataTable = () => {
 
   const onClickRestore = (data: EmployeeListRow) => {
     confirmDialog({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
+      header: "Restore Employee",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">Restore this employee record?</span>
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="m-0 text-sm font-semibold text-slate-800">
+              {getEmployeeFullName(data)}
+            </p>
+
+            <p className="m-0 mt-1 font-mono text-xs text-slate-500">
+              {data.code || `Employee ID: ${data.id}`}
+            </p>
+          </div>
+        </div>
+      ),
+      icon: "pi pi-refresh",
       defaultFocus: "accept",
       accept: () => {
         void handleRestore(data);
       },
-      reject: () => {},
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
             onClick={options.accept}
-            className="p-button-success"
           />
         </div>
       ),
@@ -355,183 +735,85 @@ const EmployeesDataTable = () => {
 
   const onClickPurge = (data: EmployeeListRow) => {
     confirmDialog({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      acceptClassName: "p-button-danger ml-3",
+      header: "Delete Employee Permanently",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="m-0 text-sm font-semibold text-red-800">
+              {getEmployeeFullName(data)}
+            </p>
+
+            <p className="m-0 mt-1 font-mono text-xs text-red-600">
+              {data.code || `Employee ID: ${data.id}`}
+            </p>
+          </div>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
       accept: () => {
         void handlePurge(data);
       },
-      reject: () => {},
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className="p-button-danger"
           />
         </div>
       ),
     });
   };
 
-  const handleDelete = async (data: EmployeeListRow) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteEmployee(
-        data.id,
-        data.row_version,
-      );
-
-      await mutate(listKey);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: EmployeeListRow) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeEmployee(
-        data.id,
-      );
-
-      await mutate(listKey);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleRestore = async (data: EmployeeListRow) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await restoreEmployee(data.id, data.row_version);
-
-      await mutate(listKey);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const onShowDeletedDataChecked = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
-  };
-
   const openDetail = (data: EmployeeListRow) => {
+    if (data.deleted_at) {
+      return;
+    }
+
     router.push(`/employees/${data.id}/general/personal`);
   };
 
   const getInitials = (rowData: EmployeeListRow) => {
-    const first = rowData.first_name?.charAt(0) ?? "";
-    const last = rowData.last_name?.charAt(0) ?? "";
-    return `${first}${last}`.toUpperCase() || "EM";
+    const firstInitial = rowData.first_name?.trim().charAt(0) ?? "";
+
+    const lastInitial = rowData.last_name?.trim().charAt(0) ?? "";
+
+    return `${firstInitial}${lastInitial}`.toUpperCase() || "EM";
   };
 
   const employeeBodyTemplate = (rowData: EmployeeListRow) => {
-    const fullName =
-      rowData.full_name ||
-      [rowData.first_name, rowData.middle_name, rowData.last_name]
-        .filter(Boolean)
-        .join(" ");
-
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <Avatar
           label={getInitials(rowData)}
           shape="circle"
-          className="bg-blue-100 text-blue-700"
           size="large"
+          className="shrink-0 bg-blue-100 text-blue-700"
         />
-        <div className="flex flex-col">
-          <span className="font-semibold text-slate-900">{fullName}</span>
-          <span className="text-sm text-slate-500">
+
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="truncate text-sm font-semibold text-slate-800">
+            {getEmployeeFullName(rowData)}
+          </span>
+
+          <span className="truncate font-mono text-xs text-slate-500">
             {rowData.code || "No employee code"}
           </span>
         </div>
@@ -540,47 +822,93 @@ const EmployeesDataTable = () => {
   };
 
   const demographicBodyTemplate = (rowData: EmployeeListRow) => {
+    const demographicItems = [
+      rowData.gender_name,
+      rowData.marital_status_name,
+    ].filter(Boolean);
+
+    const birthItems = [
+      rowData.birth_place,
+      rowData.dob ? formatDate(rowData.dob) : null,
+    ].filter(Boolean);
+
     return (
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-slate-800">
-          {rowData.gender_name || "-"}
-          {rowData.marital_status_name
-            ? ` • ${rowData.marital_status_name}`
-            : ""}
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-sm text-slate-700">
+          {demographicItems.join(" • ") || "-"}
         </span>
-        <span className="text-sm text-slate-500">
-          {rowData.birth_place || "-"}
-          {rowData.dob
-            ? ` • ${new Date(rowData.dob).toLocaleDateString()}`
-            : ""}
+
+        <span className="truncate text-xs text-slate-500">
+          {birthItems.join(" • ") || "-"}
         </span>
+
+        {rowData.religion_name && (
+          <span className="truncate text-xs text-slate-400">
+            {rowData.religion_name}
+          </span>
+        )}
       </div>
     );
   };
 
   const contactBodyTemplate = (rowData: EmployeeListRow) => {
+    const email = rowData.work_email || rowData.personal_email || null;
+
     return (
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-slate-800">
-          {rowData.personal_email || rowData.work_email || "-"}
-        </span>
-        <span className="text-sm text-slate-500">
-          {rowData.phone_number || "-"}
+      <div className="flex min-w-0 flex-col gap-1">
+        {email ? (
+          <button
+            type="button"
+            title={`Copy ${email}`}
+            className="flex min-w-0 items-center gap-2 border-0 bg-transparent p-0 text-left text-sm text-blue-700 hover:underline"
+            onClick={() => {
+              void copyToClipboard(email, "Email");
+            }}
+          >
+            <span className="truncate">{email}</span>
+
+            <i className="pi pi-copy shrink-0 text-xs" />
+          </button>
+        ) : (
+          <span className="text-sm text-slate-400">No email</span>
+        )}
+
+        <span className="truncate text-xs text-slate-500">
+          {rowData.phone_number || "No phone number"}
         </span>
       </div>
     );
   };
 
   const organizationBodyTemplate = (rowData: EmployeeListRow) => {
-    const main = rowData.position_name || rowData.department_name || "-";
-    const sub = [rowData.branch_name, rowData.agency_name]
+    const primary =
+      rowData.position_name ||
+      rowData.department_name ||
+      "Organization not assigned";
+
+    const secondary = [
+      rowData.department_name !== primary ? rowData.department_name : null,
+      rowData.branch_name,
+      rowData.agency_name,
+    ]
       .filter(Boolean)
       .join(" • ");
 
     return (
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-slate-800">{main}</span>
-        <span className="text-sm text-slate-500">{sub || "-"}</span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <span
+          className={`truncate text-sm font-medium ${
+            primary === "Organization not assigned"
+              ? "text-amber-700"
+              : "text-slate-700"
+          }`}
+        >
+          {primary}
+        </span>
+
+        <span className="truncate text-xs text-slate-500">
+          {secondary || "-"}
+        </span>
       </div>
     );
   };
@@ -588,76 +916,168 @@ const EmployeesDataTable = () => {
   const statusBodyTemplate = (rowData: EmployeeListRow) => {
     if (rowData.deleted_at) {
       return (
-        <div className="flex flex-col gap-1">
-          <Tag value="Deleted" severity="danger" />
-          <span className="text-xs text-slate-500">
-            {new Date(rowData.deleted_at).toLocaleString()}
+        <div className="flex flex-col items-start gap-1">
+          <Tag
+            value="Deleted"
+            severity="secondary"
+            icon="pi pi-trash"
+            rounded
+          />
+
+          <span className="whitespace-nowrap text-xs text-slate-500">
+            {formatDateTime(rowData.deleted_at)}
           </span>
         </div>
       );
     }
 
     return (
-      <div className="flex flex-col gap-1">
-        <Tag value="Active" severity="success" />
-        <span className="text-xs text-slate-500">Record ready</span>
-      </div>
+      <Tag
+        value="Active"
+        severity="success"
+        icon="pi pi-check-circle"
+        rounded
+      />
     );
   };
 
   const actionColumnBody = (rowData: EmployeeListRow) => {
+    const isCurrentRowProcessing = processingRowId === rowData.id;
+
+    if (rowData.deleted_at) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
+      return (
+        <div className="flex flex-nowrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            loading={isCurrentRowProcessing && processingAction === "restore"}
+            disabled={isProcessing}
+            onClick={() => onClickRestore(rowData)}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            loading={isCurrentRowProcessing && processingAction === "purge"}
+            disabled={isProcessing}
+            onClick={() => onClickPurge(rowData)}
+          />
+        </div>
+      );
+    }
+
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
-          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-          tooltip="detail"
-          rounded
-          severity="help"
+          type="button"
           icon="pi pi-eye"
+          rounded
+          outlined
+          severity="secondary"
           size="small"
+          tooltip="Open employee detail"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          disabled={isProcessing}
           onClick={() => openDetail(rowData)}
         />
 
-        {rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="restore"
-            rounded
-            severity="success"
-            icon="pi pi-refresh"
-            size="small"
-            onClick={() => onClickRestore(rowData)}
-          />
-        )}
-
-        {!rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="delete"
-            rounded
-            severity="danger"
-            icon="pi pi-trash"
-            size="small"
-            onClick={() => onClickDelete(rowData)}
-          />
-        )}
-
-        {rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="delete forever"
-            rounded
-            severity="secondary"
-            icon="pi pi-times"
-            size="small"
-            onClick={() => onClickPurge(rowData)}
-          />
-        )}
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          loading={isCurrentRowProcessing && processingAction === "delete"}
+          disabled={isProcessing}
+          onClick={() => onClickDelete(rowData)}
+        />
       </div>
     );
   };
 
-  if (isLoading) return <LoadingDataTable />;
+  const rowClassName = (rowData: EmployeeListRow) => {
+    if (rowData.deleted_at) {
+      return "bg-slate-50 text-slate-500";
+    }
+
+    if (
+      !rowData.position_name &&
+      !rowData.department_name &&
+      !rowData.branch_name &&
+      !rowData.agency_name
+    ) {
+      return "bg-amber-50/30";
+    }
+
+    return "";
+  };
+
+  const quickCreateDialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={closeQuickCreateDialog}
+      />
+
+      <Button
+        type="submit"
+        form="quick-create-employee-form"
+        label={
+          creationMode === "employee_with_user"
+            ? "Create Employee + User"
+            : "Create Employee"
+        }
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={
+          isSaving || referenceDataLoading || Boolean(referenceDataError)
+        }
+        className="w-full sm:w-auto"
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
+
   if (error) {
     return <ErrorNotConnectedToApi mutateKey={listKey} />;
   }
@@ -667,675 +1087,1058 @@ const EmployeesDataTable = () => {
       <ConfirmDialog />
 
       <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="shadow-sm">
-            <div className="flex items-start justify-between">
+        {/* Summary */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Card className="border border-slate-200 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-slate-500">Total Employees</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                <p className="m-0 text-xs text-slate-500">Total Employees</p>
+
+                <p className="m-0 mt-2 text-2xl font-semibold text-slate-800">
                   {summary.total}
-                </h3>
+                </p>
               </div>
-              <div className="rounded-xl bg-blue-50 p-3 text-blue-600">
-                <i className="pi pi-users text-xl" />
+
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <i className="pi pi-users text-lg" />
               </div>
             </div>
           </Card>
 
-          <Card className="shadow-sm">
-            <div className="flex items-start justify-between">
+          <Card className="border border-green-200 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-slate-500">Active Records</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                <p className="m-0 text-xs text-green-700">Active Records</p>
+
+                <p className="m-0 mt-2 text-2xl font-semibold text-green-800">
                   {summary.active}
-                </h3>
+                </p>
               </div>
-              <div className="rounded-xl bg-green-50 p-3 text-green-600">
-                <i className="pi pi-check-circle text-xl" />
+
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600">
+                <i className="pi pi-check-circle text-lg" />
               </div>
             </div>
           </Card>
 
-          <Card className="shadow-sm">
-            <div className="flex items-start justify-between">
+          <Card className="border border-red-200 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-slate-500">Deleted Records</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                <p className="m-0 text-xs text-red-700">Deleted Records</p>
+
+                <p className="m-0 mt-2 text-2xl font-semibold text-red-800">
                   {summary.deleted}
-                </h3>
+                </p>
               </div>
-              <div className="rounded-xl bg-red-50 p-3 text-red-600">
-                <i className="pi pi-trash text-xl" />
+
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                <i className="pi pi-trash text-lg" />
               </div>
             </div>
           </Card>
 
-          <Card className="shadow-sm">
-            <div className="flex items-start justify-between">
+          <Card className="border border-amber-200 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-slate-500">Need Org Update</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-900">
+                <p className="m-0 text-xs text-amber-700">Need Org Update</p>
+
+                <p className="m-0 mt-2 text-2xl font-semibold text-amber-800">
                   {summary.noOrganization}
-                </h3>
+                </p>
               </div>
-              <div className="rounded-xl bg-amber-50 p-3 text-amber-600">
-                <i className="pi pi-briefcase text-xl" />
+
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <i className="pi pi-briefcase text-lg" />
               </div>
             </div>
           </Card>
         </div>
 
-        <Card className="shadow-sm">
-          <div className="pt-0 pr-3 pb-3 pl-3">
-            <div className="flex flex-col gap-4 pb-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex flex-col">
-                <p className="text-2xl font-bold">Employees</p>
-                <p className="text-md text-slate-500">
-                  Manage your employee records and open detail faster
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <Checkbox
-                    inputId="showDeletedData"
-                    name="showDeletedData"
-                    value="yes"
-                    onChange={onShowDeletedDataChecked}
-                    checked={isShowDeletedDataChecked}
-                  />
-                  <label
-                    htmlFor="showDeletedData"
-                    className="ml-2 cursor-pointer text-sm text-slate-700"
-                  >
-                    Show deleted data
-                  </label>
+        {/* Employee List */}
+        <Card className="border border-slate-200 shadow-sm">
+          <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                  <i className="pi pi-id-card text-xl" />
                 </div>
 
-                <IconField iconPosition="left">
-                  <InputIcon className="pi pi-search" />
-                  <InputText
-                    className="w-full sm:w-80"
-                    value={globalFilterValue}
-                    onChange={onGlobalFilterChange}
-                    placeholder="Search name, code, email, branch..."
-                  />
-                </IconField>
+                <div className="min-w-0">
+                  <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                    Employees
+                  </h1>
+
+                  <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                    Manage employee records and open detailed employee profiles.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                <Button
+                  type="button"
+                  label="Refresh"
+                  icon="pi pi-refresh"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  loading={isValidating}
+                  disabled={isValidating || isProcessing || isSaving}
+                  className="w-full sm:w-auto"
+                  onClick={handleRefresh}
+                />
 
                 <Button
+                  type="button"
                   label="New Employee"
                   icon="pi pi-plus"
-                  onClick={onClickNew}
+                  size="small"
+                  disabled={isProcessing || isSaving}
+                  className="w-full sm:w-auto"
+                  onClick={openQuickCreateDialog}
                 />
               </div>
             </div>
 
-            <DataTable
-              value={employeesData}
-              tableStyle={{ minWidth: "88rem" }}
-              stripedRows
-              paginator
-              scrollable
-              scrollHeight="560px"
-              rows={10}
-              rowsPerPageOptions={[10, 25, 50]}
-              dataKey="id"
-              rowHover
-              globalFilterFields={[
-                "code",
-                "first_name",
-                "middle_name",
-                "last_name",
-                "preferred_name",
-                "full_name",
-                "personal_email",
-                "work_email",
-                "phone_number",
-                "gender_name",
-                "birth_place",
-                "agency_name",
-                "branch_name",
-                "department_name",
-                "position_name",
-              ]}
-              emptyMessage="No employees found."
-              filters={filters}
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
-              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-              loading={isLoading}
-              onRowDoubleClick={(e: any) => openDetail(e.data)}
-            >
-              <Column
-                header="#"
-                headerStyle={{ width: "3rem" }}
-                body={(_, options) => options.rowIndex + 1}
-              />
-              <Column
-                header="Employee"
-                body={employeeBodyTemplate}
-                style={{ minWidth: "18rem" }}
-              />
-              <Column
-                header="Demographic"
-                body={demographicBodyTemplate}
-                style={{ minWidth: "14rem" }}
-              />
-              <Column
-                header="Contact"
-                body={contactBodyTemplate}
-                style={{ minWidth: "16rem" }}
-              />
-              <Column
-                header="Organization"
-                body={organizationBodyTemplate}
-                style={{ minWidth: "16rem" }}
-              />
-              <Column
-                header="Status"
-                body={statusBodyTemplate}
-                style={{ minWidth: "10rem" }}
-              />
-              <Column
-                headerClassName="bg-white"
-                className="bg-white"
-                header="Action"
-                body={(rowData) => actionColumnBody(rowData)}
-                frozen
-                alignFrozen="right"
-                style={{ minWidth: "10rem" }}
-              />
-            </DataTable>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              {isSuperadmin ? (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    checked={isShowDeletedDataChecked}
+                    onChange={(event) =>
+                      setIsShowDeletedDataChecked(Boolean(event.checked))
+                    }
+                  />
 
-            <form onSubmit={handleSubmit(handleQuickCreate)}>
-              <Dialog
-                header="Quick Add Employee"
-                visible={visible}
-                style={{ width: "60rem", maxWidth: "95vw" }}
-                onHide={closeDialog}
-                onShow={() => {
-                  setTimeout(() => setFocus("first_name"), 0);
-                }}
-                breakpoints={{ "960px": "92vw", "640px": "96vw" }}
-                footer={
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      type="button"
-                      label="Cancel"
-                      icon="pi pi-times"
-                      onClick={closeDialog}
-                      className="p-button-text"
-                    />
-                    <Button
-                      type="submit"
-                      label="Create"
-                      icon="pi pi-check"
-                      disabled={!isValid}
-                    />
-                  </div>
-                }
-              >
-                <div className="flex flex-col gap-6">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="mb-3">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Creation Mode
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Choose whether to create employee only or employee with
-                        login account.
-                      </p>
-                    </div>
-
-                    <Controller
-                      name="creation_mode"
-                      control={control}
-                      render={({ field }) => (
-                        <SelectButton
-                          {...field}
-                          options={[
-                            { label: "Employee Only", value: "employee_only" },
-                            {
-                              label: "Employee + User",
-                              value: "employee_with_user",
-                            },
-                          ]}
-                          allowEmpty={false}
-                        />
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div className="md:col-span-2">
-                      <p className="text-sm font-semibold text-slate-900">
-                        Basic Information
-                      </p>
-                    </div>
-
-                    <Controller
-                      name="first_name"
-                      control={control}
-                      rules={{
-                        required: "First name is required",
-                        maxLength: {
-                          value: 50,
-                          message: "Maximum 50 characters",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            First Name
-                          </label>
-                          <InputText
-                            {...field}
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                            placeholder="Enter first name"
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="middle_name"
-                      control={control}
-                      rules={{
-                        maxLength: {
-                          value: 50,
-                          message: "Maximum 50 characters",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Middle Name
-                          </label>
-                          <InputText
-                            {...field}
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                            placeholder="Enter middle name"
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="last_name"
-                      control={control}
-                      rules={{
-                        required: "Last name is required",
-                        maxLength: {
-                          value: 50,
-                          message: "Maximum 50 characters",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Last Name
-                          </label>
-                          <InputText
-                            {...field}
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                            placeholder="Enter last name"
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="birth_place"
-                      control={control}
-                      rules={{
-                        required: "Birth place is required",
-                        maxLength: {
-                          value: 50,
-                          message: "Maximum 50 characters",
-                        },
-                      }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Birth Place
-                          </label>
-                          <InputText
-                            {...field}
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                            placeholder="Enter birth place"
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="dob"
-                      control={control}
-                      rules={{ required: "Birth date is required" }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Birth Date
-                          </label>
-                          <Calendar
-                            appendTo={getBody}
-                            dateFormat="dd-mm-yy"
-                            showIcon
-                            value={field.value}
-                            onChange={(e) => field.onChange(e.value)}
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="gender_id"
-                      control={control}
-                      rules={{
-                        required: "Gender is required",
-                        validate: (value) =>
-                          Number(value) > 0 || "Gender is required",
-                      }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Gender
-                          </label>
-                          <Dropdown
-                            appendTo={getBody}
-                            value={field.value}
-                            options={genderActive}
-                            loading={genderIsLoading}
-                            disabled={genderIsLoading || !!genderError}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select gender"
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="religion_id"
-                      control={control}
-                      rules={{
-                        required: "Religion is required",
-                        validate: (value) =>
-                          Number(value) > 0 || "Religion is required",
-                      }}
-                      render={({ field, fieldState }) => (
-                        <div>
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Religion
-                          </label>
-                          <Dropdown
-                            appendTo={getBody}
-                            value={field.value}
-                            options={religionActive}
-                            loading={religionIsLoading}
-                            disabled={religionIsLoading || !!religionError}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select religion"
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      name="marital_status_id"
-                      control={control}
-                      rules={{ required: "Marital status is required" }}
-                      render={({ field, fieldState }) => (
-                        <div className="md:col-span-2">
-                          <label className="mb-2 block text-sm font-medium text-slate-700">
-                            Marital Status
-                          </label>
-                          <Dropdown
-                            appendTo={getBody}
-                            value={field.value}
-                            options={maritalStatusActive}
-                            disabled={
-                              maritalStatusIsLoading || !!maritalStatusError
-                            }
-                            loading={maritalStatusIsLoading}
-                            onChange={(e) => field.onChange(e.value)}
-                            optionLabel="name"
-                            optionValue="id"
-                            placeholder="Select marital status"
-                            className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                          />
-                          {fieldState.error && (
-                            <small className="p-error">
-                              {fieldState.error.message}
-                            </small>
-                          )}
-                        </div>
-                      )}
-                    />
-                  </div>
-
-                  {creationMode === "employee_with_user" && (
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="mb-4">
-                        <p className="text-sm font-semibold text-slate-900">
-                          Login Account
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          Default role will be assigned as{" "}
-                          <span className="font-semibold">employee</span>.
-                          Password will be generated automatically and user must
-                          change it on first login.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                        <Controller
-                          name="username"
-                          control={control}
-                          rules={{
-                            validate: (value) => {
-                              if (creationMode !== "employee_with_user")
-                                return true;
-                              return (
-                                value.trim() !== "" || "Username is required"
-                              );
-                            },
-                          }}
-                          render={({ field, fieldState }) => (
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-slate-700">
-                                Username
-                              </label>
-                              <div className="flex gap-2">
-                                <InputText
-                                  {...field}
-                                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                                  placeholder="Enter username"
-                                />
-                                <Button
-                                  type="button"
-                                  icon="pi pi-refresh"
-                                  severity="secondary"
-                                  outlined
-                                  onClick={() => {
-                                    const generated = buildUsername(
-                                      getValues("first_name"),
-                                      getValues("last_name"),
-                                    );
-                                    setValue("username", generated, {
-                                      shouldValidate: true,
-                                    });
-                                  }}
-                                />
-                              </div>
-                              {fieldState.error && (
-                                <small className="p-error">
-                                  {fieldState.error.message}
-                                </small>
-                              )}
-                            </div>
-                          )}
-                        />
-
-                        <Controller
-                          name="email"
-                          control={control}
-                          rules={{
-                            validate: (value) => {
-                              if (creationMode !== "employee_with_user")
-                                return true;
-                              if (value.trim() === "")
-                                return "Email is required";
-
-                              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                              return (
-                                emailRegex.test(value.trim()) ||
-                                "Email format is not valid"
-                              );
-                            },
-                          }}
-                          render={({ field, fieldState }) => (
-                            <div>
-                              <label className="mb-2 block text-sm font-medium text-slate-700">
-                                Login Email
-                              </label>
-                              <InputText
-                                {...field}
-                                className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                                placeholder="Enter login email"
-                              />
-                              {fieldState.error && (
-                                <small className="p-error">
-                                  {fieldState.error.message}
-                                </small>
-                              )}
-                            </div>
-                          )}
-                        />
-
-                        <div className="md:col-span-2">
-                          <div className="rounded-xl bg-white p-4">
-                            <Controller
-                              name="user_is_active"
-                              control={control}
-                              render={({ field }) => (
-                                <div className="flex items-start justify-between gap-4">
-                                  <div>
-                                    <p className="text-sm font-semibold text-slate-900">
-                                      Active Login
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                      Turn off if account should be created but
-                                      not active yet.
-                                    </p>
-                                  </div>
-                                  <InputSwitch
-                                    checked={!!field.value}
-                                    onChange={(e) => field.onChange(e.value)}
-                                  />
-                                </div>
-                              )}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <label
+                    htmlFor="showDeletedData"
+                    className="cursor-pointer select-none text-sm text-slate-600"
+                  >
+                    Show deleted records
+                  </label>
                 </div>
-              </Dialog>
-            </form>
+              ) : (
+                <span className="text-xs text-slate-500">
+                  Showing active employee records.
+                </span>
+              )}
+
+              <IconField iconPosition="left" className="w-full md:w-96">
+                <InputIcon className="pi pi-search" />
+
+                <InputText
+                  value={globalFilterValue}
+                  onChange={onGlobalFilterChange}
+                  placeholder="Search name, code, email, branch, or position"
+                  className="w-full"
+                />
+              </IconField>
+            </div>
+
+            <div className="w-full overflow-hidden">
+              <DataTable
+                value={employeesData ?? []}
+                dataKey="id"
+                filters={filters}
+                globalFilterFields={[
+                  "code",
+                  "first_name",
+                  "middle_name",
+                  "last_name",
+                  "preferred_name",
+                  "full_name",
+                  "personal_email",
+                  "work_email",
+                  "phone_number",
+                  "gender_name",
+                  "religion_name",
+                  "marital_status_name",
+                  "birth_place",
+                  "agency_name",
+                  "branch_name",
+                  "department_name",
+                  "position_name",
+                ]}
+                paginator
+                rows={10}
+                rowsPerPageOptions={[10, 25, 50]}
+                stripedRows
+                rowHover
+                scrollable
+                removableSort
+                responsiveLayout="scroll"
+                size="small"
+                loading={isValidating}
+                rowClassName={rowClassName}
+                tableStyle={{
+                  minWidth: "94rem",
+                }}
+                emptyMessage="No employee data found."
+                currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                onRowDoubleClick={(event) => {
+                  openDetail(event.data as EmployeeListRow);
+                }}
+              >
+                <Column
+                  header="#"
+                  body={(_, options) => options.rowIndex + 1}
+                  headerStyle={{
+                    width: "4rem",
+                  }}
+                  bodyStyle={{
+                    width: "4rem",
+                  }}
+                />
+
+                <Column
+                  header="Employee"
+                  sortable
+                  sortField="full_name"
+                  body={employeeBodyTemplate}
+                  style={{
+                    minWidth: "21rem",
+                  }}
+                />
+
+                <Column
+                  header="Demographic"
+                  body={demographicBodyTemplate}
+                  style={{
+                    minWidth: "18rem",
+                  }}
+                />
+
+                <Column
+                  header="Contact"
+                  body={contactBodyTemplate}
+                  style={{
+                    minWidth: "20rem",
+                  }}
+                />
+
+                <Column
+                  header="Organization"
+                  body={organizationBodyTemplate}
+                  style={{
+                    minWidth: "20rem",
+                  }}
+                />
+
+                <Column
+                  header="Status"
+                  body={statusBodyTemplate}
+                  style={{
+                    minWidth: "13rem",
+                  }}
+                />
+
+                <Column
+                  header="Action"
+                  body={actionColumnBody}
+                  frozen
+                  alignFrozen="right"
+                  headerClassName="bg-white"
+                  className="bg-white"
+                  headerStyle={{
+                    width: "10rem",
+                    minWidth: "10rem",
+                    textAlign: "right",
+                  }}
+                  bodyStyle={{
+                    width: "10rem",
+                    minWidth: "10rem",
+                  }}
+                />
+              </DataTable>
+            </div>
           </div>
         </Card>
       </div>
 
+      {/* Quick Create Employee */}
+      <Dialog
+        header="Quick Add Employee"
+        visible={quickCreateDialogVisible}
+        style={{
+          width: "95vw",
+          maxWidth: "62rem",
+        }}
+        breakpoints={{
+          "960px": "92vw",
+          "640px": "96vw",
+        }}
+        footer={quickCreateDialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closable={!isSaving}
+        closeOnEscape={!isSaving}
+        onHide={closeQuickCreateDialog}
+        onShow={() => {
+          setTimeout(() => {
+            setFocus("first_name");
+          }, 0);
+        }}
+      >
+        <form
+          id="quick-create-employee-form"
+          onSubmit={handleSubmit(handleQuickCreate)}
+          className="flex flex-col gap-6 pt-2"
+        >
+          {/* Creation Mode */}
+          <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-4">
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Creation Mode
+              </h2>
+
+              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                Create only an employee profile or create the employee together
+                with a login account.
+              </p>
+            </div>
+
+            <Controller
+              name="creation_mode"
+              control={control}
+              render={({ field }) => (
+                <SelectButton
+                  value={field.value}
+                  options={CREATION_MODE_OPTIONS}
+                  optionLabel="label"
+                  optionValue="value"
+                  allowEmpty={false}
+                  disabled={isSaving}
+                  className="w-full"
+                  onChange={(event) =>
+                    field.onChange(event.value as QuickCreateMode)
+                  }
+                />
+              )}
+            />
+          </section>
+
+          {referenceDataError && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <i className="pi pi-exclamation-circle mt-0.5" />
+
+              <span>
+                Gender, religion, or marital-status reference data could not be
+                loaded. Refresh the page before creating an employee.
+              </span>
+            </div>
+          )}
+
+          {/* Basic Information */}
+          <section className="flex flex-col gap-4">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Basic Information
+              </h2>
+
+              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                Enter the employee's identity and demographic information.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="first_name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  First Name
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="first_name"
+                  control={control}
+                  rules={{
+                    required: "First name is required.",
+                    maxLength: {
+                      value: 50,
+                      message: "First name cannot exceed 50 characters.",
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        id="first_name"
+                        value={field.value ?? ""}
+                        autoComplete="off"
+                        placeholder="Enter first name"
+                        disabled={isSaving}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="middle_name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Middle Name
+                </label>
+
+                <Controller
+                  name="middle_name"
+                  control={control}
+                  rules={{
+                    maxLength: {
+                      value: 50,
+                      message: "Middle name cannot exceed 50 characters.",
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        id="middle_name"
+                        value={field.value ?? ""}
+                        autoComplete="off"
+                        placeholder="Enter middle name"
+                        disabled={isSaving}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="last_name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Last Name
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="last_name"
+                  control={control}
+                  rules={{
+                    required: "Last name is required.",
+                    maxLength: {
+                      value: 50,
+                      message: "Last name cannot exceed 50 characters.",
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        id="last_name"
+                        value={field.value ?? ""}
+                        autoComplete="off"
+                        placeholder="Enter last name"
+                        disabled={isSaving}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="birth_place"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Birth Place
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="birth_place"
+                  control={control}
+                  rules={{
+                    required: "Birth place is required.",
+                    maxLength: {
+                      value: 100,
+                      message: "Birth place cannot exceed 100 characters.",
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <InputText
+                        {...field}
+                        id="birth_place"
+                        value={field.value ?? ""}
+                        autoComplete="off"
+                        placeholder="Enter birth place"
+                        disabled={isSaving}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="dob"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Birth Date
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="dob"
+                  control={control}
+                  rules={{
+                    required: "Birth date is required.",
+                    validate: (value) => {
+                      if (!value) {
+                        return true;
+                      }
+
+                      return (
+                        !dayjs(value).isAfter(dayjs(), "day") ||
+                        "Birth date cannot be in the future."
+                      );
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Calendar
+                        id="dob"
+                        appendTo={getBody}
+                        value={field.value}
+                        dateFormat="dd M yy"
+                        showIcon
+                        maxDate={new Date()}
+                        placeholder="Select birth date"
+                        disabled={isSaving}
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) =>
+                          field.onChange((event.value as Date | null) ?? null)
+                        }
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="gender_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Gender
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="gender_id"
+                  control={control}
+                  rules={{
+                    required: "Gender is required.",
+                    validate: (value) =>
+                      Number(value) > 0 || "Gender is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="gender_id"
+                        appendTo={getBody}
+                        value={field.value}
+                        options={activeGenderOptions}
+                        optionLabel="name"
+                        optionValue="id"
+                        filter
+                        showClear
+                        loading={genderIsLoading}
+                        disabled={
+                          isSaving || genderIsLoading || Boolean(genderError)
+                        }
+                        placeholder="Select gender"
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) =>
+                          field.onChange(event.value ?? null)
+                        }
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="religion_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Religion
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="religion_id"
+                  control={control}
+                  rules={{
+                    required: "Religion is required.",
+                    validate: (value) =>
+                      Number(value) > 0 || "Religion is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="religion_id"
+                        appendTo={getBody}
+                        value={field.value}
+                        options={activeReligionOptions}
+                        optionLabel="name"
+                        optionValue="id"
+                        filter
+                        showClear
+                        loading={religionIsLoading}
+                        disabled={
+                          isSaving ||
+                          religionIsLoading ||
+                          Boolean(religionError)
+                        }
+                        placeholder="Select religion"
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) =>
+                          field.onChange(event.value ?? null)
+                        }
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="marital_status_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Marital Status
+                  <span className="ml-1 text-red-500">*</span>
+                </label>
+
+                <Controller
+                  name="marital_status_id"
+                  control={control}
+                  rules={{
+                    required: "Marital status is required.",
+                  }}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Dropdown
+                        id="marital_status_id"
+                        appendTo={getBody}
+                        value={field.value}
+                        options={activeMaritalStatusOptions}
+                        optionLabel="name"
+                        optionValue="option_value"
+                        filter
+                        showClear
+                        loading={maritalStatusIsLoading}
+                        disabled={
+                          isSaving ||
+                          maritalStatusIsLoading ||
+                          Boolean(maritalStatusError)
+                        }
+                        placeholder="Select marital status"
+                        className={`w-full ${
+                          fieldState.invalid ? "p-invalid" : ""
+                        }`}
+                        onChange={(event) => field.onChange(event.value ?? "")}
+                      />
+
+                      {fieldState.error && (
+                        <small className="p-error">
+                          {fieldState.error.message}
+                        </small>
+                      )}
+                    </>
+                  )}
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Login Account */}
+          {creationMode === "employee_with_user" && (
+            <section className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-blue-50/40 p-4">
+              <div>
+                <h2 className="m-0 text-sm font-semibold text-slate-800">
+                  Login Account
+                </h2>
+
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  The account receives the employee role. Password is generated
+                  automatically and must be changed at first login.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="username"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Username
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <Controller
+                    name="username"
+                    control={control}
+                    rules={{
+                      validate: (value) => {
+                        if (creationMode !== "employee_with_user") {
+                          return true;
+                        }
+
+                        const username = value.trim().toLowerCase();
+
+                        if (!username) {
+                          return "Username is required.";
+                        }
+
+                        if (username.length < 3) {
+                          return "Username must contain at least 3 characters.";
+                        }
+
+                        if (username.length > 50) {
+                          return "Username cannot exceed 50 characters.";
+                        }
+
+                        return (
+                          /^[a-z0-9._-]+$/.test(username) ||
+                          "Username may only contain lowercase letters, numbers, dot, underscore, and hyphen."
+                        );
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <div className="flex gap-2">
+                          <InputText
+                            {...field}
+                            id="username"
+                            value={field.value ?? ""}
+                            autoComplete="off"
+                            placeholder="Enter username"
+                            disabled={isSaving}
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(event.target.value.toLowerCase())
+                            }
+                          />
+
+                          <Button
+                            type="button"
+                            icon="pi pi-refresh"
+                            severity="secondary"
+                            outlined
+                            disabled={isSaving}
+                            tooltip="Generate username"
+                            tooltipOptions={{
+                              appendTo: getBody,
+                              position: "top",
+                            }}
+                            onClick={() => {
+                              const generated = buildUsername(
+                                getValues("first_name"),
+                                getValues("last_name"),
+                              );
+
+                              setValue("username", generated, {
+                                shouldValidate: true,
+                                shouldDirty: true,
+                              });
+                            }}
+                          />
+                        </div>
+
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Login Email
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <Controller
+                    name="email"
+                    control={control}
+                    rules={{
+                      validate: (value) => {
+                        if (creationMode !== "employee_with_user") {
+                          return true;
+                        }
+
+                        const email = value.trim().toLowerCase();
+
+                        if (!email) {
+                          return "Email is required.";
+                        }
+
+                        if (email.length > 254) {
+                          return "Email cannot exceed 254 characters.";
+                        }
+
+                        return (
+                          /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+                          "Email format is not valid."
+                        );
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <InputText
+                          {...field}
+                          id="email"
+                          type="email"
+                          value={field.value ?? ""}
+                          autoComplete="off"
+                          placeholder="employee@company.com"
+                          disabled={isSaving}
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                          onChange={(event) =>
+                            field.onChange(event.target.value.toLowerCase())
+                          }
+                        />
+
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="md:col-span-2 rounded-xl border border-slate-200 bg-white p-4">
+                  <Controller
+                    name="user_is_active"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <label
+                            htmlFor="user_is_active"
+                            className="cursor-pointer text-sm font-medium text-slate-700"
+                          >
+                            Active Login
+                          </label>
+
+                          <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                            Turn this off when the user account should be
+                            created but cannot log in yet.
+                          </p>
+                        </div>
+
+                        <InputSwitch
+                          inputId="user_is_active"
+                          checked={Boolean(field.value)}
+                          disabled={isSaving}
+                          onChange={(event) => field.onChange(event.value)}
+                        />
+                      </div>
+                    )}
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+        </form>
+      </Dialog>
+
+      {/* Credentials */}
       <Dialog
         header="Login Account Created"
         visible={credentialDialogVisible}
-        style={{ width: "34rem", maxWidth: "95vw" }}
-        onHide={() => setCredentialDialogVisible(false)}
+        style={{
+          width: "95vw",
+          maxWidth: "38rem",
+        }}
+        breakpoints={{
+          "640px": "95vw",
+        }}
+        modal
+        draggable={false}
+        resizable={false}
+        onHide={closeCredentialDialog}
         footer={
           <div className="flex justify-end">
             <Button
+              type="button"
               label="Close"
               icon="pi pi-check"
-              onClick={() => setCredentialDialogVisible(false)}
+              onClick={closeCredentialDialog}
             />
           </div>
         }
       >
-        <div className="flex flex-col gap-4">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-            Employee and user account were created successfully.
+        <div className="flex flex-col gap-5 pt-2">
+          <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+            <i className="pi pi-check-circle mt-0.5" />
+
+            <span>Employee and login account were created successfully.</span>
           </div>
 
-          <div className="grid grid-cols-[140px_1fr] gap-3 text-sm">
-            <span className="font-medium text-slate-600">Employee ID</span>
-            <span className="text-slate-900">
-              {createdResult?.employee_id ?? "-"}
-            </span>
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+              <span className="font-medium text-slate-500">Employee ID</span>
 
-            <span className="font-medium text-slate-600">User ID</span>
-            <span className="text-slate-900">
-              {createdResult?.user_id ?? "-"}
-            </span>
+              <span className="font-mono text-slate-800">
+                {createdResult?.employee_id ?? "-"}
+              </span>
+            </div>
 
-            <span className="font-medium text-slate-600">Username</span>
-            <span className="text-slate-900">
-              {createdResult?.username ?? "-"}
-            </span>
+            <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+              <span className="font-medium text-slate-500">User ID</span>
 
-            <span className="font-medium text-slate-600">
-              Temporary Password
-            </span>
-            <span className="rounded-md bg-slate-100 px-3 py-2 font-mono text-slate-900">
-              {createdResult?.temporary_password ?? "-"}
-            </span>
+              <span className="font-mono text-slate-800">
+                {createdResult?.user_id ?? "-"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
+              <span className="font-medium text-slate-500">Username</span>
+
+              <span className="min-w-0 truncate font-mono text-slate-800">
+                {createdResult?.username ?? "-"}
+              </span>
+
+              <Button
+                type="button"
+                icon="pi pi-copy"
+                rounded
+                text
+                size="small"
+                severity="secondary"
+                tooltip="Copy username"
+                tooltipOptions={{
+                  appendTo: getBody,
+                  position: "top",
+                }}
+                onClick={() => {
+                  void copyToClipboard(createdResult?.username, "Username");
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+              <span className="font-medium text-amber-700">Password</span>
+
+              <span className="min-w-0 break-all font-mono font-semibold text-amber-900">
+                {createdResult?.temporary_password ?? "-"}
+              </span>
+
+              <Button
+                type="button"
+                icon="pi pi-copy"
+                rounded
+                text
+                size="small"
+                severity="warning"
+                tooltip="Copy temporary password"
+                tooltipOptions={{
+                  appendTo: getBody,
+                  position: "top",
+                }}
+                onClick={() => {
+                  void copyToClipboard(
+                    createdResult?.temporary_password,
+                    "Temporary password",
+                  );
+                }}
+              />
+            </div>
           </div>
 
-          <p className="text-xs text-slate-500">
-            Save this password now. User will be required to change password on
-            first login.
-          </p>
+          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800">
+            <i className="pi pi-exclamation-triangle mt-0.5" />
+
+            <span>
+              Save the temporary password now. It may not be displayed again,
+              and the user must change it during the first login.
+            </span>
+          </div>
         </div>
       </Dialog>
     </>

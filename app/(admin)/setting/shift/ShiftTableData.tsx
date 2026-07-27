@@ -1,605 +1,457 @@
 "use client";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { ChangeEvent, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import useSWR from "swr";
+import dayjs from "dayjs";
+
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Controller, useForm } from "react-hook-form";
+import { Calendar } from "primereact/calendar";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputNumber } from "primereact/inputnumber";
 import { InputSwitch } from "primereact/inputswitch";
-import { useMemo, useState } from "react";
-import useSWR, { mutate } from "swr";
-import dayjs from "dayjs";
-import { fetcher } from "@/app/utils/fetcher";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import {
+  createShift,
+  deleteShift,
+  purgeShift,
+  restoreShift,
+  updateShift,
+} from "@/app/services/shift-service";
+
 import {
   ResponseType,
   ResponseTypeCreateSuccess,
 } from "@/app/types/response-type";
-import {
-  isResponseTypeError,
-  getErrorMessage,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { Tag } from "primereact/tag";
-import { Checkbox } from "primereact/checkbox";
-import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
 import { Shift } from "@/app/types/shift";
+
 import {
-  createShift,
-  updateShift,
-  deleteShift,
-  purgeShift,
-  restoreShift,
-} from "@/app/services/shift-service";
-import { Calendar } from "primereact/calendar";
-import { InputNumber } from "primereact/inputnumber";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
+const EMPTY_SHIFT = {
+  id: 0,
+  name: "",
+  work_start: null,
+  work_end: null,
+  break_start: null,
+  break_end: null,
+  grace_period_minutes: 0,
+  checkin_start: null,
+  checkin_end: null,
+  checkout_start: null,
+  checkout_end: null,
+  is_night_shift: false,
+  is_day_off: false,
+  is_active: true,
+  deleted_at: "",
+  row_version: 0,
+} as Shift;
+
+const getBody = () => document.body;
+
+const toTimeDate = (value?: string | Date | null): Date | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const normalizedValue = value.includes("T") ? value : `1970-01-01T${value}`;
+
+  const parsedDate = new Date(normalizedValue);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+};
+
+const formatTimeValue = (value?: string | Date | null) => {
+  const parsedDate = toTimeDate(value);
+
+  if (!parsedDate) {
+    return "-";
+  }
+
+  return dayjs(parsedDate).format("HH:mm");
+};
+
+const formatTimeRange = (
+  start?: string | Date | null,
+  end?: string | Date | null,
+) => {
+  if (!start && !end) {
+    return "-";
+  }
+
+  return `${formatTimeValue(start)} - ${formatTimeValue(end)}`;
+};
 
 const ShiftTableData = () => {
   const dispatch = useDispatch();
+
   const profileState = useSelector((state: RootState) => state.profile);
 
   const [selectedData, setSelectedData] = useState<Shift | null>(null);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
+
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
   });
+
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
+
   const [isAddNew, setIsAddNew] = useState(false);
+
   const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
 
-  const {
-    control,
-    handleSubmit,
-    setFocus,
-    formState: { isValid },
-    reset,
-    clearErrors,
-    watch,
-    setValue,
-  } = useForm<Shift>({
-    defaultValues: {
-      id: 0,
-      name: "",
-      work_start: null,
-      work_end: null,
-      break_start: null,
-      break_end: null,
-      grace_period_minutes: 0,
-      checkin_start: null,
-      checkin_end: null,
-      checkout_start: null,
-      checkout_end: null,
-      is_night_shift: false,
-      is_day_off: false,
-      is_active: true,
-      deleted_at: "",
-      row_version: 0,
-    } as Shift,
-  });
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New Shift");
 
-  const watchedIsDayOff = watch("is_day_off");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
-
-    _filters["global"].value = value;
-
-    setFilters(_filters);
-    setGlobalFilterValue(value);
-  };
-
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
-  };
-
-  const onClickNew = () => {
-    clearErrors();
-    setIsAddNew(true);
-    setVisible(true);
-    setPopupHeaderTitle("New Shift");
-    reset({
-      id: 0,
-      name: "",
-      work_start: null,
-      work_end: null,
-      break_start: null,
-      break_end: null,
-      grace_period_minutes: 0,
-      checkin_start: null,
-      checkin_end: null,
-      checkout_start: null,
-      checkout_end: null,
-      is_night_shift: false,
-      is_day_off: false,
-      is_active: true,
-      deleted_at: "",
-      row_version: 0,
-    } as Shift);
-  };
-
-  const footerContent = (
-    <div className="text-right flex gap-5 justify-end">
-      <Button
-        type="button"
-        label="Cancel"
-        icon="pi pi-times"
-        onClick={() => {
-          setVisible(false);
-        }}
-        className="p-button-text"
-      />
-      <Button
-        type="submit"
-        label={isAddNew ? "Submit" : "Save"}
-        icon="pi pi-check"
-      />
-    </div>
-  );
+  const currentKey = `/api/shift?show_all=${isShowDeletedDataChecked}`;
 
   const {
     data: shiftData,
     error,
     isLoading,
-  } = useSWR<Shift[]>(
-    `/api/shift?show_all=${isShowDeletedDataChecked}`,
-    fetcher,
+    isValidating,
+    mutate: refreshShiftData,
+  } = useSWR<Shift[]>(currentKey, fetcher);
+
+  const { control, handleSubmit, setFocus, setValue, reset, clearErrors } =
+    useForm<Shift>({
+      defaultValues: EMPTY_SHIFT,
+      mode: "onTouched",
+    });
+
+  const watchedIsDayOff = Boolean(
+    useWatch({
+      control,
+      name: "is_day_off",
+    }),
   );
 
-  const filteredShiftData = useMemo(() => shiftData ?? [], [shiftData]);
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
+  };
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey="/api/shift?show_all=true" />;
-  }
-
-  const handleSubmitNew = async (data: Shift) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createShift(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
       dispatch(
         showToast({
           visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
         }),
       );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const clearShiftSchedule = () => {
+    const options = {
+      shouldDirty: true,
+      shouldValidate: true,
+    };
+
+    setValue("work_start", null as Shift["work_start"], options);
+
+    setValue("work_end", null as Shift["work_end"], options);
+
+    setValue("break_start", null as Shift["break_start"], options);
+
+    setValue("break_end", null as Shift["break_end"], options);
+
+    setValue("checkin_start", null as Shift["checkin_start"], options);
+
+    setValue("checkin_end", null as Shift["checkin_end"], options);
+
+    setValue("checkout_start", null as Shift["checkout_start"], options);
+
+    setValue("checkout_end", null as Shift["checkout_end"], options);
+
+    setValue("grace_period_minutes", 0, options);
+
+    setValue("is_night_shift", false, options);
+  };
+
+  const normalizeShiftForm = (data: Shift): Shift => {
+    if (data.is_day_off) {
+      return {
+        ...data,
+        name: data.name.trim(),
+        work_start: null,
+        work_end: null,
+        break_start: null,
+        break_end: null,
+        checkin_start: null,
+        checkin_end: null,
+        checkout_start: null,
+        checkout_end: null,
+        grace_period_minutes: 0,
+        is_night_shift: false,
+      } as Shift;
+    }
+
+    return {
+      ...data,
+      name: data.name.trim(),
+      grace_period_minutes: Number(data.grace_period_minutes ?? 0),
+    };
+  };
+
+  const handleCloseDialog = () => {
+    setVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+    setPopupHeaderTitle("New Shift");
+    clearErrors();
+    reset(EMPTY_SHIFT);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshShiftData();
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    setFilters({
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
+
+    setGlobalFilterValue(value);
+  };
+
+  const onShowDeletedChange = (checked: boolean) => {
+    setIsShowDeletedDataChecked(checked);
+  };
+
+  const onClickNew = () => {
+    clearErrors();
+    setSelectedData(null);
+    setIsAddNew(true);
+    setPopupHeaderTitle("New Shift");
+    reset(EMPTY_SHIFT);
+    setVisible(true);
+  };
+
+  const onClickUpdate = (data: Shift) => {
+    clearErrors();
+    setSelectedData(data);
+    setIsAddNew(false);
+    setPopupHeaderTitle("Edit Shift");
+
+    reset({
+      ...data,
+      work_start: toTimeDate(data.work_start),
+      work_end: toTimeDate(data.work_end),
+      break_start: toTimeDate(data.break_start),
+      break_end: toTimeDate(data.break_end),
+      checkin_start: toTimeDate(data.checkin_start),
+      checkin_end: toTimeDate(data.checkin_end),
+      checkout_start: toTimeDate(data.checkout_start),
+      checkout_end: toTimeDate(data.checkout_end),
+      grace_period_minutes: Number(data.grace_period_minutes ?? 0),
+      deleted_at: data.deleted_at ?? "",
+    } as Shift);
+
+    setVisible(true);
+  };
+
+  const handleSubmitNew = async (data: Shift) => {
+    try {
+      setIsSaving(true);
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await createShift(normalizeShiftForm(data));
+
+      await refreshShiftData();
+
+      handleCloseDialog();
+      showSuccess(response.message);
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleUpdate = async (data: Shift) => {
     if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail: "Please select data",
-        }),
-      );
+      showError(new Error("Shift data is not selected."));
+
       return;
     }
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updateShift(
-        selectedData.id,
-        selectedData.row_version,
-        data,
-      );
+      setIsSaving(true);
 
-      setVisible(false);
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-      reset();
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await updateShift(
+          selectedData.id,
+          selectedData.row_version,
+          normalizeShiftForm(data),
+        );
+
+      await refreshShiftData();
+
+      handleCloseDialog();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (data: Shift) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deleteShift(
-        data.id,
-        data.row_version,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await deleteShift(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      await refreshShiftData();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: Shift) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgeShift(
-        data.id,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
   const handleRestore = async (data: Shift) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await restoreShift(
-        data.id,
-        data.row_version,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/shift?show_all=${isShowDeletedDataChecked}`);
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await restoreShift(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      await refreshShiftData();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
-  const onSubmit = (data: Shift) => {
-    if (!isValid) return;
+  const handlePurge = async (data: Shift) => {
+    try {
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await purgeShift(data.id);
 
-    if (isAddNew) {
-      handleSubmitNew(data);
+      await refreshShiftData();
+      showSuccess(response.message);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onSubmit = async (data: Shift) => {
+    if (isSaving) {
       return;
     }
 
-    if (selectedData) {
-      handleUpdate(data);
-    }
-  };
-
-  const onClickUpdate = (data: Shift) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle("Update Shift");
-
-    const updateData = {
-      ...data,
-      work_start: data.work_start
-        ? new Date(`1970-01-01T${data.work_start}`)
-        : null,
-      work_end: data.work_end ? new Date(`1970-01-01T${data.work_end}`) : null,
-      break_start: data.break_start
-        ? new Date(`1970-01-01T${data.break_start}`)
-        : null,
-      break_end: data.break_end
-        ? new Date(`1970-01-01T${data.break_end}`)
-        : null,
-      checkin_start: data.checkin_start
-        ? new Date(`1970-01-01T${data.checkin_start}`)
-        : null,
-      checkin_end: data.checkin_end
-        ? new Date(`1970-01-01T${data.checkin_end}`)
-        : null,
-      checkout_start: data.checkout_start
-        ? new Date(`1970-01-01T${data.checkout_start}`)
-        : null,
-      checkout_end: data.checkout_end
-        ? new Date(`1970-01-01T${data.checkout_end}`)
-        : null,
-    };
-
-    reset(updateData);
-    setSelectedData(updateData);
-  };
-
-  const activeColumnBody = (rowData: Shift) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
-  };
-
-  const shiftTypeColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) {
-      return <Tag value="Day Off" severity="warning" />;
+    if (isAddNew) {
+      await handleSubmitNew(data);
+      return;
     }
 
-    if (rowData.is_night_shift) {
-      return <Tag value="Night Shift" severity="info" />;
-    }
-
-    return <Tag value="Regular Shift" severity="secondary" />;
-  };
-
-  const formatTimeValue = (value?: string | Date | null) => {
-    if (!value) return "-";
-
-    if (value instanceof Date) {
-      return dayjs(value).format("HH:mm");
-    }
-
-    return dayjs(`2000-01-01 ${value}`).format("HH:mm");
-  };
-
-  const formatTimeRange = (
-    start?: string | Date | null,
-    end?: string | Date | null,
-  ) => {
-    if (!start && !end) return "-";
-    return `${formatTimeValue(start)} - ${formatTimeValue(end)}`;
-  };
-
-  const workTimeColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return "-";
-    return formatTimeRange(rowData.work_start, rowData.work_end);
-  };
-
-  const breakTimeColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return "-";
-    return formatTimeRange(rowData.break_start, rowData.break_end);
-  };
-
-  const checkinWindowColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return "-";
-    return formatTimeRange(rowData.checkin_start, rowData.checkin_end);
-  };
-
-  const checkoutWindowColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return "-";
-    return formatTimeRange(rowData.checkout_start, rowData.checkout_end);
-  };
-
-  const gracePeriodColumnBody = (rowData: Shift) => {
-    if (rowData.is_day_off) return "-";
-    return `${rowData.grace_period_minutes ?? 0} min`;
-  };
-
-  const actionColumnBody = (rowData: Shift) => {
-    return (
-      <div className="flex gap-2">
-        {hasRole(profileState.role, ["superadmin"]) && (
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="Delete Forever"
-            rounded
-            severity="secondary"
-            icon="pi pi-times"
-            size="small"
-            onClick={() => {
-              onClickPurge(rowData);
-            }}
-          />
-        )}
-
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="Restore"
-            rounded
-            severity="success"
-            icon="pi pi-refresh"
-            size="small"
-            onClick={() => {
-              onClickRestore(rowData);
-            }}
-          />
-        )}
-
-        {!rowData.deleted_at && (
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="Delete"
-            rounded
-            severity="danger"
-            icon="pi pi-trash"
-            size="small"
-            onClick={() => {
-              onClickDelete(rowData);
-            }}
-          />
-        )}
-
-        <Button
-          tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-          tooltip="Update"
-          rounded
-          severity="help"
-          icon="pi pi-pencil"
-          size="small"
-          onClick={() => {
-            onClickUpdate(rowData);
-          }}
-        />
-      </div>
-    );
+    await handleUpdate(data);
   };
 
   const onClickDelete = (data: Shift) => {
     confirmDialog({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        const updateData = {
-          ...data,
-          work_start: data.work_start
-            ? new Date(`1970-01-01T${data.work_start}`)
-            : null,
-          work_end: data.work_end
-            ? new Date(`1970-01-01T${data.work_end}`)
-            : null,
-          break_start: data.break_start
-            ? new Date(`1970-01-01T${data.break_start}`)
-            : null,
-          break_end: data.break_end
-            ? new Date(`1970-01-01T${data.break_end}`)
-            : null,
-          checkin_start: data.checkin_start
-            ? new Date(`1970-01-01T${data.checkin_start}`)
-            : null,
-          checkin_end: data.checkin_end
-            ? new Date(`1970-01-01T${data.checkin_end}`)
-            : null,
-          checkout_start: data.checkout_start
-            ? new Date(`1970-01-01T${data.checkout_start}`)
-            : null,
-          checkout_end: data.checkout_end
-            ? new Date(`1970-01-01T${data.checkout_end}`)
-            : null,
-        };
-        setSelectedData(updateData);
-        handleDelete(data);
-      },
-      reject: () => {},
+      header: "Delete Shift",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to delete this shift?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handleDelete(data),
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className="p-button-danger"
           />
         </div>
       ),
@@ -608,55 +460,37 @@ const ShiftTableData = () => {
 
   const onClickRestore = (data: Shift) => {
     confirmDialog({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
+      header: "Restore Shift",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to restore this shift?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-refresh",
       defaultFocus: "accept",
-      accept: () => {
-        const updateData = {
-          ...data,
-          work_start: data.work_start
-            ? new Date(`1970-01-01T${data.work_start}`)
-            : null,
-          work_end: data.work_end
-            ? new Date(`1970-01-01T${data.work_end}`)
-            : null,
-          break_start: data.break_start
-            ? new Date(`1970-01-01T${data.break_start}`)
-            : null,
-          break_end: data.break_end
-            ? new Date(`1970-01-01T${data.break_end}`)
-            : null,
-          checkin_start: data.checkin_start
-            ? new Date(`1970-01-01T${data.checkin_start}`)
-            : null,
-          checkin_end: data.checkin_end
-            ? new Date(`1970-01-01T${data.checkin_end}`)
-            : null,
-          checkout_start: data.checkout_start
-            ? new Date(`1970-01-01T${data.checkout_start}`)
-            : null,
-          checkout_end: data.checkout_end
-            ? new Date(`1970-01-01T${data.checkout_end}`)
-            : null,
-        };
-        setSelectedData(updateData);
-        handleRestore(data);
-      },
-      reject: () => {},
+      accept: () => handleRestore(data),
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
             onClick={options.accept}
-            className="p-button-success"
           />
         </div>
       ),
@@ -665,170 +499,565 @@ const ShiftTableData = () => {
 
   const onClickPurge = (data: Shift) => {
     confirmDialog({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => {},
+      header: "Delete Shift Permanently",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handlePurge(data),
+      reject: () => undefined,
       footer: (options) => (
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
-            label="No"
+            type="button"
+            label="Cancel"
             icon="pi pi-times"
+            text
+            severity="secondary"
             onClick={options.reject}
-            className="p-button-text"
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
             onClick={options.accept}
-            className="p-button-danger"
           />
         </div>
       ),
     });
   };
 
+  const shiftTypeColumnBody = (rowData: Shift) => {
+    if (rowData.is_day_off) {
+      return (
+        <Tag
+          value="Day Off"
+          severity="warning"
+          icon="pi pi-calendar-times"
+          rounded
+        />
+      );
+    }
+
+    if (rowData.is_night_shift) {
+      return (
+        <Tag value="Night Shift" severity="info" icon="pi pi-moon" rounded />
+      );
+    }
+
+    return (
+      <Tag
+        value="Regular Shift"
+        severity="secondary"
+        icon="pi pi-sun"
+        rounded
+      />
+    );
+  };
+
+  const statusColumnBody = (rowData: Shift) => {
+    if (rowData.deleted_at) {
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    }
+
+    if (rowData.is_active) {
+      return (
+        <Tag
+          value="Active"
+          severity="success"
+          icon="pi pi-check-circle"
+          rounded
+        />
+      );
+    }
+
+    return (
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
+    );
+  };
+
+  const timeRangeBody = (
+    start?: string | Date | null,
+    end?: string | Date | null,
+    isDayOff?: boolean,
+  ) => {
+    if (isDayOff) {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    const formattedValue = formatTimeRange(start, end);
+
+    if (formattedValue === "-") {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    return (
+      <span className="whitespace-nowrap font-mono text-sm text-slate-700">
+        {formattedValue}
+      </span>
+    );
+  };
+
+  const workTimeColumnBody = (rowData: Shift) => {
+    return timeRangeBody(
+      rowData.work_start,
+      rowData.work_end,
+      rowData.is_day_off,
+    );
+  };
+
+  const breakTimeColumnBody = (rowData: Shift) => {
+    return timeRangeBody(
+      rowData.break_start,
+      rowData.break_end,
+      rowData.is_day_off,
+    );
+  };
+
+  const checkinWindowColumnBody = (rowData: Shift) => {
+    return timeRangeBody(
+      rowData.checkin_start,
+      rowData.checkin_end,
+      rowData.is_day_off,
+    );
+  };
+
+  const checkoutWindowColumnBody = (rowData: Shift) => {
+    return timeRangeBody(
+      rowData.checkout_start,
+      rowData.checkout_end,
+      rowData.is_day_off,
+    );
+  };
+
+  const gracePeriodColumnBody = (rowData: Shift) => {
+    if (rowData.is_day_off) {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    return (
+      <span className="whitespace-nowrap text-sm text-slate-700">
+        {Number(rowData.grace_period_minutes ?? 0)} min
+      </span>
+    );
+  };
+
+  const actionColumnBody = (rowData: Shift) => {
+    const isDeleted = Boolean(rowData.deleted_at);
+
+    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+    if (isDeleted) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
+      return (
+        <div className="flex flex-nowrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickRestore(rowData)}
+          />
+
+          <Button
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickPurge(rowData)}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        <Button
+          type="button"
+          icon="pi pi-pencil"
+          rounded
+          outlined
+          severity="secondary"
+          size="small"
+          tooltip="Edit"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickUpdate(rowData)}
+        />
+
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickDelete(rowData)}
+        />
+      </div>
+    );
+  };
+
+  const dialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={handleCloseDialog}
+      />
+
+      <Button
+        type="submit"
+        form="shift-form"
+        label={isAddNew ? "Create Shift" : "Save Changes"}
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
+
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={currentKey} />;
+  }
+
   return (
     <>
       <ConfirmDialog />
 
-      <Card>
-        <div className="p-4 flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
-            <div>
-              <div className="text-2xl font-semibold">Shift</div>
-              <div className="text-sm text-gray-500">
-                Manage shift master data
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-clock text-xl" />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Shift
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage work schedules, attendance windows, grace periods,
+                  night shifts, and day-off shifts.
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  Show deleted data
-                </label>
-              </div>
-
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <InputText
-                  className="p-inputtext-sm"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Keyword Search"
-                />
-              </IconField>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                disabled={isValidating}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
 
               <Button
-                label="New"
+                type="button"
+                label="New Shift"
                 icon="pi pi-plus"
                 size="small"
-                onClick={() => {
-                  onClickNew();
-                }}
+                className="w-full sm:w-auto"
+                onClick={onClickNew}
               />
             </div>
           </div>
 
-          <DataTable
-            value={filteredShiftData}
-            tableStyle={{ minWidth: "78rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={["name"]}
-            emptyMessage="No shift found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: "3rem" }}
-              body={(rowData, options) => options.rowIndex + 1}
-            ></Column>
-            <Column field="name" header="Name" sortable></Column>
-            <Column header="Shift Type" body={shiftTypeColumnBody}></Column>
-            <Column header="Work Time" body={workTimeColumnBody}></Column>
-            <Column header="Break Time" body={breakTimeColumnBody}></Column>
-            <Column
-              header="Check-In Window"
-              body={checkinWindowColumnBody}
-            ></Column>
-            <Column
-              header="Check-Out Window"
-              body={checkoutWindowColumnBody}
-            ></Column>
-            <Column header="Grace Period" body={gracePeriodColumnBody}></Column>
-            <Column
-              field="is_active"
-              header="Active"
-              body={activeColumnBody}
-            ></Column>
-            <Column
-              headerClassName="bg-white"
-              className="bg-white"
-              header="Action"
-              body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
-              alignFrozen="right"
-            ></Column>
-          </DataTable>
+          {/* Table Toolbar */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="showDeletedData"
+                checked={isShowDeletedDataChecked}
+                onChange={(event) =>
+                  onShowDeletedChange(Boolean(event.checked))
+                }
+              />
+
+              <label
+                htmlFor="showDeletedData"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+
+            <IconField iconPosition="left" className="w-full md:w-80">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Search shift name"
+                className="w-full"
+              />
+            </IconField>
+          </div>
+
+          {/* Shift Table */}
+          <div className="w-full overflow-hidden">
+            <DataTable
+              value={shiftData ?? []}
+              dataKey="id"
+              filters={filters}
+              globalFilterFields={["name"]}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{
+                minWidth: "96rem",
+              }}
+              emptyMessage="No shift data found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            >
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                headerStyle={{
+                  width: "4rem",
+                }}
+                bodyStyle={{
+                  width: "4rem",
+                }}
+              />
+
+              <Column
+                field="name"
+                header="Shift Name"
+                sortable
+                style={{
+                  minWidth: "17rem",
+                }}
+                body={(rowData: Shift) => (
+                  <span className="font-medium text-slate-800">
+                    {rowData.name}
+                  </span>
+                )}
+              />
+
+              <Column
+                header="Shift Type"
+                body={shiftTypeColumnBody}
+                style={{
+                  minWidth: "13rem",
+                }}
+              />
+
+              <Column
+                header="Work Time"
+                body={workTimeColumnBody}
+                style={{
+                  minWidth: "13rem",
+                }}
+              />
+
+              <Column
+                header="Break Time"
+                body={breakTimeColumnBody}
+                style={{
+                  minWidth: "13rem",
+                }}
+              />
+
+              <Column
+                header="Check-In Window"
+                body={checkinWindowColumnBody}
+                style={{
+                  minWidth: "15rem",
+                }}
+              />
+
+              <Column
+                header="Check-Out Window"
+                body={checkoutWindowColumnBody}
+                style={{
+                  minWidth: "15rem",
+                }}
+              />
+
+              <Column
+                field="grace_period_minutes"
+                header="Grace Period"
+                sortable
+                body={gracePeriodColumnBody}
+                style={{
+                  minWidth: "11rem",
+                }}
+              />
+
+              <Column
+                field="is_active"
+                header="Status"
+                sortable
+                body={statusColumnBody}
+                style={{
+                  minWidth: "10rem",
+                }}
+              />
+
+              <Column
+                header="Action"
+                body={actionColumnBody}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                }}
+              />
+            </DataTable>
+          </div>
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "50vw" }}
-          onHide={() => {
-            if (!visible) return;
-            setVisible(false);
-            reset();
-          }}
-          footer={footerContent}
-          onShow={() => {
+      {/* Shift Form Dialog */}
+      <Dialog
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{
+          width: "95vw",
+          maxWidth: "62rem",
+        }}
+        breakpoints={{
+          "960px": "90vw",
+          "640px": "95vw",
+        }}
+        footer={dialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!isSaving}
+        closable={!isSaving}
+        onHide={handleCloseDialog}
+        onShow={() => {
+          setTimeout(() => {
             setFocus("name");
-          }}
+          }, 0);
+        }}
+      >
+        <form
+          id="shift-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-6 pt-2"
         >
-          <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
+          {/* General Information */}
+          <section className="flex flex-col gap-4">
+            <div className="border-b border-slate-200 pb-2">
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                General Information
+              </h2>
+
+              <p className="m-0 mt-1 text-xs text-slate-500">
+                Define the shift name and operational characteristics.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium text-slate-700"
+              >
+                Shift Name
+                <span className="ml-1 text-red-500">*</span>
+              </label>
+
               <Controller
                 name="name"
                 control={control}
                 rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
+                  required: "Shift name is required.",
+                  maxLength: {
+                    value: 50,
+                    message: "Shift name cannot exceed 50 characters.",
+                  },
                 }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
-                      id="name"
-                      placeholder="Example: Morning Shift"
                       {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
+                      id="name"
+                      autoComplete="off"
+                      placeholder="Example: Morning Shift"
+                      className={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
                     />
+
                     {fieldState.error && (
-                      <small className="font-bold p-error">
+                      <small className="p-error">
                         {fieldState.error.message}
                       </small>
                     )}
@@ -837,381 +1066,571 @@ const ShiftTableData = () => {
               />
             </div>
 
-            <div className="m-0 flex gap-2">
-              <Controller
-                name="is_day_off"
-                control={control}
-                defaultValue={false}
-                render={({ field, fieldState }) => (
-                  <>
-                    <div className="flex flex-row gap-2">
-                      <Checkbox
-                        inputId="is_day_off"
-                        checked={field.value}
-                        onChange={(e) => {
-                          const checked = !!e.checked;
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <Controller
+                  name="is_day_off"
+                  control={control}
+                  defaultValue={false}
+                  render={({ field }) => (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="is_day_off"
+                          className="cursor-pointer text-sm font-medium text-slate-700"
+                        >
+                          Day-Off Shift
+                        </label>
+
+                        <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                          Use this shift for scheduled days without working
+                          hours.
+                        </p>
+                      </div>
+
+                      <InputSwitch
+                        id="is_day_off"
+                        checked={Boolean(field.value)}
+                        onChange={(event) => {
+                          const checked = Boolean(event.value);
+
                           field.onChange(checked);
 
                           if (checked) {
-                            setValue("work_start", null as any);
-                            setValue("work_end", null as any);
-                            setValue("break_start", null as any);
-                            setValue("break_end", null as any);
-                            setValue("checkin_start", null as any);
-                            setValue("checkin_end", null as any);
-                            setValue("checkout_start", null as any);
-                            setValue("checkout_end", null as any);
-                            setValue("grace_period_minutes", 0 as any);
-                            setValue("is_night_shift", false as any);
+                            clearShiftSchedule();
                           }
                         }}
                       />
-                      <label htmlFor="is_day_off">Day Off Shift</label>
                     </div>
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
+                  )}
+                />
+              </div>
+
+              <div
+                className={`rounded-xl border border-slate-200 bg-slate-50 p-4 ${
+                  watchedIsDayOff ? "opacity-60" : ""
+                }`}
+              >
+                <Controller
+                  name="is_night_shift"
+                  control={control}
+                  defaultValue={false}
+                  render={({ field }) => (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <label
+                          htmlFor="is_night_shift"
+                          className="cursor-pointer text-sm font-medium text-slate-700"
+                        >
+                          Night Shift
+                        </label>
+
+                        <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                          Enable when the shift crosses midnight into the next
+                          day.
+                        </p>
+                      </div>
+
+                      <InputSwitch
+                        id="is_night_shift"
+                        checked={Boolean(field.value)}
+                        disabled={watchedIsDayOff}
+                        onChange={(event) => field.onChange(event.value)}
+                      />
+                    </div>
+                  )}
+                />
+              </div>
             </div>
 
             {watchedIsDayOff && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                Day off shifts do not require work time, break time, or
-                attendance windows.
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                <i className="pi pi-info-circle mt-0.5" />
+
+                <span>
+                  Day-off shifts do not use work time, break time, attendance
+                  windows, grace periods, or night-shift settings.
+                </span>
               </div>
             )}
+          </section>
 
-            <div className="flex w-full gap-5">
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="work_start">Work Start</label>
-                <Controller
-                  name="work_start"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="work_start"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
+          {!watchedIsDayOff && (
+            <>
+              {/* Work Schedule */}
+              <section className="flex flex-col gap-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h2 className="m-0 text-sm font-semibold text-slate-800">
+                    Work Schedule
+                  </h2>
+
+                  <p className="m-0 mt-1 text-xs text-slate-500">
+                    Configure working and break hours for this shift.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="work_start"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Work Start
+                    </label>
+
+                    <Controller
+                      name="work_start"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="work_start"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select start time"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="work_end">Work End</label>
-                <Controller
-                  name="work_end"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="work_end"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="flex w-full gap-5">
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="break_start">Break Start</label>
-                <Controller
-                  name="break_start"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="break_start"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="break_end">Break End</label>
-                <Controller
-                  name="break_end"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="break_end"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="flex w-full gap-5">
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="checkin_start">Check-In Start</label>
-                <Controller
-                  name="checkin_start"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="checkin_start"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="checkin_end">Check-In End</label>
-                <Controller
-                  name="checkin_end"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="checkin_end"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="flex w-full gap-5">
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="checkout_start">Check-Out Start</label>
-                <Controller
-                  name="checkout_start"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="checkout_start"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="m-0 w-1/2 flex flex-col gap-2">
-                <label htmlFor="checkout_end">Check-Out End</label>
-                <Controller
-                  name="checkout_end"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        appendTo={() => document.body}
-                        id="checkout_end"
-                        value={field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                        showTime
-                        showSeconds
-                        timeOnly
-                        hourFormat="24"
-                        disabled={watchedIsDayOff}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="grace_period_minutes">Grace Period (min)</label>
-              <Controller
-                name="grace_period_minutes"
-                control={control}
-                defaultValue={0}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputNumber
-                      id="grace_period_minutes"
-                      placeholder="Example: 15"
-                      inputRef={field.ref}
-                      onValueChange={(e) => field.onChange(e.value)}
-                      value={Number(field.value ? field.value : 0)}
-                      disabled={watchedIsDayOff}
-                      className={fieldState.invalid ? "p-invalid" : ""}
                     />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+                  </div>
 
-            <div className="m-0 flex flex-col gap-2">
-              <Controller
-                name="is_night_shift"
-                control={control}
-                defaultValue={false}
-                render={({ field, fieldState }) => (
-                  <>
-                    <div className="flex flex-row gap-2">
-                      <Checkbox
-                        inputId="is_night_shift"
-                        checked={field.value}
-                        disabled={watchedIsDayOff}
-                        onChange={(e) => field.onChange(e.checked)}
-                      />
-                      <label htmlFor="is_night_shift">Night Shift</label>
-                    </div>
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="work_end"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Work End
+                    </label>
 
-            <div className="m-0 flex gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
+                    <Controller
+                      name="work_end"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="work_end"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select end time"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="break_start"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Break Start
+                    </label>
+
+                    <Controller
+                      name="break_start"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="break_start"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select break start"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="break_end"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Break End
+                    </label>
+
+                    <Controller
+                      name="break_end"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="break_end"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select break end"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Attendance Windows */}
+              <section className="flex flex-col gap-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h2 className="m-0 text-sm font-semibold text-slate-800">
+                    Attendance Windows
+                  </h2>
+
+                  <p className="m-0 mt-1 text-xs text-slate-500">
+                    Define the valid check-in and check-out time ranges.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="checkin_start"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Check-In Start
+                    </label>
+
+                    <Controller
+                      name="checkin_start"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="checkin_start"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select check-in start"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="checkin_end"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Check-In End
+                    </label>
+
+                    <Controller
+                      name="checkin_end"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="checkin_end"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select check-in end"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="checkout_start"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Check-Out Start
+                    </label>
+
+                    <Controller
+                      name="checkout_start"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="checkout_start"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select check-out start"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="checkout_end"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Check-Out End
+                    </label>
+
+                    <Controller
+                      name="checkout_end"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <Calendar
+                            id="checkout_end"
+                            appendTo={getBody}
+                            value={toTimeDate(field.value)}
+                            timeOnly
+                            showTime
+                            showSeconds
+                            hourFormat="24"
+                            readOnlyInput
+                            placeholder="Select check-out end"
+                            className={`w-full ${
+                              fieldState.invalid ? "p-invalid" : ""
+                            }`}
+                            onChange={(event) =>
+                              field.onChange(
+                                (event.value as Date | null) ?? null,
+                              )
+                            }
+                          />
+
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              {/* Grace Period */}
+              <section className="flex flex-col gap-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h2 className="m-0 text-sm font-semibold text-slate-800">
+                    Grace Period
+                  </h2>
+
+                  <p className="m-0 mt-1 text-xs text-slate-500">
+                    Configure the permitted lateness tolerance.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="grace_period_minutes"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Grace Period (minutes)
+                  </label>
+
+                  <Controller
+                    name="grace_period_minutes"
+                    control={control}
+                    defaultValue={0}
+                    rules={{
+                      min: {
+                        value: 0,
+                        message: "Grace period cannot be negative.",
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <InputNumber
+                          id="grace_period_minutes"
+                          inputRef={field.ref}
+                          value={Number(field.value ?? 0)}
+                          min={0}
+                          useGrouping={false}
+                          suffix=" min"
+                          placeholder="Example: 15"
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                          onBlur={field.onBlur}
+                          onValueChange={(event) =>
+                            field.onChange(event.value ?? 0)
+                          }
+                        />
+
+                        {fieldState.error ? (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        ) : (
+                          <small className="text-slate-500">
+                            Employees checking in within this period are not
+                            considered late.
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+              </section>
+            </>
+          )}
+
+          {/* Active Status */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <Controller
+              name="is_active"
+              control={control}
+              defaultValue
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active Status
+                    </label>
+
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive shifts remain stored but should not be available
+                      for new employee shift assignments.
+                    </p>
+                  </div>
+
                   <InputSwitch
                     id="is_active"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
+                    checked={Boolean(field.value)}
+                    onChange={(event) => field.onChange(event.value)}
                   />
-                )}
-              />
-            </div>
+                </div>
+              )}
+            />
           </div>
-        </Dialog>
-      </form>
+        </form>
+      </Dialog>
     </>
   );
 };

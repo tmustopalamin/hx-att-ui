@@ -1,26 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import useSWR, { mutate } from "swr";
+import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useDispatch } from "react-redux";
-
-import { Agency } from "@/app/types/agency";
-import {
-  createAgency,
-  deleteAgency,
-  purgeAgency,
-  restoreAgency,
-  updateAgency,
-} from "@/app/services/agency-service";
-import { fetcher } from "@/app/utils/fetcher";
-import {
-  getErrorMessage,
-  isResponseTypeError,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import useSWR from "swr";
 
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -37,7 +19,32 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
-const emptyForm: Agency = {
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import {
+  createAgency,
+  deleteAgency,
+  purgeAgency,
+  restoreAgency,
+  updateAgency,
+} from "@/app/services/agency-service";
+
+import { Agency } from "@/app/types/agency";
+
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
+const EMPTY_AGENCY: Agency = {
   id: 0,
   code: "",
   name: "",
@@ -49,370 +56,471 @@ const emptyForm: Agency = {
   row_version: 0,
 };
 
+const getBody = () => document.body;
+
 const AgencyTableData = () => {
   const dispatch = useDispatch();
 
+  const profileState = useSelector((state: RootState) => state.profile);
+
   const [selectedData, setSelectedData] = useState<Agency | null>(null);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
+
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
   });
-  const [visible, setVisible] = useState(false);
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
+
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
+  const [isAddNew, setIsAddNew] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New Agency");
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const currentKey = `/api/agency?show_all=${isShowDeletedDataChecked}`;
+
   const {
-    control,
-    handleSubmit,
-    formState: { isValid },
-    reset,
-    clearErrors,
-    setFocus,
-  } = useForm<Agency>({
-    defaultValues: emptyForm,
-    mode: "onChange",
-  });
+    data: agencyData,
+    error,
+    isLoading,
+    isValidating,
+    mutate: refreshAgencyData,
+  } = useSWR<Agency[]>(currentKey, fetcher);
 
-  const agencyKey = `/api/agency?show_all=${isShowDeletedDataChecked}`;
+  const { control, handleSubmit, setFocus, reset, clearErrors } =
+    useForm<Agency>({
+      defaultValues: EMPTY_AGENCY,
+      mode: "onTouched",
+    });
 
-  const { data, error, isLoading } = useSWR<Agency[]>(agencyKey, fetcher);
-
-  const summary = useMemo(() => {
-    const rows = data ?? [];
-    return {
-      total: rows.length,
-      active: rows.filter((v) => !v.deleted_at && v.is_active).length,
-      inactive: rows.filter((v) => !v.deleted_at && !v.is_active).length,
-      deleted: rows.filter((v) => !!v.deleted_at).length,
-    };
-  }, [data]);
-
-  const refreshList = async () => {
-    await mutate(agencyKey);
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
   };
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setGlobalFilterValue(value);
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const normalizeAgencyForm = (data: Agency): Agency => {
+    return {
+      ...data,
+      code: data.code.trim(),
+      name: data.name.trim(),
+      address: data.address.trim(),
+      phone_number1: data.phone_number1.trim(),
+      phone_number2: data.phone_number2?.trim() || null,
+    };
+  };
+
+  const handleCloseDialog = () => {
+    setVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+    setPopupHeaderTitle("New Agency");
+    clearErrors();
+    reset(EMPTY_AGENCY);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await refreshAgencyData();
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
     setFilters({
-      global: { value, matchMode: FilterMatchMode.CONTAINS },
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
     });
+
+    setGlobalFilterValue(value);
+  };
+
+  const onShowDeletedChange = (checked: boolean) => {
+    setIsShowDeletedDataChecked(checked);
   };
 
   const onClickNew = () => {
     clearErrors();
     setSelectedData(null);
     setIsAddNew(true);
-    setVisible(true);
     setPopupHeaderTitle("New Agency");
-    reset(emptyForm);
-
-    setTimeout(() => {
-      setFocus("code");
-    }, 0);
+    reset(EMPTY_AGENCY);
+    setVisible(true);
   };
 
-  const onClickEdit = (data: Agency) => {
+  const onClickUpdate = (data: Agency) => {
+    clearErrors();
     setSelectedData(data);
     setIsAddNew(false);
-    setVisible(true);
     setPopupHeaderTitle("Edit Agency");
+
     reset({
       ...data,
-      deleted_at: data.deleted_at ?? null,
       phone_number2: data.phone_number2 ?? "",
+      deleted_at: data.deleted_at ?? null,
     });
+
+    setVisible(true);
   };
 
-  const closeDialog = () => {
-    setVisible(false);
-    setSelectedData(null);
-    reset(emptyForm);
-  };
-
-  const handleSubmitNew = async (form: Agency) => {
+  const handleSubmitNew = async (data: Agency) => {
     try {
-      const res = await createAgency({
-        ...form,
-        code: form.code.trim(),
-        name: form.name.trim(),
-        address: form.address.trim(),
-        phone_number1: form.phone_number1.trim(),
-        phone_number2: form.phone_number2?.trim() || null,
-      });
+      setIsSaving(true);
 
-      closeDialog();
-      await refreshList();
+      const response = await createAgency(normalizeAgencyForm(data));
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Agency created successfully",
-        }),
-      );
+      await refreshAgencyData();
+
+      handleCloseDialog();
+
+      showSuccess(response.message ?? "Agency created successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleUpdate = async (form: Agency) => {
-    if (!selectedData) return;
+  const handleUpdate = async (data: Agency) => {
+    if (!selectedData) {
+      showError(new Error("Agency data is not selected."));
+
+      return;
+    }
 
     try {
-      const res = await updateAgency(
+      setIsSaving(true);
+
+      const response = await updateAgency(
         selectedData.id,
         selectedData.row_version,
-        {
-          ...form,
-          code: form.code.trim(),
-          name: form.name.trim(),
-          address: form.address.trim(),
-          phone_number1: form.phone_number1.trim(),
-          phone_number2: form.phone_number2?.trim() || null,
-        },
+        normalizeAgencyForm(data),
       );
 
-      closeDialog();
-      await refreshList();
+      await refreshAgencyData();
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Agency updated successfully",
-        }),
-      );
+      handleCloseDialog();
+
+      showSuccess(response.message ?? "Agency updated successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (data: Agency) => {
     try {
-      const res = await deleteAgency(data.id, data.row_version);
-      await refreshList();
+      const response = await deleteAgency(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Agency deleted successfully",
-        }),
-      );
+      await refreshAgencyData();
+
+      showSuccess(response.message ?? "Agency deleted successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
   const handleRestore = async (data: Agency) => {
     try {
-      const res = await restoreAgency(data.id, data.row_version);
-      await refreshList();
+      const response = await restoreAgency(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Agency restored successfully",
-        }),
-      );
+      await refreshAgencyData();
+
+      showSuccess(response.message ?? "Agency restored successfully.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
   const handlePurge = async (data: Agency) => {
     try {
-      const res = await purgeAgency(data.id);
-      await refreshList();
+      const response = await purgeAgency(data.id);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Agency permanently deleted",
-        }),
-      );
+      await refreshAgencyData();
+
+      showSuccess(response.message ?? "Agency permanently deleted.");
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
-  const onSubmit = (form: Agency) => {
-    if (!isValid) return;
-    if (isAddNew) {
-      void handleSubmitNew(form);
+  const onSubmit = async (data: Agency) => {
+    if (isSaving) {
       return;
     }
-    void handleUpdate(form);
+
+    if (isAddNew) {
+      await handleSubmitNew(data);
+      return;
+    }
+
+    await handleUpdate(data);
   };
 
   const onClickDelete = (data: Agency) => {
     confirmDialog({
-      message: "Do you want to delete this agency?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      acceptClassName: "p-button-danger",
-      accept: () => {
-        void handleDelete(data);
-      },
+      header: "Delete Agency",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to delete this agency?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handleDelete(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
 
   const onClickRestore = (data: Agency) => {
     confirmDialog({
-      message: "Do you want to restore this agency?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
-      acceptClassName: "p-button-success",
-      accept: () => {
-        void handleRestore(data);
-      },
+      header: "Restore Agency",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to restore this agency?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-refresh",
+      defaultFocus: "accept",
+      accept: () => handleRestore(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
 
   const onClickPurge = (data: Agency) => {
     confirmDialog({
-      message: "Do you want to permanently delete this agency?",
-      header: "Permanent Delete Confirmation",
+      header: "Delete Agency Permanently",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
       icon: "pi pi-exclamation-triangle",
-      acceptClassName: "p-button-danger",
-      accept: () => {
-        void handlePurge(data);
-      },
+      defaultFocus: "reject",
+      accept: () => handlePurge(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
 
-  const activeBodyTemplate = (rowData: Agency) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="warning" />
+  const statusColumnBody = (rowData: Agency) => {
+    if (rowData.deleted_at) {
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    }
+
+    if (rowData.is_active) {
+      return (
+        <Tag
+          value="Active"
+          severity="success"
+          icon="pi pi-check-circle"
+          rounded
+        />
+      );
+    }
+
+    return (
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
     );
   };
 
-  const statusBodyTemplate = (rowData: Agency) => {
-    return rowData.deleted_at ? (
-      <Tag value="Deleted" severity="danger" />
-    ) : (
-      <Tag value="Normal" severity="info" />
+  const phoneColumnBody = (value: string | null | undefined) => {
+    if (!value) {
+      return <span className="text-sm text-slate-400">-</span>;
+    }
+
+    return (
+      <span className="whitespace-nowrap text-sm text-slate-700">{value}</span>
+    );
+  };
+
+  const addressColumnBody = (rowData: Agency) => {
+    if (!rowData.address) {
+      return <span className="text-sm text-slate-400">No address</span>;
+    }
+
+    return (
+      <span
+        className="block max-w-md truncate text-sm text-slate-600"
+        title={rowData.address}
+      >
+        {rowData.address}
+      </span>
     );
   };
 
   const actionColumnBody = (rowData: Agency) => {
-    if (rowData.deleted_at) {
+    const isDeleted = Boolean(rowData.deleted_at);
+
+    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+    if (isDeleted) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
       return (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           <Button
-            rounded
-            severity="success"
+            type="button"
             icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
             size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
             onClick={() => onClickRestore(rowData)}
           />
+
           <Button
+            type="button"
+            icon="pi pi-trash"
             rounded
-            severity="secondary"
-            icon="pi pi-times"
+            outlined
+            severity="danger"
             size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
             onClick={() => onClickPurge(rowData)}
           />
         </div>
@@ -420,109 +528,158 @@ const AgencyTableData = () => {
     }
 
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
-          rounded
-          severity="help"
+          type="button"
           icon="pi pi-pencil"
-          size="small"
-          onClick={() => onClickEdit(rowData)}
-        />
-        <Button
           rounded
-          severity="danger"
-          icon="pi pi-trash"
+          outlined
+          severity="secondary"
           size="small"
+          tooltip="Edit"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickUpdate(rowData)}
+        />
+
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
           onClick={() => onClickDelete(rowData)}
         />
       </div>
     );
   };
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error)
-    return <ErrorNotConnectedToApi mutateKey="/api/agency?show_all=true" />;
+  const dialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={handleCloseDialog}
+      />
+
+      <Button
+        type="submit"
+        form="agency-form"
+        label={isAddNew ? "Create Agency" : "Save Changes"}
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
+
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={currentKey} />;
+  }
 
   return (
     <>
       <ConfirmDialog />
 
-      <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Total</p>
-              <h3 className="text-2xl font-semibold">{summary.total}</h3>
-            </div>
-          </Card>
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Active</p>
-              <h3 className="text-2xl font-semibold">{summary.active}</h3>
-            </div>
-          </Card>
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Inactive</p>
-              <h3 className="text-2xl font-semibold">{summary.inactive}</h3>
-            </div>
-          </Card>
-          <Card className="shadow-sm">
-            <div>
-              <p className="text-sm text-slate-500">Deleted</p>
-              <h3 className="text-2xl font-semibold">{summary.deleted}</h3>
-            </div>
-          </Card>
-        </div>
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-building text-xl" />
+              </div>
 
-        <Card className="shadow-sm">
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold">Agency</h1>
-                <p className="text-sm text-slate-500">
-                  Manage legal entity / vendor / employing company master.
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Agency
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage employing companies, legal entities, and agency contact
+                  details.
                 </p>
               </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <Checkbox
-                    inputId="showDeletedAgency"
-                    checked={isShowDeletedDataChecked}
-                    onChange={() =>
-                      setIsShowDeletedDataChecked((prev) => !prev)
-                    }
-                  />
-                  <label htmlFor="showDeletedAgency" className="text-sm">
-                    Show deleted data
-                  </label>
-                </div>
-
-                <IconField iconPosition="left">
-                  <InputIcon className="pi pi-search" />
-                  <InputText
-                    value={globalFilterValue}
-                    onChange={onGlobalFilterChange}
-                    placeholder="Search agency"
-                    className="w-full sm:w-72"
-                  />
-                </IconField>
-
-                <Button
-                  label="New Agency"
-                  icon="pi pi-plus"
-                  onClick={onClickNew}
-                />
-              </div>
             </div>
 
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                disabled={isValidating}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
+
+              <Button
+                type="button"
+                label="New Agency"
+                icon="pi pi-plus"
+                size="small"
+                className="w-full sm:w-auto"
+                onClick={onClickNew}
+              />
+            </div>
+          </div>
+
+          {/* Table Toolbar */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="showDeletedData"
+                checked={isShowDeletedDataChecked}
+                onChange={(event) =>
+                  onShowDeletedChange(Boolean(event.checked))
+                }
+              />
+
+              <label
+                htmlFor="showDeletedData"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+
+            <IconField iconPosition="left" className="w-full md:w-80">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Search agency or contact details"
+                className="w-full"
+              />
+            </IconField>
+          </div>
+
+          {/* Agency Table */}
+          <div className="w-full overflow-hidden">
             <DataTable
-              value={data ?? []}
-              stripedRows
-              paginator
-              rows={10}
-              rowsPerPageOptions={[10, 25, 50]}
+              value={agencyData ?? []}
               dataKey="id"
               filters={filters}
               globalFilterFields={[
@@ -532,214 +689,377 @@ const AgencyTableData = () => {
                 "phone_number1",
                 "phone_number2",
               ]}
-              emptyMessage="No agency found."
-              loading={isLoading}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
               scrollable
-              tableStyle={{ minWidth: "72rem" }}
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{
+                minWidth: "82rem",
+              }}
+              emptyMessage="No agency data found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
                 header="#"
                 body={(_, options) => options.rowIndex + 1}
-                style={{ width: "4rem" }}
+                headerStyle={{
+                  width: "4rem",
+                }}
+                bodyStyle={{
+                  width: "4rem",
+                }}
               />
+
               <Column
                 field="code"
                 header="Code"
-                style={{ minWidth: "10rem" }}
+                sortable
+                style={{
+                  minWidth: "10rem",
+                }}
+                body={(rowData: Agency) => (
+                  <span className="font-mono text-sm font-semibold text-slate-700">
+                    {rowData.code}
+                  </span>
+                )}
               />
+
               <Column
                 field="name"
-                header="Name"
-                style={{ minWidth: "14rem" }}
+                header="Agency Name"
+                sortable
+                style={{
+                  minWidth: "18rem",
+                }}
+                body={(rowData: Agency) => (
+                  <span className="font-medium text-slate-800">
+                    {rowData.name}
+                  </span>
+                )}
               />
+
               <Column
                 field="phone_number1"
                 header="Primary Phone"
-                style={{ minWidth: "12rem" }}
+                sortable
+                body={(rowData: Agency) =>
+                  phoneColumnBody(rowData.phone_number1)
+                }
+                style={{
+                  minWidth: "13rem",
+                }}
               />
+
               <Column
                 field="phone_number2"
                 header="Secondary Phone"
-                style={{ minWidth: "12rem" }}
+                sortable
+                body={(rowData: Agency) =>
+                  phoneColumnBody(rowData.phone_number2)
+                }
+                style={{
+                  minWidth: "13rem",
+                }}
               />
+
               <Column
                 field="address"
                 header="Address"
-                style={{ minWidth: "20rem" }}
+                sortable
+                body={addressColumnBody}
+                style={{
+                  minWidth: "22rem",
+                }}
               />
+
               <Column
-                header="Active"
-                body={activeBodyTemplate}
-                style={{ minWidth: "8rem" }}
-              />
-              <Column
+                field="is_active"
                 header="Status"
-                body={statusBodyTemplate}
-                style={{ minWidth: "8rem" }}
+                sortable
+                body={statusColumnBody}
+                style={{
+                  minWidth: "10rem",
+                }}
               />
+
               <Column
                 header="Action"
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
-                style={{ minWidth: "10rem" }}
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                }}
               />
             </DataTable>
           </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "56rem", maxWidth: "95vw" }}
-          onHide={closeDialog}
-          onShow={() => setTimeout(() => setFocus("code"), 0)}
-          breakpoints={{ "960px": "90vw", "640px": "96vw" }}
-          footer={
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                label="Cancel"
-                icon="pi pi-times"
-                className="p-button-text"
-                onClick={closeDialog}
-              />
-              <Button
-                type="submit"
-                label={isAddNew ? "Submit" : "Save"}
-                icon="pi pi-check"
-                disabled={!isValid}
-              />
-            </div>
-          }
+      {/* Agency Form Dialog */}
+      <Dialog
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{
+          width: "95vw",
+          maxWidth: "48rem",
+        }}
+        breakpoints={{
+          "960px": "90vw",
+          "640px": "95vw",
+        }}
+        footer={dialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!isSaving}
+        closable={!isSaving}
+        onHide={handleCloseDialog}
+        onShow={() => {
+          setTimeout(() => {
+            setFocus("code");
+          }, 0);
+        }}
+      >
+        <form
+          id="agency-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2"
         >
-          <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="code"
+              className="text-sm font-medium text-slate-700"
+            >
+              Agency Code
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+
             <Controller
               name="code"
               control={control}
-              rules={{ required: "Code is required" }}
+              rules={{
+                required: "Agency code is required.",
+                validate: {
+                  noSpaces: (value) =>
+                    !/\s/.test(value) || "Agency code must not contain spaces.",
+                },
+              }}
               render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Code</label>
+                <>
                   <InputText
                     {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    id="code"
+                    autoComplete="off"
+                    placeholder="Example: AMG"
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
                   />
-                  {fieldState.error && (
+
+                  {fieldState.error ? (
                     <small className="p-error">
                       {fieldState.error.message}
                     </small>
+                  ) : (
+                    <small className="text-slate-500">
+                      Use a short and unique agency code.
+                    </small>
                   )}
-                </div>
+                </>
               )}
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="name"
+              className="text-sm font-medium text-slate-700"
+            >
+              Agency Name
+              <span className="ml-1 text-red-500">*</span>
+            </label>
 
             <Controller
               name="name"
               control={control}
-              rules={{ required: "Name is required" }}
+              rules={{
+                required: "Agency name is required.",
+              }}
               render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">Name</label>
+                <>
                   <InputText
                     {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    id="name"
+                    autoComplete="off"
+                    placeholder="Example: Asahimas"
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
                   />
+
                   {fieldState.error && (
                     <small className="p-error">
                       {fieldState.error.message}
                     </small>
                   )}
-                </div>
+                </>
               )}
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="phone_number1"
+              className="text-sm font-medium text-slate-700"
+            >
+              Primary Phone
+              <span className="ml-1 text-red-500">*</span>
+            </label>
 
             <Controller
               name="phone_number1"
               control={control}
-              rules={{ required: "Primary phone is required" }}
+              rules={{
+                required: "Primary phone number is required.",
+              }}
               render={({ field, fieldState }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Primary Phone
-                  </label>
+                <>
                   <InputText
                     {...field}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    id="phone_number1"
+                    autoComplete="off"
+                    placeholder="Example: +62 21 1234 5678"
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
                   />
+
                   {fieldState.error && (
                     <small className="p-error">
                       {fieldState.error.message}
                     </small>
                   )}
-                </div>
+                </>
               )}
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="phone_number2"
+              className="text-sm font-medium text-slate-700"
+            >
+              Secondary Phone
+            </label>
 
             <Controller
               name="phone_number2"
               control={control}
               render={({ field }) => (
-                <div>
-                  <label className="mb-2 block text-sm font-medium">
-                    Secondary Phone
-                  </label>
-                  <InputText {...field} className="w-full" />
-                </div>
+                <>
+                  <InputText
+                    {...field}
+                    value={field.value ?? ""}
+                    id="phone_number2"
+                    autoComplete="off"
+                    placeholder="Optional secondary phone"
+                    className="w-full"
+                  />
+
+                  <small className="text-slate-500">
+                    Optional alternate contact number.
+                  </small>
+                </>
               )}
             />
+          </div>
+
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <label
+              htmlFor="address"
+              className="text-sm font-medium text-slate-700"
+            >
+              Address
+              <span className="ml-1 text-red-500">*</span>
+            </label>
 
             <Controller
               name="address"
               control={control}
-              rules={{ required: "Address is required" }}
+              rules={{
+                required: "Agency address is required.",
+              }}
               render={({ field, fieldState }) => (
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-medium">
-                    Address
-                  </label>
+                <>
                   <InputTextarea
                     {...field}
+                    id="address"
                     rows={4}
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    autoResize
+                    placeholder="Enter the agency's complete address"
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
                   />
+
                   {fieldState.error && (
                     <small className="p-error">
                       {fieldState.error.message}
                     </small>
                   )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+            <Controller
+              name="is_active"
+              control={control}
+              defaultValue
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active Status
+                    </label>
+
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive agencies remain stored but should not be
+                      available for branch or employee employment records.
+                    </p>
+                  </div>
+
+                  <InputSwitch
+                    id="is_active"
+                    checked={Boolean(field.value)}
+                    onChange={(event) => field.onChange(event.value)}
+                  />
                 </div>
               )}
             />
-
-            <div className="md:col-span-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <Controller
-                  name="is_active"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
-                      <div>
-                        <p className="text-sm font-semibold">Active</p>
-                        <p className="text-xs text-slate-500">
-                          Enable if this agency can be used by branch and
-                          employee employment.
-                        </p>
-                      </div>
-                      <InputSwitch
-                        checked={!!field.value}
-                        onChange={(e) => field.onChange(e.value)}
-                      />
-                    </div>
-                  )}
-                />
-              </div>
-            </div>
           </div>
-        </Dialog>
-      </form>
+        </form>
+      </Dialog>
     </>
   );
 };

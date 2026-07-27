@@ -1,690 +1,969 @@
 "use client";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { ChangeEvent, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import useSWR from "swr";
+
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Controller, useForm } from "react-hook-form";
-import CardTitle from "@/app/_components/CardTitle";
+import { Card } from "primereact/card";
+import { Checkbox } from "primereact/checkbox";
+import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
 import { InputSwitch } from "primereact/inputswitch";
-import { useState } from "react";
-import useSWR, { mutate } from "swr";
-import { fetcher } from "@/app/utils/fetcher";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
+
+import { useDispatch, useSelector } from "react-redux";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
+
+import {
+  createPosition,
+  deletePosition,
+  purgePosition,
+  restorePosition,
+  updatePosition,
+} from "@/app/services/position-service";
+
+import { Department } from "@/app/types/department";
+import { Position } from "@/app/types/position";
 import {
   ResponseType,
   ResponseTypeCreateSuccess,
 } from "@/app/types/response-type";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+
 import {
-  isResponseTypeError,
   getErrorMessage,
+  isResponseTypeError,
 } from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { Tag } from "primereact/tag";
-import { Checkbox } from "primereact/checkbox";
-import { RootState } from "@/store/store";
+import { fetcher } from "@/app/utils/fetcher";
 import { hasRole } from "@/app/utils/role-utils";
-import {
-  createPosition,
-  updatePosition,
-  deletePosition,
-  purgePosition,
-  restorePosition,
-} from "@/app/services/position-service";
-import { Position } from "@/app/types/position";
-import { Dropdown } from "primereact/dropdown";
-import { State } from "@/app/types/state";
+
+import { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
+
+type PositionRow = Position & {
+  parent_name?: string | null;
+  department_name?: string | null;
+};
+
+const EMPTY_POSITION: Position = {
+  id: 0,
+  code: "",
+  name: "",
+  parent_id: null,
+  department_id: null,
+  is_active: true,
+  deleted_at: "",
+  row_version: 0,
+};
+
+const getBody = () => document.body;
 
 const PositionTableData = () => {
   const dispatch = useDispatch();
+
   const profileState = useSelector((state: RootState) => state.profile);
-  const [selectedData, setSelectedData] = useState<Position | null>(null);
+
+  const [selectedData, setSelectedData] = useState<PositionRow | null>(null);
+
   const [globalFilterValue, setGlobalFilterValue] = useState("");
+
   const [filters, setFilters] = useState({
-    global: { value: "", matchMode: FilterMatchMode.CONTAINS },
+    global: {
+      value: "",
+      matchMode: FilterMatchMode.CONTAINS,
+    },
   });
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const {
-    control,
-    handleSubmit,
-    setFocus,
-    formState: { isValid },
-    reset,
-    clearErrors,
-  } = useForm<Position>();
+
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
+  const [isAddNew, setIsAddNew] = useState(false);
 
-    _filters["global"].value = value;
+  const [visible, setVisible] = useState(false);
 
-    setFilters(_filters);
-    setGlobalFilterValue(value);
-  };
+  const [popupHeaderTitle, setPopupHeaderTitle] = useState("New Position");
 
-  const onClickNew = () => {
-    clearErrors();
-    setIsAddNew(true);
-    setVisible(true);
-    setPopupHeaderTitle("New Position");
-    reset({
-      id: 0,
-      code: "",
-      name: "",
-      parent_id: null,
-      department_id: null,
-      is_active: true,
-      deleted_at: "",
-      row_version: 0,
-    });
-  };
+  const [isSaving, setIsSaving] = useState(false);
 
-  const footerContent = (
-    <div className="text-right flex gap-5 justify-end">
-      <Button
-        type="button"
-        label="Cancel"
-        icon="pi pi-times"
-        onClick={() => {
-          setVisible(false);
-        }}
-        className="p-button-text"
-      />
-      <Button
-        type="submit"
-        label={isAddNew ? "Submit" : "Save"}
-        icon="pi pi-check"
-      />
-    </div>
-  );
+  const currentKey = `/api/position?show_all=${isShowDeletedDataChecked}`;
+
+  const parentPositionKey = "/api/position?show_all=false";
+
+  const departmentKey = "/api/department?show_all=false";
 
   const {
-    data: PositionData,
+    data: positionData,
     error,
     isLoading,
-  } = useSWR<Position[]>(
-    `/api/position?show_all=${isShowDeletedDataChecked}`,
-    fetcher,
-  );
+    isValidating,
+    mutate: refreshPositionData,
+  } = useSWR<PositionRow[]>(currentKey, fetcher);
+
   const {
-    data: stateData,
-    error: stateError,
-    isLoading: stateIsLoading,
-  } = useSWR<State[]>(`/api/position`, fetcher);
+    data: parentPositionData,
+    error: parentPositionError,
+    isLoading: parentPositionIsLoading,
+    isValidating: parentPositionIsValidating,
+    mutate: refreshParentPositionData,
+  } = useSWR<PositionRow[]>(parentPositionKey, fetcher);
+
   const {
     data: departmentData,
     error: departmentError,
     isLoading: departmentIsLoading,
-  } = useSWR<State[]>(`/api/department`, fetcher);
-  const activeState = stateData?.filter((a) => a.is_active);
-  const activeDepartment = departmentData?.filter((a) => a.is_active);
+    isValidating: departmentIsValidating,
+    mutate: refreshDepartmentData,
+  } = useSWR<Department[]>(departmentKey, fetcher);
 
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return <ErrorNotConnectedToApi mutateKey="/api/position?show_all=true" />;
-  }
+  const { control, handleSubmit, setFocus, reset, clearErrors } =
+    useForm<Position>({
+      defaultValues: EMPTY_POSITION,
+      mode: "onTouched",
+    });
 
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
+  const parentPositionOptions = useMemo(() => {
+    return (parentPositionData ?? []).filter((position) => {
+      const isCurrentPosition = selectedData?.id === position.id;
+
+      const isExistingParent = selectedData?.parent_id === position.id;
+
+      if (position.deleted_at || isCurrentPosition) {
+        return false;
+      }
+
+      /*
+       * Saat edit, parent lama tetap ditampilkan
+       * meskipun statusnya sudah inactive.
+       */
+      return position.is_active || isExistingParent;
+    });
+  }, [parentPositionData, selectedData]);
+
+  const departmentOptions = useMemo(() => {
+    return (departmentData ?? []).filter((department) => {
+      const isExistingDepartment =
+        selectedData?.department_id === department.id;
+
+      if (department.deleted_at) {
+        return false;
+      }
+
+      /*
+       * Department lama tetap dapat terlihat
+       * ketika edit walaupun sudah inactive.
+       */
+      return department.is_active || isExistingDepartment;
+    });
+  }, [departmentData, selectedData]);
+
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
+  };
+
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: getErrorMessage(err, "message"),
+        }),
+      );
+
+      return;
+    }
+
+    if (err instanceof Error) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
+        }),
+      );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const normalizePositionForm = (data: Position): Position => {
+    return {
+      ...data,
+      code: data.code.trim(),
+      name: data.name.trim(),
+      parent_id:
+        data.parent_id && Number(data.parent_id) > 0
+          ? Number(data.parent_id)
+          : null,
+      department_id:
+        data.department_id && Number(data.department_id) > 0
+          ? Number(data.department_id)
+          : null,
+    };
+  };
+
+  const handleCloseDialog = () => {
+    setVisible(false);
+    setSelectedData(null);
+    setIsAddNew(false);
+    setPopupHeaderTitle("New Position");
+    clearErrors();
+    reset(EMPTY_POSITION);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        refreshPositionData(),
+        refreshParentPositionData(),
+        refreshDepartmentData(),
+      ]);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onGlobalFilterChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    setFilters({
+      global: {
+        value,
+        matchMode: FilterMatchMode.CONTAINS,
+      },
+    });
+
+    setGlobalFilterValue(value);
+  };
+
+  const onShowDeletedChange = (checked: boolean) => {
+    setIsShowDeletedDataChecked(checked);
+  };
+
+  const onClickNew = () => {
+    clearErrors();
+    setSelectedData(null);
+    setIsAddNew(true);
+    setPopupHeaderTitle("New Position");
+    reset(EMPTY_POSITION);
+    setVisible(true);
+  };
+
+  const onClickUpdate = (data: PositionRow) => {
+    clearErrors();
+    setSelectedData(data);
+    setIsAddNew(false);
+    setPopupHeaderTitle("Edit Position");
+
+    reset({
+      id: data.id,
+      code: data.code,
+      name: data.name,
+      parent_id: data.parent_id ?? null,
+      department_id: data.department_id ?? null,
+      is_active: data.is_active,
+      deleted_at: data.deleted_at ?? "",
+      row_version: data.row_version,
+    });
+
+    setVisible(true);
   };
 
   const handleSubmitNew = async (data: Position) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createPosition(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/position?show_all=${isShowDeletedDataChecked}`);
-      mutate(`/api/department`);
-      mutate(`/api/position`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      setIsSaving(true);
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await createPosition(normalizePositionForm(data));
+
+      await Promise.all([refreshPositionData(), refreshParentPositionData()]);
+
+      handleCloseDialog();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleUpdate = async (data: Position) => {
     if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail: "please select data",
-        }),
-      );
+      showError(new Error("Position data is not selected."));
+
       return;
     }
 
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await updatePosition(
-        selectedData.id,
-        selectedData.row_version,
-        data,
-      );
+      setIsSaving(true);
 
-      setVisible(false);
-      mutate(`/api/position?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-      reset();
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await updatePosition(
+          selectedData.id,
+          selectedData.row_version,
+          normalizePositionForm(data),
+        );
+
+      await Promise.all([refreshPositionData(), refreshParentPositionData()]);
+
+      handleCloseDialog();
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDelete = async (data: Position) => {
+  const handleDelete = async (data: PositionRow) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await deletePosition(
-        data.id,
-        data.row_version,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/position?show_all=${isShowDeletedDataChecked}`);
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await deletePosition(data.id, data.row_version);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      await Promise.all([refreshPositionData(), refreshParentPositionData()]);
+
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
-  const handlePurge = async (data: Position) => {
+  const handleRestore = async (data: PositionRow) => {
     try {
-      const res: ResponseType<ResponseTypeCreateSuccess> = await purgePosition(
-        data.id,
-      );
-      setVisible(false);
-      reset();
-      mutate(`/api/position?show_all=${isShowDeletedDataChecked}`);
-      mutate(`/api/department`);
-      mutate(`/api/position`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleRestore = async (data: Position) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
+      const response: ResponseType<ResponseTypeCreateSuccess> =
         await restorePosition(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/position?show_all=${isShowDeletedDataChecked}`);
 
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
+      await Promise.all([refreshPositionData(), refreshParentPositionData()]);
+
+      showSuccess(response.message);
     } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
+      showError(err);
     }
   };
 
-  const onSubmit = (data: Position) => {
-    if (!isValid) return;
+  const handlePurge = async (data: PositionRow) => {
+    try {
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await purgePosition(data.id);
+
+      await Promise.all([refreshPositionData(), refreshParentPositionData()]);
+
+      showSuccess(response.message);
+    } catch (err: unknown) {
+      showError(err);
+    }
+  };
+
+  const onSubmit = async (data: Position) => {
+    if (isSaving) {
+      return;
+    }
 
     if (isAddNew) {
-      handleSubmitNew(data);
+      await handleSubmitNew(data);
       return;
     }
 
-    if (selectedData) {
-      handleUpdate(data);
+    await handleUpdate(data);
+  };
+
+  const onClickDelete = (data: PositionRow) => {
+    confirmDialog({
+      header: "Delete Position",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to delete this position?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handleDelete(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
+    });
+  };
+
+  const onClickRestore = (data: PositionRow) => {
+    confirmDialog({
+      header: "Restore Position",
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">
+            Are you sure you want to restore this position?
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-refresh",
+      defaultFocus: "accept",
+      accept: () => handleRestore(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Restore"
+            icon="pi pi-refresh"
+            severity="success"
+            onClick={options.accept}
+          />
+        </div>
+      ),
+    });
+  };
+
+  const onClickPurge = (data: PositionRow) => {
+    confirmDialog({
+      header: "Delete Position Permanently",
+      message: (
+        <div className="flex flex-col gap-2">
+          <span className="text-slate-600">
+            This action cannot be undone. Permanently delete:
+          </span>
+
+          <span className="font-semibold text-slate-800">{data.name}</span>
+        </div>
+      ),
+      icon: "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () => handlePurge(data),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+
+          <Button
+            type="button"
+            label="Delete Permanently"
+            icon="pi pi-trash"
+            severity="danger"
+            onClick={options.accept}
+          />
+        </div>
+      ),
+    });
+  };
+
+  const statusColumnBody = (rowData: PositionRow) => {
+    if (rowData.deleted_at) {
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
     }
-  };
 
-  const onClickUpdate = (data: Position) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle("Update Position");
+    if (rowData.is_active) {
+      return (
+        <Tag
+          value="Active"
+          severity="success"
+          icon="pi pi-check-circle"
+          rounded
+        />
+      );
+    }
 
-    reset(data);
-    setSelectedData(data);
-  };
-
-  const activeColumnBody = (rowData: Position) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
-  };
-
-  const actionColumnBody = (rowData: Position) => {
     return (
-      <>
-        <div className="flex gap-2">
-          {hasRole(profileState.role, ["superadmin"]) && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              label=""
-              icon="pi pi-times"
-              size="small"
-              onClick={() => {
-                onClickPurge(rowData);
-              }}
-            />
-          )}
-
-          {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              label=""
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => {
-                onClickRestore(rowData);
-              }}
-            />
-          )}
-
-          {!rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete"
-              rounded
-              severity="danger"
-              label=""
-              icon="pi pi-trash"
-              size="small"
-              onClick={() => {
-                onClickDelete(rowData);
-              }}
-            />
-          )}
-
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="update"
-            rounded
-            severity="help"
-            label=""
-            icon="pi pi-pencil"
-            size="small"
-            onClick={() => {
-              onClickUpdate(rowData);
-            }}
-          />
-        </div>
-      </>
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
     );
   };
 
-  const onClickDelete = (data: Position) => {
-    confirmDialog({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
+  const parentColumnBody = (rowData: PositionRow) => {
+    if (!rowData.parent_name) {
+      return <span className="text-sm text-slate-400">No parent</span>;
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <i className="pi pi-sitemap text-xs text-slate-400" />
+
+        <span className="text-sm text-slate-700">{rowData.parent_name}</span>
+      </div>
+    );
   };
 
-  const onClickRestore = (data: Position) => {
-    confirmDialog({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-success"
-          />
-        </div>
-      ),
-    });
+  const departmentColumnBody = (rowData: PositionRow) => {
+    if (!rowData.department_name) {
+      return <span className="text-sm text-slate-400">No department</span>;
+    }
+
+    return (
+      <div className="flex items-center gap-2">
+        <i className="pi pi-building text-xs text-slate-400" />
+
+        <span className="text-sm text-slate-700">
+          {rowData.department_name}
+        </span>
+      </div>
+    );
   };
 
-  const onClickPurge = (data: Position) => {
-    confirmDialog({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
+  const actionColumnBody = (rowData: PositionRow) => {
+    const isDeleted = Boolean(rowData.deleted_at);
+
+    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+
+    if (isDeleted) {
+      if (!isSuperadmin) {
+        return <span className="text-sm text-slate-400">No action</span>;
+      }
+
+      return (
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            tooltip="Restore"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickRestore(rowData)}
           />
+
           <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickPurge(rowData)}
           />
         </div>
-      ),
-    });
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        <Button
+          type="button"
+          icon="pi pi-pencil"
+          rounded
+          outlined
+          severity="secondary"
+          size="small"
+          tooltip="Edit"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickUpdate(rowData)}
+        />
+
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{
+            appendTo: getBody,
+            position: "top",
+          }}
+          onClick={() => onClickDelete(rowData)}
+        />
+      </div>
+    );
   };
+
+  const referenceDataLoading = parentPositionIsLoading || departmentIsLoading;
+
+  const referenceDataError =
+    Boolean(parentPositionError) || Boolean(departmentError);
+
+  const allDataValidating =
+    isValidating || parentPositionIsValidating || departmentIsValidating;
+
+  const dialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+      <Button
+        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        disabled={isSaving}
+        className="w-full sm:w-auto"
+        onClick={handleCloseDialog}
+      />
+
+      <Button
+        type="submit"
+        form="position-form"
+        label={isAddNew ? "Create Position" : "Save Changes"}
+        icon="pi pi-check"
+        loading={isSaving}
+        disabled={isSaving || referenceDataLoading || referenceDataError}
+        className="w-full sm:w-auto"
+      />
+    </div>
+  );
+
+  if (isLoading) {
+    return <LoadingDataTable />;
+  }
+
+  if (error) {
+    return <ErrorNotConnectedToApi mutateKey={currentKey} />;
+  }
 
   return (
     <>
       <ConfirmDialog />
 
-      <Card>
-        <div className="p-4 flex flex-col gap-4">
-          {/* HEADER */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
-            <div>
-              <div className="text-2xl font-semibold">Position</div>
-              <div className="text-sm text-gray-500">
-                Manage position master data
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          {/* Page Header */}
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-briefcase text-xl" />
+              </div>
+
+              <div className="min-w-0">
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Position
+                </h1>
+
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage job positions, reporting hierarchy, departments, and
+                  active status.
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  show deleted data
-                </label>
-              </div>
-
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <InputText
-                  className="p-inputtext-sm"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Keyword Search"
-                />
-              </IconField>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={allDataValidating}
+                disabled={allDataValidating}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
 
               <Button
-                label="New"
+                type="button"
+                label="New Position"
                 icon="pi pi-plus"
                 size="small"
-                onClick={() => {
-                  onClickNew();
-                }}
+                className="w-full sm:w-auto"
+                onClick={onClickNew}
               />
             </div>
           </div>
 
-          {/* TABLE */}
-          <DataTable
-            value={PositionData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={["name"]}
-            emptyMessage="No Position found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: "3rem" }}
-              body={(data, options) => options.rowIndex + 1}
-            ></Column>
-            <Column field="code" header="Code"></Column>
-            <Column field="name" header="Name"></Column>
-            <Column field="parent_name" header="Parent Name"></Column>
-            <Column field="department_name" header="Department"></Column>
-            <Column
-              field="is_active"
-              header="Active"
-              body={activeColumnBody}
-            ></Column>
-            <Column
-              headerClassName="bg-white"
-              className="bg-white"
-              header="Action"
-              body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
-              alignFrozen="right"
-            ></Column>
-          </DataTable>
+          {/* Table Toolbar */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="showDeletedData"
+                checked={isShowDeletedDataChecked}
+                onChange={(event) =>
+                  onShowDeletedChange(Boolean(event.checked))
+                }
+              />
+
+              <label
+                htmlFor="showDeletedData"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+
+            <IconField iconPosition="left" className="w-full md:w-80">
+              <InputIcon className="pi pi-search" />
+
+              <InputText
+                value={globalFilterValue}
+                onChange={onGlobalFilterChange}
+                placeholder="Search position, parent, or department"
+                className="w-full"
+              />
+            </IconField>
+          </div>
+
+          {/* Position Table */}
+          <div className="w-full overflow-hidden">
+            <DataTable
+              value={positionData ?? []}
+              dataKey="id"
+              filters={filters}
+              globalFilterFields={[
+                "code",
+                "name",
+                "parent_name",
+                "department_name",
+              ]}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{
+                minWidth: "76rem",
+              }}
+              emptyMessage="No position data found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            >
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                headerStyle={{
+                  width: "4rem",
+                }}
+                bodyStyle={{
+                  width: "4rem",
+                }}
+              />
+
+              <Column
+                field="code"
+                header="Code"
+                sortable
+                style={{
+                  minWidth: "11rem",
+                }}
+                body={(rowData: PositionRow) => (
+                  <span className="font-mono text-sm font-semibold text-slate-700">
+                    {rowData.code}
+                  </span>
+                )}
+              />
+
+              <Column
+                field="name"
+                header="Position Name"
+                sortable
+                style={{
+                  minWidth: "20rem",
+                }}
+                body={(rowData: PositionRow) => (
+                  <span className="font-medium text-slate-800">
+                    {rowData.name}
+                  </span>
+                )}
+              />
+
+              <Column
+                field="parent_name"
+                header="Parent Position"
+                sortable
+                body={parentColumnBody}
+                style={{
+                  minWidth: "18rem",
+                }}
+              />
+
+              <Column
+                field="department_name"
+                header="Department"
+                sortable
+                body={departmentColumnBody}
+                style={{
+                  minWidth: "18rem",
+                }}
+              />
+
+              <Column
+                field="is_active"
+                header="Status"
+                sortable
+                body={statusColumnBody}
+                style={{
+                  minWidth: "10rem",
+                }}
+              />
+
+              <Column
+                header="Action"
+                body={actionColumnBody}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                }}
+              />
+            </DataTable>
+          </div>
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "50vw" }}
-          onHide={() => {
-            if (!visible) return;
-            setVisible(false);
-            reset();
-          }}
-          footer={footerContent}
-          onShow={() => {
-            setFocus("name");
-          }}
+      {/* Position Form Dialog */}
+      <Dialog
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{
+          width: "95vw",
+          maxWidth: "40rem",
+        }}
+        breakpoints={{
+          "640px": "95vw",
+        }}
+        footer={dialogFooter}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!isSaving}
+        closable={!isSaving}
+        onHide={handleCloseDialog}
+        onShow={() => {
+          setTimeout(() => {
+            setFocus("code");
+          }, 0);
+        }}
+      >
+        <form
+          id="position-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-5 pt-2"
         >
-          <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="code"
+                className="text-sm font-medium text-slate-700"
+              >
+                Position Code
+                <span className="ml-1 text-red-500">*</span>
+              </label>
+
               <Controller
                 name="code"
                 control={control}
                 rules={{
-                  required: "*required",
-                  validate: (value) =>
-                    !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: "maximum 50 character" },
+                  required: "Position code is required.",
+                  validate: {
+                    noSpaces: (value) =>
+                      !/\s/.test(value) ||
+                      "Position code must not contain spaces.",
+                  },
+                  maxLength: {
+                    value: 50,
+                    message: "Position code cannot exceed 50 characters.",
+                  },
                 }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
-                      id="code"
-                      placeholder="example: Position_abc"
                       {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
+                      id="code"
+                      autoComplete="off"
+                      placeholder="Example: DEV_LEAD"
+                      className={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
                     />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
+
+                    {fieldState.error ? (
+                      <small className="p-error">
+                        {fieldState.error.message}
+                      </small>
+                    ) : (
+                      <small className="text-slate-500">
+                        Use a short and unique position code.
                       </small>
                     )}
                   </>
@@ -692,135 +971,198 @@ const PositionTableData = () => {
               />
             </div>
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="name"
+                className="text-sm font-medium text-slate-700"
+              >
+                Position Name
+                <span className="ml-1 text-red-500">*</span>
+              </label>
+
               <Controller
                 name="name"
                 control={control}
                 rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
+                  required: "Position name is required.",
+                  maxLength: {
+                    value: 50,
+                    message: "Position name cannot exceed 50 characters.",
+                  },
                 }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
-                      id="name"
-                      placeholder="example: Position abc"
                       {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
+                      id="name"
+                      autoComplete="off"
+                      placeholder="Example: Development Lead"
+                      className={`w-full ${
+                        fieldState.invalid ? "p-invalid" : ""
+                      }`}
                     />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
 
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="parent_id">Parent</label>
-              <Controller
-                name="parent_id"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="parent_id"
-                      appendTo={() => document.body}
-                      value={field.value ?? null}
-                      options={activeState}
-                      loading={stateIsLoading}
-                      disabled={stateIsLoading || !!stateError}
-                      onChange={(e) => {
-                        field.onChange(e.value ?? null);
-                      }}
-                      optionLabel="name"
-                      optionValue="id"
-                      showClear={true}
-                      placeholder={
-                        isLoading ? "Loading Positions..." : "Select a Position"
-                      }
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
                     {fieldState.error && (
-                      <small className="font-bold">
+                      <small className="p-error">
                         {fieldState.error.message}
                       </small>
                     )}
-                    {stateError && (
-                      <small className="p-error font-bold">
-                        We couldn’t load the list of Positions. Please try again
-                      </small>
-                    )}
                   </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="department_id">Department</label>
-              <Controller
-                name="department_id"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="department_id"
-                      appendTo={() => document.body}
-                      value={field.value ?? null}
-                      options={activeDepartment}
-                      loading={departmentIsLoading}
-                      disabled={departmentIsLoading || !!departmentError}
-                      onChange={(e) => {
-                        field.onChange(e.value ?? null);
-                      }}
-                      optionLabel="name"
-                      optionValue="id"
-                      showClear={true}
-                      placeholder={
-                        isLoading
-                          ? "Loading Departments..."
-                          : "Select a Department"
-                      }
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                    {departmentError && (
-                      <small className="p-error font-bold">
-                        We couldn’t load the list of Departments. Please try
-                        again
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
-                  <InputSwitch
-                    id="is_active"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
                 )}
               />
             </div>
           </div>
-        </Dialog>
-      </form>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="parent_id"
+              className="text-sm font-medium text-slate-700"
+            >
+              Parent Position
+            </label>
+
+            <Controller
+              name="parent_id"
+              control={control}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    id="parent_id"
+                    appendTo={getBody}
+                    value={field.value ?? null}
+                    options={parentPositionOptions}
+                    optionLabel="name"
+                    optionValue="id"
+                    filter
+                    showClear
+                    loading={parentPositionIsLoading}
+                    disabled={
+                      parentPositionIsLoading || Boolean(parentPositionError)
+                    }
+                    placeholder={
+                      parentPositionIsLoading
+                        ? "Loading positions..."
+                        : "No parent position"
+                    }
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
+                    onChange={(event) => field.onChange(event.value ?? null)}
+                  />
+
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+
+                  {!fieldState.error && !parentPositionError && (
+                    <small className="text-slate-500">
+                      Optional. Select the position this position reports to.
+                    </small>
+                  )}
+
+                  {parentPositionError && (
+                    <small className="p-error">
+                      Positions could not be loaded. Refresh the page and try
+                      again.
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="department_id"
+              className="text-sm font-medium text-slate-700"
+            >
+              Department
+            </label>
+
+            <Controller
+              name="department_id"
+              control={control}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    id="department_id"
+                    appendTo={getBody}
+                    value={field.value ?? null}
+                    options={departmentOptions}
+                    optionLabel="name"
+                    optionValue="id"
+                    filter
+                    showClear
+                    loading={departmentIsLoading}
+                    disabled={departmentIsLoading || Boolean(departmentError)}
+                    placeholder={
+                      departmentIsLoading
+                        ? "Loading departments..."
+                        : "Select a department"
+                    }
+                    className={`w-full ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
+                    onChange={(event) => field.onChange(event.value ?? null)}
+                  />
+
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+
+                  {!fieldState.error && !departmentError && (
+                    <small className="text-slate-500">
+                      Optional. Assign this position to a department.
+                    </small>
+                  )}
+
+                  {departmentError && (
+                    <small className="p-error">
+                      Departments could not be loaded. Refresh the page and try
+                      again.
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <Controller
+              name="is_active"
+              control={control}
+              defaultValue
+              render={({ field }) => (
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active Status
+                    </label>
+
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive positions remain stored but should not be
+                      available for new employee assignments.
+                    </p>
+                  </div>
+
+                  <InputSwitch
+                    id="is_active"
+                    checked={Boolean(field.value)}
+                    onChange={(event) => field.onChange(event.value)}
+                  />
+                </div>
+              )}
+            />
+          </div>
+        </form>
+      </Dialog>
     </>
   );
 };

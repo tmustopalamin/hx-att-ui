@@ -1,40 +1,51 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { Controller, useForm } from "react-hook-form";
-import useSWR, { mutate } from "swr";
-import { useDispatch } from "react-redux";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import useSWR from "swr";
 
-import { Card } from "primereact/card";
 import { Button } from "primereact/button";
+import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Dropdown } from "primereact/dropdown";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputText } from "primereact/inputtext";
+import { Tag } from "primereact/tag";
 
-import { fetcher } from "@/app/utils/fetcher";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
+import { useDispatch } from "react-redux";
+
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import {
-  isResponseTypeError,
-  getErrorMessage,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
 
+import { saveRolePermissions } from "@/app/services/role-service";
+
+import { Permissions } from "@/app/types/permissions";
 import {
   ResponseType,
   ResponseTypeCreateSuccess,
 } from "@/app/types/response-type";
-import { Role } from "@/app/types/role";
-import { Permissions } from "@/app/types/permissions";
 import { RolePermissions } from "@/app/types/role-permissions";
-import { saveRolePermissions } from "@/app/services/role-service";
+import { Role } from "@/app/types/role";
+
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+
+import { showToast } from "@/store/ToastSlice";
+
+type PermissionItem = {
+  code: string;
+  label: string;
+  unavailable: boolean;
+};
 
 type PermissionGroup = {
   group: string;
   group_name: string;
-  permissions: {
-    code: string;
-    label: string;
-  }[];
+  permissions: PermissionItem[];
 };
 
 type RolePermissionsResponse = {
@@ -42,18 +53,33 @@ type RolePermissionsResponse = {
   code: string;
 };
 
+type RoleOption = Role & {
+  option_value: string;
+};
+
 const getBody = () => document.body;
+
+const normalizeId = (value: string) => {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "-");
+};
 
 const RolePermissionsTableData = () => {
   const dispatch = useDispatch();
 
+  const [permissionSearchValue, setPermissionSearchValue] = useState("");
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const roleKey = "/api/roles?show_all=false";
+
+  const permissionKey = "/api/permissions?show_all=false";
+
   const {
     control,
-    watch,
     handleSubmit,
-    setValue,
     reset,
-    formState: { isValid },
+    setValue,
+    formState: { isDirty },
   } = useForm<RolePermissions>({
     defaultValues: {
       role_id: "",
@@ -62,369 +88,871 @@ const RolePermissionsTableData = () => {
     mode: "onTouched",
   });
 
-  const selectedRoleCode = watch("role_id");
+  const selectedRoleCode =
+    useWatch({
+      control,
+      name: "role_id",
+    }) ?? "";
+
+  const selectedPermissions =
+    useWatch({
+      control,
+      name: "permissions",
+    }) ?? [];
+
+  const rolePermissionKey = selectedRoleCode
+    ? `/api/roles/${selectedRoleCode}/permissions`
+    : null;
 
   const {
     data: roleData,
     error: roleError,
     isLoading: roleIsLoading,
-  } = useSWR<Role[]>("/api/roles", fetcher);
+    isValidating: roleIsValidating,
+    mutate: refreshRoleData,
+  } = useSWR<Role[]>(roleKey, fetcher);
 
   const {
     data: permissionData,
     error: permissionError,
     isLoading: permissionIsLoading,
-  } = useSWR<Permissions[]>("/api/permissions", fetcher);
+    isValidating: permissionIsValidating,
+    mutate: refreshPermissionData,
+  } = useSWR<Permissions[]>(permissionKey, fetcher);
 
   const {
     data: rolePermissionData,
     error: rolePermissionError,
     isLoading: rolePermissionIsLoading,
-  } = useSWR<RolePermissionsResponse[]>(
-    selectedRoleCode ? `/api/roles/${selectedRoleCode}/permissions` : null,
-    fetcher,
-  );
+    isValidating: rolePermissionIsValidating,
+    mutate: refreshRolePermissionData,
+  } = useSWR<RolePermissionsResponse[]>(rolePermissionKey, fetcher);
 
-  const activeRoles = useMemo(() => {
-    return (roleData ?? []).filter(
-      (role) => role.is_active && !role.deleted_at,
-    );
+  const roleOptions = useMemo<RoleOption[]>(() => {
+    return (roleData ?? [])
+      .filter((role) => role.is_active && !role.deleted_at)
+      .map((role) => ({
+        ...role,
+        option_value: String(role.code),
+      }))
+      .sort((first, second) => first.name.localeCompare(second.name));
   }, [roleData]);
 
-  const activePermissions = useMemo(() => {
-    return (permissionData ?? []).filter(
-      (permission) => permission.is_active && !permission.deleted_at,
+  const selectedRole = useMemo(() => {
+    return roleOptions.find(
+      (role) => role.option_value === String(selectedRoleCode),
     );
-  }, [permissionData]);
+  }, [roleOptions, selectedRoleCode]);
 
-  const groupedPermissions = useMemo(() => {
-    const map: Record<string, PermissionGroup> = {};
+  const assignedPermissionCodes = useMemo(() => {
+    return (rolePermissionData ?? [])
+      .map((item) => String(item.code).trim())
+      .filter(Boolean);
+  }, [rolePermissionData]);
 
-    activePermissions.forEach((permission) => {
-      if (!map[permission.resource]) {
-        map[permission.resource] = {
-          group: permission.resource,
-          group_name: permission.group_name || permission.resource,
-          permissions: [],
-        };
+  const groupedPermissions = useMemo<PermissionGroup[]>(() => {
+    const permissions = permissionData ?? [];
+
+    const permissionMap = new Map(
+      permissions.map((permission) => [String(permission.code), permission]),
+    );
+
+    const assignedCodeSet = new Set(assignedPermissionCodes);
+
+    const visiblePermissions: {
+      code: string;
+      label: string;
+      resource: string;
+      group_name: string;
+      unavailable: boolean;
+    }[] = [];
+
+    for (const permission of permissions) {
+      const code = String(permission.code);
+
+      const isAvailable = permission.is_active && !permission.deleted_at;
+
+      const isAssigned = assignedCodeSet.has(code);
+
+      if (!isAvailable && !isAssigned) {
+        continue;
       }
 
-      map[permission.resource].permissions.push({
-        code: permission.code,
-        label: permission.label,
+      visiblePermissions.push({
+        code,
+        label: permission.label || code,
+        resource: permission.resource || "other",
+        group_name:
+          permission.group_name || permission.resource || "Other Permissions",
+        unavailable: !isAvailable,
       });
-    });
+    }
 
-    return Object.values(map).sort((a, b) =>
-      a.group_name.localeCompare(b.group_name),
+    /*
+     * Permission yang masih terpasang
+     * pada role tetapi sudah tidak
+     * dikembalikan endpoint permissions
+     * tetap ditampilkan agar tidak
+     * terhapus diam-diam saat Save.
+     */
+    for (const code of assignedPermissionCodes) {
+      const alreadyIncluded = visiblePermissions.some(
+        (permission) => permission.code === code,
+      );
+
+      if (alreadyIncluded) {
+        continue;
+      }
+
+      const source = permissionMap.get(code);
+
+      visiblePermissions.push({
+        code,
+        label: source?.label || code,
+        resource: source?.resource || "__unavailable__",
+        group_name: source?.group_name || "Unavailable Permissions",
+        unavailable: true,
+      });
+    }
+
+    const groupMap = new Map<string, PermissionGroup>();
+
+    for (const permission of visiblePermissions) {
+      const currentGroup = groupMap.get(permission.resource);
+
+      if (currentGroup) {
+        currentGroup.permissions.push({
+          code: permission.code,
+          label: permission.label,
+          unavailable: permission.unavailable,
+        });
+
+        continue;
+      }
+
+      groupMap.set(permission.resource, {
+        group: permission.resource,
+        group_name: permission.group_name,
+        permissions: [
+          {
+            code: permission.code,
+            label: permission.label,
+            unavailable: permission.unavailable,
+          },
+        ],
+      });
+    }
+
+    return Array.from(groupMap.values())
+      .map((group) => ({
+        ...group,
+        permissions: [...group.permissions].sort((first, second) =>
+          first.label.localeCompare(second.label),
+        ),
+      }))
+      .sort((first, second) =>
+        first.group_name.localeCompare(second.group_name),
+      );
+  }, [permissionData, assignedPermissionCodes]);
+
+  const filteredPermissionGroups = useMemo(() => {
+    const query = permissionSearchValue.trim().toLowerCase();
+
+    if (!query) {
+      return groupedPermissions;
+    }
+
+    return groupedPermissions
+      .map((group) => {
+        const groupMatches =
+          group.group.toLowerCase().includes(query) ||
+          group.group_name.toLowerCase().includes(query);
+
+        const permissions = groupMatches
+          ? group.permissions
+          : group.permissions.filter(
+              (permission) =>
+                permission.code.toLowerCase().includes(query) ||
+                permission.label.toLowerCase().includes(query),
+            );
+
+        return {
+          ...group,
+          permissions,
+        };
+      })
+      .filter((group) => group.permissions.length > 0);
+  }, [groupedPermissions, permissionSearchValue]);
+
+  const totalPermissionCount = useMemo(() => {
+    return groupedPermissions.reduce(
+      (total, group) => total + group.permissions.length,
+      0,
     );
-  }, [activePermissions]);
+  }, [groupedPermissions]);
+
+  const unavailablePermissionCount = useMemo(() => {
+    return groupedPermissions.reduce(
+      (total, group) =>
+        total +
+        group.permissions.filter((permission) => permission.unavailable).length,
+      0,
+    );
+  }, [groupedPermissions]);
 
   useEffect(() => {
     if (!selectedRoleCode) {
-      setValue("permissions", []);
+      setValue("permissions", [], {
+        shouldDirty: false,
+        shouldValidate: false,
+      });
+
       return;
     }
 
-    if (!rolePermissionData) {
+    if (rolePermissionIsLoading || !rolePermissionData || isDirty) {
       return;
     }
 
-    const permissions = rolePermissionData.map((item) => item.code);
-    setValue("permissions", permissions, {
+    setValue("permissions", assignedPermissionCodes, {
       shouldDirty: false,
-      shouldValidate: true,
+      shouldValidate: false,
     });
-  }, [selectedRoleCode, rolePermissionData, setValue]);
+  }, [
+    selectedRoleCode,
+    rolePermissionData,
+    assignedPermissionCodes,
+    rolePermissionIsLoading,
+    isDirty,
+    setValue,
+  ]);
 
-  const onSave = async (data: RolePermissions) => {
-    if (!isValid) {
-      return;
-    }
+  const showSuccess = (message: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "success",
+        summary: "Success",
+        detail: message,
+      }),
+    );
+  };
 
-    if (!data.role_id) {
+  const showError = (err: unknown) => {
+    if (isResponseTypeError(err)) {
       dispatch(
         showToast({
           visible: true,
           severity: "error",
           summary: "Error",
-          detail: "Please select a role first.",
+          detail: getErrorMessage(err, "message"),
         }),
       );
+
       return;
     }
 
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await saveRolePermissions({
-          role_id: data.role_id,
-          permissions: data.permissions ?? [],
-        });
-
-      await mutate(`/api/roles/${data.role_id}/permissions`);
-
+    if (err instanceof Error) {
       dispatch(
         showToast({
           visible: true,
-          severity: "success",
-          summary: "Success",
-          detail: res.message || "Role permissions updated successfully.",
+          severity: "error",
+          summary: "Error",
+          detail: err.message,
         }),
       );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "Error",
-            detail: err.message,
-          }),
-        );
+
+      return;
+    }
+
+    dispatch(
+      showToast({
+        visible: true,
+        severity: "error",
+        summary: "Error",
+        detail: "An unexpected error occurred.",
+      }),
+    );
+  };
+
+  const handleRefresh = async () => {
+    try {
+      const requests: Promise<unknown>[] = [
+        refreshRoleData(),
+        refreshPermissionData(),
+      ];
+
+      if (selectedRoleCode) {
+        requests.push(refreshRolePermissionData());
       }
+
+      await Promise.all(requests);
+    } catch (err: unknown) {
+      showError(err);
     }
   };
 
-  if (roleIsLoading) {
+  const onPermissionSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setPermissionSearchValue(event.target.value);
+  };
+
+  const onRoleChange = (roleCode: string) => {
+    reset({
+      role_id: roleCode,
+      permissions: [],
+    });
+
+    setPermissionSearchValue("");
+  };
+
+  const onSave = async (data: RolePermissions) => {
+    if (isSaving) {
+      return;
+    }
+
+    const roleCode = String(data.role_id ?? "").trim();
+
+    if (!roleCode) {
+      showError(new Error("Select a role before saving permissions."));
+
+      return;
+    }
+
+    if (rolePermissionIsLoading || rolePermissionError) {
+      showError(
+        new Error(
+          "Role permissions are not ready. Refresh the data and try again.",
+        ),
+      );
+
+      return;
+    }
+
+    const permissions = Array.from(
+      new Set(
+        (data.permissions ?? [])
+          .map((code) => String(code).trim())
+          .filter(Boolean),
+      ),
+    );
+
+    try {
+      setIsSaving(true);
+
+      const response: ResponseType<ResponseTypeCreateSuccess> =
+        await saveRolePermissions({
+          role_id: roleCode,
+          permissions,
+        });
+
+      reset({
+        role_id: roleCode,
+        permissions,
+      });
+
+      await refreshRolePermissionData();
+
+      showSuccess(response.message || "Role permissions updated successfully.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const roleOptionTemplate = (role: RoleOption) => {
+    return (
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate text-sm font-medium text-slate-800">
+          {role.name}
+        </span>
+
+        <span className="font-mono text-xs text-slate-500">
+          {role.option_value}
+        </span>
+      </div>
+    );
+  };
+
+  const selectedRoleTemplate = (role: RoleOption | null) => {
+    if (!role) {
+      return <span className="text-slate-400">Select role</span>;
+    }
+
+    return roleOptionTemplate(role);
+  };
+
+  const allDataValidating =
+    roleIsValidating ||
+    permissionIsValidating ||
+    Boolean(selectedRoleCode && rolePermissionIsValidating);
+
+  const permissionSelectionDisabled =
+    isSaving || rolePermissionIsLoading || Boolean(rolePermissionError);
+
+  if (roleIsLoading || permissionIsLoading) {
     return <LoadingDataTable />;
   }
 
   if (roleError) {
-    return <ErrorNotConnectedToApi mutateKey="/api/roles" />;
+    return <ErrorNotConnectedToApi mutateKey={roleKey} />;
+  }
+
+  if (permissionError) {
+    return <ErrorNotConnectedToApi mutateKey={permissionKey} />;
   }
 
   return (
-    <Card>
-      <div className="flex flex-col gap-5 p-4">
-        <div className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="text-2xl font-semibold text-slate-800">
-              Role Permission
+    <Card className="border border-slate-200 shadow-sm">
+      <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+        {/* Page Header */}
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+              <i className="pi pi-lock-open text-xl" />
             </div>
-            <div className="mt-1 text-sm text-slate-500">
-              Assign permissions to roles. This will update role_permissions and
-              sync Casbin policies.
+
+            <div className="min-w-0">
+              <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                Role Permissions
+              </h1>
+
+              <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                Assign permissions to roles and synchronize role access with
+                Casbin authorization policies.
+              </p>
             </div>
           </div>
+
+          <Button
+            type="button"
+            label="Refresh"
+            icon="pi pi-refresh"
+            severity="secondary"
+            outlined
+            size="small"
+            loading={allDataValidating}
+            disabled={allDataValidating || isSaving}
+            className="w-full sm:w-auto"
+            onClick={handleRefresh}
+          />
         </div>
 
-        <form onSubmit={handleSubmit(onSave)}>
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="role_id"
-                className="text-sm font-medium text-slate-700"
-              >
-                Role
-              </label>
+        <form
+          id="role-permissions-form"
+          onSubmit={handleSubmit(onSave)}
+          className="flex flex-col gap-5"
+        >
+          {/* Role Selection */}
+          <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+            <div>
+              <h2 className="m-0 text-sm font-semibold text-slate-800">
+                Select Role
+              </h2>
 
-              <Controller
-                name="role_id"
-                control={control}
-                rules={{ required: "Role is required" }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Dropdown
-                      id="role_id"
-                      appendTo={getBody}
-                      value={field.value}
-                      options={activeRoles}
-                      loading={roleIsLoading}
-                      onChange={(e) => {
-                        const roleCode = e.value || "";
-
-                        reset({
-                          role_id: roleCode,
-                          permissions: [],
-                        });
-
-                        field.onChange(roleCode);
-                      }}
-                      optionLabel="name"
-                      optionValue="code"
-                      placeholder={
-                        roleIsLoading ? "Loading roles..." : "Select a role"
-                      }
-                      className={`w-full md:w-96 ${
-                        fieldState.invalid ? "p-invalid" : ""
-                      }`}
-                      filter
-                      showClear
-                    />
-
-                    {fieldState.error && (
-                      <small className="p-error">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
+              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                Choose the role whose permissions will be reviewed or changed.
+              </p>
             </div>
 
-            {!selectedRoleCode && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                Please select a role first.
-              </div>
-            )}
+            <Controller
+              name="role_id"
+              control={control}
+              rules={{
+                required: "Role is required.",
+              }}
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="role_id"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Role
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
 
-            {selectedRoleCode && permissionIsLoading && <LoadingDataTable />}
+                  <Dropdown
+                    id="role_id"
+                    appendTo={getBody}
+                    value={field.value || null}
+                    options={roleOptions}
+                    optionLabel="name"
+                    optionValue="option_value"
+                    itemTemplate={roleOptionTemplate}
+                    valueTemplate={selectedRoleTemplate}
+                    filter
+                    showClear
+                    disabled={isSaving || roleOptions.length === 0}
+                    placeholder="Select role"
+                    className={`w-full md:max-w-md ${
+                      fieldState.invalid ? "p-invalid" : ""
+                    }`}
+                    onChange={(event) =>
+                      onRoleChange(event.value ? String(event.value) : "")
+                    }
+                  />
 
-            {selectedRoleCode && permissionError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                Failed to load permissions. Please refresh and try again.
-              </div>
-            )}
+                  {fieldState.error && (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
 
-            {selectedRoleCode && rolePermissionError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-                Failed to load selected role permissions. Please refresh and try
-                again.
-              </div>
-            )}
+                  {roleOptions.length === 0 && (
+                    <small className="text-amber-600">
+                      No active roles are available.
+                    </small>
+                  )}
+                </div>
+              )}
+            />
+          </section>
 
-            {selectedRoleCode && rolePermissionIsLoading && (
-              <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                Loading selected role permissions...
-              </div>
-            )}
+          {!selectedRoleCode && (
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+              <i className="pi pi-info-circle mt-0.5 text-slate-400" />
 
-            {selectedRoleCode &&
-              !permissionIsLoading &&
-              groupedPermissions.length === 0 && (
-                <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-700">
-                  No active permissions found.
+              <span>Select a role to load and manage its permissions.</span>
+            </div>
+          )}
+
+          {selectedRoleCode && (
+            <>
+              {/* Role Summary */}
+              <section className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="m-0 truncate text-base font-semibold text-slate-800">
+                      {selectedRole?.name || selectedRoleCode}
+                    </h2>
+
+                    <Tag value={selectedRoleCode} severity="info" rounded />
+                  </div>
+
+                  <p className="m-0 mt-2 text-sm leading-6 text-slate-600">
+                    {selectedRole?.description ||
+                      "Manage permissions assigned to this role."}
+                  </p>
+                </div>
+
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Tag
+                    value={`${selectedPermissions.length} selected`}
+                    severity="success"
+                    rounded
+                  />
+
+                  <Tag
+                    value={`${totalPermissionCount} available`}
+                    severity="secondary"
+                    rounded
+                  />
+                </div>
+              </section>
+
+              {rolePermissionIsLoading && (
+                <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+                  <i className="pi pi-spin pi-spinner" />
+
+                  <span>Loading assigned role permissions...</span>
                 </div>
               )}
 
-            {selectedRoleCode &&
-              groupedPermissions.map((group) => (
-                <div
-                  key={group.group}
-                  className="rounded-2xl border border-slate-200 bg-white p-4"
-                >
-                  <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              {rolePermissionError && (
+                <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3 text-sm text-red-700">
+                    <i className="pi pi-exclamation-circle mt-0.5" />
+
+                    <span>
+                      Assigned permissions could not be loaded. Refresh the data
+                      and try again.
+                    </span>
+                  </div>
+
+                  <Button
+                    type="button"
+                    label="Retry"
+                    icon="pi pi-refresh"
+                    severity="danger"
+                    outlined
+                    size="small"
+                    onClick={() => {
+                      void refreshRolePermissionData();
+                    }}
+                  />
+                </div>
+              )}
+
+              {!rolePermissionIsLoading && !rolePermissionError && (
+                <>
+                  {/* Permission Toolbar */}
+                  <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <h2 className="font-semibold text-slate-800">
-                        {String(group.group_name).toUpperCase()}
+                      <h2 className="m-0 text-sm font-semibold text-slate-800">
+                        Permission Access
                       </h2>
-                      <p className="text-xs text-slate-500">
-                        Resource: {group.group}
+
+                      <p className="m-0 mt-1 text-xs text-slate-500">
+                        Select individual permissions or use Select All within
+                        each group.
                       </p>
                     </div>
 
+                    <IconField iconPosition="left" className="w-full md:w-80">
+                      <InputIcon className="pi pi-search" />
+
+                      <InputText
+                        value={permissionSearchValue}
+                        onChange={onPermissionSearchChange}
+                        placeholder="Search permission or group"
+                        className="w-full"
+                      />
+                    </IconField>
+                  </div>
+
+                  {unavailablePermissionCount > 0 && (
+                    <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                      <i className="pi pi-exclamation-triangle mt-0.5" />
+
+                      <span>
+                        {unavailablePermissionCount} assigned permission(s) are
+                        inactive or no longer available. They remain selected to
+                        prevent accidental removal. Uncheck them before saving
+                        to remove them from this role.
+                      </span>
+                    </div>
+                  )}
+
+                  {groupedPermissions.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center">
+                      <i className="pi pi-key mb-3 text-3xl text-slate-400" />
+
+                      <p className="m-0 text-sm font-medium text-slate-700">
+                        No permissions available
+                      </p>
+
+                      <p className="m-0 mt-1 text-xs text-slate-500">
+                        Create or activate permissions before assigning access
+                        to this role.
+                      </p>
+                    </div>
+                  ) : filteredPermissionGroups.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center">
+                      <i className="pi pi-search mb-3 text-3xl text-slate-400" />
+
+                      <p className="m-0 text-sm font-medium text-slate-700">
+                        No matching permissions
+                      </p>
+
+                      <p className="m-0 mt-1 text-xs text-slate-500">
+                        Change the search keyword and try again.
+                      </p>
+                    </div>
+                  ) : (
                     <Controller
                       name="permissions"
                       control={control}
                       render={({ field }) => {
-                        const value = field.value ?? [];
-                        const groupCodes = group.permissions.map(
-                          (permission) => permission.code,
+                        const currentValue = (field.value ?? []).map((code) =>
+                          String(code),
                         );
 
-                        const isAllChecked =
-                          groupCodes.length > 0 &&
-                          groupCodes.every((code) => value.includes(code));
-
                         return (
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              inputId={`select_all_${group.group}`}
-                              checked={isAllChecked}
-                              onChange={(e) => {
-                                if (e.checked) {
-                                  const merged = Array.from(
-                                    new Set([...value, ...groupCodes]),
-                                  );
-                                  field.onChange(merged);
-                                } else {
-                                  field.onChange(
-                                    value.filter(
-                                      (code) => !groupCodes.includes(code),
-                                    ),
-                                  );
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={`select_all_${group.group}`}
-                              className="cursor-pointer text-sm font-medium text-slate-700"
-                            >
-                              Select All
-                            </label>
+                          <div className="flex flex-col gap-4">
+                            {filteredPermissionGroups.map((group) => {
+                              const groupCodes = group.permissions.map(
+                                (permission) => permission.code,
+                              );
+
+                              const checkedCount = groupCodes.filter((code) =>
+                                currentValue.includes(code),
+                              ).length;
+
+                              const isAllChecked =
+                                groupCodes.length > 0 &&
+                                checkedCount === groupCodes.length;
+
+                              const isPartiallyChecked =
+                                checkedCount > 0 && !isAllChecked;
+
+                              const groupCheckboxId = `select-all-${normalizeId(
+                                group.group,
+                              )}`;
+
+                              return (
+                                <section
+                                  key={group.group}
+                                  className="overflow-hidden rounded-xl border border-slate-200 bg-white"
+                                >
+                                  <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="min-w-0">
+                                      <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="m-0 text-sm font-semibold text-slate-800">
+                                          {group.group_name}
+                                        </h3>
+
+                                        <Tag
+                                          value={`${checkedCount}/${groupCodes.length}`}
+                                          severity={
+                                            checkedCount > 0
+                                              ? "info"
+                                              : "secondary"
+                                          }
+                                          rounded
+                                        />
+                                      </div>
+
+                                      <p className="m-0 mt-1 font-mono text-xs text-slate-500">
+                                        Resource: {group.group}
+                                      </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox
+                                        inputId={groupCheckboxId}
+                                        checked={isAllChecked}
+                                        indeterminate={isPartiallyChecked}
+                                        disabled={permissionSelectionDisabled}
+                                        onChange={(event) => {
+                                          if (event.checked) {
+                                            field.onChange(
+                                              Array.from(
+                                                new Set([
+                                                  ...currentValue,
+                                                  ...groupCodes,
+                                                ]),
+                                              ),
+                                            );
+
+                                            return;
+                                          }
+
+                                          field.onChange(
+                                            currentValue.filter(
+                                              (code) =>
+                                                !groupCodes.includes(code),
+                                            ),
+                                          );
+                                        }}
+                                      />
+
+                                      <label
+                                        htmlFor={groupCheckboxId}
+                                        className="cursor-pointer select-none text-sm font-medium text-slate-700"
+                                      >
+                                        Select All
+                                      </label>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
+                                    {group.permissions.map((permission) => {
+                                      const checked = currentValue.includes(
+                                        permission.code,
+                                      );
+
+                                      const permissionCheckboxId = `permission-${normalizeId(
+                                        permission.code,
+                                      )}`;
+
+                                      return (
+                                        <label
+                                          key={permission.code}
+                                          htmlFor={permissionCheckboxId}
+                                          className={`cursor-pointer rounded-xl border p-4 transition-colors ${
+                                            checked
+                                              ? "border-blue-300 bg-blue-50"
+                                              : "border-slate-200 bg-white hover:bg-slate-50"
+                                          }`}
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <Checkbox
+                                              inputId={permissionCheckboxId}
+                                              checked={checked}
+                                              disabled={
+                                                permissionSelectionDisabled
+                                              }
+                                              onChange={(event) => {
+                                                if (event.checked) {
+                                                  field.onChange(
+                                                    Array.from(
+                                                      new Set([
+                                                        ...currentValue,
+                                                        permission.code,
+                                                      ]),
+                                                    ),
+                                                  );
+
+                                                  return;
+                                                }
+
+                                                field.onChange(
+                                                  currentValue.filter(
+                                                    (code) =>
+                                                      code !== permission.code,
+                                                  ),
+                                                );
+                                              }}
+                                            />
+
+                                            <div className="min-w-0 flex-1">
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                <span className="text-sm font-medium text-slate-800">
+                                                  {permission.label}
+                                                </span>
+
+                                                {permission.unavailable && (
+                                                  <Tag
+                                                    value="Unavailable"
+                                                    severity="warning"
+                                                    rounded
+                                                  />
+                                                )}
+                                              </div>
+
+                                              <p className="m-0 mt-2 break-all font-mono text-xs text-slate-500">
+                                                {permission.code}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </section>
+                              );
+                            })}
                           </div>
                         );
                       }}
                     />
+                  )}
+
+                  {/* Save Actions */}
+                  <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="m-0 text-xs text-slate-500">
+                      {isDirty
+                        ? "You have unsaved permission changes."
+                        : "Role permissions are synchronized with the latest saved data."}
+                    </p>
+
+                    <Button
+                      type="submit"
+                      label="Save Permissions"
+                      icon="pi pi-check"
+                      loading={isSaving}
+                      disabled={
+                        isSaving ||
+                        rolePermissionIsLoading ||
+                        Boolean(rolePermissionError)
+                      }
+                      className="w-full sm:w-auto"
+                    />
                   </div>
-
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {group.permissions.map((permission) => (
-                      <Controller
-                        key={permission.code}
-                        name="permissions"
-                        control={control}
-                        render={({ field }) => {
-                          const value = field.value ?? [];
-                          const checked = value.includes(permission.code);
-
-                          return (
-                            <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-                              <Checkbox
-                                inputId={permission.code}
-                                checked={checked}
-                                onChange={(e) => {
-                                  if (e.checked) {
-                                    field.onChange([...value, permission.code]);
-                                  } else {
-                                    field.onChange(
-                                      value.filter(
-                                        (code) => code !== permission.code,
-                                      ),
-                                    );
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor={permission.code}
-                                className="cursor-pointer text-sm text-slate-700"
-                              >
-                                {permission.label}
-                              </label>
-                            </div>
-                          );
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-            {selectedRoleCode && (
-              <div className="flex justify-end">
-                <Button
-                  label="Save"
-                  icon={
-                    rolePermissionIsLoading
-                      ? "pi pi-spin pi-spinner"
-                      : "pi pi-check"
-                  }
-                  size="small"
-                  type="submit"
-                  disabled={rolePermissionIsLoading}
-                />
-              </div>
-            )}
-          </div>
+                </>
+              )}
+            </>
+          )}
         </form>
       </div>
     </Card>
