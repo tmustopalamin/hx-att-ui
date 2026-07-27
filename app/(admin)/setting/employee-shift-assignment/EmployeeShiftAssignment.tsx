@@ -403,7 +403,7 @@ const EmployeeShiftAssignmentListPage = () => {
               <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                 <div>
                   <div className="text-2xl md:text-3xl font-semibold text-gray-900">
-                    Employee Shift Assignment (Schedule)
+                    Employee Shift Assignment (Daily Schedule)
                   </div>
                   <div className="text-sm text-gray-500 mt-1">
                     One glance to see who works on which day.

@@ -91,7 +91,7 @@ const employeeItems: MenuItem[] = [
 const timeManagementItems: MenuItem[] = [
   {
     href: "/setting/employee-shift-rule",
-    label: "Employee Schedule Rule",
+    label: "Employee Shift Rule",
     icon: "pi-list",
     permission: "employee-shift-rule.read",
   },

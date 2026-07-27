@@ -45,6 +45,14 @@ import { RequestLeaveApprovalDetail } from "@/app/types/request-leave-approval-d
 
 import { getRequestLeaveApprovalDetail } from "@/app/services/request-leave-service";
 
+import { RequestLeaveAttachment } from "@/app/types/request-leave-attachment";
+
+import {
+  deleteRequestLeaveAttachment,
+  getRequestLeaveAttachments,
+  viewRequestLeaveAttachmentUrl,
+} from "@/app/services/request-leave-attachment-service";
+
 type EmployeeLeaveBalanceOption = {
   id: number;
   employee_id: number;
@@ -106,7 +114,11 @@ const getResponseMessage = (response: ApiResponse, fallback: string) => {
   return response?.message || fallback;
 };
 
-const getResponseId = (response: ApiResponse<ApiIdResponse>) => {
+const getResponseId = (response: ApiResponse<ApiIdResponse | number>) => {
+  if (typeof response?.data === "number") {
+    return response.data;
+  }
+
   return response?.data?.id ?? 0;
 };
 
@@ -141,7 +153,7 @@ const createRequestLeaveApi = async (data: RequestLeaveForm) => {
     throw await parseErrorResponse(res);
   }
 
-  return (await res.json()) as ApiResponse<ApiIdResponse>;
+  return (await res.json()) as ApiResponse<ApiIdResponse | number>;
 };
 
 const updateRequestLeaveApi = async (
@@ -307,6 +319,18 @@ const formatDateTime = (value?: string | null) => {
   return dayjs(value).format("DD MMM YYYY HH:mm");
 };
 
+const formatFileSize = (size: number) => {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
   if (!startDate || !endDate) {
     return 0;
@@ -361,6 +385,11 @@ const RequestLeaveTableData = () => {
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState("New Request Leave");
   const [isSaving, setIsSaving] = useState(false);
+  const [attachments, setAttachments] = useState<RequestLeaveAttachment[]>([]);
+  const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<
+    number | null
+  >(null);
 
   const [approvalDetailVisible, setApprovalDetailVisible] = useState(false);
   const [approvalDetailLoading, setApprovalDetailLoading] = useState(false);
@@ -479,6 +508,9 @@ const RequestLeaveTableData = () => {
     setVisible(false);
     setSelectedData(null);
     setIsAddNew(false);
+    setAttachments([]);
+    setIsLoadingAttachments(false);
+    setDeletingAttachmentId(null);
     reset(defaultRequestLeaveFormValue);
   };
 
@@ -492,6 +524,80 @@ const RequestLeaveTableData = () => {
     setGlobalFilterValue(value);
   };
 
+  const loadAttachments = async (requestLeaveId: number) => {
+    try {
+      setIsLoadingAttachments(true);
+
+      const data = await getRequestLeaveAttachments(requestLeaveId);
+
+      setAttachments(data);
+    } catch (err: unknown) {
+      setAttachments([]);
+      showError(err);
+    } finally {
+      setIsLoadingAttachments(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachment: RequestLeaveAttachment) => {
+    if (!selectedData) {
+      return;
+    }
+
+    try {
+      setDeletingAttachmentId(attachment.id);
+
+      await deleteRequestLeaveAttachment(
+        selectedData.id,
+        attachment.id,
+        attachment.row_version,
+      );
+
+      await loadAttachments(selectedData.id);
+      await mutate(currentKey);
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: "Attachment deleted successfully.",
+        }),
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setDeletingAttachmentId(null);
+    }
+  };
+
+  const onClickDeleteAttachment = (attachment: RequestLeaveAttachment) => {
+    confirmDialog({
+      message: `Do you want to delete ${attachment.original_file_name}?`,
+      header: "Delete Attachment",
+      icon: "pi pi-info-circle",
+      defaultFocus: "accept",
+      accept: () => handleDeleteAttachment(attachment),
+      reject: () => {},
+      footer: (options) => (
+        <div className="flex justify-end gap-3">
+          <Button
+            label="No"
+            icon="pi pi-times"
+            onClick={options.reject}
+            className="p-button-text"
+          />
+          <Button
+            label="Yes, Delete"
+            icon="pi pi-trash"
+            onClick={options.accept}
+            severity="danger"
+          />
+        </div>
+      ),
+    });
+  };
+
   const onClickNew = () => {
     clearErrors();
     setSelectedData(null);
@@ -503,6 +609,8 @@ const RequestLeaveTableData = () => {
     setTimeout(() => {
       setFocus("employee_leave_balance_id");
     }, 0);
+
+    setAttachments([]);
   };
 
   const onClickUpdate = (data: RequestLeave) => {
@@ -511,6 +619,9 @@ const RequestLeaveTableData = () => {
     setIsAddNew(false);
     setVisible(true);
     setPopupHeaderTitle("Update Request Leave");
+    setAttachments([]);
+
+    void loadAttachments(data.id);
 
     reset({
       id: data.id,
@@ -1001,7 +1112,10 @@ const RequestLeaveTableData = () => {
         {isDraft && (
           <>
             <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
               tooltip="submit for approval"
               rounded
               severity="success"
@@ -1011,7 +1125,10 @@ const RequestLeaveTableData = () => {
             />
 
             <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
               tooltip="edit"
               rounded
               severity="help"
@@ -1021,7 +1138,10 @@ const RequestLeaveTableData = () => {
             />
 
             <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
               tooltip="delete"
               rounded
               severity="danger"
@@ -1034,7 +1154,10 @@ const RequestLeaveTableData = () => {
 
         {!isDraft && hasApprovalDetail(rowData) && !rowData.deleted_at && (
           <Button
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
             tooltip="approval detail"
             rounded
             severity="secondary"
@@ -1047,7 +1170,10 @@ const RequestLeaveTableData = () => {
         {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
           <>
             <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
               tooltip="restore"
               rounded
               severity="success"
@@ -1057,7 +1183,10 @@ const RequestLeaveTableData = () => {
             />
 
             <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
               tooltip="delete forever"
               rounded
               severity="secondary"
@@ -1212,7 +1341,10 @@ const RequestLeaveTableData = () => {
               body={actionColumnBody}
               frozen
               alignFrozen="right"
-              style={{ minWidth: "12rem", width: "12rem" }}
+              style={{
+                minWidth: "12rem",
+                width: "12rem",
+              }}
               headerStyle={{
                 minWidth: "12rem",
                 width: "12rem",
@@ -1242,47 +1374,6 @@ const RequestLeaveTableData = () => {
         resizable={false}
       >
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700">
-              Leave Balance
-            </label>
-
-            <Controller
-              name="employee_leave_balance_id"
-              control={control}
-              rules={{ required: "Leave balance is required" }}
-              render={({ field, fieldState }) => (
-                <>
-                  <Dropdown
-                    value={field.value || null}
-                    options={leaveBalanceOptions}
-                    optionLabel="label"
-                    optionValue="value"
-                    onChange={(e) => {
-                      field.onChange(e.value);
-
-                      const selected = leaveBalanceRows.find(
-                        (item) => item.id === e.value,
-                      );
-
-                      setValue("leave_type_id", selected?.leave_type_id ?? 0, {
-                        shouldValidate: true,
-                      });
-                    }}
-                    placeholder="Select leave balance"
-                    filter
-                    className={fieldState.invalid ? "p-invalid" : ""}
-                  />
-                  {fieldState.error && (
-                    <small className="font-bold p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </>
-              )}
-            />
-          </div>
-
           {selectedLeaveBalance && (
             <div className="md:col-span-2">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -1308,7 +1399,9 @@ const RequestLeaveTableData = () => {
             <Controller
               name="start_date"
               control={control}
-              rules={{ required: "Start date is required" }}
+              rules={{
+                required: "Start date is required",
+              }}
               render={({ field, fieldState }) => (
                 <>
                   <Calendar
@@ -1335,7 +1428,9 @@ const RequestLeaveTableData = () => {
             <Controller
               name="end_date"
               control={control}
-              rules={{ required: "End date is required" }}
+              rules={{
+                required: "End date is required",
+              }}
               render={({ field, fieldState }) => (
                 <>
                   <Calendar
@@ -1393,16 +1488,100 @@ const RequestLeaveTableData = () => {
             />
           </div>
 
-          <div className="flex flex-col gap-2 md:col-span-2">
+          <div className="flex flex-col gap-3 md:col-span-2">
             <label className="text-sm font-medium text-slate-700">
               Attachment
             </label>
+
+            {!isAddNew && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 text-sm font-semibold text-slate-700">
+                  Existing Attachments
+                </div>
+
+                {isLoadingAttachments ? (
+                  <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
+                    <i className="pi pi-spin pi-spinner" />
+                    <span>Loading attachments...</span>
+                  </div>
+                ) : attachments.length === 0 ? (
+                  <div className="py-3 text-sm text-slate-500">
+                    No attachment uploaded.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-slate-800">
+                            {attachment.original_file_name}
+                          </div>
+
+                          <div className="mt-1 text-xs text-slate-500">
+                            {formatFileSize(attachment.file_size)}
+                            {" • "}
+                            {attachment.content_type}
+                            {" • "}
+                            {formatDateTime(attachment.created_at)}
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button
+                            type="button"
+                            label="View"
+                            icon="pi pi-eye"
+                            size="small"
+                            outlined
+                            onClick={() => {
+                              window.open(
+                                viewRequestLeaveAttachmentUrl(
+                                  selectedData?.id ??
+                                    attachment.employee_leave_id,
+                                  attachment.id,
+                                ),
+                                "_blank",
+                                "noopener,noreferrer",
+                              );
+                            }}
+                          />
+
+                          <Button
+                            type="button"
+                            label={
+                              deletingAttachmentId === attachment.id
+                                ? "Deleting..."
+                                : "Delete"
+                            }
+                            icon={
+                              deletingAttachmentId === attachment.id
+                                ? "pi pi-spin pi-spinner"
+                                : "pi pi-trash"
+                            }
+                            size="small"
+                            severity="danger"
+                            outlined
+                            disabled={deletingAttachmentId !== null}
+                            onClick={() => onClickDeleteAttachment(attachment)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <Controller
               name="attachment_file"
               control={control}
               render={({ field }) => (
                 <input
                   type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
                   className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
                   onChange={(event) => {
                     field.onChange(event.target.files?.[0] ?? null);
@@ -1410,8 +1589,9 @@ const RequestLeaveTableData = () => {
                 />
               )}
             />
+
             <div className="text-xs text-slate-500">
-              Upload only if this leave type requires attachment.
+              JPG, JPEG, PNG, or PDF. Maximum file size 5 MB.
             </div>
           </div>
         </div>

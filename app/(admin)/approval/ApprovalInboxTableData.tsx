@@ -39,6 +39,11 @@ import {
   approveApprovalRequest,
   rejectApprovalRequest,
 } from "@/app/services/approval-service";
+import { RequestLeaveAttachment } from "@/app/types/request-leave-attachment";
+import {
+  getRequestLeaveAttachments,
+  viewRequestLeaveAttachmentUrl,
+} from "@/app/services/request-leave-attachment-service";
 
 const API_KEY = "/api/approval/pending";
 
@@ -61,6 +66,18 @@ const useIsMobile = () => {
   }, []);
 
   return isMobile;
+};
+
+const formatFileSize = (size: number) => {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 };
 
 const formatDate = (value?: string | null) => {
@@ -207,6 +224,15 @@ const ApprovalInboxTableData = () => {
   const [actionVisible, setActionVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [attachments, setAttachments] = useState<RequestLeaveAttachment[]>([]);
+  const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+
+  const [previewAttachment, setPreviewAttachment] =
+    useState<RequestLeaveAttachment | null>(null);
+
+  const [attachmentPreviewVisible, setAttachmentPreviewVisible] =
+    useState(false);
+
   const {
     control,
     handleSubmit,
@@ -319,14 +345,37 @@ const ApprovalInboxTableData = () => {
     setGlobalFilterValue(value);
   };
 
+  const loadLeaveAttachments = async (requestLeaveId: number) => {
+    try {
+      setIsLoadingAttachments(true);
+
+      const data = await getRequestLeaveAttachments(requestLeaveId);
+
+      setAttachments(data);
+    } catch (err: unknown) {
+      setAttachments([]);
+      showError(err);
+    } finally {
+      setIsLoadingAttachments(false);
+    }
+  };
+
   const openDetail = (data: ApprovalPendingItem) => {
     setSelectedData(data);
+    setAttachments([]);
     setDetailVisible(true);
+
+    if (data.module_code?.toUpperCase() === "LEAVE") {
+      void loadLeaveAttachments(data.reference_id);
+    }
   };
 
   const closeDetail = () => {
     setDetailVisible(false);
     setSelectedData(null);
+    setAttachments([]);
+    setIsLoadingAttachments(false);
+    closeAttachmentPreview();
   };
 
   const openActionDialog = (
@@ -756,6 +805,16 @@ const ApprovalInboxTableData = () => {
     return <ErrorNotConnectedToApi mutateKey={API_KEY} />;
   }
 
+  const openAttachmentPreview = (attachment: RequestLeaveAttachment) => {
+    setPreviewAttachment(attachment);
+    setAttachmentPreviewVisible(true);
+  };
+
+  const closeAttachmentPreview = () => {
+    setAttachmentPreviewVisible(false);
+    setPreviewAttachment(null);
+  };
+
   return (
     <>
       <ConfirmDialog />
@@ -910,6 +969,57 @@ const ApprovalInboxTableData = () => {
               </div>
             </div>
 
+            {selectedData.module_code?.toUpperCase() === "LEAVE" && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="text-sm font-semibold text-slate-700">
+                  Attachments
+                </div>
+
+                {isLoadingAttachments ? (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
+                    <i className="pi pi-spin pi-spinner" />
+                    <span>Loading attachments...</span>
+                  </div>
+                ) : attachments.length === 0 ? (
+                  <div className="mt-3 text-sm text-slate-500">
+                    No attachment uploaded.
+                  </div>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2">
+                    {attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-slate-800">
+                            {attachment.original_file_name}
+                          </div>
+
+                          <div className="mt-1 text-xs text-slate-500">
+                            {formatFileSize(attachment.file_size)}
+                            {" • "}
+                            {attachment.content_type}
+                            {" • "}
+                            {formatDateTime(attachment.created_at)}
+                          </div>
+                        </div>
+
+                        <Button
+                          type="button"
+                          label="View"
+                          icon="pi pi-eye"
+                          size="small"
+                          outlined
+                          onClick={() => openAttachmentPreview(attachment)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-row gap-3">
               <Button
                 label="Reject"
@@ -927,6 +1037,53 @@ const ApprovalInboxTableData = () => {
                 onClick={() => openActionDialog(selectedData, "approve")}
               />
             </div>
+          </div>
+        )}
+      </Dialog>
+
+      <Dialog
+        header={previewAttachment?.original_file_name ?? "Attachment Preview"}
+        visible={attachmentPreviewVisible}
+        style={{
+          width: "95vw",
+          maxWidth: "1000px",
+        }}
+        breakpoints={{
+          "960px": "95vw",
+        }}
+        contentStyle={{
+          padding: 0,
+          overflow: "hidden",
+        }}
+        onHide={closeAttachmentPreview}
+        modal
+        maximizable
+        draggable={false}
+        resizable={false}
+      >
+        {selectedData && previewAttachment && (
+          <div className="flex min-h-[60vh] items-center justify-center bg-slate-100">
+            {previewAttachment.content_type
+              .toLowerCase()
+              .startsWith("image/") ? (
+              <img
+                src={viewRequestLeaveAttachmentUrl(
+                  selectedData.reference_id,
+                  previewAttachment.id,
+                )}
+                alt={previewAttachment.original_file_name}
+                className="max-h-[75vh] max-w-full object-contain"
+              />
+            ) : (
+              <iframe
+                src={viewRequestLeaveAttachmentUrl(
+                  selectedData.reference_id,
+                  previewAttachment.id,
+                )}
+                title={previewAttachment.original_file_name}
+                className="h-[75vh] w-full border-0 bg-white"
+              />
+            )}
           </div>
         )}
       </Dialog>
