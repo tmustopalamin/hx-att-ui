@@ -1,9 +1,14 @@
-import { EmployeeShiftRule } from "../types/employee-shift-rule";
+import {
+  EmployeeShiftRule,
+  EmployeeShiftRuleAssignment,
+} from "../types/employee-shift-rule";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/shift-employee";
 
-export const createEmployeeShiftRule = async (data: any) => {
+export const createEmployeeShiftRule = async (
+  data: EmployeeShiftRuleAssignment,
+) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",

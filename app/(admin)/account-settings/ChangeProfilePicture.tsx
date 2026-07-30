@@ -9,6 +9,7 @@ import useSWR, { mutate } from "swr";
 import { Avatar } from "primereact/avatar";
 import { Button } from "primereact/button";
 import { FileUpload } from "primereact/fileupload";
+import type { FileUploadHandlerEvent } from "primereact/fileupload";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Tag } from "primereact/tag";
 
@@ -243,8 +244,8 @@ const ChangeProfilePicture = ({
     }
   };
 
-  const handleUpload = async (event: any) => {
-    const file = event.files?.[0] as File | undefined;
+  const handleUpload = async (event: FileUploadHandlerEvent) => {
+    const file = event.files[0];
 
     if (!targetEmployeeId) {
       dispatch(

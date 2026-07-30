@@ -72,7 +72,12 @@ const pickFirstNumber = (...values: unknown[]) => {
   return null;
 };
 
-const buildFullNameFromParts = (obj: Record<string, any>) => {
+const asRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : {};
+
+const buildFullNameFromParts = (obj: Record<string, unknown>) => {
   const name = [
     obj.first_name,
     obj.middle_name,
@@ -142,23 +147,14 @@ const buildGoogleMapsUrl = (latitude: number, longitude: number) => {
   return `https://www.google.com/maps?q=${latitude},${longitude}`;
 };
 
-const normalizeProfile = (raw: any): CurrentEmployeeProfile => {
-  const root = raw?.data ?? raw ?? {};
-  const data = typeof root === "object" && root !== null ? root : {};
-  const user =
-    typeof data.user === "object" && data.user !== null ? data.user : {};
-  const employee =
-    typeof data.employee === "object" && data.employee !== null
-      ? data.employee
-      : {};
-  const profile =
-    typeof data.profile === "object" && data.profile !== null
-      ? data.profile
-      : {};
-  const employment =
-    typeof data.employment === "object" && data.employment !== null
-      ? data.employment
-      : {};
+const normalizeProfile = (raw: unknown): CurrentEmployeeProfile => {
+  const root = asRecord(raw);
+  const nestedData = asRecord(root.data);
+  const data = Object.keys(nestedData).length > 0 ? nestedData : root;
+  const user = asRecord(data.user);
+  const employee = asRecord(data.employee);
+  const profile = asRecord(data.profile);
+  const employment = asRecord(data.employment);
 
   const rootFullName = buildFullNameFromParts(data);
   const userFullName = buildFullNameFromParts(user);

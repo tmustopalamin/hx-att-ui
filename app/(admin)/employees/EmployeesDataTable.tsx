@@ -1439,7 +1439,7 @@ const EmployeesDataTable = () => {
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Enter the employee's identity and demographic information.
+                Enter the employee&apos;s identity and demographic information.
               </p>
             </div>
 

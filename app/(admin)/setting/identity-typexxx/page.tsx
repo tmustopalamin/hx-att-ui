@@ -57,7 +57,7 @@ const IdentityTypeSettingPage = () => {
   const getData = () => {
     setTableLoading(true);
 
-    fetch("http://localhost:3050/api/identity-type", {
+    fetch("/api/identity-type", {
       method: "GET",
       credentials: "include",
       headers: {
@@ -120,7 +120,7 @@ const IdentityTypeSettingPage = () => {
     is_active: boolean;
   }) => {
     try {
-      const res = await fetch("http://localhost:3050/api/identity-type", {
+      const res = await fetch("/api/identity-type", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -158,7 +158,7 @@ const IdentityTypeSettingPage = () => {
     is_active: boolean;
   }) => {
     try {
-      const res = await fetch("http://localhost:3050/api/identity-type", {
+      const res = await fetch("/api/identity-type", {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -194,7 +194,7 @@ const IdentityTypeSettingPage = () => {
     setSelectedId(id);
 
     try {
-      const res = await fetch("http://localhost:3050/api/identity-type", {
+      const res = await fetch("/api/identity-type", {
         method: "DELETE",
         credentials: "include",
         headers: {

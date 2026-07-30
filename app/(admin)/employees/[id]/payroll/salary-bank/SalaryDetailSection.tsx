@@ -36,10 +36,9 @@ const SalaryDetailSection = () => {
   const getPersonalData = async () => {
     console.clear();
 
-    const response = await fetch(
-      `http://localhost:3050/api/employees/${id}/personal-data`,
-      { credentials: "include" },
-    );
+    const response = await fetch(`/api/employees/${id}/personal-data`, {
+      credentials: "include",
+    });
     const data = await response.json();
 
     setValue("firstName", data.first_name);
@@ -62,19 +61,14 @@ const SalaryDetailSection = () => {
       marital_status_id: data.marital,
     };
 
-    const res = await fetch(
-      `http://localhost:3050/api/employees/${id}/personal-data`,
-      {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(putData),
+    await fetch(`/api/employees/${id}/personal-data`, {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
       },
-    );
-
-    const result = await res.json();
+      body: JSON.stringify(putData),
+    });
 
     getPersonalData();
   };

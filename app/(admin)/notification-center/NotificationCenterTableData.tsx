@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "primereact/button";
 import { Dropdown } from "primereact/dropdown";
 import { ProgressSpinner } from "primereact/progressspinner";
@@ -13,6 +14,7 @@ import {
   markNotificationAsRead,
   NotificationItem,
 } from "@/app/services/notification-service";
+import { getSafeInternalPath } from "@/app/utils/safe-navigation";
 
 const moduleOptions = [
   { label: "All Modules", value: "" },
@@ -84,6 +86,7 @@ const getModuleIcon = (moduleCode: string) => {
 };
 
 const NotificationCenterTableData = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
@@ -156,8 +159,9 @@ const NotificationCenterTableData = () => {
       await markNotificationAsRead(notification.id);
     }
 
-    if (notification.action_url) {
-      window.location.href = notification.action_url;
+    const actionPath = getSafeInternalPath(notification.action_url);
+    if (actionPath) {
+      router.push(actionPath);
       return;
     }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export async function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const access = req.cookies.get("access_token")?.value;
@@ -14,21 +14,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/images") ||
     pathname.startsWith("/fonts") ||
     pathname.startsWith("/themes") ||
-    pathname === "/favicon.ico" ||
-    pathname.endsWith(".png") ||
-    pathname.endsWith(".jpg") ||
-    pathname.endsWith(".jpeg") ||
-    pathname.endsWith(".svg") ||
-    pathname.endsWith(".gif") ||
-    pathname.endsWith(".webp") ||
-    pathname.endsWith(".ico") ||
-    pathname.endsWith(".css") ||
-    pathname.endsWith(".js") ||
-    pathname.endsWith(".map") ||
-    pathname.endsWith(".woff") ||
-    pathname.endsWith(".woff2") ||
-    pathname.endsWith(".ttf") ||
-    pathname.endsWith(".eot");
+    pathname === "/favicon.ico";
 
   if (isPublicPath) {
     return NextResponse.next();

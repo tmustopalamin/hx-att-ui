@@ -6,7 +6,7 @@ import useSWR from "swr";
 
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
-import { Checkbox } from "primereact/checkbox";
+import IndeterminateCheckbox from "@/app/_components/IndeterminateCheckbox";
 import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
@@ -808,7 +808,7 @@ const RolePermissionsTableData = () => {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      <Checkbox
+                                      <IndeterminateCheckbox
                                         inputId={groupCheckboxId}
                                         checked={isAllChecked}
                                         indeterminate={isPartiallyChecked}
@@ -866,7 +866,7 @@ const RolePermissionsTableData = () => {
                                           }`}
                                         >
                                           <div className="flex items-start gap-3">
-                                            <Checkbox
+                                            <IndeterminateCheckbox
                                               inputId={permissionCheckboxId}
                                               checked={checked}
                                               disabled={

@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
-import { Checkbox } from "primereact/checkbox";
+import IndeterminateCheckbox from "@/app/_components/IndeterminateCheckbox";
 import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
@@ -643,7 +643,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
     return (
       <div className="flex items-center justify-center">
-        <Checkbox
+        <IndeterminateCheckbox
           inputId={inputId}
           checked={selectedIds.has(row.id)}
           disabled={isAssigning}
@@ -660,7 +660,7 @@ const EmployeeShiftRuleAssignForm = () => {
   const headerCheckbox = () => {
     return (
       <div className="flex items-center justify-center">
-        <Checkbox
+        <IndeterminateCheckbox
           inputId="select_visible_employees"
           checked={allVisibleSelected}
           indeterminate={someVisibleSelected}
@@ -952,7 +952,7 @@ const EmployeeShiftRuleAssignForm = () => {
                               : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                         }`}
                       >
-                        <Checkbox
+                        <IndeterminateCheckbox
                           inputId={inputId}
                           checked={allSelected}
                           indeterminate={partiallySelected}
@@ -1018,7 +1018,7 @@ const EmployeeShiftRuleAssignForm = () => {
                               : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
                         }`}
                       >
-                        <Checkbox
+                        <IndeterminateCheckbox
                           inputId={inputId}
                           checked={allSelected}
                           indeterminate={partiallySelected}
@@ -1292,7 +1292,7 @@ const EmployeeShiftRuleAssignForm = () => {
             {/* Assignment Mode */}
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start gap-3">
-                <Checkbox
+                <IndeterminateCheckbox
                   inputId="overwrite"
                   checked={overwrite}
                   disabled={isAssigning}

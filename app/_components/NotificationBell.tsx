@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getSafeInternalPath } from "@/app/utils/safe-navigation";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { ProgressSpinner } from "primereact/progressspinner";
 
@@ -171,8 +172,9 @@ const NotificationBell = () => {
 
       panelRef.current?.hide();
 
-      if (notification.action_url) {
-        router.push(notification.action_url);
+      const actionPath = getSafeInternalPath(notification.action_url);
+      if (actionPath) {
+        router.push(actionPath);
       }
 
       await fetchUnreadCount();

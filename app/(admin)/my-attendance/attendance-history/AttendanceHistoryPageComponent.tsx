@@ -44,16 +44,10 @@ const formatDateTime = (value?: string | null) => {
 
 const buildPhotoUrl = (photoUrl?: string | null) => {
   if (!photoUrl) return null;
-
-  // if (
-  //     photoUrl.startsWith("http://") ||
-  //     photoUrl.startsWith("https://") ||
-  //     photoUrl.startsWith("data:")
-  // ) {
-  //     return photoUrl;
-  // }
-
-  return `http://localhost:3050/api/public/upload/attendance/${photoUrl}`;
+  const filename = photoUrl.split(/[\\/]/).pop();
+  return filename
+    ? `/api/public/upload/attendance/${encodeURIComponent(filename)}`
+    : null;
 };
 
 const buildGoogleMapsUrl = (latitude?: unknown, longitude?: unknown) => {

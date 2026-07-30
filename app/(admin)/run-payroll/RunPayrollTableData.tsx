@@ -90,7 +90,7 @@ export default function RunPayrollTableData() {
       : "-";
 
   const whBody = (row: AttendanceSummary) => {
-    const sec = row.work_hours ?? 0;
+    const sec = row.work_seconds ?? 0;
     return `${Math.floor(sec / 3600)}j ${Math.floor((sec % 3600) / 60)}m`;
   };
 

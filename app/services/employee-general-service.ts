@@ -686,15 +686,38 @@ export const getEmployeeOptions = async () => {
     throw new Error("Failed to fetch employee options");
   }
 
-  const data = await res.json();
+  const data: unknown = await res.json();
 
-  return data.map((item: any) => ({
-    id: item.id,
-    name:
-      item.full_name ||
-      [item.first_name, item.last_name].filter(Boolean).join(" ") ||
-      item.name ||
-      `Employee #${item.id}`,
-    is_active: item.is_active,
-  }));
+  if (!Array.isArray(data)) {
+    throw new Error("Invalid employee options response");
+  }
+
+  return data.map((value: unknown) => {
+    const item =
+      typeof value === "object" && value !== null
+        ? (value as Record<string, unknown>)
+        : {};
+    const id = typeof item.id === "number" ? item.id : Number(item.id);
+    const fullName =
+      typeof item.full_name === "string" ? item.full_name.trim() : "";
+    const firstName =
+      typeof item.first_name === "string" ? item.first_name.trim() : "";
+    const lastName =
+      typeof item.last_name === "string" ? item.last_name.trim() : "";
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+
+    if (!Number.isFinite(id)) {
+      throw new Error("Invalid employee option ID");
+    }
+
+    return {
+      id,
+      name:
+        fullName ||
+        [firstName, lastName].filter(Boolean).join(" ") ||
+        name ||
+        `Employee #${id}`,
+      is_active: item.is_active === true,
+    };
+  });
 };

@@ -1,9 +1,5 @@
-export async function fetcher(url: string) {
-  const res = await fetch(url, { credentials: "include" });
+import { apiFetch } from "./api-client";
 
-  if (!res.ok) {
-    throw new Error(`failed: ${res.status} ${res.statusText}`);
-  }
-
-  return res.json();
+export function fetcher<T>(url: string): Promise<T> {
+  return apiFetch<T>(url);
 }

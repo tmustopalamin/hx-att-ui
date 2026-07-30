@@ -4,7 +4,7 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR from "swr";
 import dayjs from "dayjs";
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 import { saveAs } from "file-saver";
 
 import { FilterMatchMode } from "primereact/api";

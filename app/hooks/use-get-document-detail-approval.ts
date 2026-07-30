@@ -1,8 +1,9 @@
+import type { ApprovalDocumentDetail } from "../types/approval-request-line";
 import { fetcher } from "../utils/fetcher";
 import useSWR from "swr";
 
-const UseGetDocumentDetailApproval = (approvalRequestId?: number) => {
-  return useSWR(
+const useGetDocumentDetailApproval = (approvalRequestId?: number) => {
+  return useSWR<ApprovalDocumentDetail>(
     approvalRequestId
       ? `/api/approval/get-detail-document/${approvalRequestId}`
       : null,
@@ -13,4 +14,4 @@ const UseGetDocumentDetailApproval = (approvalRequestId?: number) => {
   );
 };
 
-export default UseGetDocumentDetailApproval;
+export default useGetDocumentDetailApproval;

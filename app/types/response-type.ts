@@ -9,10 +9,6 @@ export interface ResponseTypeCreateSuccess {
   row_version: number;
 }
 
-export interface ResponseTypeCreateSuccess {
-  id: number;
-}
-
 export interface ResponseTypeError {
   success: boolean;
   code: string;

@@ -3,7 +3,7 @@
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 import { saveAs } from "file-saver";
 
 import { Button } from "primereact/button";
@@ -77,14 +77,10 @@ const PROCESSED_OPTIONS = [
 const getBody = () => document.body;
 
 const getAttendancePhotoUrl = (photoUrl: string) => {
-  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
-    return photoUrl;
-  }
-
-  const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3050";
-
-  return `${apiBaseUrl}/api/public/upload/attendance/${photoUrl}`;
+  const filename = photoUrl.split(/[\\/]/).pop();
+  return filename
+    ? `/api/public/upload/attendance/${encodeURIComponent(filename)}`
+    : "";
 };
 
 const safeJsonStringify = (value: unknown) => {

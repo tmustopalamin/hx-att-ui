@@ -1,7 +1,7 @@
 "use client";
 
 import CardTitle from "@/app/_components/CardTitle";
-import UseGetDocumentDetailApproval from "@/app/hooks/use-get-document-detail-approval";
+import useGetDocumentDetailApproval from "@/app/hooks/use-get-document-detail-approval";
 import { ApprovalRequestLine } from "@/app/types/approval-request-line";
 import {
   ResponseType,
@@ -34,7 +34,7 @@ const ApprovalTableData = () => {
     error: errorDocDetail,
     isLoading: isLoadingDocDetail,
     mutate: mutateDocDetail,
-  } = UseGetDocumentDetailApproval(selectedDocId);
+  } = useGetDocumentDetailApproval(selectedDocId);
 
   const dispatch = useDispatch();
   const [visible, setVisible] = useState(false);
