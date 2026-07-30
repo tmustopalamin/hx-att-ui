@@ -229,14 +229,19 @@ const ChangeProfilePicture = ({
 
       dispatch(
         updateDataProfile({
+          user_id: refreshedMe.user_id,
           employee_id: refreshedMe.employee_id,
           email: refreshedMe.email,
+          username: refreshedMe.username,
           name: refreshedMe.name,
           role: hasCurrentRole ? currentRole : refreshedMe.role,
           permissions: hasCurrentPermissions
             ? currentPermissions
             : refreshedMe.permissions,
           photo_url: refreshedMe.photo_url,
+          must_change_password: refreshedMe.must_change_password,
+          last_login_at: refreshedMe.last_login_at,
+          password_changed_at: refreshedMe.password_changed_at,
         }),
       );
     } catch {
