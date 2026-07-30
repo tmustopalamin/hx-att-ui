@@ -56,6 +56,23 @@ const LoginForm = () => {
         throw new Error(errorMessage);
       }
 
+      const sessionResponse = await fetch("/api/auth/me", {
+        method: "GET",
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!sessionResponse.ok) {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        }).catch(() => undefined);
+
+        throw new Error(
+          "Login succeeded, but the session could not be established. Please try again.",
+        );
+      }
+
       dispatch(
         showToast({
           visible: true,
@@ -65,9 +82,7 @@ const LoginForm = () => {
         }),
       );
 
-      setTimeout(() => {
-        router.replace("/dashboard");
-      }, 500);
+      router.replace("/dashboard");
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error

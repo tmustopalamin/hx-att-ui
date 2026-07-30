@@ -28,6 +28,7 @@ const ForgotPasswordPage = () => {
   const [otpToken, setOtpToken] = useState<string | number | undefined | null>(
     "",
   );
+  const [challengeId, setChallengeId] = useState("");
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -60,6 +61,7 @@ const ForgotPasswordPage = () => {
       }
 
       setOtpFormVisible(true);
+      setChallengeId(responseData?.data || "");
 
       dispatch(
         showToast({
@@ -101,12 +103,17 @@ const ForgotPasswordPage = () => {
         throw new Error("OTP must be 6 digits.");
       }
 
+      if (!challengeId) {
+        throw new Error("Reset session expired. Please request a new OTP.");
+      }
+
       const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          challenge_id: challengeId,
           otp: otpValue,
         }),
       });
@@ -351,6 +358,7 @@ const ForgotPasswordPage = () => {
             onClick={() => {
               setOtpFormVisible(false);
               setOtpToken("");
+              setChallengeId("");
               setFormError("");
             }}
             className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50"

@@ -9,7 +9,6 @@ import Breadcrumb from "../_components/Breadcrumb";
 import BProgressProvider from "../utils/providers/BProgressProvider";
 import AvatarWithSidebar from "./AvatarWithSidebar";
 import SidebarMenu from "./SidebarMenu";
-import { apiFetch } from "../services/api-fetch";
 import NotificationBell from "../_components/NotificationBell";
 
 const AppMain = ({ children }: { children: React.ReactNode }) => {
@@ -21,18 +20,6 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
     useState(false);
 
   const getBody = () => document.body;
-
-  useEffect(() => {
-    const bootstrapAuth = async () => {
-      try {
-        await apiFetch("/api/auth/me");
-      } catch {
-        // redirect / handling tetap dari apiFetch
-      }
-    };
-
-    bootstrapAuth();
-  }, []);
 
   useEffect(() => {
     const syncViewport = () => {

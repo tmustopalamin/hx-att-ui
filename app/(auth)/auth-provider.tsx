@@ -6,9 +6,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { clearProfile, updateDataProfile } from "@/store/me/ProfileSlice";
 import { RootState } from "@/store/store";
 import { Me } from "../types/me";
+import { useRouter } from "next/navigation";
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const profileData = useSelector((state: RootState) => state.profile);
 
   const fetcher = async (url: string) => {
@@ -38,8 +40,9 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (error?.status === 401) {
       dispatch(clearProfile());
+      router.replace("/login");
     }
-  }, [data, error]);
+  }, [data, error, dispatch, router]);
 
   if (isLoading) return null;
   if (!profileData?.employee_id) return null;
