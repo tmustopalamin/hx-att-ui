@@ -1804,8 +1804,13 @@ const UserTableData = () => {
                       return "Password is required.";
                     }
 
-                    if (value && value.length < 8) {
-                      return "Password must contain at least 8 characters.";
+                    if (
+                      value &&
+                      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,128}$/.test(
+                        value,
+                      )
+                    ) {
+                      return "Use 12-128 characters with uppercase, lowercase, number, and symbol.";
                     }
 
                     return true;

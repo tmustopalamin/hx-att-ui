@@ -176,15 +176,18 @@ const AccountSettingsPage = () => {
                   control={control}
                   rules={{
                     required: "New password is required",
-                    minLength: {
-                      value: 8,
-                      message: "New password must be at least 8 characters",
-                    },
                     validate: (value) => {
                       const currentPassword = getValues("currentPassword");
 
                       if (value === currentPassword) {
                         return "New password must be different from current password";
+                      }
+                      if (
+                        !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,128}$/.test(
+                          value,
+                        )
+                      ) {
+                        return "Use 12-128 characters with uppercase, lowercase, number, and symbol";
                       }
 
                       return true;
