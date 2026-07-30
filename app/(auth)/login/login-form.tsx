@@ -16,11 +16,7 @@ const LoginForm = () => {
   const router = useRouter();
   const dispatch = useDispatch();
 
-  const {
-    handleSubmit,
-    control,
-    formState: { errors },
-  } = useForm<FormDataLogin>({
+  const { handleSubmit, control } = useForm<FormDataLogin>({
     defaultValues: {
       email: "",
       password: "",
@@ -119,14 +115,15 @@ const LoginForm = () => {
         <div className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-2xl shadow-slate-300/60 backdrop-blur md:p-8">
           <div className="mb-7 text-center">
             <div className="mb-5 flex justify-center">
-              <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm md:h-32 md:w-32">
+              <div className="flex h-20 w-full max-w-[250px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-5 shadow-sm sm:h-24">
                 <Image
                   src="/images/logo.png"
                   alt="PT. Hexing Technology"
-                  width={104}
-                  height={104}
+                  width={475}
+                  height={105}
                   priority
-                  className="object-contain"
+                  sizes="(max-width: 640px) 210px, 225px"
+                  className="h-auto w-full max-w-[225px] object-contain"
                 />
               </div>
             </div>
