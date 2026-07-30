@@ -45,6 +45,14 @@ type AttendanceLogRow = AttendanceLog & {
   machine_name?: string | null;
 };
 
+type PaginatedAttendanceLogResponse = {
+  data: AttendanceLogRow[];
+  page: number;
+  page_size: number;
+  total_records: number;
+  total_pages: number;
+};
+
 type ProcessedFilter = "ALL" | "PROCESSED" | "UNPROCESSED";
 
 type QuickRange = "today" | "this_week" | "this_month" | null;
@@ -119,7 +127,21 @@ const AttendanceLogTableData = () => {
 
   const [selectedLog, setSelectedLog] = useState<AttendanceLogRow | null>(null);
 
-  const swrKey = "/api/attendance-log";
+  const [first, setFirst] = useState(0);
+
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
+  const currentPage = Math.floor(first / rowsPerPage) + 1;
+
+  const swrKey = useMemo(() => {
+    const params = new URLSearchParams();
+
+    params.set("page", String(currentPage));
+
+    params.set("page_size", String(rowsPerPage));
+
+    return `/api/attendance-log?${params.toString()}`;
+  }, [currentPage, rowsPerPage]);
 
   const {
     data: attendanceLogData,
@@ -127,11 +149,16 @@ const AttendanceLogTableData = () => {
     isLoading,
     isValidating,
     mutate: refreshAttendanceLogData,
-  } = useSWR<AttendanceLogRow[]>(swrKey, fetcher, {
+  } = useSWR<PaginatedAttendanceLogResponse>(swrKey, fetcher, {
     revalidateOnFocus: false,
+    keepPreviousData: true,
   });
 
-  const rows = attendanceLogData ?? [];
+  const rows = attendanceLogData?.data ?? [];
+
+  const totalRecords = attendanceLogData?.total_records ?? 0;
+
+  const totalPages = attendanceLogData?.total_pages ?? 0;
 
   const statusOptions = useMemo(() => {
     const statuses = Array.from(
@@ -331,6 +358,7 @@ const AttendanceLogTableData = () => {
     const today = dayjs();
 
     setQuickRange(range);
+    resetPagination();
 
     if (range === "today") {
       setDateFrom(today.startOf("day").toDate());
@@ -356,11 +384,13 @@ const AttendanceLogTableData = () => {
   const onDateFromChange = (value: Date | null) => {
     setDateFrom(value);
     setQuickRange(null);
+    resetPagination();
   };
 
   const onDateToChange = (value: Date | null) => {
     setDateTo(value);
     setQuickRange(null);
+    resetPagination();
   };
 
   const resetFilters = () => {
@@ -370,6 +400,7 @@ const AttendanceLogTableData = () => {
     setKeyword("");
     setStatusFilter(null);
     setProcessedFilter("ALL");
+    setFirst(0);
   };
 
   const handleSyncAttendanceLog = async () => {
@@ -387,7 +418,11 @@ const AttendanceLogTableData = () => {
       setSyncResult(response.data);
       setSyncResultDialog(true);
 
-      await refreshAttendanceLogData();
+      returnToFirstPage();
+
+      if (first === 0) {
+        await refreshAttendanceLogData();
+      }
 
       dispatch(
         showToast({
@@ -456,12 +491,21 @@ const AttendanceLogTableData = () => {
     });
   };
 
+  const resetPagination = () => {
+    setFirst(0);
+  };
+
   const handleRemapEmployee = async () => {
     try {
       setRemapLoading(true);
 
       await remapEmployeeAttendanceLog();
-      await refreshAttendanceLogData();
+
+      returnToFirstPage();
+
+      if (first === 0) {
+        await refreshAttendanceLogData();
+      }
 
       showSuccess("Machine PIN mapping updated successfully.");
     } catch (err: unknown) {
@@ -469,6 +513,10 @@ const AttendanceLogTableData = () => {
     } finally {
       setRemapLoading(false);
     }
+  };
+
+  const returnToFirstPage = () => {
+    setFirst(0);
   };
 
   const onClickRemapEmployee = () => {
@@ -989,7 +1037,7 @@ const AttendanceLogTableData = () => {
 
               <Button
                 type="button"
-                label="Export Excel"
+                label="Export Current Page"
                 icon="pi pi-file-excel"
                 severity="success"
                 outlined
@@ -1014,7 +1062,8 @@ const AttendanceLogTableData = () => {
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-400">
-                {rows.length} total records
+                Page {currentPage} of {totalPages || 1} •{" "}
+                {totalRecords.toLocaleString("id-ID")} total records
               </p>
             </div>
 
@@ -1101,9 +1150,10 @@ const AttendanceLogTableData = () => {
                   value={keyword}
                   placeholder="Search employee, scanner, PIN, source, or status"
                   className="w-full"
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setKeyword(event.target.value)
-                  }
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setKeyword(event.target.value);
+                    resetPagination();
+                  }}
                 />
               </IconField>
 
@@ -1138,7 +1188,11 @@ const AttendanceLogTableData = () => {
                 placeholder="All Statuses"
                 showClear
                 className="w-full"
-                onChange={(event) => setStatusFilter(event.value ?? null)}
+                onChange={(event) => {
+                  setStatusFilter(event.value ?? null);
+
+                  resetPagination();
+                }}
               />
 
               <Dropdown
@@ -1146,9 +1200,11 @@ const AttendanceLogTableData = () => {
                 value={processedFilter}
                 options={PROCESSED_OPTIONS}
                 className="w-full"
-                onChange={(event) =>
-                  setProcessedFilter(event.value as ProcessedFilter)
-                }
+                onChange={(event) => {
+                  setProcessedFilter(event.value as ProcessedFilter);
+
+                  resetPagination();
+                }}
               />
             </div>
 
@@ -1227,18 +1283,21 @@ const AttendanceLogTableData = () => {
           {/* Attendance Log Table */}
           <div className="w-full overflow-hidden">
             <DataTable
-              value={filteredData}
+              value={rows}
               dataKey="id"
+              lazy
               paginator
-              rows={10}
-              rowsPerPageOptions={[10, 25, 50]}
+              first={first}
+              rows={rowsPerPage}
+              totalRecords={totalRecords}
+              rowsPerPageOptions={[10, 25, 50, 100]}
               stripedRows
               rowHover
               scrollable
               removableSort
               responsiveLayout="scroll"
               size="small"
-              loading={isValidating}
+              loading={isLoading || isValidating}
               rowClassName={rowClassName}
               tableStyle={{
                 minWidth: "96rem",
@@ -1246,10 +1305,14 @@ const AttendanceLogTableData = () => {
               emptyMessage="No attendance log data found."
               currentPageReportTemplate="{first} to {last} of {totalRecords}"
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+              onPage={(event) => {
+                setFirst(event.first);
+                setRowsPerPage(event.rows);
+              }}
             >
               <Column
                 header="#"
-                body={(_, options) => options.rowIndex + 1}
+                body={(_, options) => first + options.rowIndex + 1}
                 headerStyle={{
                   width: "4rem",
                 }}
