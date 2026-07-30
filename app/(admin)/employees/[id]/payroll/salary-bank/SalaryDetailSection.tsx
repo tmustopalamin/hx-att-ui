@@ -9,7 +9,7 @@ import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { Toast } from "primereact/toast";
 import React, { useRef } from "react";
-import { Controller, FieldErrors, useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 
 type FormData = {
   firstName: string;
@@ -73,7 +73,7 @@ const SalaryDetailSection = () => {
     getPersonalData();
   };
 
-  const onInvalid = (errors: FieldErrors<FormData>) => {};
+  const onInvalid = () => undefined;
 
   return (
     <>

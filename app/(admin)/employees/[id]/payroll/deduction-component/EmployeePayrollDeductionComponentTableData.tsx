@@ -10,7 +10,6 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Controller, useForm } from "react-hook-form";
-import CardTitle from "@/app/_components/CardTitle";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -33,7 +32,7 @@ import { hasRole } from "@/app/utils/role-utils";
 import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
-import { Employee } from "@/app/types/employee";
+import { EmployeePersonalData } from "@/app/types/employee-general";
 import { EmployeeDeductionComponent } from "@/app/types/employee-deduction-component";
 import { useParams } from "next/navigation";
 import dayjs from "dayjs";
@@ -69,8 +68,6 @@ const EmployeePayrollDeductionComponentTableData = () => {
     formState: { isValid },
     reset,
     clearErrors,
-    watch,
-    setValue,
   } = useForm<EmployeeDeductionComponent>();
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
@@ -137,13 +134,29 @@ const EmployeePayrollDeductionComponentTableData = () => {
     data: employeeData,
     error: employeeError,
     isLoading: employeeIsLoading,
-  } = useSWR<Employee[]>(`/api/employees`, fetcher);
+  } = useSWR<EmployeePersonalData>(
+    `/api/employees/${id}/personal-data`,
+    fetcher,
+  );
   const {
     data: employeeDeductionComponentData,
     error: employeeDeductionComponentError,
     isLoading: employeeDeductionComponentIsLoading,
   } = useSWR<EmployeeDeductionComponent[]>(`/api/deduction-component`, fetcher);
-  const employeeActive = employeeData?.filter((a) => a.id === Number(id));
+  const employeeActive = employeeData
+    ? [
+        {
+          id: Number(id),
+          full_name: [
+            employeeData.first_name,
+            employeeData.middle_name,
+            employeeData.last_name,
+          ]
+            .filter(Boolean)
+            .join(" "),
+        },
+      ]
+    : [];
   const employeeDeductionComponentActive =
     employeeDeductionComponentData?.filter((a) => a.is_active);
 
@@ -166,7 +179,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         await createEmployeeDeductionComponent(data);
       setVisible(false);
       reset();
-      mutate(
+      await mutate(
         `/api/employees/${id}/deduction-component?show_all=${isShowDeletedDataChecked}`,
       );
       dispatch(
@@ -222,7 +235,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         );
 
       setVisible(false);
-      mutate(
+      await mutate(
         `/api/employees/${id}/deduction-component?show_all=${isShowDeletedDataChecked}`,
       );
       dispatch(
@@ -263,7 +276,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         await deleteEmployeeDeductionComponent(data.id, data);
       setVisible(false);
       reset();
-      mutate(
+      await mutate(
         `/api/employees/${id}/deduction-component?show_all=${isShowDeletedDataChecked}`,
       );
 
@@ -304,7 +317,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         await purgeEmployeeDeductionComponent(data.id, data);
       setVisible(false);
       reset();
-      mutate(
+      await mutate(
         `/api/employees/${id}/deduction-component?show_all=${isShowDeletedDataChecked}`,
       );
 
@@ -345,7 +358,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         await restoreEmployeeDeductionComponent(data.id, data);
       setVisible(false);
       reset();
-      mutate(
+      await mutate(
         `/api/employees/${id}/deduction-component?show_all=${isShowDeletedDataChecked}`,
       );
 
@@ -583,18 +596,29 @@ const EmployeePayrollDeductionComponentTableData = () => {
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title="Deduction Component" url="" />}>
-        <div className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">
+                Deduction Component
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Manage recurring and one-time deduction components for this
+                employee.
+              </p>
+            </div>
+
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
               <Button
-                label="New"
+                label="New Deduction Component"
                 icon="pi pi-plus"
                 size="small"
+                className="w-full sm:w-auto"
                 onClick={() => onClickNew()}
               />
 
-              <div className="flex align-items-center pl-5">
+              <div className="flex items-center gap-2">
                 <Checkbox
                   inputId="showDeletedData"
                   name="showDeletedData"
@@ -602,21 +626,24 @@ const EmployeePayrollDeductionComponentTableData = () => {
                   onChange={onIngredientsChange}
                   checked={isShowDeletedDataChecked}
                 />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  Show deleted data
+                <label
+                  htmlFor="showDeletedData"
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Show deleted records
                 </label>
               </div>
-            </div>
 
-            <IconField iconPosition="left">
-              <InputIcon className="pi pi-search" />
-              <InputText
-                className="p-inputtext-sm"
-                value={globalFilterValue}
-                onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
-              />
-            </IconField>
+              <IconField iconPosition="left" className="w-full sm:w-72">
+                <InputIcon className="pi pi-search" />
+                <InputText
+                  className="w-full"
+                  value={globalFilterValue}
+                  onChange={onGlobalFilterChange}
+                  placeholder="Search deduction component"
+                />
+              </IconField>
+            </div>
           </div>
 
           <DataTable

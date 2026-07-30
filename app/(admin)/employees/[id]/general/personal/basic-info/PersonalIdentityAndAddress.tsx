@@ -335,14 +335,16 @@ const PersonalIdentityAndAddress = () => {
     const isDeleted = !!row.deleted_at;
 
     return (
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         {!isDeleted && (
           <>
             <Button
               type="button"
               rounded
+              outlined
+              size="small"
               icon="pi pi-pencil"
-              severity="help"
+              severity="secondary"
               onClick={() => openEdit(row)}
               tooltip="Edit"
               tooltipOptions={{ position: "top" }}
@@ -350,6 +352,8 @@ const PersonalIdentityAndAddress = () => {
             <Button
               type="button"
               rounded
+              outlined
+              size="small"
               icon="pi pi-trash"
               severity="danger"
               onClick={() => onDelete(row)}
@@ -364,6 +368,8 @@ const PersonalIdentityAndAddress = () => {
             <Button
               type="button"
               rounded
+              outlined
+              size="small"
               icon="pi pi-refresh"
               severity="success"
               onClick={() => void onRestore(row)}
@@ -373,8 +379,10 @@ const PersonalIdentityAndAddress = () => {
             <Button
               type="button"
               rounded
-              icon="pi pi-times"
-              severity="secondary"
+              outlined
+              size="small"
+              icon="pi pi-trash"
+              severity="danger"
               onClick={() => onPurge(row)}
               tooltip="Purge"
               tooltipOptions={{ position: "top" }}
@@ -386,17 +394,21 @@ const PersonalIdentityAndAddress = () => {
   };
 
   const dialogFooter = (
-    <div className="flex justify-end gap-2">
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
         label="Cancel"
-        className="p-button-text"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        className="w-full sm:w-auto"
         onClick={hideDialog}
       />
       <Button
         type="button"
-        label={isAddMode ? "Save" : "Update"}
+        label={isAddMode ? "Create Identity" : "Save Changes"}
         icon="pi pi-check"
+        className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
       />
     </div>
@@ -419,8 +431,10 @@ const PersonalIdentityAndAddress = () => {
 
           <Button
             type="button"
-            label="New"
+            label="New Identity"
             icon="pi pi-plus"
+            size="small"
+            className="w-full sm:w-auto"
             onClick={openNew}
           />
         </div>
@@ -430,20 +444,26 @@ const PersonalIdentityAndAddress = () => {
           dataKey="id"
           loading={loading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
           emptyMessage="No identity data found."
           scrollable
-          className="text-sm"
+          tableStyle={{ minWidth: "70rem" }}
+          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
             header="#"
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "60px" }}
           />
-          <Column field="identity_type_name" header="Identity Type" />
-          <Column field="number" header="Number" />
+          <Column field="identity_type_name" header="Identity Type" sortable />
+          <Column field="number" header="Number" sortable />
           <Column
             header="Expiry"
             body={expiryBodyTemplate}
@@ -452,11 +472,13 @@ const PersonalIdentityAndAddress = () => {
           <Column
             field="citizen_address"
             header="Citizen Address"
+            sortable
             style={{ minWidth: "220px" }}
           />
           <Column
             field="residential_address"
             header="Residential Address"
+            sortable
             style={{ minWidth: "220px" }}
           />
           <Column
@@ -471,7 +493,12 @@ const PersonalIdentityAndAddress = () => {
             alignFrozen="right"
             className="bg-white"
             headerClassName="bg-white"
-            style={{ minWidth: "150px" }}
+            headerStyle={{
+              width: "9rem",
+              minWidth: "9rem",
+              textAlign: "right",
+            }}
+            bodyStyle={{ width: "9rem", minWidth: "9rem" }}
           />
         </DataTable>
       </div>
@@ -479,10 +506,13 @@ const PersonalIdentityAndAddress = () => {
       <Dialog
         header={isAddMode ? "New Identity" : "Update Identity"}
         visible={visible}
-        style={{ width: "52rem", maxWidth: "95vw" }}
+        style={{ width: "95vw", maxWidth: "52rem" }}
         onHide={hideDialog}
         footer={dialogFooter}
-        breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
       >
         <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
           <Controller

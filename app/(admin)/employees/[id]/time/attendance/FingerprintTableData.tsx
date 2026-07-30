@@ -630,11 +630,12 @@ const EmployeeFingerprintTableData = () => {
   const actionColumnBody = (rowData: EmployeeFingerprint) => {
     if (rowData.deleted_at) {
       return (
-        <div className="flex justify-center gap-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           <Button
             tooltipOptions={{ appendTo: getBody, position: "top" }}
             tooltip="Restore"
             rounded
+            outlined
             severity="success"
             icon="pi pi-refresh"
             size="small"
@@ -644,8 +645,9 @@ const EmployeeFingerprintTableData = () => {
             tooltipOptions={{ appendTo: getBody, position: "top" }}
             tooltip="Delete Forever"
             rounded
-            severity="secondary"
-            icon="pi pi-times"
+            outlined
+            severity="danger"
+            icon="pi pi-trash"
             size="small"
             onClick={() => onClickPurge(rowData)}
           />
@@ -654,12 +656,13 @@ const EmployeeFingerprintTableData = () => {
     }
 
     return (
-      <div className="flex justify-center gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           tooltip="Edit"
           rounded
-          severity="help"
+          outlined
+          severity="secondary"
           icon="pi pi-pencil"
           size="small"
           onClick={() => onClickEdit(rowData)}
@@ -668,6 +671,7 @@ const EmployeeFingerprintTableData = () => {
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           tooltip="Delete"
           rounded
+          outlined
           severity="danger"
           icon="pi pi-trash"
           size="small"
@@ -763,7 +767,7 @@ const EmployeeFingerprintTableData = () => {
     <>
       <ConfirmDialog />
 
-      <Card className="shadow-sm">
+      <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-4">
           <div className="border-b border-slate-200 pb-4">
             <div className="mb-4">
@@ -808,6 +812,7 @@ const EmployeeFingerprintTableData = () => {
                   className="w-full sm:w-auto"
                   label="New Fingerprint"
                   icon="pi pi-plus"
+                  size="small"
                   onClick={onClickNew}
                 />
               </div>
@@ -833,6 +838,10 @@ const EmployeeFingerprintTableData = () => {
             loading={isLoading}
             scrollable
             stripedRows
+            rowHover
+            removableSort
+            responsiveLayout="scroll"
+            size="small"
             tableStyle={{ minWidth: "68rem" }}
           >
             <Column
@@ -844,18 +853,21 @@ const EmployeeFingerprintTableData = () => {
             <Column
               field="fp_device_name"
               header="Scanner"
+              sortable
               style={{ minWidth: "13rem" }}
             />
 
             <Column
               field="fp_pin"
               header="User ID / PIN2"
+              sortable
               style={{ minWidth: "12rem" }}
             />
 
             <Column
               field="fp_machine_pin"
               header="Machine PIN / PIN1"
+              sortable
               style={{ minWidth: "12rem" }}
               body={(rowData: EmployeeFingerprint) =>
                 rowData.fp_machine_pin ?? "-"
@@ -865,6 +877,7 @@ const EmployeeFingerprintTableData = () => {
             <Column
               field="fp_device_user_name"
               header="Device User Name"
+              sortable
               style={{ minWidth: "14rem" }}
               body={(rowData: EmployeeFingerprint) =>
                 rowData.fp_device_user_name ?? "-"
@@ -896,7 +909,12 @@ const EmployeeFingerprintTableData = () => {
               alignFrozen="right"
               headerClassName="bg-white"
               className="bg-white"
-              style={{ width: "9rem", minWidth: "9rem" }}
+              headerStyle={{
+                width: "9rem",
+                minWidth: "9rem",
+                textAlign: "right",
+              }}
+              bodyStyle={{ width: "9rem", minWidth: "9rem" }}
             />
           </DataTable>
         </div>

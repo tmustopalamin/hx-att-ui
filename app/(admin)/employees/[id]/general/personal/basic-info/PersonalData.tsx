@@ -2,7 +2,6 @@
 
 import {
   getCountryOptions,
-  getEmployeePersonalData,
   getGenderOptions,
   getMaritalOptions,
   getReligionOptions,
@@ -24,6 +23,8 @@ import { InputText } from "primereact/inputtext";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
+import useSWR from "swr";
+import { fetcher } from "@/app/utils/fetcher";
 
 type FormData = {
   first_name: string;
@@ -47,6 +48,9 @@ const PersonalData = () => {
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
+  const personalDataKey = `/api/employees/${employeeId}/personal-data`;
+  const { data: personal, mutate: refreshPersonalData } =
+    useSWR<EmployeePersonalData>(personalDataKey, fetcher);
 
   const { control, handleSubmit, reset } = useForm<FormData>({
     defaultValues: {
@@ -74,11 +78,14 @@ const PersonalData = () => {
   const [countries, setCountries] = useState<OptionItem[]>([]);
 
   const loadData = async () => {
+    if (!personal) {
+      return;
+    }
+
     setLoading(true);
     try {
-      const [personal, genderList, religionList, maritalList, countryList] =
+      const [genderList, religionList, maritalList, countryList] =
         await Promise.all([
-          getEmployeePersonalData(employeeId),
           getGenderOptions(),
           getReligionOptions(),
           getMaritalOptions(),
@@ -123,7 +130,7 @@ const PersonalData = () => {
 
   useEffect(() => {
     void loadData();
-  }, [employeeId]);
+  }, [employeeId, personal]);
 
   const onSubmit = async (data: FormData) => {
     const payload: EmployeePersonalData = {
@@ -156,7 +163,7 @@ const PersonalData = () => {
         }),
       );
       setIsPageEdit(false);
-      await loadData();
+      await refreshPersonalData();
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
@@ -193,7 +200,7 @@ const PersonalData = () => {
       <ConfirmDialog />
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h5 className="text-xl font-semibold text-slate-900">
                 Personal Data
@@ -203,28 +210,39 @@ const PersonalData = () => {
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
               {isPageEdit ? (
                 <>
                   <Button
                     type="button"
                     label="Cancel"
                     icon="pi pi-times"
-                    className="p-button-text"
+                    text
+                    severity="secondary"
+                    size="small"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setIsPageEdit(false);
                       void loadData();
                     }}
                   />
-                  <Button type="submit" label="Save" icon="pi pi-check" />
+                  <Button
+                    type="submit"
+                    label="Save Changes"
+                    icon="pi pi-check"
+                    size="small"
+                    className="w-full sm:w-auto"
+                  />
                 </>
               ) : (
                 <Button
                   type="button"
                   icon="pi pi-pencil"
                   label="Edit"
-                  severity="help"
-                  text
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  className="w-full sm:w-auto"
                   onClick={() => setIsPageEdit(true)}
                 />
               )}

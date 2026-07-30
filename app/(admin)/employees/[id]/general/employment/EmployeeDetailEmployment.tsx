@@ -4,7 +4,6 @@ import {
   getAgencyOptions,
   getBranchOptions,
   getDepartmentOptions,
-  getEmployeeEmploymentData,
   getEmployeeOptions,
   getEmploymentStatusOptions,
   getPositionOptions,
@@ -28,6 +27,8 @@ import { InputText } from "primereact/inputtext";
 import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { useDispatch } from "react-redux";
+import useSWR from "swr";
+import { fetcher } from "@/app/utils/fetcher";
 
 type PositionOption = OptionItem & {
   department_id?: number | null;
@@ -61,6 +62,9 @@ const EmployeeDetailEmployment = () => {
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
+  const employmentDataKey = `/api/employees/${employeeId}/employment-data`;
+  const { data: employmentData, mutate: refreshEmploymentData } =
+    useSWR<EmployeeEmploymentData | null>(employmentDataKey, fetcher);
 
   const { control, handleSubmit, reset, setValue } = useForm<FormData>({
     defaultValues: {
@@ -151,11 +155,14 @@ const EmployeeDetailEmployment = () => {
   }, [selectedAgencyId, selectedBranchId, branchOptions, setValue]);
 
   const loadData = async () => {
+    if (employmentData === undefined) {
+      return;
+    }
+
     setLoading(true);
 
     try {
       const [
-        employmentData,
         departmentList,
         positionList,
         employmentStatusList,
@@ -163,7 +170,6 @@ const EmployeeDetailEmployment = () => {
         branchList,
         employeeList,
       ] = await Promise.all([
-        getEmployeeEmploymentData(employeeId),
         getDepartmentOptions(),
         getPositionOptions(),
         getEmploymentStatusOptions(),
@@ -241,7 +247,7 @@ const EmployeeDetailEmployment = () => {
     }
 
     void loadData();
-  }, [employeeId]);
+  }, [employeeId, employmentData]);
 
   const onSubmit = async (data: FormData) => {
     if (
@@ -291,7 +297,7 @@ const EmployeeDetailEmployment = () => {
       );
 
       setIsPageEdit(false);
-      await loadData();
+      await refreshEmploymentData();
     } catch (err: unknown) {
       if (isResponseTypeError(err)) {
         dispatch(
@@ -337,28 +343,39 @@ const EmployeeDetailEmployment = () => {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
             {isPageEdit ? (
               <>
                 <Button
                   type="button"
                   label="Cancel"
                   icon="pi pi-times"
-                  className="p-button-text"
+                  text
+                  severity="secondary"
+                  size="small"
+                  className="w-full sm:w-auto"
                   onClick={() => {
                     setIsPageEdit(false);
                     void loadData();
                   }}
                 />
-                <Button type="submit" label="Save" icon="pi pi-check" />
+                <Button
+                  type="submit"
+                  label="Save Changes"
+                  icon="pi pi-check"
+                  size="small"
+                  className="w-full sm:w-auto"
+                />
               </>
             ) : (
               <Button
                 type="button"
                 label="Edit"
                 icon="pi pi-pencil"
-                severity="help"
-                text
+                severity="secondary"
+                outlined
+                size="small"
+                className="w-full sm:w-auto"
                 onClick={() => setIsPageEdit(true)}
               />
             )}

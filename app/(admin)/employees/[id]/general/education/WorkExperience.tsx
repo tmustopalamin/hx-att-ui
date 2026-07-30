@@ -243,12 +243,14 @@ const WorkExperience = () => {
 
   const actionBodyTemplate = (row: EmployeeWorkExperienceRow) => {
     return (
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
           type="button"
           rounded
+          outlined
+          size="small"
           icon="pi pi-pencil"
-          severity="help"
+          severity="secondary"
           onClick={() => openEdit(row)}
           tooltip="Edit"
           tooltipOptions={{ position: "top" }}
@@ -256,6 +258,8 @@ const WorkExperience = () => {
         <Button
           type="button"
           rounded
+          outlined
+          size="small"
           icon="pi pi-trash"
           severity="danger"
           onClick={() => onDelete(row)}
@@ -267,17 +271,21 @@ const WorkExperience = () => {
   };
 
   const dialogFooter = (
-    <div className="flex justify-end gap-2">
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
         label="Cancel"
-        className="p-button-text"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        className="w-full sm:w-auto"
         onClick={hideDialog}
       />
       <Button
         type="button"
-        label={isAddMode ? "Save" : "Update"}
+        label={isAddMode ? "Create Experience" : "Save Changes"}
         icon="pi pi-check"
+        className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
       />
     </div>
@@ -300,8 +308,10 @@ const WorkExperience = () => {
 
           <Button
             type="button"
-            label="New"
+            label="New Experience"
             icon="pi pi-plus"
+            size="small"
+            className="w-full sm:w-auto"
             onClick={openNew}
           />
         </div>
@@ -311,12 +321,18 @@ const WorkExperience = () => {
           dataKey="id"
           loading={loading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
           emptyMessage="No work experience found."
           scrollable
-          className="text-sm"
+          tableStyle={{ minWidth: "48rem" }}
+          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
             header="#"
@@ -350,10 +366,13 @@ const WorkExperience = () => {
       <Dialog
         header={isAddMode ? "New Work Experience" : "Update Work Experience"}
         visible={visible}
-        style={{ width: "48rem", maxWidth: "95vw" }}
+        style={{ width: "95vw", maxWidth: "48rem" }}
         onHide={hideDialog}
         footer={dialogFooter}
-        breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
       >
         <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
           <Controller

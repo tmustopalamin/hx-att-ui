@@ -59,6 +59,8 @@ import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
+import EmployeeSummaryCards from "./components/EmployeeSummaryCards";
+import EmployeePageHeader from "./components/EmployeePageHeader";
 
 type EmployeeListRow = Employee & {
   gender_name?: string | null;
@@ -86,6 +88,25 @@ type QuickCreateEmployeeForm = {
 };
 
 type ProcessingAction = "delete" | "restore" | "purge" | null;
+type OnboardingStep = 0 | 1 | 2;
+
+const ONBOARDING_STEPS = [
+  {
+    label: "Setup",
+    description: "Choose account mode",
+    icon: "pi pi-sliders-h",
+  },
+  {
+    label: "Personal",
+    description: "Employee identity",
+    icon: "pi pi-user",
+  },
+  {
+    label: "Review",
+    description: "Account and confirmation",
+    icon: "pi pi-check-circle",
+  },
+] as const;
 
 const CREATION_MODE_OPTIONS: {
   label: string;
@@ -181,6 +202,7 @@ const EmployeesDataTable = () => {
 
   const [quickCreateDialogVisible, setQuickCreateDialogVisible] =
     useState(false);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(0);
 
   const [credentialDialogVisible, setCredentialDialogVisible] = useState(false);
 
@@ -258,6 +280,14 @@ const EmployeesDataTable = () => {
     }) ?? "";
 
   const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+  const permissionSet = useMemo(
+    () => new Set(profileState.permissions),
+    [profileState.permissions],
+  );
+  const canCreateEmployee = permissionSet.has("employee.create");
+  const canDeleteEmployee = permissionSet.has("employee.delete");
+  const canRestoreEmployee = permissionSet.has("employee.restore");
+  const canPurgeEmployee = permissionSet.has("employee.purge");
 
   const isProcessing = processingRowId !== null;
 
@@ -464,6 +494,7 @@ const EmployeesDataTable = () => {
   const openQuickCreateDialog = () => {
     clearErrors();
     reset(EMPTY_QUICK_CREATE_FORM);
+    setOnboardingStep(0);
 
     setQuickCreateDialogVisible(true);
   };
@@ -474,6 +505,7 @@ const EmployeesDataTable = () => {
     }
 
     setQuickCreateDialogVisible(false);
+    setOnboardingStep(0);
 
     clearErrors();
     reset(EMPTY_QUICK_CREATE_FORM);
@@ -945,66 +977,72 @@ const EmployeesDataTable = () => {
     const isCurrentRowProcessing = processingRowId === rowData.id;
 
     if (rowData.deleted_at) {
-      if (!isSuperadmin) {
+      if (!canRestoreEmployee && !canPurgeEmployee) {
         return <span className="text-sm text-slate-400">No action</span>;
       }
 
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            loading={isCurrentRowProcessing && processingAction === "restore"}
-            disabled={isProcessing}
-            onClick={() => onClickRestore(rowData)}
-          />
+          {canRestoreEmployee && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              loading={isCurrentRowProcessing && processingAction === "restore"}
+              disabled={isProcessing}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
 
-          <Button
-            type="button"
-            icon="pi pi-trash"
-            rounded
-            outlined
-            severity="danger"
-            size="small"
-            tooltip="Delete permanently"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            loading={isCurrentRowProcessing && processingAction === "purge"}
-            disabled={isProcessing}
-            onClick={() => onClickPurge(rowData)}
-          />
+          {canPurgeEmployee && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              loading={isCurrentRowProcessing && processingAction === "purge"}
+              disabled={isProcessing}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
         </div>
       );
     }
 
     return (
       <div className="flex flex-nowrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          icon="pi pi-eye"
-          rounded
-          outlined
-          severity="secondary"
-          size="small"
-          tooltip="Open employee detail"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          disabled={isProcessing}
-          onClick={() => openDetail(rowData)}
-        />
+        {canDeleteEmployee && (
+          <Button
+            type="button"
+            icon="pi pi-eye"
+            rounded
+            outlined
+            severity="secondary"
+            size="small"
+            tooltip="Open employee detail"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            disabled={isProcessing}
+            onClick={() => openDetail(rowData)}
+          />
+        )}
 
         <Button
           type="button"
@@ -1043,34 +1081,95 @@ const EmployeesDataTable = () => {
     return "";
   };
 
-  const quickCreateDialogFooter = (
-    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-      <Button
-        type="button"
-        label="Cancel"
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        disabled={isSaving}
-        className="w-full sm:w-auto"
-        onClick={closeQuickCreateDialog}
-      />
+  const goToPreviousOnboardingStep = () => {
+    setOnboardingStep((current) => Math.max(0, current - 1) as OnboardingStep);
+  };
 
-      <Button
-        type="submit"
-        form="quick-create-employee-form"
-        label={
-          creationMode === "employee_with_user"
-            ? "Create Employee + User"
-            : "Create Employee"
-        }
-        icon="pi pi-check"
-        loading={isSaving}
-        disabled={
-          isSaving || referenceDataLoading || Boolean(referenceDataError)
-        }
-        className="w-full sm:w-auto"
-      />
+  const goToNextOnboardingStep = async () => {
+    if (onboardingStep === 0) {
+      setOnboardingStep(1);
+      setTimeout(() => setFocus("first_name"), 0);
+      return;
+    }
+
+    const personalDataIsValid = await trigger([
+      "first_name",
+      "middle_name",
+      "last_name",
+      "birth_place",
+      "dob",
+      "gender_id",
+      "religion_id",
+      "marital_status_id",
+    ]);
+
+    if (!personalDataIsValid) {
+      return;
+    }
+
+    setOnboardingStep(2);
+    if (creationMode === "employee_with_user") {
+      setTimeout(() => setFocus("username"), 0);
+    }
+  };
+
+  const quickCreateDialogFooter = (
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row">
+        <Button
+          type="button"
+          label="Cancel"
+          icon="pi pi-times"
+          text
+          severity="secondary"
+          disabled={isSaving}
+          className="w-full sm:w-auto"
+          onClick={closeQuickCreateDialog}
+        />
+
+        {onboardingStep > 0 && (
+          <Button
+            type="button"
+            label="Back"
+            icon="pi pi-arrow-left"
+            severity="secondary"
+            outlined
+            disabled={isSaving}
+            className="w-full sm:w-auto"
+            onClick={goToPreviousOnboardingStep}
+          />
+        )}
+      </div>
+
+      {onboardingStep < 2 ? (
+        <Button
+          type="button"
+          label="Continue"
+          icon="pi pi-arrow-right"
+          iconPos="right"
+          disabled={
+            isSaving || referenceDataLoading || Boolean(referenceDataError)
+          }
+          className="w-full sm:w-auto"
+          onClick={() => void goToNextOnboardingStep()}
+        />
+      ) : (
+        <Button
+          type="submit"
+          form="quick-create-employee-form"
+          label={
+            creationMode === "employee_with_user"
+              ? "Create Employee + User"
+              : "Create Employee"
+          }
+          icon="pi pi-check"
+          loading={isSaving}
+          disabled={
+            isSaving || referenceDataLoading || Boolean(referenceDataError)
+          }
+          className="w-full sm:w-auto"
+        />
+      )}
     </div>
   );
 
@@ -1087,118 +1186,43 @@ const EmployeesDataTable = () => {
       <ConfirmDialog />
 
       <div className="flex flex-col gap-5">
-        {/* Summary */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Card className="border border-slate-200 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="m-0 text-xs text-slate-500">Total Employees</p>
-
-                <p className="m-0 mt-2 text-2xl font-semibold text-slate-800">
-                  {summary.total}
-                </p>
-              </div>
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                <i className="pi pi-users text-lg" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border border-green-200 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="m-0 text-xs text-green-700">Active Records</p>
-
-                <p className="m-0 mt-2 text-2xl font-semibold text-green-800">
-                  {summary.active}
-                </p>
-              </div>
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-50 text-green-600">
-                <i className="pi pi-check-circle text-lg" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border border-red-200 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="m-0 text-xs text-red-700">Deleted Records</p>
-
-                <p className="m-0 mt-2 text-2xl font-semibold text-red-800">
-                  {summary.deleted}
-                </p>
-              </div>
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                <i className="pi pi-trash text-lg" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border border-amber-200 shadow-sm">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="m-0 text-xs text-amber-700">Need Org Update</p>
-
-                <p className="m-0 mt-2 text-2xl font-semibold text-amber-800">
-                  {summary.noOrganization}
-                </p>
-              </div>
-
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                <i className="pi pi-briefcase text-lg" />
-              </div>
-            </div>
-          </Card>
-        </div>
+        <EmployeeSummaryCards summary={summary} />
 
         {/* Employee List */}
         <Card className="border border-slate-200 shadow-sm">
           <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
-            <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
-                  <i className="pi pi-id-card text-xl" />
-                </div>
+            <EmployeePageHeader
+              title="Employees"
+              description="Manage employee records and open detailed employee profiles."
+              actions={
+                <>
+                  <Button
+                    type="button"
+                    label="Refresh"
+                    icon="pi pi-refresh"
+                    severity="secondary"
+                    outlined
+                    size="small"
+                    loading={isValidating}
+                    disabled={isValidating || isProcessing || isSaving}
+                    className="w-full sm:w-auto"
+                    onClick={handleRefresh}
+                  />
 
-                <div className="min-w-0">
-                  <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                    Employees
-                  </h1>
-
-                  <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                    Manage employee records and open detailed employee profiles.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-                <Button
-                  type="button"
-                  label="Refresh"
-                  icon="pi pi-refresh"
-                  severity="secondary"
-                  outlined
-                  size="small"
-                  loading={isValidating}
-                  disabled={isValidating || isProcessing || isSaving}
-                  className="w-full sm:w-auto"
-                  onClick={handleRefresh}
-                />
-
-                <Button
-                  type="button"
-                  label="New Employee"
-                  icon="pi pi-plus"
-                  size="small"
-                  disabled={isProcessing || isSaving}
-                  className="w-full sm:w-auto"
-                  onClick={openQuickCreateDialog}
-                />
-              </div>
-            </div>
+                  {canCreateEmployee && (
+                    <Button
+                      type="button"
+                      label="New Employee"
+                      icon="pi pi-plus"
+                      size="small"
+                      disabled={isProcessing || isSaving}
+                      className="w-full sm:w-auto"
+                      onClick={openQuickCreateDialog}
+                    />
+                  )}
+                </>
+              }
+            />
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               {isSuperadmin ? (
@@ -1376,49 +1400,99 @@ const EmployeesDataTable = () => {
         closable={!isSaving}
         closeOnEscape={!isSaving}
         onHide={closeQuickCreateDialog}
-        onShow={() => {
-          setTimeout(() => {
-            setFocus("first_name");
-          }, 0);
-        }}
       >
         <form
           id="quick-create-employee-form"
           onSubmit={handleSubmit(handleQuickCreate)}
           className="flex flex-col gap-6 pt-2"
         >
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {ONBOARDING_STEPS.map((step, index) => {
+              const isActive = onboardingStep === index;
+              const isComplete = onboardingStep > index;
+
+              return (
+                <div
+                  key={step.label}
+                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 transition-colors ${
+                    isActive
+                      ? "border-blue-200 bg-blue-50"
+                      : isComplete
+                        ? "border-emerald-200 bg-emerald-50/70"
+                        : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${
+                      isActive
+                        ? "bg-blue-600 text-white"
+                        : isComplete
+                          ? "bg-emerald-600 text-white"
+                          : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    <i
+                      className={
+                        isComplete ? "pi pi-check" : `${step.icon} text-sm`
+                      }
+                    />
+                  </span>
+
+                  <div className="min-w-0">
+                    <p
+                      className={`m-0 text-sm font-semibold ${
+                        isActive
+                          ? "text-blue-900"
+                          : isComplete
+                            ? "text-emerald-900"
+                            : "text-slate-700"
+                      }`}
+                    >
+                      {index + 1}. {step.label}
+                    </p>
+                    <p className="m-0 mt-0.5 truncate text-xs text-slate-500">
+                      {step.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
           {/* Creation Mode */}
-          <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div className="mb-4">
-              <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Creation Mode
-              </h2>
+          {onboardingStep === 0 && (
+            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-4">
+                <h2 className="m-0 text-sm font-semibold text-slate-800">
+                  Creation Mode
+                </h2>
 
-              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Create only an employee profile or create the employee together
-                with a login account.
-              </p>
-            </div>
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Create only an employee profile or create the employee
+                  together with a login account.
+                </p>
+              </div>
 
-            <Controller
-              name="creation_mode"
-              control={control}
-              render={({ field }) => (
-                <SelectButton
-                  value={field.value}
-                  options={CREATION_MODE_OPTIONS}
-                  optionLabel="label"
-                  optionValue="value"
-                  allowEmpty={false}
-                  disabled={isSaving}
-                  className="w-full"
-                  onChange={(event) =>
-                    field.onChange(event.value as QuickCreateMode)
-                  }
-                />
-              )}
-            />
-          </section>
+              <Controller
+                name="creation_mode"
+                control={control}
+                render={({ field }) => (
+                  <SelectButton
+                    value={field.value}
+                    options={CREATION_MODE_OPTIONS}
+                    optionLabel="label"
+                    optionValue="value"
+                    allowEmpty={false}
+                    disabled={isSaving}
+                    className="w-full"
+                    onChange={(event) =>
+                      field.onChange(event.value as QuickCreateMode)
+                    }
+                  />
+                )}
+              />
+            </section>
+          )}
 
           {referenceDataError && (
             <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -1432,399 +1506,404 @@ const EmployeesDataTable = () => {
           )}
 
           {/* Basic Information */}
-          <section className="flex flex-col gap-4">
-            <div className="border-b border-slate-200 pb-2">
-              <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Basic Information
-              </h2>
+          {onboardingStep === 1 && (
+            <section className="flex flex-col gap-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h2 className="m-0 text-sm font-semibold text-slate-800">
+                  Basic Information
+                </h2>
 
-              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Enter the employee&apos;s identity and demographic information.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="first_name"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  First Name
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-
-                <Controller
-                  name="first_name"
-                  control={control}
-                  rules={{
-                    required: "First name is required.",
-                    maxLength: {
-                      value: 50,
-                      message: "First name cannot exceed 50 characters.",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <InputText
-                        {...field}
-                        id="first_name"
-                        value={field.value ?? ""}
-                        autoComplete="off"
-                        placeholder="Enter first name"
-                        disabled={isSaving}
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                      />
-
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Enter the employee&apos;s identity and demographic
+                  information.
+                </p>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="middle_name"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Middle Name
-                </label>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="first_name"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    First Name
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
 
-                <Controller
-                  name="middle_name"
-                  control={control}
-                  rules={{
-                    maxLength: {
-                      value: 50,
-                      message: "Middle name cannot exceed 50 characters.",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <InputText
-                        {...field}
-                        id="middle_name"
-                        value={field.value ?? ""}
-                        autoComplete="off"
-                        placeholder="Enter middle name"
-                        disabled={isSaving}
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                      />
+                  <Controller
+                    name="first_name"
+                    control={control}
+                    rules={{
+                      required: "First name is required.",
+                      maxLength: {
+                        value: 50,
+                        message: "First name cannot exceed 50 characters.",
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <InputText
+                          {...field}
+                          id="first_name"
+                          value={field.value ?? ""}
+                          autoComplete="off"
+                          placeholder="Enter first name"
+                          disabled={isSaving}
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                        />
 
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="last_name"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Last Name
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="middle_name"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Middle Name
+                  </label>
 
-                <Controller
-                  name="last_name"
-                  control={control}
-                  rules={{
-                    required: "Last name is required.",
-                    maxLength: {
-                      value: 50,
-                      message: "Last name cannot exceed 50 characters.",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <InputText
-                        {...field}
-                        id="last_name"
-                        value={field.value ?? ""}
-                        autoComplete="off"
-                        placeholder="Enter last name"
-                        disabled={isSaving}
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                      />
+                  <Controller
+                    name="middle_name"
+                    control={control}
+                    rules={{
+                      maxLength: {
+                        value: 50,
+                        message: "Middle name cannot exceed 50 characters.",
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <InputText
+                          {...field}
+                          id="middle_name"
+                          value={field.value ?? ""}
+                          autoComplete="off"
+                          placeholder="Enter middle name"
+                          disabled={isSaving}
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                        />
 
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="birth_place"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Birth Place
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="last_name"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Last Name
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
 
-                <Controller
-                  name="birth_place"
-                  control={control}
-                  rules={{
-                    required: "Birth place is required.",
-                    maxLength: {
-                      value: 100,
-                      message: "Birth place cannot exceed 100 characters.",
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <InputText
-                        {...field}
-                        id="birth_place"
-                        value={field.value ?? ""}
-                        autoComplete="off"
-                        placeholder="Enter birth place"
-                        disabled={isSaving}
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                      />
+                  <Controller
+                    name="last_name"
+                    control={control}
+                    rules={{
+                      required: "Last name is required.",
+                      maxLength: {
+                        value: 50,
+                        message: "Last name cannot exceed 50 characters.",
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <InputText
+                          {...field}
+                          id="last_name"
+                          value={field.value ?? ""}
+                          autoComplete="off"
+                          placeholder="Enter last name"
+                          disabled={isSaving}
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                        />
 
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
 
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="dob"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Birth Date
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="birth_place"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Birth Place
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
 
-                <Controller
-                  name="dob"
-                  control={control}
-                  rules={{
-                    required: "Birth date is required.",
-                    validate: (value) => {
-                      if (!value) {
-                        return true;
-                      }
+                  <Controller
+                    name="birth_place"
+                    control={control}
+                    rules={{
+                      required: "Birth place is required.",
+                      maxLength: {
+                        value: 100,
+                        message: "Birth place cannot exceed 100 characters.",
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <InputText
+                          {...field}
+                          id="birth_place"
+                          value={field.value ?? ""}
+                          autoComplete="off"
+                          placeholder="Enter birth place"
+                          disabled={isSaving}
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                        />
 
-                      return (
-                        !dayjs(value).isAfter(dayjs(), "day") ||
-                        "Birth date cannot be in the future."
-                      );
-                    },
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Calendar
-                        id="dob"
-                        appendTo={getBody}
-                        value={field.value}
-                        dateFormat="dd M yy"
-                        showIcon
-                        maxDate={new Date()}
-                        placeholder="Select birth date"
-                        disabled={isSaving}
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                        onChange={(event) =>
-                          field.onChange((event.value as Date | null) ?? null)
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="dob"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Birth Date
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <Controller
+                    name="dob"
+                    control={control}
+                    rules={{
+                      required: "Birth date is required.",
+                      validate: (value) => {
+                        if (!value) {
+                          return true;
                         }
-                      />
 
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
+                        return (
+                          !dayjs(value).isAfter(dayjs(), "day") ||
+                          "Birth date cannot be in the future."
+                        );
+                      },
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <Calendar
+                          id="dob"
+                          appendTo={getBody}
+                          value={field.value}
+                          dateFormat="dd M yy"
+                          showIcon
+                          maxDate={new Date()}
+                          placeholder="Select birth date"
+                          disabled={isSaving}
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                          onChange={(event) =>
+                            field.onChange((event.value as Date | null) ?? null)
+                          }
+                        />
+
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="gender_id"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Gender
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <Controller
+                    name="gender_id"
+                    control={control}
+                    rules={{
+                      required: "Gender is required.",
+                      validate: (value) =>
+                        Number(value) > 0 || "Gender is required.",
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <Dropdown
+                          id="gender_id"
+                          appendTo={getBody}
+                          value={field.value}
+                          options={activeGenderOptions}
+                          optionLabel="name"
+                          optionValue="id"
+                          filter
+                          showClear
+                          loading={genderIsLoading}
+                          disabled={
+                            isSaving || genderIsLoading || Boolean(genderError)
+                          }
+                          placeholder="Select gender"
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                          onChange={(event) =>
+                            field.onChange(event.value ?? null)
+                          }
+                        />
+
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="religion_id"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Religion
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <Controller
+                    name="religion_id"
+                    control={control}
+                    rules={{
+                      required: "Religion is required.",
+                      validate: (value) =>
+                        Number(value) > 0 || "Religion is required.",
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <Dropdown
+                          id="religion_id"
+                          appendTo={getBody}
+                          value={field.value}
+                          options={activeReligionOptions}
+                          optionLabel="name"
+                          optionValue="id"
+                          filter
+                          showClear
+                          loading={religionIsLoading}
+                          disabled={
+                            isSaving ||
+                            religionIsLoading ||
+                            Boolean(religionError)
+                          }
+                          placeholder="Select religion"
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                          onChange={(event) =>
+                            field.onChange(event.value ?? null)
+                          }
+                        />
+
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="marital_status_id"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Marital Status
+                    <span className="ml-1 text-red-500">*</span>
+                  </label>
+
+                  <Controller
+                    name="marital_status_id"
+                    control={control}
+                    rules={{
+                      required: "Marital status is required.",
+                    }}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <Dropdown
+                          id="marital_status_id"
+                          appendTo={getBody}
+                          value={field.value}
+                          options={activeMaritalStatusOptions}
+                          optionLabel="name"
+                          optionValue="option_value"
+                          filter
+                          showClear
+                          loading={maritalStatusIsLoading}
+                          disabled={
+                            isSaving ||
+                            maritalStatusIsLoading ||
+                            Boolean(maritalStatusError)
+                          }
+                          placeholder="Select marital status"
+                          className={`w-full ${
+                            fieldState.invalid ? "p-invalid" : ""
+                          }`}
+                          onChange={(event) =>
+                            field.onChange(event.value ?? "")
+                          }
+                        />
+
+                        {fieldState.error && (
+                          <small className="p-error">
+                            {fieldState.error.message}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
               </div>
-
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="gender_id"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Gender
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-
-                <Controller
-                  name="gender_id"
-                  control={control}
-                  rules={{
-                    required: "Gender is required.",
-                    validate: (value) =>
-                      Number(value) > 0 || "Gender is required.",
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="gender_id"
-                        appendTo={getBody}
-                        value={field.value}
-                        options={activeGenderOptions}
-                        optionLabel="name"
-                        optionValue="id"
-                        filter
-                        showClear
-                        loading={genderIsLoading}
-                        disabled={
-                          isSaving || genderIsLoading || Boolean(genderError)
-                        }
-                        placeholder="Select gender"
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                        onChange={(event) =>
-                          field.onChange(event.value ?? null)
-                        }
-                      />
-
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="religion_id"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Religion
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-
-                <Controller
-                  name="religion_id"
-                  control={control}
-                  rules={{
-                    required: "Religion is required.",
-                    validate: (value) =>
-                      Number(value) > 0 || "Religion is required.",
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="religion_id"
-                        appendTo={getBody}
-                        value={field.value}
-                        options={activeReligionOptions}
-                        optionLabel="name"
-                        optionValue="id"
-                        filter
-                        showClear
-                        loading={religionIsLoading}
-                        disabled={
-                          isSaving ||
-                          religionIsLoading ||
-                          Boolean(religionError)
-                        }
-                        placeholder="Select religion"
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                        onChange={(event) =>
-                          field.onChange(event.value ?? null)
-                        }
-                      />
-
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="marital_status_id"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Marital Status
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-
-                <Controller
-                  name="marital_status_id"
-                  control={control}
-                  rules={{
-                    required: "Marital status is required.",
-                  }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="marital_status_id"
-                        appendTo={getBody}
-                        value={field.value}
-                        options={activeMaritalStatusOptions}
-                        optionLabel="name"
-                        optionValue="option_value"
-                        filter
-                        showClear
-                        loading={maritalStatusIsLoading}
-                        disabled={
-                          isSaving ||
-                          maritalStatusIsLoading ||
-                          Boolean(maritalStatusError)
-                        }
-                        placeholder="Select marital status"
-                        className={`w-full ${
-                          fieldState.invalid ? "p-invalid" : ""
-                        }`}
-                        onChange={(event) => field.onChange(event.value ?? "")}
-                      />
-
-                      {fieldState.error && (
-                        <small className="p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Login Account */}
-          {creationMode === "employee_with_user" && (
+          {onboardingStep === 2 && creationMode === "employee_with_user" && (
             <section className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-blue-50/40 p-4">
               <div>
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
@@ -2021,6 +2100,66 @@ const EmployeesDataTable = () => {
                     )}
                   />
                 </div>
+              </div>
+            </section>
+          )}
+
+          {onboardingStep === 2 && (
+            <section className="flex flex-col gap-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h2 className="m-0 text-sm font-semibold text-slate-800">
+                  Review Employee
+                </h2>
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                  Confirm the onboarding information before creating the
+                  employee.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Employee
+                  </p>
+                  <p className="m-0 mt-2 font-semibold text-slate-900">
+                    {[
+                      getValues("first_name"),
+                      getValues("middle_name"),
+                      getValues("last_name"),
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  </p>
+                  <p className="m-0 mt-1 text-sm text-slate-500">
+                    Born in {getValues("birth_place")} ·{" "}
+                    {formatDate(getValues("dob"))}
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Login Access
+                  </p>
+                  <p className="m-0 mt-2 font-semibold text-slate-900">
+                    {creationMode === "employee_with_user"
+                      ? "Employee account"
+                      : "Profile only"}
+                  </p>
+                  <p className="m-0 mt-1 truncate text-sm text-slate-500">
+                    {creationMode === "employee_with_user"
+                      ? getValues("email") || "Email not entered"
+                      : "A login account can be added later."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <i className="pi pi-info-circle mt-0.5 text-amber-700" />
+                <p className="m-0 text-sm leading-6 text-amber-900">
+                  Organization, employment, payroll, and attendance details can
+                  be completed from the employee profile after this onboarding
+                  step.
+                </p>
               </div>
             </section>
           )}

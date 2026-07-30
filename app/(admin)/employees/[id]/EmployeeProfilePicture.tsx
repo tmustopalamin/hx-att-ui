@@ -1,32 +1,36 @@
 "use client";
 
-import { Employee } from "@/app/types/employee";
+import { EmployeePersonalData } from "@/app/types/employee-general";
 import { useParams, useRouter } from "next/navigation";
 import { Avatar } from "primereact/avatar";
 import React, { useMemo, useState } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 interface EmployeePhotoProfileProps {
-  data: Employee | undefined;
+  data: EmployeePersonalData | undefined;
 }
 
 const getPhotoUrl = (photoUrl?: string | null) => {
   if (!photoUrl) return undefined;
 
-  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+  if (photoUrl.startsWith("/api/")) {
     return photoUrl;
   }
 
-  if (photoUrl.startsWith("/")) {
-    return photoUrl;
-  }
-
-  return `/api/public/images/uploads/${encodeURIComponent(photoUrl)}`;
+  const filename = photoUrl.split(/[\\/]/).pop();
+  return filename
+    ? `/api/public/images/uploads/${encodeURIComponent(filename)}`
+    : undefined;
 };
 
 const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [isHovering, setIsHovering] = useState(false);
+  const canUpdateEmployee = useSelector((state: RootState) =>
+    state.profile.permissions.includes("employee.update"),
+  );
 
   const initials = useMemo(() => {
     const first = data?.first_name?.trim()?.charAt(0) ?? "";
@@ -58,7 +62,7 @@ const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
         style={{ width: "7rem", height: "7rem", fontSize: "3rem" }}
       />
 
-      {isHovering && (
+      {canUpdateEmployee && isHovering && (
         <button
           type="button"
           onClick={goToEditPhoto}

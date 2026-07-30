@@ -85,6 +85,7 @@ const LeaveTableData = () => {
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
   const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
@@ -391,16 +392,21 @@ const LeaveTableData = () => {
     }
   };
 
-  const onSubmit = (data: EmployeeLeaveBalanceForm) => {
-    if (!isValid) return;
+  const onSubmit = async (data: EmployeeLeaveBalanceForm) => {
+    if (!isValid || isSaving) return;
 
-    if (isAddNew) {
-      void handleSubmitNew(data);
-      return;
-    }
+    setIsSaving(true);
+    try {
+      if (isAddNew) {
+        await handleSubmitNew(data);
+        return;
+      }
 
-    if (selectedData) {
-      void handleUpdate(data);
+      if (selectedData) {
+        await handleUpdate(data);
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -476,9 +482,10 @@ const LeaveTableData = () => {
   const actionColumnBody = (rowData: EmployeeLeaveBalance) => {
     if (rowData.deleted_at) {
       return (
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           <Button
             rounded
+            outlined
             severity="success"
             icon="pi pi-refresh"
             size="small"
@@ -488,8 +495,9 @@ const LeaveTableData = () => {
           />
           <Button
             rounded
-            severity="secondary"
-            icon="pi pi-times"
+            outlined
+            severity="danger"
+            icon="pi pi-trash"
             size="small"
             tooltip="Delete Forever"
             tooltipOptions={{ appendTo: () => document.body, position: "top" }}
@@ -500,10 +508,11 @@ const LeaveTableData = () => {
     }
 
     return (
-      <div className="flex gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
           rounded
-          severity="help"
+          outlined
+          severity="secondary"
           icon="pi pi-pencil"
           size="small"
           tooltip="Edit"
@@ -512,6 +521,7 @@ const LeaveTableData = () => {
         />
         <Button
           rounded
+          outlined
           severity="danger"
           icon="pi pi-trash"
           size="small"
@@ -533,7 +543,7 @@ const LeaveTableData = () => {
     <>
       <ConfirmDialog />
 
-      <Card className="shadow-sm">
+      <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
@@ -574,6 +584,8 @@ const LeaveTableData = () => {
               <Button
                 label="New Leave Balance"
                 icon="pi pi-plus"
+                size="small"
+                className="w-full sm:w-auto"
                 onClick={openNew}
               />
             </div>
@@ -582,6 +594,10 @@ const LeaveTableData = () => {
           <DataTable
             value={leaveBalanceData ?? []}
             stripedRows
+            rowHover
+            removableSort
+            responsiveLayout="scroll"
+            size="small"
             paginator
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
@@ -607,6 +623,7 @@ const LeaveTableData = () => {
             <Column
               field="leave_type_name"
               header="Leave Type"
+              sortable
               style={{ minWidth: "14rem" }}
             />
             <Column
@@ -617,17 +634,25 @@ const LeaveTableData = () => {
             <Column
               field="opening_balance"
               header="Opening"
+              sortable
               style={{ minWidth: "8rem" }}
             />
             <Column
               field="entitlement"
               header="Entitlement"
+              sortable
               style={{ minWidth: "8rem" }}
             />
-            <Column field="taken" header="Taken" style={{ minWidth: "8rem" }} />
+            <Column
+              field="taken"
+              header="Taken"
+              sortable
+              style={{ minWidth: "8rem" }}
+            />
             <Column
               field="adjustment"
               header="Adjustment"
+              sortable
               style={{ minWidth: "8rem" }}
             />
             <Column
@@ -646,44 +671,70 @@ const LeaveTableData = () => {
               style={{ minWidth: "8rem" }}
             />
             <Column
-              headerClassName="bg-white"
-              className="bg-white"
               header="Action"
               body={actionColumnBody}
               frozen
               alignFrozen="right"
-              style={{ minWidth: "10rem" }}
+              headerClassName="bg-white"
+              className="bg-white"
+              headerStyle={{
+                width: "10rem",
+                minWidth: "10rem",
+                textAlign: "right",
+              }}
+              bodyStyle={{ width: "10rem", minWidth: "10rem" }}
             />
           </DataTable>
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "64rem", maxWidth: "95vw" }}
-          onHide={closeDialog}
-          onShow={() => setTimeout(() => setFocus("leave_type_id"), 0)}
-          breakpoints={{ "960px": "90vw", "640px": "96vw" }}
-          footer={
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                label="Cancel"
-                icon="pi pi-times"
-                onClick={closeDialog}
-                className="p-button-text"
-              />
-              <Button
-                type="submit"
-                label={isAddNew ? "Submit" : "Save"}
-                icon="pi pi-check"
-                disabled={!isValid}
-              />
-            </div>
-          }
+      <Dialog
+        header={popupHeaderTitle}
+        visible={visible}
+        style={{ width: "95vw", maxWidth: "52rem" }}
+        breakpoints={{ "640px": "95vw" }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button
+              type="button"
+              label="Cancel"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={isSaving}
+              className="w-full sm:w-auto"
+              onClick={closeDialog}
+            />
+            <Button
+              type="submit"
+              form="leave-balance-form"
+              label={isAddNew ? "Create Leave Balance" : "Save Changes"}
+              icon="pi pi-check"
+              loading={isSaving}
+              disabled={!isValid || isSaving}
+              className="w-full sm:w-auto"
+            />
+          </div>
+        }
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!isSaving}
+        closable={!isSaving}
+        onHide={closeDialog}
+        onShow={() => setTimeout(() => setFocus("leave_type_id"), 0)}
+      >
+        <form
+          id="leave-balance-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="flex flex-col gap-5 pt-2"
         >
+          <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3">
+            <p className="m-0 text-sm leading-6 text-slate-600">
+              Define the leave period and balance allocation for this employee.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
             <Controller
               name="leave_type_id"
@@ -700,6 +751,7 @@ const LeaveTableData = () => {
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
                     Leave Type
+                    <span className="ml-1 text-red-500">*</span>
                   </label>
                   <Dropdown
                     id="leave_type_id"
@@ -734,6 +786,7 @@ const LeaveTableData = () => {
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
                     Period Start
+                    <span className="ml-1 text-red-500">*</span>
                   </label>
                   <Calendar
                     id="period_start"
@@ -764,6 +817,7 @@ const LeaveTableData = () => {
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
                     Period End
+                    <span className="ml-1 text-red-500">*</span>
                   </label>
                   <Calendar
                     id="period_end"
@@ -895,8 +949,8 @@ const LeaveTableData = () => {
               )}
             />
           </div>
-        </Dialog>
-      </form>
+        </form>
+      </Dialog>
     </>
   );
 };

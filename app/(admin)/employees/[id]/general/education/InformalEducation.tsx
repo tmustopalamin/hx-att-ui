@@ -279,12 +279,14 @@ const InformalEducation = () => {
 
   const actionBodyTemplate = (row: EmployeeEducationRow) => {
     return (
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <Button
           type="button"
           rounded
+          outlined
+          size="small"
           icon="pi pi-pencil"
-          severity="help"
+          severity="secondary"
           onClick={() => openEdit(row)}
           tooltip="Edit"
           tooltipOptions={{ position: "top" }}
@@ -292,6 +294,8 @@ const InformalEducation = () => {
         <Button
           type="button"
           rounded
+          outlined
+          size="small"
           icon="pi pi-trash"
           severity="danger"
           onClick={() => onDelete(row)}
@@ -303,17 +307,21 @@ const InformalEducation = () => {
   };
 
   const dialogFooter = (
-    <div className="flex justify-end gap-2">
+    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
         label="Cancel"
-        className="p-button-text"
+        icon="pi pi-times"
+        text
+        severity="secondary"
+        className="w-full sm:w-auto"
         onClick={hideDialog}
       />
       <Button
         type="button"
-        label={isAddMode ? "Save" : "Update"}
+        label={isAddMode ? "Create Education" : "Save Changes"}
         icon="pi pi-check"
+        className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
       />
     </div>
@@ -336,8 +344,10 @@ const InformalEducation = () => {
 
           <Button
             type="button"
-            label="New"
+            label="New Education"
             icon="pi pi-plus"
+            size="small"
+            className="w-full sm:w-auto"
             onClick={openNew}
           />
         </div>
@@ -347,12 +357,18 @@ const InformalEducation = () => {
           dataKey="id"
           loading={loading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
           emptyMessage="No informal education found."
           scrollable
-          className="text-sm"
+          tableStyle={{ minWidth: "70rem" }}
+          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
             header="#"
@@ -397,10 +413,13 @@ const InformalEducation = () => {
           isAddMode ? "New Informal Education" : "Update Informal Education"
         }
         visible={visible}
-        style={{ width: "56rem", maxWidth: "95vw" }}
+        style={{ width: "95vw", maxWidth: "56rem" }}
         onHide={hideDialog}
         footer={dialogFooter}
-        breakpoints={{ "960px": "90vw", "640px": "96vw" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
       >
         <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
           <Controller

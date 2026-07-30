@@ -2,9 +2,7 @@ import dayjs from "dayjs";
 import {
   EmployeeEducationPayload,
   EmployeeEducationRow,
-  EmployeeEmergencyContactRow,
   EmployeeEmploymentData,
-  EmployeeFamilyRow,
   EmployeeIdentityPayload,
   EmployeeIdentityRow,
   EmployeePersonalData,
@@ -524,19 +522,19 @@ export const createEmployeeEmergencyContact = async (
 export const updateEmployeeEmergencyContact = async (
   employeeId: number,
   id: number,
-  _rowVersion: number,
+  rowVersion: number,
   payload: EmployeeEmergencyContactPayload,
 ) => {
   const res = await fetch(
-    `/api/employees/${employeeId}/emergency-contact-data`,
+    `/api/employees/${employeeId}/emergency-contact-data/${id}`,
     {
       method: "PUT",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
       },
       body: JSON.stringify({
-        id,
         employee_id: employeeId,
         name: payload.name.trim(),
         relationship_id: Number(payload.relationship_id),
@@ -553,19 +551,16 @@ export const updateEmployeeEmergencyContact = async (
 export const deleteEmployeeEmergencyContact = async (
   employeeId: number,
   id: number,
-  _rowVersion: number,
+  rowVersion: number,
 ) => {
   const res = await fetch(
-    `/api/employees/${employeeId}/emergency-contact-data`,
+    `/api/employees/${employeeId}/emergency-contact-data/${id}`,
     {
       method: "DELETE",
       credentials: "include",
       headers: {
-        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
       },
-      body: JSON.stringify({
-        id,
-      }),
     },
   );
 
@@ -625,17 +620,17 @@ export const createEmployeeFamily = async (
 export const updateEmployeeFamily = async (
   employeeId: number,
   id: number,
-  _rowVersion: number,
+  rowVersion: number,
   payload: EmployeeFamilyPayload,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/family-data`, {
+  const res = await fetch(`/api/employees/${employeeId}/family-data/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
     body: JSON.stringify({
-      id,
       employee_id: employeeId,
       name: payload.name.trim(),
       relationship_id: Number(payload.relationship_id),
@@ -656,17 +651,14 @@ export const updateEmployeeFamily = async (
 export const deleteEmployeeFamily = async (
   employeeId: number,
   id: number,
-  _rowVersion: number,
+  rowVersion: number,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/family-data`, {
+  const res = await fetch(`/api/employees/${employeeId}/family-data/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
-      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
     },
-    body: JSON.stringify({
-      id,
-    }),
   });
 
   await ensureOk(res);

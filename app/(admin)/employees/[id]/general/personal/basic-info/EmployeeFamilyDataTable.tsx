@@ -20,13 +20,13 @@ import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
-import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
 import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
+import { InputSwitch } from "primereact/inputswitch";
 import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
@@ -255,16 +255,21 @@ const EmployeeFamilyDataTable = () => {
   };
 
   const actionBody = (row: EmployeeFamilyRow) => (
-    <div className="flex justify-center gap-2">
+    <div className="flex flex-nowrap items-center justify-end gap-2">
       <Button
+        type="button"
         rounded
+        outlined
         size="small"
         icon="pi pi-pencil"
-        severity="help"
+        severity="secondary"
+        tooltip="Edit"
         onClick={() => openEdit(row)}
       />
       <Button
+        type="button"
         rounded
+        outlined
         size="small"
         icon="pi pi-trash"
         severity="danger"
@@ -278,7 +283,7 @@ const EmployeeFamilyDataTable = () => {
       <ConfirmDialog />
 
       <div className="flex flex-col gap-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h5 className="text-xl font-semibold text-slate-900">Family</h5>
             <p className="text-sm text-slate-500">
@@ -290,6 +295,8 @@ const EmployeeFamilyDataTable = () => {
             type="button"
             label="New Family"
             icon="pi pi-plus"
+            size="small"
+            className="w-full sm:w-auto"
             onClick={openNew}
           />
         </div>
@@ -299,11 +306,18 @@ const EmployeeFamilyDataTable = () => {
           dataKey="id"
           loading={loading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
           emptyMessage="No family data found."
           scrollable
+          tableStyle={{ minWidth: "70rem" }}
+          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
             header="#"
@@ -342,38 +356,55 @@ const EmployeeFamilyDataTable = () => {
       <Dialog
         header={isAddMode ? "New Family Data" : "Edit Family Data"}
         visible={visible}
-        style={{ width: "42rem" }}
+        style={{ width: "95vw", maxWidth: "42rem" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
         onHide={() => setVisible(false)}
         footer={
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
               label="Cancel"
-              className="p-button-text"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              className="w-full sm:w-auto"
               onClick={() => setVisible(false)}
             />
             <Button
               type="button"
-              label={isAddMode ? "Submit" : "Save"}
+              label={isAddMode ? "Create Family" : "Save Changes"}
               icon="pi pi-check"
+              className="w-full sm:w-auto"
               onClick={handleSubmit(onSubmit)}
             />
           </div>
         }
       >
-        <div className="grid grid-cols-1 gap-4 pt-2">
+        <div className="grid grid-cols-1 gap-5 pt-2 md:grid-cols-2">
           <Controller
             name="name"
             control={control}
             rules={{ required: "Name is required" }}
             render={({ field, fieldState }) => (
-              <div className="flex flex-col gap-2">
-                <label htmlFor="family_name">Name</label>
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label
+                  htmlFor="family_name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Name <span className="text-red-500">*</span>
+                </label>
                 <InputText
                   id="family_name"
                   {...field}
-                  className={fieldState.invalid ? "p-invalid" : ""}
+                  placeholder="Enter family member name"
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
+                {fieldState.error && (
+                  <small className="p-error">{fieldState.error.message}</small>
+                )}
               </div>
             )}
           />
@@ -384,7 +415,12 @@ const EmployeeFamilyDataTable = () => {
             rules={{ required: "Relationship is required" }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="relationship_id">Relationship</label>
+                <label
+                  htmlFor="relationship_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Relationship <span className="text-red-500">*</span>
+                </label>
                 <Dropdown
                   id="relationship_id"
                   appendTo={getBody}
@@ -394,8 +430,11 @@ const EmployeeFamilyDataTable = () => {
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select relationship"
-                  className={fieldState.invalid ? "p-invalid" : ""}
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
+                {fieldState.error && (
+                  <small className="p-error">{fieldState.error.message}</small>
+                )}
               </div>
             )}
           />
@@ -406,7 +445,12 @@ const EmployeeFamilyDataTable = () => {
             rules={{ required: "Birth date is required" }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="family_dob">Birth Date</label>
+                <label
+                  htmlFor="family_dob"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Birth Date <span className="text-red-500">*</span>
+                </label>
                 <Calendar
                   id="family_dob"
                   appendTo={getBody}
@@ -416,6 +460,9 @@ const EmployeeFamilyDataTable = () => {
                   onChange={(e) => field.onChange(e.value)}
                   className={fieldState.invalid ? "p-invalid w-full" : "w-full"}
                 />
+                {fieldState.error && (
+                  <small className="p-error">{fieldState.error.message}</small>
+                )}
               </div>
             )}
           />
@@ -426,7 +473,12 @@ const EmployeeFamilyDataTable = () => {
             rules={{ required: "Gender is required" }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="family_gender_id">Gender</label>
+                <label
+                  htmlFor="family_gender_id"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Gender <span className="text-red-500">*</span>
+                </label>
                 <Dropdown
                   id="family_gender_id"
                   appendTo={getBody}
@@ -436,8 +488,11 @@ const EmployeeFamilyDataTable = () => {
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select gender"
-                  className={fieldState.invalid ? "p-invalid" : ""}
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
+                {fieldState.error && (
+                  <small className="p-error">{fieldState.error.message}</small>
+                )}
               </div>
             )}
           />
@@ -448,7 +503,12 @@ const EmployeeFamilyDataTable = () => {
             rules={{ required: "Marital status is required" }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="family_marital_status">Marital Status</label>
+                <label
+                  htmlFor="family_marital_status"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Marital Status <span className="text-red-500">*</span>
+                </label>
                 <Dropdown
                   id="family_marital_status"
                   appendTo={getBody}
@@ -458,8 +518,11 @@ const EmployeeFamilyDataTable = () => {
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select marital status"
-                  className={fieldState.invalid ? "p-invalid" : ""}
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
+                {fieldState.error && (
+                  <small className="p-error">{fieldState.error.message}</small>
+                )}
               </div>
             )}
           />
@@ -469,8 +532,18 @@ const EmployeeFamilyDataTable = () => {
             control={control}
             render={({ field }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="family_job">Job</label>
-                <InputText id="family_job" {...field} />
+                <label
+                  htmlFor="family_job"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Job
+                </label>
+                <InputText
+                  id="family_job"
+                  {...field}
+                  placeholder="Enter occupation"
+                  className="w-full"
+                />
               </div>
             )}
           />
@@ -480,8 +553,18 @@ const EmployeeFamilyDataTable = () => {
             control={control}
             render={({ field }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="family_phone1">Phone 1</label>
-                <InputText id="family_phone1" {...field} />
+                <label
+                  htmlFor="family_phone1"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Primary Phone
+                </label>
+                <InputText
+                  id="family_phone1"
+                  {...field}
+                  placeholder="Enter primary phone"
+                  className="w-full"
+                />
               </div>
             )}
           />
@@ -491,25 +574,47 @@ const EmployeeFamilyDataTable = () => {
             control={control}
             render={({ field }) => (
               <div className="flex flex-col gap-2">
-                <label htmlFor="family_phone2">Phone 2</label>
-                <InputText id="family_phone2" {...field} />
+                <label
+                  htmlFor="family_phone2"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Secondary Phone
+                </label>
+                <InputText
+                  id="family_phone2"
+                  {...field}
+                  placeholder="Enter secondary phone"
+                  className="w-full"
+                />
               </div>
             )}
           />
 
-          <div className="flex items-center gap-2">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
             <Controller
               name="is_active"
               control={control}
               render={({ field }) => (
-                <Checkbox
-                  inputId="family_is_active"
-                  checked={field.value}
-                  onChange={(e) => field.onChange(!!e.checked)}
-                />
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <label
+                      htmlFor="family_is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active Status
+                    </label>
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive family records remain stored in employee history.
+                    </p>
+                  </div>
+                  <InputSwitch
+                    inputId="family_is_active"
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.value)}
+                  />
+                </div>
               )}
             />
-            <label htmlFor="family_is_active">Active</label>
           </div>
         </div>
       </Dialog>

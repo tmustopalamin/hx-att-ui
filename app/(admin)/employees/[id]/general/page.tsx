@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
-import React from "react";
 
 interface Params {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
-const EmployeeIdGeneralPage = ({ params }: Params) => {
-  redirect(`/employees/${params.id}/general/personal`);
+const EmployeeIdGeneralPage = async ({ params }: Params) => {
+  const { id } = await params;
+  redirect(`/employees/${id}/general/personal`);
 };
 
 export default EmployeeIdGeneralPage;

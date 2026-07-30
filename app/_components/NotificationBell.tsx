@@ -288,14 +288,28 @@ const NotificationBell = () => {
                 const isProcessing = actionLoadingId === notification.id;
 
                 return (
-                  <button
+                  <div
                     key={notification.id}
-                    type="button"
-                    disabled={isProcessing}
-                    onClick={() => handleClickNotification(notification)}
-                    className={`flex w-full gap-3 border-b border-slate-100 px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-slate-50 disabled:cursor-wait disabled:opacity-70 ${
-                      notification.is_read ? "bg-white" : "bg-blue-50/40"
-                    }`}
+                    role="button"
+                    tabIndex={isProcessing ? -1 : 0}
+                    aria-disabled={isProcessing}
+                    onClick={() => {
+                      if (!isProcessing) {
+                        void handleClickNotification(notification);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (
+                        !isProcessing &&
+                        (event.key === "Enter" || event.key === " ")
+                      ) {
+                        event.preventDefault();
+                        void handleClickNotification(notification);
+                      }
+                    }}
+                    className={`flex w-full gap-3 border-b border-slate-100 px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-slate-50 ${
+                      isProcessing ? "cursor-wait opacity-70" : "cursor-pointer"
+                    } ${notification.is_read ? "bg-white" : "bg-blue-50/40"}`}
                   >
                     <div className="relative mt-0.5">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-blue-700 ring-1 ring-slate-200">
@@ -353,7 +367,7 @@ const NotificationBell = () => {
                         </button>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
           </div>
