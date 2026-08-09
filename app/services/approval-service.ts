@@ -2,6 +2,7 @@ import {
   ApprovalActionPayload,
   ApprovalWorkflowSettingForm,
 } from "../types/approval";
+import { LifecycleApprovalDetail } from "../types/employee-lifecycle";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/approval";
@@ -90,6 +91,22 @@ export const rejectApprovalRequest = async (
   }
 
   return res.json();
+};
+
+export const getPendingLifecycleApprovalDetail = async (
+  approvalRequestId: number,
+): Promise<LifecycleApprovalDetail> => {
+  const res = await fetch(
+    `${API_URL}/pending/${approvalRequestId}/lifecycle-detail`,
+    { credentials: "include" },
+  );
+
+  if (!res.ok) {
+    throw await parseErrorResponse(res);
+  }
+
+  const response: { data: LifecycleApprovalDetail } = await res.json();
+  return response.data;
 };
 
 export const updateApprovalWorkflowSetting = async (

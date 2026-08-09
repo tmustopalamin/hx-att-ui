@@ -48,7 +48,19 @@ export const getAttendanceProcessSetting = async (): Promise<{
 export const updateAttendanceProcessSetting = async (
   data: Pick<
     AttendanceProcessSetting,
-    "auto_process_enabled" | "process_interval_minutes" | "lookback_days"
+    | "auto_process_enabled"
+    | "process_interval_minutes"
+    | "lookback_days"
+    | "mobile_attendance_enabled"
+    | "mobile_attendance_require_photo"
+    | "mobile_attendance_require_location"
+    | "mobile_attendance_max_photo_bytes"
+    | "mobile_attendance_max_gps_accuracy_meters"
+    | "mobile_attendance_max_event_age_seconds"
+    | "mobile_attendance_min_submission_interval_seconds"
+    | "mobile_attendance_geofence_latitude"
+    | "mobile_attendance_geofence_longitude"
+    | "mobile_attendance_geofence_radius_meters"
   >,
 ): Promise<{
   success: boolean;
@@ -65,6 +77,23 @@ export const updateAttendanceProcessSetting = async (
       auto_process_enabled: data.auto_process_enabled,
       process_interval_minutes: data.process_interval_minutes,
       lookback_days: data.lookback_days,
+      mobile_attendance_enabled: data.mobile_attendance_enabled,
+      mobile_attendance_require_photo: data.mobile_attendance_require_photo,
+      mobile_attendance_require_location:
+        data.mobile_attendance_require_location,
+      mobile_attendance_max_photo_bytes: data.mobile_attendance_max_photo_bytes,
+      mobile_attendance_max_gps_accuracy_meters:
+        data.mobile_attendance_max_gps_accuracy_meters,
+      mobile_attendance_max_event_age_seconds:
+        data.mobile_attendance_max_event_age_seconds,
+      mobile_attendance_min_submission_interval_seconds:
+        data.mobile_attendance_min_submission_interval_seconds,
+      mobile_attendance_geofence_latitude:
+        data.mobile_attendance_geofence_latitude,
+      mobile_attendance_geofence_longitude:
+        data.mobile_attendance_geofence_longitude,
+      mobile_attendance_geofence_radius_meters:
+        data.mobile_attendance_geofence_radius_meters,
     }),
   });
 

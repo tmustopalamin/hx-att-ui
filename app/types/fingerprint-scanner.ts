@@ -4,7 +4,10 @@ export interface FingerprintScanner {
   name: string;
   ip: string;
   port: string;
-  password: string;
+  /** Only sent from the form when a credential is being created or changed. */
+  password?: string;
+  /** The API exposes state only; it never returns the credential itself. */
+  has_password: boolean;
 
   last_pull_time?: string | null;
   last_sync_at?: string | null;

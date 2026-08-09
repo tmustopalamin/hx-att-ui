@@ -1,9 +1,9 @@
-import { PayrollFormula } from "../types/payroll-formula";
+import { PayrollFormulaPayload } from "../types/payroll-formula";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/payroll-formula";
 
-export const createPayrollFormula = async (data: PayrollFormula) => {
+export const createPayrollFormula = async (data: PayrollFormulaPayload) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
@@ -43,7 +43,7 @@ export const createPayrollFormula = async (data: PayrollFormula) => {
 export const updatePayrollFormula = async (
   id: number,
   rowVersion: number,
-  data: PayrollFormula,
+  data: PayrollFormulaPayload,
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 

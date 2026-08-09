@@ -1,9 +1,11 @@
-import { CalculationMethod } from "../types/calculation-method";
+import { CalculationMethodPayload } from "../types/calculation-method";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/calculation-method";
 
-export const createCalculationMethod = async (data: CalculationMethod) => {
+export const createCalculationMethod = async (
+  data: CalculationMethodPayload,
+) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
@@ -43,7 +45,7 @@ export const createCalculationMethod = async (data: CalculationMethod) => {
 export const updateCalculationMethod = async (
   id: number,
   rowVersion: number,
-  data: CalculationMethod,
+  data: CalculationMethodPayload,
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 

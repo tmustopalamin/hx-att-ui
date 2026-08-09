@@ -53,6 +53,17 @@ const selfServiceItems: MenuItem[] = [
     icon: "pi-clock",
     permission: "overtime.read",
   },
+  {
+    href: "/my-payslips",
+    label: "My Payslips",
+    icon: "pi-wallet",
+    permission: "payroll-payslip.self",
+  },
+  {
+    href: "/my-lifecycle-tasks",
+    label: "My Lifecycle Tasks",
+    icon: "pi-list-check",
+  },
 ];
 const approvalItems: MenuItem[] = [
   {
@@ -76,6 +87,30 @@ const employeeItems: MenuItem[] = [
     permission: "employee.read",
   },
   {
+    href: "/recruitment",
+    label: "Recruitment",
+    icon: "pi-briefcase",
+    permission: "recruitment.read",
+  },
+  {
+    href: "/performance",
+    label: "Performance",
+    icon: "pi-chart-line",
+    permission: "performance.read",
+  },
+  {
+    href: "/training",
+    label: "Training & Certification",
+    icon: "pi-book",
+    permission: "training.read",
+  },
+  {
+    href: "/hr-analytics",
+    label: "HR Analytics",
+    icon: "pi-chart-bar",
+    permission: "hr-analytics.read",
+  },
+  {
     href: "/leave-management",
     label: "Leave Management",
     icon: "pi-calendar",
@@ -86,6 +121,24 @@ const employeeItems: MenuItem[] = [
     label: "Overtime Management",
     icon: "pi-clock",
     permission: "overtime-management.read",
+  },
+  {
+    href: "/employee-lifecycle",
+    label: "Employee Lifecycle",
+    icon: "pi-directions-alt",
+    permission: "employee-lifecycle.read",
+  },
+  {
+    href: "/assets",
+    label: "Company Assets",
+    icon: "pi-box",
+    permission: "asset.read",
+  },
+  {
+    href: "/employee-documents",
+    label: "Employee Documents",
+    icon: "pi-file-check",
+    permission: "employee-document.read",
   },
 ];
 const timeManagementItems: MenuItem[] = [
@@ -259,22 +312,59 @@ const settingSubMenus: SettingSubMenu[] = [
     icon: "pi-calculator",
     items: [
       {
+        href: "/setting/payroll",
+        label: "General Settings",
+        icon: "pi-cog",
+        permission: "payroll-config.read",
+      },
+      {
+        href: "/setting/frequency",
+        label: "Pay Frequency",
+        icon: "pi-calendar",
+        permission: "payroll-config.read",
+      },
+      {
+        href: "/setting/component-category",
+        label: "Component Category",
+        icon: "pi-tags",
+        permission: "payroll-config.read",
+      },
+      {
+        href: "/setting/calculation-method",
+        label: "Calculation Method",
+        icon: "pi-sliders-h",
+        permission: "payroll-config.read",
+      },
+      {
         href: "/setting/payroll-formula",
         label: "Payroll Formula",
         icon: "pi-calculator",
-        permission: "payroll.read",
+        permission: "payroll-config.read",
       },
       {
         href: "/setting/income-component",
         label: "Income Component",
         icon: "pi-plus-circle",
-        permission: "payroll.read",
+        permission: "payroll-config.read",
       },
       {
         href: "/setting/deduction-component",
         label: "Deduction Component",
         icon: "pi-minus-circle",
-        permission: "payroll.read",
+        permission: "payroll-config.read",
+      },
+    ],
+  },
+  {
+    key: "employee-lifecycle-configuration",
+    label: "Employee Lifecycle",
+    icon: "pi-directions-alt",
+    items: [
+      {
+        href: "/setting/employee-lifecycle",
+        label: "Lifecycle Configuration",
+        icon: "pi-list-check",
+        permission: "employee-lifecycle.settings.read",
       },
     ],
   },

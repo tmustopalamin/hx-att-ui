@@ -1,7 +1,5 @@
-import React from "react";
+import EmployeePayrollProfilePanel from "../_components/EmployeePayrollProfilePanel";
 
-const TimeLeaveDetail = () => {
-  return <div>TimeLeaveDetail</div>;
-};
-
-export default TimeLeaveDetail;
+export default function EmployeeBpjsPage() {
+  return <EmployeePayrollProfilePanel mode="bpjs" />;
+}

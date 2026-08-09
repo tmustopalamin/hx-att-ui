@@ -4,7 +4,7 @@ import {
   getAgencyOptions,
   getBranchOptions,
   getDepartmentOptions,
-  getEmployeeOptions,
+  getApprovalEmployeeOptions,
   getEmploymentStatusOptions,
   getPositionOptions,
   updateEmployeeEmploymentData,
@@ -19,6 +19,7 @@ import {
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -26,7 +27,8 @@ import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import useSWR from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 
@@ -60,6 +62,9 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 
 const EmployeeDetailEmployment = () => {
   const dispatch = useDispatch();
+  const canUpdate = useSelector((state: RootState) =>
+    state.profile.permissions.includes("employee.update"),
+  );
   const params = useParams();
   const employeeId = Number(params.id);
   const employmentDataKey = `/api/employees/${employeeId}/employment-data`;
@@ -82,6 +87,7 @@ const EmployeeDetailEmployment = () => {
 
   const [isPageEdit, setIsPageEdit] = useState(false);
   const [loading, setLoading] = useState(true);
+  const hasEmploymentHistory = employmentData !== null;
 
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
@@ -175,7 +181,7 @@ const EmployeeDetailEmployment = () => {
         getEmploymentStatusOptions(),
         getAgencyOptions(),
         getBranchOptions(),
-        getEmployeeOptions(),
+        getApprovalEmployeeOptions(),
       ]);
 
       setDepartments(departmentList);
@@ -338,8 +344,9 @@ const EmployeeDetailEmployment = () => {
               Employment Data
             </h5>
             <p className="mt-1 text-sm text-slate-500">
-              Manage current employment assignment, organization placement, and
-              direct supervisor.
+              {hasEmploymentHistory
+                ? "Employment changes are effective-dated and must be processed through Employee Lifecycle to preserve history."
+                : "Set the initial employment assignment, organization placement, and direct supervisor."}
             </p>
           </div>
 
@@ -367,7 +374,22 @@ const EmployeeDetailEmployment = () => {
                   className="w-full sm:w-auto"
                 />
               </>
-            ) : (
+            ) : hasEmploymentHistory ? (
+              <Link
+                href={`/employee-lifecycle?employee_id=${employeeId}&type=EMPLOYMENT_CHANGE`}
+                className="w-full sm:w-auto"
+              >
+                <Button
+                  type="button"
+                  label="Request Employment Change"
+                  icon="pi pi-send"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  className="w-full sm:w-auto"
+                />
+              </Link>
+            ) : canUpdate ? (
               <Button
                 type="button"
                 label="Edit"
@@ -378,7 +400,7 @@ const EmployeeDetailEmployment = () => {
                 className="w-full sm:w-auto"
                 onClick={() => setIsPageEdit(true)}
               />
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -572,6 +594,7 @@ const EmployeeDetailEmployment = () => {
                   optionLabel="name"
                   optionValue="id"
                   placeholder="Select supervisor"
+                  emptyMessage="No employee + approver account found"
                   className="w-full"
                   showClear
                   filter

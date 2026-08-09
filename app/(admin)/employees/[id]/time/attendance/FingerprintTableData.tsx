@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Controller, useForm } from "react-hook-form";
 import { useParams } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import { fetcher } from "@/app/utils/fetcher";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -14,6 +14,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
+import { RootState } from "@/store/store";
 
 import { EmployeeFingerprint } from "@/app/types/employee-fingerprint";
 import { FingerprintScanner } from "@/app/types/fingerprint-scanner";
@@ -67,6 +68,14 @@ const EmployeeFingerprintTableData = () => {
   const params = useParams();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canCreate = permissions.includes("employee.create");
+  const canUpdate = permissions.includes("employee.update");
+  const canDelete = permissions.includes("employee.delete");
+  const canRestore = permissions.includes("employee.restore");
+  const canPurge = permissions.includes("employee.purge");
 
   const [selectedData, setSelectedData] = useState<EmployeeFingerprint | null>(
     null,
@@ -631,52 +640,60 @@ const EmployeeFingerprintTableData = () => {
     if (rowData.deleted_at) {
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
-          <Button
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
-            tooltip="Restore"
-            rounded
-            outlined
-            severity="success"
-            icon="pi pi-refresh"
-            size="small"
-            onClick={() => onClickRestore(rowData)}
-          />
-          <Button
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
-            tooltip="Delete Forever"
-            rounded
-            outlined
-            severity="danger"
-            icon="pi pi-trash"
-            size="small"
-            onClick={() => onClickPurge(rowData)}
-          />
+          {canRestore && (
+            <Button
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltip="Restore"
+              rounded
+              outlined
+              severity="success"
+              icon="pi pi-refresh"
+              size="small"
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
+          {canPurge && (
+            <Button
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltip="Delete Forever"
+              rounded
+              outlined
+              severity="danger"
+              icon="pi pi-trash"
+              size="small"
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
         </div>
       );
     }
 
     return (
       <div className="flex flex-nowrap items-center justify-end gap-2">
-        <Button
-          tooltipOptions={{ appendTo: getBody, position: "top" }}
-          tooltip="Edit"
-          rounded
-          outlined
-          severity="secondary"
-          icon="pi pi-pencil"
-          size="small"
-          onClick={() => onClickEdit(rowData)}
-        />
-        <Button
-          tooltipOptions={{ appendTo: getBody, position: "top" }}
-          tooltip="Delete"
-          rounded
-          outlined
-          severity="danger"
-          icon="pi pi-trash"
-          size="small"
-          onClick={() => onClickDelete(rowData)}
-        />
+        {canUpdate && (
+          <Button
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            tooltip="Edit"
+            rounded
+            outlined
+            severity="secondary"
+            icon="pi pi-pencil"
+            size="small"
+            onClick={() => onClickEdit(rowData)}
+          />
+        )}
+        {canDelete && (
+          <Button
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            tooltip="Delete"
+            rounded
+            outlined
+            severity="danger"
+            icon="pi pi-trash"
+            size="small"
+            onClick={() => onClickDelete(rowData)}
+          />
+        )}
       </div>
     );
   };
@@ -808,13 +825,15 @@ const EmployeeFingerprintTableData = () => {
               </div>
 
               <div className="flex w-full justify-start xl:w-auto xl:justify-end">
-                <Button
-                  className="w-full sm:w-auto"
-                  label="New Fingerprint"
-                  icon="pi pi-plus"
-                  size="small"
-                  onClick={onClickNew}
-                />
+                {canCreate && (
+                  <Button
+                    className="w-full sm:w-auto"
+                    label="New Fingerprint"
+                    icon="pi pi-plus"
+                    size="small"
+                    onClick={onClickNew}
+                  />
+                )}
               </div>
             </div>
           </div>

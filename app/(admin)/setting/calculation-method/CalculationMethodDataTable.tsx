@@ -1,860 +1,639 @@
 "use client";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { type ChangeEvent, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import useSWR from "swr";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Controller, useForm } from "react-hook-form";
-import CardTitle from "@/app/_components/CardTitle";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
-import { InputSwitch } from "primereact/inputswitch";
-import { useState } from "react";
-import useSWR, { mutate } from "swr";
-import { fetcher } from "@/app/utils/fetcher";
-import {
-  ResponseType,
-  ResponseTypeCreateSuccess,
-} from "@/app/types/response-type";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import {
-  isResponseTypeError,
-  getErrorMessage,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { Tag } from "primereact/tag";
+import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
-import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
-import { CalculationMethod } from "@/app/types/calculation-method";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputSwitch } from "primereact/inputswitch";
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Tag } from "primereact/tag";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import {
   createCalculationMethod,
-  updateCalculationMethod,
   deleteCalculationMethod,
   purgeCalculationMethod,
   restoreCalculationMethod,
+  updateCalculationMethod,
 } from "@/app/services/calculation-method-service";
+import type {
+  CalculationMethod,
+  CalculationMethodPayload,
+} from "@/app/types/calculation-method";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+import type { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
 
-const CalculationMethodDataTable = () => {
+const getBody = () => document.body;
+const listUrl = (showDeleted: boolean) =>
+  `/api/calculation-method?show_all=${showDeleted}`;
+const emptyPayload = (): CalculationMethodPayload => ({
+  code: "",
+  name: "",
+  description: null,
+  requires_formula: false,
+  requires_reference_component: false,
+  requires_attendance: false,
+  is_active: true,
+});
+
+export default function CalculationMethodDataTable() {
   const dispatch = useDispatch();
-  const profileState = useSelector((state: RootState) => state.profile);
-  const [selectedData, setSelectedData] = useState<CalculationMethod | null>(
-    null,
-  );
-  const [globalFilterValue, setGlobalFilterValue] = useState("");
+  const profile = useSelector((state: RootState) => state.profile);
+  const canManage = profile.permissions.includes("payroll-config.manage");
+  const isSuperadmin = hasRole(profile.role, ["superadmin"]);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const {
-    control,
-    handleSubmit,
-    setFocus,
-    formState: { isValid },
-    reset,
-    clearErrors,
-  } = useForm<CalculationMethod>();
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
-    useState(false);
+  const [selected, setSelected] = useState<CalculationMethod | null>(null);
+  const [form, setForm] = useState<CalculationMethodPayload>(emptyPayload);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const currentUrl = listUrl(showDeleted);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    CalculationMethod[]
+  >(currentUrl, fetcher);
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
-
-    _filters["global"].value = value;
-
-    setFilters(_filters);
-    setGlobalFilterValue(value);
+  const notify = (severity: "success" | "error", detail: string) => {
+    dispatch(
+      showToast({
+        visible: true,
+        severity,
+        summary: severity === "success" ? "Success" : "Error",
+        detail,
+      }),
+    );
   };
-
-  const onClickNew = () => {
-    clearErrors();
-    setIsAddNew(true);
-    setVisible(true);
-    setPopupHeaderTitle("New Calculation Method");
-    reset({
-      id: 0,
-      code: "",
-      name: "",
-      description: "",
-      requires_formula: false,
-      requires_attendance: false,
-      requires_reference_component: false,
-      is_active: true,
-      deleted_at: "",
-      row_version: 0,
+  const showError = (requestError: unknown) => {
+    notify(
+      "error",
+      isResponseTypeError(requestError)
+        ? getErrorMessage(requestError, "message")
+        : requestError instanceof Error
+          ? requestError.message
+          : "An unexpected error occurred.",
+    );
+  };
+  const closeDialog = () => {
+    setDialogVisible(false);
+    setSelected(null);
+    setForm(emptyPayload());
+  };
+  const openNew = () => {
+    setSelected(null);
+    setForm(emptyPayload());
+    setDialogVisible(true);
+  };
+  const openEdit = (row: CalculationMethod) => {
+    setSelected(row);
+    setForm({
+      code: row.code ?? "",
+      name: row.name,
+      description: row.description,
+      requires_formula: row.requires_formula,
+      requires_reference_component: row.requires_reference_component,
+      requires_attendance: row.requires_attendance,
+      is_active: row.is_active,
+    });
+    setDialogVisible(true);
+  };
+  const updateForm = <K extends keyof CalculationMethodPayload>(
+    key: K,
+    value: CalculationMethodPayload[K],
+  ) => setForm((current) => ({ ...current, [key]: value }));
+  const submit = async () => {
+    const code = form.code?.trim().toUpperCase() ?? "";
+    const name = form.name.trim();
+    if (!code || !name) {
+      notify("error", "Code and name are required.");
+      return;
+    }
+    if (!/^[A-Z0-9_]+$/.test(code)) {
+      notify(
+        "error",
+        "Code may contain only uppercase letters, numbers, and underscores.",
+      );
+      return;
+    }
+    try {
+      setSaving(true);
+      const payload: CalculationMethodPayload = {
+        ...form,
+        code,
+        name,
+        description: form.description?.trim() || null,
+      };
+      if (selected)
+        await updateCalculationMethod(
+          selected.id,
+          selected.row_version,
+          payload,
+        );
+      else await createCalculationMethod(payload);
+      await mutate();
+      closeDialog();
+      notify("success", "Calculation method saved successfully.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const remove = async (row: CalculationMethod) => {
+    try {
+      await deleteCalculationMethod(row.id, row.row_version);
+      await mutate();
+      notify("success", "Calculation method deleted successfully.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    }
+  };
+  const restore = async (row: CalculationMethod) => {
+    try {
+      await restoreCalculationMethod(row.id, row.row_version);
+      await mutate();
+      notify("success", "Calculation method restored successfully.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    }
+  };
+  const purge = async (row: CalculationMethod) => {
+    try {
+      await purgeCalculationMethod(row.id);
+      await mutate();
+      notify("success", "Calculation method permanently deleted.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    }
+  };
+  const ask = (
+    row: CalculationMethod,
+    action: "delete" | "restore" | "purge",
+  ) => {
+    const label =
+      action === "delete"
+        ? "Delete"
+        : action === "restore"
+          ? "Restore"
+          : "Delete Permanently";
+    const message =
+      action === "delete"
+        ? "This method can no longer be selected for new payroll components."
+        : action === "restore"
+          ? "This method will be available again."
+          : "This action cannot be undone.";
+    confirmDialog({
+      header: `${label} Calculation Method`,
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">{message}</span>
+          <span className="font-semibold text-slate-800">{row.name}</span>
+        </div>
+      ),
+      icon:
+        action === "restore" ? "pi pi-refresh" : "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () =>
+        void (action === "delete"
+          ? remove(row)
+          : action === "restore"
+            ? restore(row)
+            : purge(row)),
+      reject: () => undefined,
     });
   };
-
-  const footerContent = (
-    <div className="text-right flex gap-5 justify-end">
-      <Button
-        type="button"
-        label="Cancel"
-        icon="pi pi-times"
-        onClick={() => {
-          setVisible(false);
-        }}
-        className="p-button-text"
+  const status = (row: CalculationMethod) => {
+    if (row.deleted_at)
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    return row.is_active ? (
+      <Tag
+        value="Active"
+        severity="success"
+        icon="pi pi-check-circle"
+        rounded
       />
-      <Button
-        type="submit"
-        label={isAddNew ? "Submit" : "Save"}
-        icon="pi pi-check"
+    ) : (
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
       />
-    </div>
-  );
-
-  const {
-    data: CalculationMethodData,
-    error,
-    isLoading,
-  } = useSWR<CalculationMethod[]>(
-    `/api/calculation-method?show_all=${isShowDeletedDataChecked}`,
-    fetcher,
-  );
+    );
+  };
+  const requirements = (row: CalculationMethod) => {
+    const items = [
+      row.requires_formula && "Formula",
+      row.requires_reference_component && "Reference",
+      row.requires_attendance && "Attendance",
+    ].filter(Boolean);
+    return items.length ? (
+      <span className="text-sm text-slate-700">{items.join(", ")}</span>
+    ) : (
+      <span className="text-sm text-slate-400">None</span>
+    );
+  };
+  const actions = (row: CalculationMethod) => {
+    if (!canManage)
+      return <span className="text-sm text-slate-400">No action</span>;
+    if (row.deleted_at) {
+      return isSuperadmin ? (
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            icon="pi pi-refresh"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            tooltip="Restore"
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            onClick={() => ask(row, "restore")}
+          />
+          <Button
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            onClick={() => ask(row, "purge")}
+          />
+        </div>
+      ) : (
+        <span className="text-sm text-slate-400">No action</span>
+      );
+    }
+    return (
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          icon="pi pi-pencil"
+          rounded
+          outlined
+          severity="secondary"
+          size="small"
+          tooltip="Edit"
+          tooltipOptions={{ appendTo: getBody, position: "top" }}
+          onClick={() => openEdit(row)}
+        />
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{ appendTo: getBody, position: "top" }}
+          onClick={() => ask(row, "delete")}
+        />
+      </div>
+    );
+  };
+  const onSearch = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setSearch(value);
+    setFilters({ global: { value, matchMode: FilterMatchMode.CONTAINS } });
+  };
 
   if (isLoading) return <LoadingDataTable />;
-  if (error) {
-    return (
-      <ErrorNotConnectedToApi mutateKey="/api/calculation-method?show_all=true" />
-    );
-  }
-
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
-  };
-
-  const handleSubmitNew = async (data: CalculationMethod) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createCalculationMethod(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/calculation-method?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleUpdate = async (data: CalculationMethod) => {
-    if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail: "please select data",
-        }),
-      );
-      return;
-    }
-
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await updateCalculationMethod(
-          selectedData.id,
-          selectedData.row_version,
-          data,
-        );
-
-      setVisible(false);
-      mutate(`/api/calculation-method?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-      reset();
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleDelete = async (data: CalculationMethod) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await deleteCalculationMethod(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/calculation-method?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: CalculationMethod) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await purgeCalculationMethod(data.id);
-      setVisible(false);
-      reset();
-      mutate(`/api/calculation-method?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleRestore = async (data: CalculationMethod) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await restoreCalculationMethod(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/calculation-method?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const onSubmit = (data: CalculationMethod) => {
-    if (!isValid) return;
-
-    if (isAddNew) {
-      handleSubmitNew(data);
-      return;
-    }
-
-    if (selectedData) {
-      handleUpdate(data);
-    }
-  };
-
-  const onClickUpdate = (data: CalculationMethod) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle("Update Calculation Method");
-
-    reset(data);
-    setSelectedData(data);
-  };
-
-  const isRequiresFormulaBody = (rowData: CalculationMethod) => {
-    return rowData.requires_formula ? (
-      <i className="pi pi-check "></i>
-    ) : (
-      <i className="pi pi-times"></i>
-    );
-  };
-
-  const isRequiresReferenceComponentBody = (rowData: CalculationMethod) => {
-    return rowData.requires_reference_component ? (
-      <i className="pi pi-check"></i>
-    ) : (
-      <i className="pi pi-times"></i>
-    );
-  };
-
-  const isRequiresAttendanceComponentBody = (rowData: CalculationMethod) => {
-    return rowData.requires_attendance ? (
-      <i className="pi pi-check"></i>
-    ) : (
-      <i className="pi pi-times"></i>
-    );
-  };
-
-  const activeColumnBody = (rowData: CalculationMethod) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
-    );
-  };
-
-  const actionColumnBody = (rowData: CalculationMethod) => {
-    return (
-      <>
-        <div className="flex gap-2">
-          {hasRole(profileState.role, ["superadmin"]) && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              label=""
-              icon="pi pi-times"
-              size="small"
-              onClick={() => {
-                onClickPurge(rowData);
-              }}
-            />
-          )}
-
-          {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              label=""
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => {
-                onClickRestore(rowData);
-              }}
-            />
-          )}
-
-          {!rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete"
-              rounded
-              severity="danger"
-              label=""
-              icon="pi pi-trash"
-              size="small"
-              onClick={() => {
-                onClickDelete(rowData);
-              }}
-            />
-          )}
-
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="update"
-            rounded
-            severity="help"
-            label=""
-            icon="pi pi-pencil"
-            size="small"
-            onClick={() => {
-              onClickUpdate(rowData);
-            }}
-          />
-        </div>
-      </>
-    );
-  };
-
-  const onClickDelete = (data: CalculationMethod) => {
-    confirmDialog({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      acceptClassName: "p-button-danger ml-3",
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
-  };
-
-  const onClickRestore = (data: CalculationMethod) => {
-    confirmDialog({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-success"
-          />
-        </div>
-      ),
-    });
-  };
-
-  const onClickPurge = (data: CalculationMethod) => {
-    confirmDialog({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      acceptClassName: "p-button-danger ml-3",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
-  };
+  if (error) return <ErrorNotConnectedToApi mutateKey={currentUrl} />;
 
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title="Calculation Method" url="" />}>
-        <div className="p-3 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button
-                label="New"
-                icon="pi pi-plus"
-                size="small"
-                onClick={() => {
-                  onClickNew();
-                }}
-              />
-
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  show deleted data
-                </label>
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-sliders-h text-xl" />
+              </div>
+              <div>
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Calculation Method
+                </h1>
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Define how payroll components are calculated and which
+                  additional input each method requires.
+                </p>
               </div>
             </div>
-
-            <IconField iconPosition="left">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                onClick={() => void mutate()}
+                className="w-full sm:w-auto"
+              />
+              {canManage && (
+                <Button
+                  type="button"
+                  label="New Calculation Method"
+                  icon="pi pi-plus"
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={openNew}
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="method-show-deleted"
+                checked={showDeleted}
+                onChange={(event) => setShowDeleted(Boolean(event.checked))}
+              />
+              <label
+                htmlFor="method-show-deleted"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+            <IconField iconPosition="left" className="w-full md:w-80">
               <InputIcon className="pi pi-search" />
               <InputText
-                className="p-inputtext-sm"
-                value={globalFilterValue}
-                onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
+                value={search}
+                onChange={onSearch}
+                placeholder="Search code, name, or description"
+                className="w-full"
               />
             </IconField>
           </div>
-
-          <DataTable
-            value={CalculationMethodData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={["name"]}
-            emptyMessage="No Calculation Method found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: "3rem" }}
-              body={(data, options) => options.rowIndex + 1}
-            ></Column>
-            <Column field="code" header="Code"></Column>
-            <Column field="name" header="Name"></Column>
-            <Column field="description" header="Description"></Column>
-            <Column
-              field="requires_formula"
-              header="Require Formula"
-              body={isRequiresFormulaBody}
-              className="text-center"
-            ></Column>
-            <Column
-              field="requires_attendance"
-              header="Require Attendance"
-              body={isRequiresAttendanceComponentBody}
-              className="text-center"
-            ></Column>
-            <Column
-              field="requires_reference_component"
-              header="Require Reference Component"
-              body={isRequiresReferenceComponentBody}
-              className="text-center"
-            ></Column>
-            <Column
-              field="is_active"
-              header="Active"
-              body={activeColumnBody}
-            ></Column>
-            <Column
-              headerClassName="bg-white"
-              className="bg-white"
-              header="Action"
-              body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
-              alignFrozen="right"
-            ></Column>
-          </DataTable>
+          <div className="w-full overflow-hidden">
+            <DataTable
+              value={data ?? []}
+              dataKey="id"
+              filters={filters}
+              globalFilterFields={["code", "name", "description"]}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{ minWidth: "67rem" }}
+              emptyMessage="No calculation method found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            >
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                headerStyle={{ width: "4rem" }}
+                bodyStyle={{ width: "4rem" }}
+              />
+              <Column
+                field="code"
+                header="Code"
+                sortable
+                body={(row: CalculationMethod) => (
+                  <span className="font-mono text-sm font-semibold text-slate-700">
+                    {row.code ?? "-"}
+                  </span>
+                )}
+                style={{ minWidth: "13rem" }}
+              />
+              <Column
+                field="name"
+                header="Method Name"
+                sortable
+                body={(row: CalculationMethod) => (
+                  <span className="font-medium text-slate-800">{row.name}</span>
+                )}
+                style={{ minWidth: "16rem" }}
+              />
+              <Column
+                header="Additional Input"
+                body={requirements}
+                style={{ minWidth: "14rem" }}
+              />
+              <Column
+                header="Status"
+                body={status}
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                header="Action"
+                body={actions}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{ width: "9rem", minWidth: "9rem" }}
+              />
+            </DataTable>
+          </div>
         </div>
       </Card>
 
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "50vw" }}
-          onHide={() => {
-            if (!visible) return;
-            setVisible(false);
-            reset();
-          }}
-          footer={footerContent}
-          onShow={() => {
-            setFocus("name");
+      <Dialog
+        header={selected ? "Edit Calculation Method" : "New Calculation Method"}
+        visible={dialogVisible}
+        style={{ width: "95vw", maxWidth: "42rem" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!saving}
+        closable={!saving}
+        onHide={closeDialog}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button
+              type="button"
+              label="Cancel"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={saving}
+              className="w-full sm:w-auto"
+              onClick={closeDialog}
+            />
+            <Button
+              type="submit"
+              form="calculation-method-form"
+              label={selected ? "Save Changes" : "Create Calculation Method"}
+              icon="pi pi-check"
+              loading={saving}
+              disabled={saving}
+              className="w-full sm:w-auto"
+            />
+          </div>
+        }
+      >
+        <form
+          id="calculation-method-form"
+          className="flex flex-col gap-5 pt-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
           }}
         >
-          <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
-              <Controller
-                name="code"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) =>
-                    !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="code"
-                      placeholder="example: fixed"
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <Field label="Code" required>
+              <InputText
+                value={form.code ?? ""}
+                maxLength={50}
+                autoComplete="off"
+                className="w-full"
+                placeholder="e.g. FIXED_AMOUNT"
+                onChange={(event) => updateForm("code", event.target.value)}
               />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="name"
-                      placeholder=""
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
+              <small className="text-slate-500">
+                Uppercase letters, numbers, and underscores only.
+              </small>
+            </Field>
+            <Field label="Name" required>
+              <InputText
+                value={form.name}
+                maxLength={100}
+                autoComplete="off"
+                className="w-full"
+                placeholder="e.g. Fixed Amount"
+                onChange={(event) => updateForm("name", event.target.value)}
               />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="description">Description</label>
-              <Controller
-                name="description"
-                control={control}
-                rules={{
-                  required: "*required",
-                  maxLength: { value: 100, message: "maximum 100 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="description"
-                      placeholder=""
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
+            </Field>
+          </div>
+          <Field label="Description">
+            <InputTextarea
+              value={form.description ?? ""}
+              rows={3}
+              autoResize
+              maxLength={500}
+              className="w-full"
+              placeholder="Describe how this method is calculated"
+              onChange={(event) =>
+                updateForm("description", event.target.value)
+              }
+            />
+          </Field>
+          <div className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3">
+            <span className="text-sm font-medium text-slate-700">
+              Required input
+            </span>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <ToggleField
+                id="method-formula"
+                label="Formula"
+                checked={form.requires_formula}
+                onChange={(value) => updateForm("requires_formula", value)}
               />
-            </div>
-
-            <div className="flex flex-row gap-2 items-center">
-              <Controller
-                name="requires_formula"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Checkbox
-                      inputId="requires_formula"
-                      onChange={(e) => field.onChange(e.checked)}
-                      checked={field.value}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
+              <ToggleField
+                id="method-reference"
+                label="Reference component"
+                checked={form.requires_reference_component}
+                onChange={(value) =>
+                  updateForm("requires_reference_component", value)
+                }
               />
-              <label htmlFor="requires_formula">Require Formula</label>
-            </div>
-
-            <div className="flex flex-row gap-2 items-center">
-              <Controller
-                name="requires_attendance"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Checkbox
-                      inputId="requires_attendance"
-                      onChange={(e) => field.onChange(e.checked)}
-                      checked={field.value}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-              <label htmlFor="requires_attendance">Require Attendance</label>
-            </div>
-
-            <div className="flex flex-row gap-2 items-center">
-              <Controller
-                name="requires_reference_component"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Checkbox
-                      inputId="requires_reference_component"
-                      onChange={(e) => field.onChange(e.checked)}
-                      checked={field.value}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold">
-                        {fieldState.error.message}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-              <label htmlFor="requires_reference_component">
-                Require Reference Component
-              </label>
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
-                  <InputSwitch
-                    id="is_active"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
-                )}
+              <ToggleField
+                id="method-attendance"
+                label="Attendance data"
+                checked={form.requires_attendance}
+                onChange={(value) => updateForm("requires_attendance", value)}
               />
             </div>
           </div>
-        </Dialog>
-      </form>
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+            <label
+              htmlFor="method-active"
+              className="cursor-pointer text-sm font-medium text-slate-700"
+            >
+              Active
+            </label>
+            <InputSwitch
+              inputId="method-active"
+              checked={form.is_active}
+              onChange={(event) => updateForm("is_active", event.value)}
+            />
+          </div>
+        </form>
+      </Dialog>
     </>
   );
-};
+}
 
-export default CalculationMethodDataTable;
+function Field({
+  label,
+  required = false,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-sm font-medium text-slate-700">
+        {label}
+        {required && <span className="ml-1 text-red-500">*</span>}
+      </span>
+      {children}
+    </label>
+  );
+}
+
+function ToggleField({
+  id,
+  label,
+  checked,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2">
+      <label htmlFor={id} className="cursor-pointer text-sm text-slate-700">
+        {label}
+      </label>
+      <InputSwitch
+        inputId={id}
+        checked={checked}
+        onChange={(event) => onChange(event.value)}
+      />
+    </div>
+  );
+}

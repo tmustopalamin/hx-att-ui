@@ -1,4 +1,5 @@
 import LeaveTableData from "./LeaveTableData";
+import EmployeeTimeHistoryPanel from "../_components/EmployeeTimeHistoryPanel";
 
 export const metadata = {
   title: "Leave Balance - PT. Hexing Technology",
@@ -6,7 +7,12 @@ export const metadata = {
 };
 
 const EmployeeTimeLeave = () => {
-  return <LeaveTableData />;
+  return (
+    <div className="flex flex-col gap-5">
+      <EmployeeTimeHistoryPanel view="leave" />
+      <LeaveTableData />
+    </div>
+  );
 };
 
 export default EmployeeTimeLeave;

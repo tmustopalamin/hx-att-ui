@@ -8,8 +8,9 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { InputOtp } from "primereact/inputotp";
 import { InputText } from "primereact/inputtext";
+import { Password } from "primereact/password";
 
-import { ForgotPassword } from "@/app/types/forgot-password";
+import { ForgotPassword, ResetPassword } from "@/app/types/forgot-password";
 import { showToast } from "@/store/ToastSlice";
 
 const ForgotPasswordPage = () => {
@@ -22,13 +23,24 @@ const ForgotPasswordPage = () => {
     },
     mode: "onTouched",
   });
+  const {
+    handleSubmit: handleResetPasswordSubmit,
+    control: resetPasswordControl,
+  } = useForm<ResetPassword>({
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+    mode: "onTouched",
+  });
 
   const [submitting, setSubmitting] = useState(false);
-  const [isOtpFormVisible, setOtpFormVisible] = useState(false);
+  const [step, setStep] = useState<"email" | "otp" | "password">("email");
   const [otpToken, setOtpToken] = useState<string | number | undefined | null>(
     "",
   );
   const [challengeId, setChallengeId] = useState("");
+  const [resetToken, setResetToken] = useState("");
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -60,7 +72,7 @@ const ForgotPasswordPage = () => {
         throw new Error(errorMessage);
       }
 
-      setOtpFormVisible(true);
+      setStep("otp");
       setChallengeId(responseData?.data || "");
 
       dispatch(
@@ -127,6 +139,15 @@ const ForgotPasswordPage = () => {
         throw new Error(errorMessage);
       }
 
+      const verifiedResetToken = String(responseData?.data || "").trim();
+      if (!verifiedResetToken) {
+        throw new Error("Reset session expired. Please request a new OTP.");
+      }
+
+      setResetToken(verifiedResetToken);
+      setOtpToken("");
+      setStep("password");
+
       dispatch(
         showToast({
           visible: true,
@@ -135,8 +156,6 @@ const ForgotPasswordPage = () => {
           detail: responseData.message,
         }),
       );
-
-      router.replace("/login");
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error
@@ -145,6 +164,63 @@ const ForgotPasswordPage = () => {
 
       setFormError(errorMessage);
 
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Failed",
+          detail: errorMessage,
+        }),
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onSubmitNewPassword = async (formData: ResetPassword) => {
+    try {
+      setSubmitting(true);
+      setFormError("");
+
+      if (!resetToken) {
+        throw new Error("Reset session expired. Please request a new OTP.");
+      }
+
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reset_token: resetToken,
+          password: formData.password,
+          confirm_password: formData.confirmPassword,
+        }),
+      });
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(
+          responseData?.message ||
+            "Failed to reset password. Please try again.",
+        );
+      }
+
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Password reset",
+          detail: responseData.message,
+        }),
+      );
+      router.replace("/login");
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Unexpected error occurred. Please try again.";
+      setFormError(errorMessage);
       dispatch(
         showToast({
           visible: true,
@@ -170,7 +246,7 @@ const ForgotPasswordPage = () => {
         <div className="flex items-center gap-2">
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-              !isOtpFormVisible
+              step === "email"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
                 : "bg-blue-100 text-blue-700"
             }`}
@@ -179,7 +255,7 @@ const ForgotPasswordPage = () => {
           </div>
           <span
             className={`text-xs font-semibold ${
-              !isOtpFormVisible ? "text-slate-800" : "text-slate-500"
+              step === "email" ? "text-slate-800" : "text-slate-500"
             }`}
           >
             Email
@@ -191,7 +267,7 @@ const ForgotPasswordPage = () => {
         <div className="flex items-center gap-2">
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
-              isOtpFormVisible
+              step === "otp"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
                 : "bg-slate-200 text-slate-500"
             }`}
@@ -200,10 +276,31 @@ const ForgotPasswordPage = () => {
           </div>
           <span
             className={`text-xs font-semibold ${
-              isOtpFormVisible ? "text-slate-800" : "text-slate-500"
+              step === "otp" ? "text-slate-800" : "text-slate-500"
             }`}
           >
             OTP
+          </span>
+        </div>
+
+        <div className="h-px w-8 bg-slate-300" />
+
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
+              step === "password"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                : "bg-slate-200 text-slate-500"
+            }`}
+          >
+            3
+          </div>
+          <span
+            className={`text-xs font-semibold ${
+              step === "password" ? "text-slate-800" : "text-slate-500"
+            }`}
+          >
+            Password
           </span>
         </div>
       </div>
@@ -356,9 +453,10 @@ const ForgotPasswordPage = () => {
             type="button"
             disabled={submitting}
             onClick={() => {
-              setOtpFormVisible(false);
+              setStep("email");
               setOtpToken("");
               setChallengeId("");
+              setResetToken("");
               setFormError("");
             }}
             className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50"
@@ -366,6 +464,117 @@ const ForgotPasswordPage = () => {
             Back to email
           </button>
         </div>
+      </>
+    );
+  };
+
+  const renderResetPassword = () => {
+    return (
+      <>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">
+            Create new password
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Use at least 12 characters with uppercase, lowercase, number, and
+            symbol.
+          </p>
+        </div>
+
+        {renderStepIndicator()}
+        {renderErrorBanner()}
+
+        <form
+          className="space-y-5"
+          onSubmit={handleResetPasswordSubmit(onSubmitNewPassword)}
+        >
+          <div className="space-y-2">
+            <label
+              htmlFor="password"
+              className="text-sm font-semibold text-slate-700"
+            >
+              New password
+            </label>
+            <Controller
+              name="password"
+              control={resetPasswordControl}
+              rules={{
+                required: "New password is required",
+                minLength: {
+                  value: 12,
+                  message: "Password must be at least 12 characters",
+                },
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Password
+                    inputId="password"
+                    value={field.value}
+                    onChange={(event) => field.onChange(event.target.value)}
+                    toggleMask
+                    feedback={false}
+                    autoComplete="new-password"
+                    disabled={submitting}
+                    className="w-full"
+                    inputClassName={`${inputBaseClass} ${
+                      fieldState.invalid ? inputErrorClass : ""
+                    }`}
+                  />
+                  {fieldState.error && (
+                    <p className="text-xs font-medium text-red-500">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="confirmPassword"
+              className="text-sm font-semibold text-slate-700"
+            >
+              Confirm new password
+            </label>
+            <Controller
+              name="confirmPassword"
+              control={resetPasswordControl}
+              rules={{ required: "Password confirmation is required" }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Password
+                    inputId="confirmPassword"
+                    value={field.value}
+                    onChange={(event) => field.onChange(event.target.value)}
+                    toggleMask
+                    feedback={false}
+                    autoComplete="new-password"
+                    disabled={submitting}
+                    className="w-full"
+                    inputClassName={`${inputBaseClass} ${
+                      fieldState.invalid ? inputErrorClass : ""
+                    }`}
+                  />
+                  {fieldState.error && (
+                    <p className="text-xs font-medium text-red-500">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
+          >
+            {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
+            <span>{submitting ? "Saving..." : "Reset password"}</span>
+          </button>
+        </form>
       </>
     );
   };
@@ -397,7 +606,11 @@ const ForgotPasswordPage = () => {
             </p>
           </div>
 
-          {isOtpFormVisible ? renderFormOTP() : renderForgotPassword()}
+          {step === "email"
+            ? renderForgotPassword()
+            : step === "otp"
+              ? renderFormOTP()
+              : renderResetPassword()}
 
           <div className="mt-6 text-center">
             <Link

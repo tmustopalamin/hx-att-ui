@@ -8,6 +8,7 @@ import { useParams, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
+import { useSelector } from "react-redux";
 
 import EmployeeProfilePicture from "./EmployeeProfilePicture";
 import VerticalTabview from "./VerticalTabView";
@@ -18,12 +19,14 @@ import {
 } from "@/app/types/employee-general";
 import { fetcher } from "@/app/utils/fetcher";
 import EmployeePageHeader from "../components/EmployeePageHeader";
+import { RootState } from "@/store/store";
 
 interface EmployeeLayoutProps {
   children: React.ReactNode;
 }
 
 const pageTitleMap: Record<string, string> = {
+  overview: "Overview",
   personal: "Personal",
   employment: "Employment",
   education: "Education & Experience",
@@ -32,6 +35,16 @@ const pageTitleMap: Record<string, string> = {
   leave: "Leave",
   "income-component": "Income Component",
   "deduction-component": "Deduction Component",
+  "salary-bank": "Salary History",
+  bpjs: "BPJS & Statutory",
+  tax: "Tax Profile",
+  bank: "Bank Account",
+  history: "Payroll History & Payslips",
+  documents: "Documents",
+  assets: "Assets",
+  lifecycle: "Lifecycle",
+  performance: "Performance",
+  learning: "Learning & Certification",
   "edit-photo": "Edit Photo",
 };
 
@@ -41,15 +54,22 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
   const id = params?.id;
   const employeeId = Number(id);
   const isValidEmployeeId = Number.isSafeInteger(employeeId) && employeeId > 0;
+  const canReadEmployee = useSelector((state: RootState) =>
+    state.profile.permissions.includes("employee.read"),
+  );
 
   const { data, error } = useSWR<EmployeePersonalData>(
-    isValidEmployeeId ? `/api/employees/${employeeId}/personal-data` : null,
+    isValidEmployeeId && canReadEmployee
+      ? `/api/employees/${employeeId}/personal-data`
+      : null,
     fetcher,
   );
 
   const { data: employmentData, error: employmentError } =
     useSWR<EmployeeEmploymentData>(
-      isValidEmployeeId ? `/api/employees/${employeeId}/employment-data` : null,
+      isValidEmployeeId && canReadEmployee
+        ? `/api/employees/${employeeId}/employment-data`
+        : null,
       fetcher,
     );
 
@@ -60,12 +80,12 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
   }, [pathname]);
 
   const employeeName = useMemo(() => {
-    if (!data) return "Employee";
+    if (!data) return `Employee #${employeeId}`;
 
     return [data.first_name, data.middle_name, data.last_name]
       .filter(Boolean)
       .join(" ");
-  }, [data]);
+  }, [data, employeeId]);
 
   if (!isValidEmployeeId) {
     return (
@@ -86,7 +106,7 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
     );
   }
 
-  if (error || employmentError) {
+  if (canReadEmployee && (error || employmentError)) {
     return (
       <ErrorNotConnectedToApi
         mutateKey={`/api/employees/${employeeId}/personal-data`}
@@ -121,28 +141,30 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
         <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="min-w-0 lg:sticky lg:top-4 lg:self-start">
             <div className="flex min-w-0 flex-col gap-4">
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex min-w-0 flex-col items-center gap-3">
-                  <EmployeeProfilePicture data={data} />
+              {canReadEmployee && data && (
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                  <div className="flex min-w-0 flex-col items-center gap-3">
+                    <EmployeeProfilePicture data={data} />
 
-                  <div className="flex w-full min-w-0 flex-col items-center text-center">
-                    <h2
-                      className="w-full max-w-[230px] text-center text-lg font-semibold leading-snug text-slate-900"
-                      style={{ overflowWrap: "anywhere" }}
-                      title={employeeName}
-                    >
-                      {employeeName}
-                    </h2>
+                    <div className="flex w-full min-w-0 flex-col items-center text-center">
+                      <h2
+                        className="w-full max-w-[230px] text-center text-lg font-semibold leading-snug text-slate-900"
+                        style={{ overflowWrap: "anywhere" }}
+                        title={employeeName}
+                      >
+                        {employeeName}
+                      </h2>
 
-                    <p
-                      className="mt-1 w-full max-w-[230px] truncate text-sm text-slate-500"
-                      title={employmentData?.position_name || "-"}
-                    >
-                      {employmentData?.position_name || "-"}
-                    </p>
+                      <p
+                        className="mt-1 w-full max-w-[230px] truncate text-sm text-slate-500"
+                        title={employmentData?.position_name || "-"}
+                      >
+                        {employmentData?.position_name || "-"}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="rounded-xl border border-slate-200 bg-white p-3">
                 <VerticalTabview />

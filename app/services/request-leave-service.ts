@@ -1,10 +1,25 @@
 import dayjs from "dayjs";
 
-import { RequestLeaveForm } from "../types/request-leave";
+import { RequestLeaveForm, RequestLeaveOptions } from "../types/request-leave";
 import { ResponseTypeError } from "../types/response-type";
 import { RequestLeaveApprovalDetail } from "../types/request-leave-approval-detail";
 
 const API_URL = "/api/request-leave";
+
+export const getRequestLeaveOptions =
+  async (): Promise<RequestLeaveOptions> => {
+    const res = await fetch(`${API_URL}/options`, {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      throw await parseErrorResponse(res);
+    }
+
+    return (await res.json()) as RequestLeaveOptions;
+  };
 
 type PreviewLeaveDaysResponse = {
   success: boolean;

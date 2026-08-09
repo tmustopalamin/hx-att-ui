@@ -14,6 +14,8 @@ export interface ApprovalPendingItem {
   row_version: number;
 
   request_date: string | null;
+  request_end_date: string | null;
+  request_type_name: string | null;
   request_start_at: string | null;
   request_end_at: string | null;
   request_seconds: number | null;

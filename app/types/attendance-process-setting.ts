@@ -5,6 +5,17 @@ export interface AttendanceProcessSetting {
   process_interval_minutes: number;
   lookback_days: number;
 
+  mobile_attendance_enabled: boolean;
+  mobile_attendance_require_photo: boolean;
+  mobile_attendance_require_location: boolean;
+  mobile_attendance_max_photo_bytes: number;
+  mobile_attendance_max_gps_accuracy_meters: number;
+  mobile_attendance_max_event_age_seconds: number;
+  mobile_attendance_min_submission_interval_seconds: number;
+  mobile_attendance_geofence_latitude: number | null;
+  mobile_attendance_geofence_longitude: number | null;
+  mobile_attendance_geofence_radius_meters: number | null;
+
   last_process_at: string | null;
   last_process_status: string | null;
   last_process_error: string | null;

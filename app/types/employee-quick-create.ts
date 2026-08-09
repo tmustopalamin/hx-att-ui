@@ -20,6 +20,9 @@ export type QuickCreateEmployeePayload = {
     role: string[];
     is_active: boolean;
   } | null;
+  recruitment_offer_id?: number | null;
+  recruitment_offer_row_version?: number | null;
+  onboarding_effective_date?: string | null;
 };
 
 export type QuickCreateEmployeeResult = {
@@ -28,4 +31,6 @@ export type QuickCreateEmployeeResult = {
   user_created: boolean;
   username: string | null;
   temporary_password: string | null;
+  lifecycle_case_id?: number | null;
+  onboarding_linked?: boolean;
 };

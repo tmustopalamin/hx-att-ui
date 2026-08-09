@@ -43,7 +43,6 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -64,6 +63,12 @@ const RoleTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const rolePermissions = new Set(profileState.permissions);
+  const canCreateRole = rolePermissions.has("role.create");
+  const canUpdateRole = rolePermissions.has("role.update");
+  const canDeleteRole = rolePermissions.has("role.delete");
+  const canRestoreRole = rolePermissions.has("role.restore");
+  const canPurgeRole = rolePermissions.has("role.purge");
 
   const [selectedData, setSelectedData] = useState<Role | null>(null);
 
@@ -502,30 +507,70 @@ const RoleTableData = () => {
   const actionColumnBody = (rowData: Role) => {
     const isDeleted = Boolean(rowData.deleted_at);
 
-    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
-
     if (isDeleted) {
-      if (!isSuperadmin) {
+      if (!canRestoreRole && !canPurgeRole) {
         return <span className="text-sm text-slate-400">No action</span>;
       }
 
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
+          {canRestoreRole && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
+
+          {canPurgeRole && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        {canUpdateRole && (
           <Button
             type="button"
-            icon="pi pi-refresh"
+            icon="pi pi-pencil"
             rounded
             outlined
-            severity="success"
+            severity="secondary"
             size="small"
-            tooltip="Restore"
+            tooltip="Edit"
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
             }}
-            onClick={() => onClickRestore(rowData)}
+            onClick={() => onClickUpdate(rowData)}
           />
+        )}
 
+        {canDeleteRole && (
           <Button
             type="button"
             icon="pi pi-trash"
@@ -533,48 +578,14 @@ const RoleTableData = () => {
             outlined
             severity="danger"
             size="small"
-            tooltip="Delete permanently"
+            tooltip="Delete"
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
             }}
-            onClick={() => onClickPurge(rowData)}
+            onClick={() => onClickDelete(rowData)}
           />
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-nowrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          icon="pi pi-pencil"
-          rounded
-          outlined
-          severity="secondary"
-          size="small"
-          tooltip="Edit"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickUpdate(rowData)}
-        />
-
-        <Button
-          type="button"
-          icon="pi pi-trash"
-          rounded
-          outlined
-          severity="danger"
-          size="small"
-          tooltip="Delete"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickDelete(rowData)}
-        />
+        )}
       </div>
     );
   };
@@ -651,14 +662,16 @@ const RoleTableData = () => {
                 onClick={handleRefresh}
               />
 
-              <Button
-                type="button"
-                label="New Role"
-                icon="pi pi-plus"
-                size="small"
-                className="w-full sm:w-auto"
-                onClick={onClickNew}
-              />
+              {canCreateRole && (
+                <Button
+                  type="button"
+                  label="New Role"
+                  icon="pi pi-plus"
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={onClickNew}
+                />
+              )}
             </div>
           </div>
 

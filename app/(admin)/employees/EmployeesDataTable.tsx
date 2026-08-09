@@ -499,6 +499,27 @@ const EmployeesDataTable = () => {
     setQuickCreateDialogVisible(true);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("quick_add") !== "1") {
+      return;
+    }
+    const fullName = params.get("candidate_name")?.trim() || "";
+    const nameParts = fullName.split(/\s+/).filter(Boolean);
+    const firstName = nameParts.shift() || "";
+    const lastName = nameParts.join(" ");
+    clearErrors();
+    reset({
+      ...EMPTY_QUICK_CREATE_FORM,
+      first_name: firstName,
+      last_name: lastName,
+      email: params.get("candidate_email")?.trim().toLowerCase() || "",
+      username: buildUsername(firstName, lastName),
+    });
+    setOnboardingStep(0);
+    setQuickCreateDialogVisible(true);
+  }, [clearErrors, reset]);
+
   const closeQuickCreateDialog = () => {
     if (isSaving) {
       return;
@@ -533,6 +554,33 @@ const EmployeesDataTable = () => {
     if (!form.dob) {
       showError(new Error("Birth date is required."));
 
+      return;
+    }
+
+    const recruitmentParams = new URLSearchParams(window.location.search);
+    const recruitmentOfferId = Number(
+      recruitmentParams.get("recruitment_offer_id"),
+    );
+    const recruitmentOfferRowVersion = Number(
+      recruitmentParams.get("recruitment_offer_row_version"),
+    );
+    const recruitmentEffectiveDate =
+      recruitmentParams.get("effective_date") || "";
+    const hasRecruitmentOfferParam = Boolean(
+      recruitmentParams.get("recruitment_offer_id"),
+    );
+    const hasRecruitmentContext =
+      Number.isSafeInteger(recruitmentOfferId) &&
+      recruitmentOfferId > 0 &&
+      Number.isSafeInteger(recruitmentOfferRowVersion) &&
+      recruitmentOfferRowVersion > 0 &&
+      Boolean(recruitmentEffectiveDate);
+    if (hasRecruitmentOfferParam && !hasRecruitmentContext) {
+      showError(
+        new Error(
+          "The recruitment handoff context is incomplete. Return to Recruitment and start onboarding again.",
+        ),
+      );
       return;
     }
 
@@ -581,7 +629,19 @@ const EmployeesDataTable = () => {
               is_active: Boolean(form.user_is_active),
             }
           : null,
+        ...(hasRecruitmentContext
+          ? {
+              recruitment_offer_id: recruitmentOfferId,
+              recruitment_offer_row_version: recruitmentOfferRowVersion,
+              onboarding_effective_date: recruitmentEffectiveDate,
+            }
+          : {}),
       });
+
+      const onboardingLinked = Boolean(response.data?.onboarding_linked);
+      if (hasRecruitmentContext) {
+        router.replace("/employees");
+      }
 
       await refreshEmployeesData();
 
@@ -590,7 +650,11 @@ const EmployeesDataTable = () => {
       clearErrors();
       reset(EMPTY_QUICK_CREATE_FORM);
 
-      showSuccess(response.message || "Employee created successfully.");
+      showSuccess(
+        onboardingLinked
+          ? "Employee created, offer linked, and onboarding started."
+          : response.message || "Employee created successfully.",
+      );
 
       if (response.data?.user_created) {
         setCreatedResult(response.data);

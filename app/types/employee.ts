@@ -25,3 +25,8 @@ export interface Employee {
   position_name?: string | null;
   code?: string | null;
 }
+
+export interface EmployeeApprovalOption {
+  id: number;
+  name: string;
+}

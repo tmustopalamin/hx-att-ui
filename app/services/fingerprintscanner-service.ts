@@ -31,7 +31,6 @@ const buildScannerPayload = (data: FingerprintScanner) => {
     name: data.name,
     ip: data.ip,
     port: data.port,
-    password: data.password,
     last_pull_time: data.last_pull_time ?? null,
     timezone_offset_minutes: data.timezone_offset_minutes ?? 420,
 
@@ -43,13 +42,19 @@ const buildScannerPayload = (data: FingerprintScanner) => {
 };
 
 export const createFingerprintScanner = async (data: FingerprintScanner) => {
+  const password = data.password?.trim();
+
+  if (!password) {
+    throw new Error("Communication key is required.");
+  }
+
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(buildScannerPayload(data)),
+    body: JSON.stringify({ ...buildScannerPayload(data), password }),
   });
 
   if (!res.ok) {
@@ -75,7 +80,10 @@ export const updateFingerprintScanner = async (
       "Content-Type": "application/json",
       "If-Match": String(rowVersion),
     },
-    body: JSON.stringify(buildScannerPayload(data)),
+    body: JSON.stringify({
+      ...buildScannerPayload(data),
+      password: data.password?.trim() || null,
+    }),
   });
 
   if (!res.ok) {

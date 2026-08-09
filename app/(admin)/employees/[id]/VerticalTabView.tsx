@@ -40,6 +40,11 @@ const VerticalTabview = () => {
       icon: "pi pi-user",
       items: [
         {
+          label: "Overview",
+          href: `/employees/${employeeId}/overview`,
+          permission: "employee.read",
+        },
+        {
           label: "Personal",
           href: `/employees/${employeeId}/general/personal`,
           permission: "employee.read",
@@ -64,12 +69,13 @@ const VerticalTabview = () => {
         {
           label: "Attendance",
           href: `/employees/${employeeId}/time/attendance`,
-          permission: "employee.read",
+          permission: "attendance-summary.read",
         },
-        // {
-        //   label: "Overtime",
-        //   href: `/employees/${employeeId}/time/overtime`,
-        // },
+        {
+          label: "Overtime",
+          href: `/employees/${employeeId}/time/overtime`,
+          permission: "overtime-management.read",
+        },
         {
           label: "Leave",
           href: `/employees/${employeeId}/time/leave`,
@@ -83,6 +89,31 @@ const VerticalTabview = () => {
       icon: "pi pi-money-bill",
       items: [
         {
+          label: "Salary History",
+          href: `/employees/${employeeId}/payroll/salary-bank`,
+          permission: "payroll.read",
+        },
+        {
+          label: "BPJS & Statutory",
+          href: `/employees/${employeeId}/payroll/bpjs`,
+          permission: "payroll.read",
+        },
+        {
+          label: "Tax Profile",
+          href: `/employees/${employeeId}/payroll/tax`,
+          permission: "payroll.read",
+        },
+        {
+          label: "Bank Account",
+          href: `/employees/${employeeId}/payroll/bank`,
+          permission: "payroll.read",
+        },
+        {
+          label: "Payroll History & Payslips",
+          href: `/employees/${employeeId}/payroll/history`,
+          permission: "payroll.read",
+        },
+        {
           label: "Income Component",
           href: `/employees/${employeeId}/payroll/income-component`,
           permission: "payroll.read",
@@ -91,6 +122,38 @@ const VerticalTabview = () => {
           label: "Deduction Component",
           href: `/employees/${employeeId}/payroll/deduction-component`,
           permission: "payroll.read",
+        },
+      ],
+    },
+    {
+      key: "hr",
+      label: "HR Records",
+      icon: "pi pi-briefcase",
+      items: [
+        {
+          label: "Documents",
+          href: `/employees/${employeeId}/hr/documents`,
+          permission: "employee-document.read",
+        },
+        {
+          label: "Assets",
+          href: `/employees/${employeeId}/hr/assets`,
+          permission: "asset.read",
+        },
+        {
+          label: "Lifecycle",
+          href: `/employees/${employeeId}/hr/lifecycle`,
+          permission: "employee-lifecycle.read",
+        },
+        {
+          label: "Performance",
+          href: `/employees/${employeeId}/hr/performance`,
+          permission: "performance.manage",
+        },
+        {
+          label: "Learning & Certification",
+          href: `/employees/${employeeId}/hr/learning`,
+          permission: "training.manage",
         },
       ],
     },
@@ -109,7 +172,10 @@ const VerticalTabview = () => {
           return null;
         }
 
-        const isSectionActive = activeGroup === section.key;
+        const isSectionActive =
+          section.key === "hr"
+            ? visibleItems.some((item) => pathname === item.href.split("?")[0])
+            : activeGroup === section.key;
 
         return (
           <section
@@ -133,7 +199,7 @@ const VerticalTabview = () => {
 
             <div className="flex flex-col gap-1">
               {visibleItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href.split("?")[0];
 
                 return (
                   <Link

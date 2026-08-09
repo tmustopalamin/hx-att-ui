@@ -1,3 +1,8 @@
 export interface ForgotPassword {
   email: string;
 }
+
+export interface ResetPassword {
+  password: string;
+  confirmPassword: string;
+}

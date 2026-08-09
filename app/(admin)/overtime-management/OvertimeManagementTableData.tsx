@@ -18,17 +18,24 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 
 import {
+  createMassOvertime,
   approveOvertimeManagement,
+  previewMassOvertime,
+  MassOvertimePayload,
+  MassOvertimeTarget,
   rejectOvertimeManagement,
 } from "@/app/services/overtime-management-service";
+import { cancelOvertimeRequest } from "@/app/services/overtime-request-service";
 
 import { OvertimeRequest } from "@/app/types/overtime-request";
+import { Department } from "@/app/types/department";
+import { Position } from "@/app/types/position";
 
 import {
   getErrorMessage,
@@ -37,8 +44,9 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
+import { RootState } from "@/store/store";
 
-type ProcessingAction = "approve" | "reject" | null;
+type ProcessingAction = "approve" | "reject" | "cancel" | "mass" | null;
 
 const API_KEY = "/api/overtime-management?show_all=false";
 
@@ -121,6 +129,13 @@ const formatDuration = (seconds?: number | null) => {
 
 const OvertimeManagementTableData = () => {
   const dispatch = useDispatch();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canApprove = permissions.includes("overtime-management.approve");
+  const canReject = permissions.includes("overtime-management.reject");
+  const canCreate = permissions.includes("overtime-management.create");
+  const canCancel = permissions.includes("overtime-management.cancel");
 
   const [rejectDialogVisible, setRejectDialogVisible] = useState(false);
 
@@ -129,6 +144,8 @@ const OvertimeManagementTableData = () => {
   );
 
   const [rejectNote, setRejectNote] = useState("");
+  const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  const [cancelNote, setCancelNote] = useState("");
 
   const [keyword, setKeyword] = useState("");
 
@@ -142,6 +159,25 @@ const OvertimeManagementTableData = () => {
 
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
+
+  const [massDialogVisible, setMassDialogVisible] = useState(false);
+  const [massDate, setMassDate] = useState<Date | null>(null);
+  const [massStart, setMassStart] = useState<string | null>(null);
+  const [massEnd, setMassEnd] = useState<string | null>(null);
+  const [massReason, setMassReason] = useState("");
+  const [massDepartmentId, setMassDepartmentId] = useState<number | null>(null);
+  const [massPositionId, setMassPositionId] = useState<number | null>(null);
+  const [massTargets, setMassTargets] = useState<MassOvertimeTarget[]>([]);
+  const [massLoading, setMassLoading] = useState(false);
+
+  const { data: departments = [] } = useSWR<Department[]>(
+    canCreate ? "/api/department?show_all=false" : null,
+    fetcher,
+  );
+  const { data: positions = [] } = useSWR<Position[]>(
+    canCreate ? "/api/position?show_all=false" : null,
+    fetcher,
+  );
 
   const {
     data: overtimeManagementData,
@@ -341,6 +377,105 @@ const OvertimeManagementTableData = () => {
     setDateTo(null);
   };
 
+  const resetMassForm = () => {
+    setMassDate(null);
+    setMassStart(null);
+    setMassEnd(null);
+    setMassReason("");
+    setMassDepartmentId(null);
+    setMassPositionId(null);
+    setMassTargets([]);
+  };
+
+  const closeMassDialog = () => {
+    setMassDialogVisible(false);
+    resetMassForm();
+  };
+
+  const buildMassPayload = (): MassOvertimePayload => {
+    if (!massDate || !massStart || !massEnd) {
+      throw new Error("Overtime date, start time, and end time are required.");
+    }
+
+    const [startHour, startMinute] = massStart.split(":").map(Number);
+    const [endHour, endMinute] = massEnd.split(":").map(Number);
+    const start = dayjs(massDate)
+      .hour(startHour)
+      .minute(startMinute)
+      .second(0)
+      .millisecond(0);
+    let end = dayjs(massDate)
+      .hour(endHour)
+      .minute(endMinute)
+      .second(0)
+      .millisecond(0);
+
+    if (!start.isValid() || !end.isValid()) {
+      throw new Error("Invalid overtime time.");
+    }
+    if (!end.isAfter(start)) {
+      end = end.add(1, "day");
+    }
+
+    if (!massDepartmentId && !massPositionId) {
+      throw new Error("Select a department or department and position.");
+    }
+    if (massPositionId && !massDepartmentId) {
+      throw new Error("Department is required when selecting a position.");
+    }
+
+    return {
+      overtime_date: dayjs(massDate).format("YYYY-MM-DD"),
+      requested_start_at: start.toISOString(),
+      requested_end_at: end.toISOString(),
+      reason: massReason.trim() || null,
+      department_id: massDepartmentId,
+      position_id: massPositionId,
+    };
+  };
+
+  const handlePreviewMass = async () => {
+    try {
+      setMassLoading(true);
+      const targets = await previewMassOvertime(buildMassPayload());
+      setMassTargets(targets);
+      if (targets.length === 0)
+        showWarning("No active employee matches the selected target.");
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setMassLoading(false);
+    }
+  };
+
+  const handleCreateMass = async () => {
+    try {
+      const payload = buildMassPayload();
+      if (massTargets.length === 0) {
+        showWarning("Preview the employee target before creating overtime.");
+        return;
+      }
+      if (massTargets.some((target) => target.has_active_request)) {
+        showWarning(
+          "One or more target employees already have an active request. Resolve the conflict before creating the batch.",
+        );
+        return;
+      }
+      setMassLoading(true);
+      const response = await createMassOvertime(payload);
+      await refreshOvertimeManagementData();
+      showSuccess(
+        response.message ||
+          `${massTargets.length} overtime request(s) created successfully.`,
+      );
+      closeMassDialog();
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setMassLoading(false);
+    }
+  };
+
   const closeRejectDialog = () => {
     if (processingAction === "reject") {
       return;
@@ -350,6 +485,43 @@ const OvertimeManagementTableData = () => {
 
     setSelectedData(null);
     setRejectNote("");
+  };
+
+  const closeCancelDialog = () => {
+    if (processingAction === "cancel") return;
+    setCancelDialogVisible(false);
+    setSelectedData(null);
+    setCancelNote("");
+  };
+
+  const handleCancel = async () => {
+    if (!selectedData) return;
+    const reason = cancelNote.trim();
+    if (!reason) {
+      showWarning("Cancellation reason is required.");
+      return;
+    }
+    try {
+      setProcessingRowId(selectedData.id);
+      setProcessingAction("cancel");
+      const response = await cancelOvertimeRequest(
+        selectedData.id,
+        selectedData.row_version,
+        reason,
+      );
+      await refreshOvertimeManagementData();
+      setCancelDialogVisible(false);
+      setSelectedData(null);
+      setCancelNote("");
+      showSuccess(
+        response.message || "Overtime request cancelled successfully.",
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setProcessingRowId(null);
+      setProcessingAction(null);
+    }
   };
 
   const handleApprove = async (row: OvertimeRequest) => {
@@ -603,48 +775,78 @@ const OvertimeManagementTableData = () => {
 
   const actionBody = (row: OvertimeRequest) => {
     const isPending = normalizeStatus(row.status) === "PENDING";
+    const isCancellable =
+      isPending || normalizeStatus(row.status) === "APPROVED";
+    const showManagementDecision = isPending && !row.approval_request_id;
 
     const isCurrentRowProcessing = processingRowId === row.id;
 
-    if (!isPending) {
+    if (
+      (!showManagementDecision || (!canApprove && !canReject)) &&
+      !(canCancel && isCancellable)
+    ) {
       return <span className="text-sm text-slate-400">No action</span>;
     }
 
     return (
       <div className="flex flex-nowrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          icon="pi pi-check"
-          rounded
-          outlined
-          size="small"
-          severity="success"
-          loading={isCurrentRowProcessing && processingAction === "approve"}
-          disabled={isActionRunning}
-          tooltip="Approve"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickApprove(row)}
-        />
+        {showManagementDecision && canApprove && (
+          <Button
+            type="button"
+            icon="pi pi-check"
+            rounded
+            outlined
+            size="small"
+            severity="success"
+            loading={isCurrentRowProcessing && processingAction === "approve"}
+            disabled={isActionRunning}
+            tooltip="Approve"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickApprove(row)}
+          />
+        )}
 
-        <Button
-          type="button"
-          icon="pi pi-times"
-          rounded
-          outlined
-          size="small"
-          severity="danger"
-          loading={isCurrentRowProcessing && processingAction === "reject"}
-          disabled={isActionRunning}
-          tooltip="Reject"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickReject(row)}
-        />
+        {showManagementDecision && canReject && (
+          <Button
+            type="button"
+            icon="pi pi-times"
+            rounded
+            outlined
+            size="small"
+            severity="danger"
+            loading={isCurrentRowProcessing && processingAction === "reject"}
+            disabled={isActionRunning}
+            tooltip="Reject"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickReject(row)}
+          />
+        )}
+
+        {canCancel && isCancellable && (
+          <Button
+            type="button"
+            icon="pi pi-ban"
+            rounded
+            outlined
+            size="small"
+            severity="warning"
+            loading={isCurrentRowProcessing && processingAction === "cancel"}
+            disabled={isActionRunning}
+            tooltip="Cancel"
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            onClick={() => {
+              setSelectedData(row);
+              setCancelNote("");
+              setCancelDialogVisible(true);
+            }}
+          />
+        )}
       </div>
     );
   };
@@ -690,24 +892,36 @@ const OvertimeManagementTableData = () => {
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review employee overtime requests and perform manual approval
-                  or rejection.
+                  Review employee overtime requests. Requests with an approval
+                  workflow are processed from Approval Inbox.
                 </p>
               </div>
             </div>
 
-            <Button
-              type="button"
-              label="Refresh"
-              icon="pi pi-refresh"
-              severity="secondary"
-              outlined
-              size="small"
-              loading={isValidating}
-              disabled={isValidating || isActionRunning}
-              className="w-full sm:w-auto"
-              onClick={handleRefresh}
-            />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {canCreate && (
+                <Button
+                  type="button"
+                  label="Create Mass Overtime"
+                  icon="pi pi-users"
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={() => setMassDialogVisible(true)}
+                />
+              )}
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                disabled={isValidating || isActionRunning}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
+            </div>
           </div>
 
           {/* Summary */}
@@ -1079,6 +1293,284 @@ const OvertimeManagementTableData = () => {
               <small className="shrink-0 text-slate-400">
                 {rejectNote.length}/{MAX_REJECTION_NOTE_LENGTH}
               </small>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Cancel Overtime Request"
+        visible={cancelDialogVisible}
+        style={{ width: "95vw", maxWidth: "36rem" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
+        closable={processingAction !== "cancel"}
+        closeOnEscape={processingAction !== "cancel"}
+        onHide={closeCancelDialog}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button
+              type="button"
+              label="Close"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={processingAction === "cancel"}
+              onClick={closeCancelDialog}
+            />
+            <Button
+              type="button"
+              label="Cancel Overtime"
+              icon="pi pi-ban"
+              severity="warning"
+              loading={processingAction === "cancel"}
+              disabled={processingAction === "cancel"}
+              onClick={() => void handleCancel()}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-3 pt-2">
+          {selectedData && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              Cancel overtime for{" "}
+              <strong>{selectedData.employee_name || "employee"}</strong> on{" "}
+              {formatDate(selectedData.overtime_date)}.
+            </div>
+          )}
+          <label
+            htmlFor="cancelNote"
+            className="text-sm font-medium text-slate-700"
+          >
+            Cancellation reason <span className="text-red-500">*</span>
+          </label>
+          <InputTextarea
+            id="cancelNote"
+            value={cancelNote}
+            rows={5}
+            autoResize
+            maxLength={MAX_REJECTION_NOTE_LENGTH}
+            disabled={processingAction === "cancel"}
+            placeholder="Explain why this overtime is cancelled"
+            className="w-full"
+            onChange={(event) => setCancelNote(event.target.value)}
+          />
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Create Mass Overtime"
+        visible={massDialogVisible}
+        style={{ width: "96vw", maxWidth: "58rem" }}
+        breakpoints={{ "960px": "96vw", "640px": "98vw" }}
+        modal
+        draggable={false}
+        resizable={false}
+        closable={!massLoading}
+        closeOnEscape={!massLoading}
+        onHide={closeMassDialog}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button
+              type="button"
+              label="Close"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={massLoading}
+              onClick={closeMassDialog}
+            />
+            <Button
+              type="button"
+              label="Preview Employees"
+              icon="pi pi-search"
+              severity="secondary"
+              outlined
+              loading={massLoading}
+              disabled={massLoading}
+              onClick={() => void handlePreviewMass()}
+            />
+            <Button
+              type="button"
+              label="Create Requests"
+              icon="pi pi-check"
+              loading={massLoading}
+              disabled={
+                massLoading ||
+                massTargets.length === 0 ||
+                massTargets.some((target) => target.has_active_request)
+              }
+              onClick={() => void handleCreateMass()}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-5 pt-2">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
+            Employees are resolved on the server using the employment assignment
+            effective on the overtime date. All requests are created in one
+            transaction and use the normal manager approval chain.
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Overtime date *
+              </label>
+              <Calendar
+                value={massDate}
+                onChange={(event) =>
+                  setMassDate((event.value as Date | null) ?? null)
+                }
+                showIcon
+                dateFormat="dd M yy"
+                appendTo={getBody}
+                className="w-full"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Department *
+              </label>
+              <Dropdown
+                value={massDepartmentId}
+                options={departments
+                  .filter((item) => item.is_active)
+                  .map((item) => ({
+                    label: `${item.name} (${item.code})`,
+                    value: item.id,
+                  }))}
+                onChange={(event) => {
+                  setMassDepartmentId(event.value ?? null);
+                  setMassPositionId(null);
+                  setMassTargets([]);
+                }}
+                placeholder="Select department"
+                showClear
+                filter
+                appendTo={getBody}
+                className="w-full"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-slate-700">
+                Position (optional)
+              </label>
+              <Dropdown
+                value={massPositionId}
+                options={positions
+                  .filter(
+                    (item) =>
+                      item.is_active &&
+                      (massDepartmentId === null ||
+                        item.department_id === massDepartmentId ||
+                        item.department_id === null),
+                  )
+                  .map((item) => ({
+                    label: `${item.name} (${item.code})`,
+                    value: item.id,
+                  }))}
+                onChange={(event) => {
+                  setMassPositionId(event.value ?? null);
+                  setMassTargets([]);
+                }}
+                placeholder="All positions in department"
+                showClear
+                filter
+                appendTo={getBody}
+                disabled={!massDepartmentId}
+                className="w-full"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Start *
+                </label>
+                <InputText
+                  type="time"
+                  value={massStart ?? ""}
+                  onChange={(event) => {
+                    setMassStart(event.target.value || null);
+                    setMassTargets([]);
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-slate-700">
+                  End *
+                </label>
+                <InputText
+                  type="time"
+                  value={massEnd ?? ""}
+                  onChange={(event) => {
+                    setMassEnd(event.target.value || null);
+                    setMassTargets([]);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">Reason</label>
+            <InputTextarea
+              value={massReason}
+              rows={3}
+              autoResize
+              maxLength={1000}
+              placeholder="Reason for this mass overtime"
+              onChange={(event) => {
+                setMassReason(event.target.value);
+                setMassTargets([]);
+              }}
+            />
+          </div>
+          <div className="rounded-xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <div>
+                <p className="m-0 text-sm font-semibold text-slate-800">
+                  Target employees
+                </p>
+                <p className="m-0 mt-1 text-xs text-slate-500">
+                  {massTargets.length} employee(s) selected by the server
+                </p>
+              </div>
+              {massTargets.length > 0 && (
+                <Tag
+                  value={`${massTargets.length} target`}
+                  severity="info"
+                  rounded
+                />
+              )}
+            </div>
+            <div className="max-h-56 overflow-auto p-3">
+              {massTargets.length === 0 ? (
+                <p className="m-0 p-3 text-sm text-slate-500">
+                  Choose a date/target and click Preview Employees.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  {massTargets.map((target) => (
+                    <div
+                      key={target.id}
+                      className={`rounded-lg border p-3 ${target.has_active_request ? "border-red-200 bg-red-50" : "border-slate-200"}`}
+                    >
+                      <p className="m-0 text-sm font-medium text-slate-800">
+                        {target.full_name}
+                      </p>
+                      <p className="m-0 mt-1 text-xs text-slate-500">
+                        {target.department_name} · {target.position_name}
+                      </p>
+                      {target.validation_error && (
+                        <p className="m-0 mt-2 text-xs text-red-600">
+                          {target.validation_error}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

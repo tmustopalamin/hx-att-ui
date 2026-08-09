@@ -19,13 +19,14 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 
 import {
   approveApprovalRequest,
+  getPendingLifecycleApprovalDetail,
   rejectApprovalRequest,
 } from "@/app/services/approval-service";
 import {
@@ -38,6 +39,10 @@ import {
   ApprovalPendingItem,
   defaultApprovalActionFormValue,
 } from "@/app/types/approval";
+import type {
+  EmployeeLifecycleEmploymentSnapshot,
+  LifecycleApprovalDetail,
+} from "@/app/types/employee-lifecycle";
 import { RequestLeaveAttachment } from "@/app/types/request-leave-attachment";
 
 import {
@@ -47,10 +52,11 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
+import { RootState } from "@/store/store";
 
 type ApprovalActionType = "approve" | "reject" | null;
 
-type ModuleFilter = "ALL" | "LEAVE" | "OVERTIME";
+type ModuleFilter = "ALL" | "LEAVE" | "OVERTIME" | "EMPLOYEE_LIFECYCLE";
 
 type TagSeverity =
   "success" | "secondary" | "info" | "warning" | "danger" | "contrast";
@@ -58,6 +64,25 @@ type TagSeverity =
 const API_KEY = "/api/approval/pending";
 
 const MAX_NOTE_LENGTH = 1000;
+
+const employmentChangeFields: Array<{
+  key: keyof EmployeeLifecycleEmploymentSnapshot;
+  label: string;
+}> = [
+  { key: "code", label: "Employment Code" },
+  { key: "agency_name", label: "Agency" },
+  { key: "branch_name", label: "Branch" },
+  { key: "department_name", label: "Department" },
+  { key: "position_name", label: "Position" },
+  { key: "employment_status_name", label: "Employment Status" },
+  { key: "supervisor_name", label: "Direct Supervisor" },
+  { key: "end_date", label: "End Date" },
+  { key: "probation_end_date", label: "Probation End Date" },
+  { key: "confirmation_date", label: "Confirmation Date" },
+  { key: "notes", label: "Notes" },
+];
+
+const displayLifecycleValue = (value: string | null) => value || "-";
 
 const MODULE_FILTER_OPTIONS: {
   label: string;
@@ -74,6 +99,10 @@ const MODULE_FILTER_OPTIONS: {
   {
     label: "Overtime",
     value: "OVERTIME",
+  },
+  {
+    label: "Employee Lifecycle",
+    value: "EMPLOYEE_LIFECYCLE",
   },
 ];
 
@@ -221,6 +250,10 @@ const getModuleLabel = (moduleCode?: string | null) => {
     return "Leave";
   }
 
+  if (code === "EMPLOYEE_LIFECYCLE") {
+    return "Employee Lifecycle";
+  }
+
   return moduleCode || "Unknown";
 };
 
@@ -233,6 +266,10 @@ const getModuleSeverity = (moduleCode?: string | null): TagSeverity => {
 
   if (code === "LEAVE") {
     return "success";
+  }
+
+  if (code === "EMPLOYEE_LIFECYCLE") {
+    return "warning";
   }
 
   return "secondary";
@@ -265,6 +302,20 @@ const getStatusSeverity = (status?: string | null): TagSeverity => {
 };
 
 const getRequestTitle = (rowData: ApprovalPendingItem) => {
+  if (normalizeModuleCode(rowData.module_code) === "LEAVE") {
+    const leaveType = rowData.request_type_name || "Leave";
+    const startDate = formatDate(rowData.request_date);
+    const endDate = formatDate(
+      rowData.request_end_date || rowData.request_date,
+    );
+
+    return `${leaveType}: ${startDate} – ${endDate}`;
+  }
+
+  if (normalizeModuleCode(rowData.module_code) === "EMPLOYEE_LIFECYCLE") {
+    return `Effective: ${formatDate(rowData.request_date)}`;
+  }
+
   return formatDate(rowData.request_date);
 };
 
@@ -283,14 +334,25 @@ const getRequestSubtitle = (rowData: ApprovalPendingItem) => {
     )} • ${formatDuration(rowData.request_seconds)}`;
   }
 
+  if (moduleCode === "EMPLOYEE_LIFECYCLE") {
+    return `Current status: ${formatStatusLabel(rowData.request_status)}`;
+  }
+
   return "-";
 };
 
 const ApprovalInboxTableData = () => {
   const dispatch = useDispatch();
   const isMobile = useIsMobile();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canApprove = permissions.includes("approval.approve");
+  const canReject = permissions.includes("approval.reject");
 
   const attachmentLoadSequence = useRef(0);
+
+  const lifecycleDetailLoadSequence = useRef(0);
 
   const [globalFilterValue, setGlobalFilterValue] = useState("");
 
@@ -318,6 +380,12 @@ const ApprovalInboxTableData = () => {
   const [attachments, setAttachments] = useState<RequestLeaveAttachment[]>([]);
 
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+
+  const [lifecycleDetail, setLifecycleDetail] =
+    useState<LifecycleApprovalDetail | null>(null);
+
+  const [isLoadingLifecycleDetail, setIsLoadingLifecycleDetail] =
+    useState(false);
 
   const [previewAttachment, setPreviewAttachment] =
     useState<RequestLeaveAttachment | null>(null);
@@ -530,12 +598,37 @@ const ApprovalInboxTableData = () => {
     }
   };
 
+  const loadLifecycleDetail = async (approvalRequestId: number) => {
+    const loadSequence = lifecycleDetailLoadSequence.current + 1;
+    lifecycleDetailLoadSequence.current = loadSequence;
+    setIsLoadingLifecycleDetail(true);
+
+    try {
+      const detail = await getPendingLifecycleApprovalDetail(approvalRequestId);
+      if (lifecycleDetailLoadSequence.current === loadSequence) {
+        setLifecycleDetail(detail);
+      }
+    } catch (err: unknown) {
+      if (lifecycleDetailLoadSequence.current === loadSequence) {
+        setLifecycleDetail(null);
+        showError(err);
+      }
+    } finally {
+      if (lifecycleDetailLoadSequence.current === loadSequence) {
+        setIsLoadingLifecycleDetail(false);
+      }
+    }
+  };
+
   const openDetail = (data: ApprovalPendingItem) => {
     attachmentLoadSequence.current += 1;
 
     setSelectedData(data);
     setAttachments([]);
     setIsLoadingAttachments(false);
+    lifecycleDetailLoadSequence.current += 1;
+    setLifecycleDetail(null);
+    setIsLoadingLifecycleDetail(false);
 
     closeAttachmentPreview();
 
@@ -543,6 +636,10 @@ const ApprovalInboxTableData = () => {
 
     if (normalizeModuleCode(data.module_code) === "LEAVE") {
       void loadLeaveAttachments(data.reference_id);
+    }
+
+    if (normalizeModuleCode(data.module_code) === "EMPLOYEE_LIFECYCLE") {
+      void loadLifecycleDetail(data.approval_request_id);
     }
   };
 
@@ -553,6 +650,9 @@ const ApprovalInboxTableData = () => {
     setSelectedData(null);
     setAttachments([]);
     setIsLoadingAttachments(false);
+    lifecycleDetailLoadSequence.current += 1;
+    setLifecycleDetail(null);
+    setIsLoadingLifecycleDetail(false);
 
     closeAttachmentPreview();
   };
@@ -816,37 +916,41 @@ const ApprovalInboxTableData = () => {
           onClick={() => openDetail(rowData)}
         />
 
-        <Button
-          type="button"
-          icon="pi pi-check"
-          rounded
-          outlined
-          severity="success"
-          size="small"
-          disabled={isSaving}
-          tooltip="Approve"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => openActionDialog(rowData, "approve")}
-        />
+        {canApprove && (
+          <Button
+            type="button"
+            icon="pi pi-check"
+            rounded
+            outlined
+            severity="success"
+            size="small"
+            disabled={isSaving}
+            tooltip="Approve"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => openActionDialog(rowData, "approve")}
+          />
+        )}
 
-        <Button
-          type="button"
-          icon="pi pi-times"
-          rounded
-          outlined
-          severity="danger"
-          size="small"
-          disabled={isSaving}
-          tooltip="Reject"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => openActionDialog(rowData, "reject")}
-        />
+        {canReject && (
+          <Button
+            type="button"
+            icon="pi pi-times"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            disabled={isSaving}
+            tooltip="Reject"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => openActionDialog(rowData, "reject")}
+          />
+        )}
       </div>
     );
   };
@@ -1048,27 +1152,31 @@ const ApprovalInboxTableData = () => {
                 onClick={() => openDetail(rowData)}
               />
 
-              <Button
-                type="button"
-                label="Approve"
-                icon="pi pi-check"
-                severity="success"
-                outlined
-                size="small"
-                disabled={isSaving}
-                onClick={() => openActionDialog(rowData, "approve")}
-              />
+              {canApprove && (
+                <Button
+                  type="button"
+                  label="Approve"
+                  icon="pi pi-check"
+                  severity="success"
+                  outlined
+                  size="small"
+                  disabled={isSaving}
+                  onClick={() => openActionDialog(rowData, "approve")}
+                />
+              )}
 
-              <Button
-                type="button"
-                label="Reject"
-                icon="pi pi-times"
-                severity="danger"
-                outlined
-                size="small"
-                disabled={isSaving}
-                onClick={() => openActionDialog(rowData, "reject")}
-              />
+              {canReject && (
+                <Button
+                  type="button"
+                  label="Reject"
+                  icon="pi pi-times"
+                  severity="danger"
+                  outlined
+                  size="small"
+                  disabled={isSaving}
+                  onClick={() => openActionDialog(rowData, "reject")}
+                />
+              )}
             </div>
           </article>
         ))}
@@ -1347,6 +1455,41 @@ const ApprovalInboxTableData = () => {
               </div>
             </section>
 
+            {normalizeModuleCode(selectedData.module_code) === "LEAVE" && (
+              <section className="rounded-xl border border-slate-200 bg-white p-4">
+                <h2 className="m-0 text-sm font-semibold text-slate-800">
+                  Leave Details
+                </h2>
+
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <p className="m-0 text-xs text-slate-500">Leave Type</p>
+                    <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                      {selectedData.request_type_name || "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="m-0 text-xs text-slate-500">Date Range</p>
+                    <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                      {formatDate(selectedData.request_date)} –{" "}
+                      {formatDate(
+                        selectedData.request_end_date ||
+                          selectedData.request_date,
+                      )}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="m-0 text-xs text-slate-500">Working Days</p>
+                    <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                      {selectedData.request_seconds ?? "-"}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
             <section className="rounded-xl border border-slate-200 bg-white p-4">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
                 Request Reason
@@ -1356,6 +1499,110 @@ const ApprovalInboxTableData = () => {
                 {selectedData.request_reason || "-"}
               </p>
             </section>
+
+            {normalizeModuleCode(selectedData.module_code) ===
+              "EMPLOYEE_LIFECYCLE" && (
+              <section className="rounded-xl border border-slate-200 bg-white p-4">
+                <h2 className="m-0 text-sm font-semibold text-slate-800">
+                  Lifecycle Change Details
+                </h2>
+
+                {isLoadingLifecycleDetail ? (
+                  <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
+                    <i className="pi pi-spin pi-spinner" />
+                    Loading lifecycle details...
+                  </div>
+                ) : lifecycleDetail ? (
+                  <div className="mt-4 flex flex-col gap-5">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="m-0 text-xs text-slate-500">Employee</p>
+                        <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                          {lifecycleDetail.case.employee_name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="m-0 text-xs text-slate-500">
+                          Lifecycle Owner
+                        </p>
+                        <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                          {lifecycleDetail.case.requested_by_name}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="m-0 text-xs text-slate-500">
+                          Lifecycle Type
+                        </p>
+                        <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                          {formatStatusLabel(
+                            lifecycleDetail.case.lifecycle_type,
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="m-0 text-xs text-slate-500">
+                          Effective Date
+                        </p>
+                        <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+                          {formatDate(lifecycleDetail.case.effective_date)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {lifecycleDetail.employment_change && (
+                      <div>
+                        <h3 className="m-0 text-sm font-semibold text-slate-800">
+                          Employment Change Summary
+                        </h3>
+                        <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                          <table className="min-w-full text-sm">
+                            <thead className="bg-slate-50 text-left text-slate-600">
+                              <tr>
+                                <th className="px-3 py-2 font-medium">Field</th>
+                                <th className="px-3 py-2 font-medium">
+                                  Current
+                                </th>
+                                <th className="px-3 py-2 font-medium">
+                                  Proposed
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {employmentChangeFields.map(({ key, label }) => (
+                                <tr
+                                  key={key}
+                                  className="border-t border-slate-100"
+                                >
+                                  <td className="px-3 py-2 font-medium text-slate-700">
+                                    {label}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-600">
+                                    {displayLifecycleValue(
+                                      lifecycleDetail.employment_change!
+                                        .previous[key],
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-slate-800">
+                                    {displayLifecycleValue(
+                                      lifecycleDetail.employment_change!
+                                        .proposed[key],
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="m-0 mt-4 text-sm text-slate-500">
+                    Lifecycle details are unavailable.
+                  </p>
+                )}
+              </section>
+            )}
 
             {normalizeModuleCode(selectedData.module_code) === "LEAVE" && (
               <section className="rounded-xl border border-slate-200 bg-white p-4">
@@ -1410,24 +1657,28 @@ const ApprovalInboxTableData = () => {
             )}
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Button
-                type="button"
-                label="Reject"
-                icon="pi pi-times"
-                severity="danger"
-                outlined
-                disabled={isSaving}
-                onClick={() => openActionDialog(selectedData, "reject")}
-              />
+              {canReject && (
+                <Button
+                  type="button"
+                  label="Reject"
+                  icon="pi pi-times"
+                  severity="danger"
+                  outlined
+                  disabled={isSaving}
+                  onClick={() => openActionDialog(selectedData, "reject")}
+                />
+              )}
 
-              <Button
-                type="button"
-                label="Approve"
-                icon="pi pi-check"
-                severity="success"
-                disabled={isSaving}
-                onClick={() => openActionDialog(selectedData, "approve")}
-              />
+              {canApprove && (
+                <Button
+                  type="button"
+                  label="Approve"
+                  icon="pi pi-check"
+                  severity="success"
+                  disabled={isSaving}
+                  onClick={() => openActionDialog(selectedData, "approve")}
+                />
+              )}
             </div>
           </div>
         )}

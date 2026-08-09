@@ -1,9 +1,11 @@
-import { DeductionComponent } from "../types/deduction-component";
+import { DeductionComponentPayload } from "../types/deduction-component";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/deduction-component";
 
-export const createDeductionComponent = async (data: DeductionComponent) => {
+export const createDeductionComponent = async (
+  data: DeductionComponentPayload,
+) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
@@ -43,7 +45,7 @@ export const createDeductionComponent = async (data: DeductionComponent) => {
 export const updateDeductionComponent = async (
   id: number,
   rowVersion: number,
-  data: DeductionComponent,
+  data: DeductionComponentPayload,
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 

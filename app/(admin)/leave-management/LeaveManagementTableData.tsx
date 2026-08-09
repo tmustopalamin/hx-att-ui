@@ -18,7 +18,7 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -37,6 +37,7 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
+import { RootState } from "@/store/store";
 
 type ProcessingAction = "approve" | "reject" | null;
 
@@ -91,6 +92,11 @@ const formatDateTime = (value?: string | null) => {
 
 const LeaveManagementTableData = () => {
   const dispatch = useDispatch();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canApprove = permissions.includes("leave-management.approve");
+  const canReject = permissions.includes("leave-management.reject");
 
   const [rejectDialogVisible, setRejectDialogVisible] = useState(false);
 
@@ -620,45 +626,54 @@ const LeaveManagementTableData = () => {
 
     const isCurrentRowProcessing = processingRowId === row.id;
 
-    if (!isPending) {
+    if (
+      !isPending ||
+      row.approval_request_id ||
+      !row.submitted_at ||
+      (!canApprove && !canReject)
+    ) {
       return <span className="text-sm text-slate-400">No action</span>;
     }
 
     return (
       <div className="flex flex-nowrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          icon="pi pi-check"
-          rounded
-          outlined
-          size="small"
-          severity="success"
-          loading={isCurrentRowProcessing && processingAction === "approve"}
-          disabled={isActionRunning}
-          tooltip="Approve"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickApprove(row)}
-        />
+        {canApprove && (
+          <Button
+            type="button"
+            icon="pi pi-check"
+            rounded
+            outlined
+            size="small"
+            severity="success"
+            loading={isCurrentRowProcessing && processingAction === "approve"}
+            disabled={isActionRunning}
+            tooltip="Approve"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickApprove(row)}
+          />
+        )}
 
-        <Button
-          type="button"
-          icon="pi pi-times"
-          rounded
-          outlined
-          size="small"
-          severity="danger"
-          loading={isCurrentRowProcessing && processingAction === "reject"}
-          disabled={isActionRunning}
-          tooltip="Reject"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickReject(row)}
-        />
+        {canReject && (
+          <Button
+            type="button"
+            icon="pi pi-times"
+            rounded
+            outlined
+            size="small"
+            severity="danger"
+            loading={isCurrentRowProcessing && processingAction === "reject"}
+            disabled={isActionRunning}
+            tooltip="Reject"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            onClick={() => onClickReject(row)}
+          />
+        )}
       </div>
     );
   };
@@ -704,8 +719,8 @@ const LeaveManagementTableData = () => {
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review employee leave requests and perform manual approval or
-                  rejection.
+                  Review employee leave requests. Requests with an approval
+                  workflow are processed from Approval Inbox.
                 </p>
               </div>
             </div>

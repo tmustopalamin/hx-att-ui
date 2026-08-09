@@ -515,6 +515,7 @@ const MobileAttendancePage = () => {
         photo_data_url: capturedPhoto,
         latitude: geoData.latitude,
         longitude: geoData.longitude,
+        gps_accuracy_meters: geoData.accuracy,
         face_id: null,
         extra_data: {
           capture_method: "camera",

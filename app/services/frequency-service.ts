@@ -1,9 +1,9 @@
-import { Frequency } from "../types/frequency";
+import { FrequencyPayload } from "../types/frequency";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/frequency";
 
-export const createFrequency = async (data: Frequency) => {
+export const createFrequency = async (data: FrequencyPayload) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
@@ -43,7 +43,7 @@ export const createFrequency = async (data: Frequency) => {
 export const updateFrequency = async (
   id: number,
   rowVersion: number,
-  data: Frequency,
+  data: FrequencyPayload,
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 

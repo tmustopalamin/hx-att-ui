@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR, { mutate } from "swr";
 import dayjs from "dayjs";
@@ -31,7 +31,6 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
-import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -39,11 +38,18 @@ import { showToast } from "@/store/ToastSlice";
 import {
   RequestLeave,
   RequestLeaveForm,
+  RequestLeaveOptionBalance,
+  RequestLeaveOptionType,
+  RequestLeaveOptions,
   defaultRequestLeaveFormValue,
 } from "@/app/types/request-leave";
 import { RequestLeaveApprovalDetail } from "@/app/types/request-leave-approval-detail";
 
-import { getRequestLeaveApprovalDetail } from "@/app/services/request-leave-service";
+import {
+  getRequestLeaveApprovalDetail,
+  getRequestLeaveOptions,
+  previewRequestLeaveDays,
+} from "@/app/services/request-leave-service";
 
 import { RequestLeaveAttachment } from "@/app/types/request-leave-attachment";
 
@@ -52,23 +58,6 @@ import {
   getRequestLeaveAttachments,
   viewRequestLeaveAttachmentUrl,
 } from "@/app/services/request-leave-attachment-service";
-
-type EmployeeLeaveBalanceOption = {
-  id: number;
-  employee_id: number;
-  leave_type_id: number;
-  leave_type_name?: string | null;
-  period_start: string;
-  period_end: string;
-  opening_balance: number;
-  entitlement: number;
-  taken: number;
-  adjustment: number;
-  closing_balance: number;
-  expired_balance: number;
-  deleted_at?: string | null;
-  row_version: number;
-};
 
 type ApiResponse<T = unknown> = {
   success: boolean;
@@ -84,7 +73,7 @@ type ApiIdResponse = {
 
 const REQUEST_LEAVE_API_URL = "/api/request-leave";
 const REQUEST_LEAVE_KEY_PREFIX = "/api/request-leave";
-const LEAVE_BALANCE_KEY = "/api/employees/leave-balance";
+const REQUEST_LEAVE_OPTIONS_KEY = "/api/request-leave/options";
 
 const getBody = () => document.body;
 
@@ -136,7 +125,7 @@ const createRequestLeaveApi = async (data: RequestLeaveForm) => {
     employee_leave_balance_id: data.employee_leave_balance_id,
     start_date: toApiDate(data.start_date),
     end_date: toApiDate(data.end_date),
-    reason: data.reason?.trim() || null,
+    reason: data.reason?.trim() || "",
     total_days: data.total_days,
   };
 
@@ -166,7 +155,7 @@ const updateRequestLeaveApi = async (
     employee_leave_balance_id: data.employee_leave_balance_id,
     start_date: toApiDate(data.start_date),
     end_date: toApiDate(data.end_date),
-    reason: data.reason?.trim() || null,
+    reason: data.reason?.trim() || "",
     total_days: data.total_days,
   };
 
@@ -331,34 +320,6 @@ const formatFileSize = (size: number) => {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const calculateWorkingDays = (startDate: Date | null, endDate: Date | null) => {
-  if (!startDate || !endDate) {
-    return 0;
-  }
-
-  const start = dayjs(startDate).startOf("day");
-  const end = dayjs(endDate).startOf("day");
-
-  if (end.isBefore(start)) {
-    return 0;
-  }
-
-  let total = 0;
-  let current = start;
-
-  while (current.isSame(end) || current.isBefore(end)) {
-    const day = current.day();
-
-    if (day !== 0 && day !== 6) {
-      total += 1;
-    }
-
-    current = current.add(1, "day");
-  }
-
-  return total;
-};
-
 const isDraftRequest = (rowData: RequestLeave) => {
   return (
     rowData.status?.toUpperCase() === "PENDING" &&
@@ -375,6 +336,13 @@ const hasApprovalDetail = (rowData: RequestLeave) => {
 const RequestLeaveTableData = () => {
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+  const permissionSet = useMemo(
+    () => new Set(profileState.permissions),
+    [profileState.permissions],
+  );
+  const canCreate = permissionSet.has("request-leave.create");
+  const canUpdate = permissionSet.has("request-leave.update");
+  const canDelete = permissionSet.has("request-leave.delete");
 
   const [selectedData, setSelectedData] = useState<RequestLeave | null>(null);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
@@ -414,11 +382,12 @@ const RequestLeaveTableData = () => {
 
   const startDate = watch("start_date");
   const endDate = watch("end_date");
+  const leaveTypeId = watch("leave_type_id");
   const employeeLeaveBalanceId = watch("employee_leave_balance_id");
 
-  const previewTotalDays = useMemo(() => {
-    return calculateWorkingDays(startDate, endDate);
-  }, [startDate, endDate]);
+  const [previewTotalDays, setPreviewTotalDays] = useState(0);
+  const [previewHolidayDays, setPreviewHolidayDays] = useState(0);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
@@ -430,24 +399,93 @@ const RequestLeaveTableData = () => {
     isLoading,
   } = useSWR<RequestLeave[]>(currentKey, fetcher);
 
-  const { data: leaveBalanceData } = useSWR<EmployeeLeaveBalanceOption[]>(
-    LEAVE_BALANCE_KEY,
-    fetcher,
+  const { data: leaveOptionsData } = useSWR<RequestLeaveOptions>(
+    REQUEST_LEAVE_OPTIONS_KEY,
+    getRequestLeaveOptions,
   );
 
   const rows = requestLeaveData ?? [];
-  const leaveBalanceRows = leaveBalanceData ?? [];
+  const leaveTypeRows: RequestLeaveOptionType[] =
+    leaveOptionsData?.leave_types ?? [];
+  const leaveBalanceRows: RequestLeaveOptionBalance[] =
+    leaveOptionsData?.balances ?? [];
+
+  const selectedLeaveType = useMemo(
+    () => leaveTypeRows.find((item) => item.id === Number(leaveTypeId)) ?? null,
+    [leaveTypeRows, leaveTypeId],
+  );
+
+  const leaveTypeOptions = useMemo(
+    () =>
+      leaveTypeRows.map((item) => ({
+        label: `${item.name} (${item.code})`,
+        value: item.id,
+      })),
+    [leaveTypeRows],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!startDate || !endDate || dayjs(endDate).isBefore(startDate, "day")) {
+      setPreviewTotalDays(0);
+      setPreviewHolidayDays(0);
+      setIsPreviewLoading(false);
+      return;
+    }
+
+    setIsPreviewLoading(true);
+    void previewRequestLeaveDays(startDate, endDate)
+      .then((result) => {
+        if (!cancelled) {
+          setPreviewTotalDays(result.total_days);
+          setPreviewHolidayDays(result.holiday_days);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreviewTotalDays(0);
+          setPreviewHolidayDays(0);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsPreviewLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [startDate, endDate]);
 
   const leaveBalanceOptions = useMemo(() => {
     return leaveBalanceRows
-      .filter((item) => !item.deleted_at)
+      .filter((item) => {
+        if (item.deleted_at || item.leave_type_id !== Number(leaveTypeId)) {
+          return false;
+        }
+
+        if (item.closing_balance <= 0) {
+          return false;
+        }
+
+        if (!startDate || !endDate) {
+          return true;
+        }
+
+        return (
+          !dayjs(item.period_start).isAfter(dayjs(startDate), "day") &&
+          !dayjs(item.period_end).isBefore(dayjs(endDate), "day")
+        );
+      })
       .map((item) => ({
         label: `${item.leave_type_name ?? `Leave Type #${item.leave_type_id}`} • ${formatDate(
           item.period_start,
         )} - ${formatDate(item.period_end)} • Balance ${item.closing_balance}`,
         value: item.id,
       }));
-  }, [leaveBalanceRows]);
+  }, [leaveBalanceRows, leaveTypeId, startDate, endDate]);
 
   const selectedLeaveBalance = useMemo(() => {
     return (
@@ -458,7 +496,7 @@ const RequestLeaveTableData = () => {
 
   const refreshData = async () => {
     await mutate(currentKey);
-    await mutate(LEAVE_BALANCE_KEY);
+    await mutate(REQUEST_LEAVE_OPTIONS_KEY);
   };
 
   const showError = (err: unknown) => {
@@ -607,7 +645,7 @@ const RequestLeaveTableData = () => {
     reset(defaultRequestLeaveFormValue);
 
     setTimeout(() => {
-      setFocus("employee_leave_balance_id");
+      setFocus("leave_type_id");
     }, 0);
 
     setAttachments([]);
@@ -637,7 +675,7 @@ const RequestLeaveTableData = () => {
     });
 
     setTimeout(() => {
-      setFocus("employee_leave_balance_id");
+      setFocus("leave_type_id");
     }, 0);
   };
 
@@ -837,13 +875,37 @@ const RequestLeaveTableData = () => {
       return;
     }
 
-    if (!data.employee_leave_balance_id || !data.leave_type_id) {
+    if (!data.leave_type_id) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Validation",
+          detail: "Please select leave type.",
+        }),
+      );
+      return;
+    }
+
+    if (selectedLeaveType?.is_deductible && !data.employee_leave_balance_id) {
       dispatch(
         showToast({
           visible: true,
           severity: "error",
           summary: "Validation",
           detail: "Please select leave balance.",
+        }),
+      );
+      return;
+    }
+
+    if (selectedLeaveType?.requires_reason && !data.reason.trim()) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: "Validation",
+          detail: "Reason is required for this leave type.",
         }),
       );
       return;
@@ -1109,47 +1171,49 @@ const RequestLeaveTableData = () => {
 
     return (
       <div className="flex flex-nowrap items-center gap-2">
-        {isDraft && (
-          <>
-            <Button
-              tooltipOptions={{
-                appendTo: getBody,
-                position: "top",
-              }}
-              tooltip="submit for approval"
-              rounded
-              severity="success"
-              icon="pi pi-send"
-              size="small"
-              onClick={() => onClickSubmit(rowData)}
-            />
+        {isDraft && canUpdate && (
+          <Button
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            tooltip="submit for approval"
+            rounded
+            severity="success"
+            icon="pi pi-send"
+            size="small"
+            onClick={() => onClickSubmit(rowData)}
+          />
+        )}
 
-            <Button
-              tooltipOptions={{
-                appendTo: getBody,
-                position: "top",
-              }}
-              tooltip="edit"
-              rounded
-              severity="help"
-              icon="pi pi-pencil"
-              size="small"
-              onClick={() => onClickUpdate(rowData)}
-            />
+        {isDraft && canUpdate && (
+          <Button
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            tooltip="edit"
+            rounded
+            severity="help"
+            icon="pi pi-pencil"
+            size="small"
+            onClick={() => onClickUpdate(rowData)}
+          />
+        )}
 
-            <Button
-              tooltipOptions={{
-                appendTo: getBody,
-                position: "top",
-              }}
-              tooltip="delete"
-              rounded
-              severity="danger"
-              icon="pi pi-trash"
-              size="small"
-              onClick={() => onClickDelete(rowData)}
-            />
-          </>
+        {isDraft && canDelete && (
+          <Button
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            tooltip="delete"
+            rounded
+            severity="danger"
+            icon="pi pi-trash"
+            size="small"
+            onClick={() => onClickDelete(rowData)}
+          />
         )}
 
         {!isDraft && hasApprovalDetail(rowData) && !rowData.deleted_at && (
@@ -1167,7 +1231,7 @@ const RequestLeaveTableData = () => {
           />
         )}
 
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
+        {canDelete && rowData.deleted_at && (
           <>
             <Button
               tooltipOptions={{
@@ -1268,7 +1332,9 @@ const RequestLeaveTableData = () => {
                 />
               </IconField>
 
-              <Button label="New" icon="pi pi-plus" onClick={onClickNew} />
+              {canCreate && (
+                <Button label="New" icon="pi pi-plus" onClick={onClickNew} />
+              )}
             </div>
           </div>
 
@@ -1394,6 +1460,78 @@ const RequestLeaveTableData = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">
+              Leave Type
+            </label>
+            <Controller
+              name="leave_type_id"
+              control={control}
+              rules={{ required: "Leave type is required" }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    value={field.value || null}
+                    options={leaveTypeOptions}
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select leave type"
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    onChange={(event) => {
+                      field.onChange(event.value ?? 0);
+                      setValue("employee_leave_balance_id", null, {
+                        shouldValidate: true,
+                      });
+                    }}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              Leave Balance{selectedLeaveType?.is_deductible ? " *" : ""}
+            </label>
+            <Controller
+              name="employee_leave_balance_id"
+              control={control}
+              rules={{
+                validate: (value) =>
+                  !selectedLeaveType?.is_deductible ||
+                  Boolean(value) ||
+                  "Leave balance is required for this leave type",
+              }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    value={field.value}
+                    options={leaveBalanceOptions}
+                    placeholder={
+                      selectedLeaveType?.is_deductible
+                        ? "Select leave balance"
+                        : "Not required for this leave type"
+                    }
+                    showClear
+                    disabled={!selectedLeaveType?.is_deductible}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    onChange={(event) => field.onChange(event.value ?? null)}
+                  />
+                  {fieldState.error && (
+                    <small className="font-bold p-error">
+                      {fieldState.error.message}
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
               Start Date
             </label>
             <Controller
@@ -1456,10 +1594,13 @@ const RequestLeaveTableData = () => {
                 Leave Days Preview
               </div>
               <div className="mt-1 text-lg font-semibold text-slate-800">
-                {previewTotalDays} day(s)
+                {isPreviewLoading
+                  ? "Calculating..."
+                  : `${previewTotalDays} day(s)`}
               </div>
               <div className="mt-1 text-sm text-slate-500">
-                Preview counts working days only, excluding Saturday and Sunday.
+                Backend preview excludes weekends and {previewHolidayDays}{" "}
+                holiday day(s).
               </div>
             </div>
           </div>
@@ -1469,7 +1610,12 @@ const RequestLeaveTableData = () => {
             <Controller
               name="reason"
               control={control}
-              rules={{ required: "Reason is required" }}
+              rules={{
+                validate: (value) =>
+                  !selectedLeaveType?.requires_reason ||
+                  Boolean(value?.trim()) ||
+                  "Reason is required for this leave type",
+              }}
               render={({ field, fieldState }) => (
                 <>
                   <InputTextarea

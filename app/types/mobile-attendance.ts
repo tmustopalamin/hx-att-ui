@@ -7,6 +7,7 @@ export interface MobileAttendancePayload {
 
   latitude: number | null;
   longitude: number | null;
+  gps_accuracy_meters: number | null;
   face_id: string | null;
 
   extra_data: Record<string, unknown> | null;

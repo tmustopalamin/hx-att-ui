@@ -28,7 +28,6 @@ import { showToast } from "@/store/ToastSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { Checkbox } from "primereact/checkbox";
 import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
 import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
@@ -52,6 +51,12 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+  const permissionSet = new Set(profileState.permissions);
+  const canCreate = permissionSet.has("payroll.create");
+  const canUpdate = permissionSet.has("payroll.update");
+  const canDelete = permissionSet.has("payroll.delete");
+  const canRestore = permissionSet.has("payroll.restore");
+  const canPurge = permissionSet.has("payroll.purge");
   const [selectedData, setSelectedData] =
     useState<EmployeeDeductionComponent | null>(null);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
@@ -176,7 +181,10 @@ const EmployeePayrollDeductionComponentTableData = () => {
   const handleSubmitNew = async (data: EmployeeDeductionComponent) => {
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createEmployeeDeductionComponent(data);
+        await createEmployeeDeductionComponent({
+          ...data,
+          employee_id: Number(id),
+        });
       setVisible(false);
       reset();
       await mutate(
@@ -433,7 +441,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
     return (
       <>
         <div className="flex gap-2">
-          {hasRole(profileState.role, ["superadmin"]) && (
+          {canPurge && rowData.deleted_at && (
             <Button
               tooltipOptions={{
                 appendTo: () => document.body,
@@ -451,7 +459,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           )}
 
-          {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
+          {canRestore && rowData.deleted_at && (
             <Button
               tooltipOptions={{
                 appendTo: () => document.body,
@@ -469,7 +477,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           )}
 
-          {!rowData.deleted_at && (
+          {canDelete && !rowData.deleted_at && (
             <Button
               tooltipOptions={{
                 appendTo: () => document.body,
@@ -487,18 +495,23 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           )}
 
-          <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="update"
-            rounded
-            severity="help"
-            label=""
-            icon="pi pi-pencil"
-            size="small"
-            onClick={() => {
-              onClickUpdate(rowData);
-            }}
-          />
+          {canUpdate && !rowData.deleted_at && (
+            <Button
+              tooltipOptions={{
+                appendTo: () => document.body,
+                position: "top",
+              }}
+              tooltip="update"
+              rounded
+              severity="help"
+              label=""
+              icon="pi pi-pencil"
+              size="small"
+              onClick={() => {
+                onClickUpdate(rowData);
+              }}
+            />
+          )}
         </div>
       </>
     );
@@ -610,13 +623,15 @@ const EmployeePayrollDeductionComponentTableData = () => {
             </div>
 
             <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
-              <Button
-                label="New Deduction Component"
-                icon="pi pi-plus"
-                size="small"
-                className="w-full sm:w-auto"
-                onClick={() => onClickNew()}
-              />
+              {canCreate && (
+                <Button
+                  label="New Deduction Component"
+                  icon="pi pi-plus"
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={() => onClickNew()}
+                />
+              )}
 
               <div className="flex items-center gap-2">
                 <Checkbox

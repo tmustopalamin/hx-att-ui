@@ -1,7 +1,10 @@
-import React from "react";
+import PayrollConfiguration from "./PayrollConfiguration";
 
-const SettingPayrollPage = () => {
-  return <div>SettingPayrollPage</div>;
+export const metadata = {
+  title: "Payroll Configuration - PT. Hexing Technology",
+  description: "Manage payroll settings and Indonesian regulatory packages",
 };
 
-export default SettingPayrollPage;
+export default function SettingPayrollPage() {
+  return <PayrollConfiguration />;
+}

@@ -1,21 +1,5 @@
-import React, { lazy, Suspense } from "react";
+import EmployeePayrollProfilePanel from "../_components/EmployeePayrollProfilePanel";
 
-const TimeAttendanceDetail = () => {
-  const renderSalaryBank = () => {
-    const SalaryDetailSection = lazy(() => import("./SalaryDetailSection"));
-    // const BankDetailSection = lazy(() => import("./BankDetailSection"));
-
-    return (
-      <Suspense fallback={<p>Loading...</p>}>
-        <div className="flex flex-col gap-10">
-          <SalaryDetailSection />
-          {/* <BankDetailSection /> */}
-        </div>
-      </Suspense>
-    );
-  };
-
-  return renderSalaryBank();
-};
-
-export default TimeAttendanceDetail;
+export default function EmployeeSalaryPage() {
+  return <EmployeePayrollProfilePanel mode="salary" />;
+}

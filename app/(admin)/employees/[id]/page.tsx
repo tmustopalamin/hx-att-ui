@@ -6,7 +6,7 @@ interface Params {
 
 const EmployeeIdPage = async ({ params }: Params) => {
   const { id } = await params;
-  redirect(`/employees/${id}/general/personal`);
+  redirect(`/employees/${id}/overview`);
 };
 
 export default EmployeeIdPage;

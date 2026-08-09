@@ -1,9 +1,9 @@
-import { IncomeComponent } from "../types/income-component";
+import { IncomeComponentPayload } from "../types/income-component";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/income-component";
 
-export const createIncomeComponent = async (data: IncomeComponent) => {
+export const createIncomeComponent = async (data: IncomeComponentPayload) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
@@ -43,7 +43,7 @@ export const createIncomeComponent = async (data: IncomeComponent) => {
 export const updateIncomeComponent = async (
   id: number,
   rowVersion: number,
-  data: IncomeComponent,
+  data: IncomeComponentPayload,
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 

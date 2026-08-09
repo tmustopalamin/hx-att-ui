@@ -2,6 +2,27 @@ import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/overtime-management";
 
+export interface MassOvertimePayload {
+  overtime_date: string;
+  requested_start_at: string;
+  requested_end_at: string;
+  reason: string | null;
+  department_id: number | null;
+  position_id: number | null;
+}
+
+export interface MassOvertimeTarget {
+  id: number;
+  full_name: string;
+  department_id: number;
+  department_name: string;
+  position_id: number;
+  position_name: string;
+  supervisor_employee_id: number | null;
+  has_active_request: boolean;
+  validation_error: string | null;
+}
+
 const parseErrorResponse = async (
   res: Response,
 ): Promise<ResponseTypeError> => {
@@ -87,4 +108,40 @@ export const rejectOvertimeManagement = async (
   }
 
   return res.json();
+};
+
+const parseJson = async (res: Response) => {
+  const contentType = res.headers.get("Content-Type") ?? "";
+  if (contentType.includes("application/json")) {
+    return res.json();
+  }
+  return {
+    success: false,
+    code: String(res.status),
+    message: await res.text(),
+  };
+};
+
+export const previewMassOvertime = async (payload: MassOvertimePayload) => {
+  const res = await fetch(`${API_URL}/mass/preview`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw data;
+  return data as MassOvertimeTarget[];
+};
+
+export const createMassOvertime = async (payload: MassOvertimePayload) => {
+  const res = await fetch(`${API_URL}/mass`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(res);
+  if (!res.ok) throw data;
+  return data;
 };

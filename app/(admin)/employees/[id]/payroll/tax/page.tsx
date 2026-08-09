@@ -1,7 +1,5 @@
-import React from "react";
+import EmployeePayrollProfilePanel from "../_components/EmployeePayrollProfilePanel";
 
-const TimeOvertimeDetail = () => {
-  return <div>TimeOvertimeDetail</div>;
-};
-
-export default TimeOvertimeDetail;
+export default function EmployeeTaxPage() {
+  return <EmployeePayrollProfilePanel mode="tax" />;
+}

@@ -1,7 +1,5 @@
-import React from "react";
+import EmployeeTimeHistoryPanel from "../_components/EmployeeTimeHistoryPanel";
 
-const TimeOvertimeDetail = () => {
-  return <div>TimeOvertimeDetail</div>;
-};
-
-export default TimeOvertimeDetail;
+export default function TimeOvertimeDetail() {
+  return <EmployeeTimeHistoryPanel view="overtime" />;
+}

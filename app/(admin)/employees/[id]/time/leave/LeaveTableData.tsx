@@ -881,14 +881,15 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Taken
+                    Taken (system)
                   </label>
                   <InputNumber
                     value={field.value}
-                    onValueChange={(e) => field.onChange(e.value ?? 0)}
+                    onValueChange={() => undefined}
                     className="w-full"
                     min={0}
                     useGrouping={false}
+                    disabled
                   />
                 </div>
               )}
@@ -918,13 +919,14 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Closing Balance
+                    Closing Balance (calculated)
                   </label>
                   <InputNumber
                     value={field.value}
-                    onValueChange={(e) => field.onChange(e.value ?? 0)}
+                    onValueChange={() => undefined}
                     className="w-full"
                     useGrouping={false}
+                    disabled
                   />
                 </div>
               )}

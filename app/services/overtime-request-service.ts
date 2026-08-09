@@ -85,16 +85,14 @@ const buildOvertimeRequestPayload = (
     data.requested_start_time,
   );
 
-  const requestedEndAt = combineDateAndTime(
+  let requestedEndAt = combineDateAndTime(
     data.overtime_date,
     data.requested_end_time,
   );
 
-  if (
-    dayjs(requestedEndAt).isSame(requestedStartAt) ||
-    dayjs(requestedEndAt).isBefore(requestedStartAt)
-  ) {
-    throw new Error("Requested end time must be after requested start time");
+  if (!dayjs(requestedEndAt).isAfter(requestedStartAt)) {
+    // End time before start means a cross-midnight request.
+    requestedEndAt = dayjs(requestedEndAt).add(1, "day").toDate();
   }
 
   return {
@@ -166,6 +164,25 @@ export const submitOvertimeRequest = async (id: number, rowVersion: number) => {
     throw await parseErrorResponse(res);
   }
 
+  return res.json();
+};
+
+export const cancelOvertimeRequest = async (
+  id: number,
+  rowVersion: number,
+  reason: string,
+) => {
+  validateRowVersion(rowVersion);
+  const res = await fetch(`${API_URL}/${id}/cancel`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+    body: JSON.stringify({ reason: reason.trim() }),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
   return res.json();
 };
 

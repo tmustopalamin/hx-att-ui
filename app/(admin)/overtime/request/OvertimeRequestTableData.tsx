@@ -49,6 +49,7 @@ import { OvertimeRequestApprovalDetail } from "@/app/types/overtime-request-appr
 
 import {
   createOvertimeRequest,
+  cancelOvertimeRequest,
   deleteOvertimeRequest,
   getOvertimeRequestApprovalDetail,
   purgeOvertimeRequest,
@@ -214,6 +215,9 @@ const OvertimeRequestTableData = () => {
     "New Overtime Request",
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [cancelDialogVisible, setCancelDialogVisible] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const [approvalDetailVisible, setApprovalDetailVisible] = useState(false);
   const [approvalDetailLoading, setApprovalDetailLoading] = useState(false);
@@ -239,6 +243,7 @@ const OvertimeRequestTableData = () => {
   const overtimeDate = watch("overtime_date");
   const requestedStartTime = watch("requested_start_time");
   const requestedEndTime = watch("requested_end_time");
+  const canCancel = profileState.permissions.includes("overtime.cancel");
 
   const previewStartAt = useMemo(() => {
     return combineDateAndTime(overtimeDate, requestedStartTime);
@@ -253,7 +258,10 @@ const OvertimeRequestTableData = () => {
       return 0;
     }
 
-    const diff = dayjs(previewEndAt).diff(previewStartAt, "second");
+    let diff = dayjs(previewEndAt).diff(previewStartAt, "second");
+    if (diff <= 0) {
+      diff = dayjs(previewEndAt).add(1, "day").diff(previewStartAt, "second");
+    }
 
     return diff > 0 ? diff : 0;
   }, [previewStartAt, previewEndAt]);
@@ -441,6 +449,47 @@ const OvertimeRequestTableData = () => {
     }
   };
 
+  const handleCancel = async () => {
+    if (!selectedData) return;
+    const reason = cancelReason.trim();
+    if (!reason) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "warn",
+          summary: "Validation",
+          detail: "Cancellation reason is required.",
+        }),
+      );
+      return;
+    }
+    try {
+      setIsCancelling(true);
+      const res: ResponseType<ResponseTypeCreateSuccess> =
+        await cancelOvertimeRequest(
+          selectedData.id,
+          selectedData.row_version,
+          reason,
+        );
+      await refreshData();
+      setCancelDialogVisible(false);
+      setSelectedData(null);
+      setCancelReason("");
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "success",
+          summary: "Success",
+          detail: res.message || "Overtime request cancelled successfully.",
+        }),
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const handleRestore = async (data: OvertimeRequest) => {
     try {
       const res: ResponseType<ResponseTypeCreateSuccess> =
@@ -533,17 +582,9 @@ const OvertimeRequestTableData = () => {
       data.requested_start_time,
     );
 
-    const endAt = combineDateAndTime(
-      data.overtime_date,
-      data.requested_end_time,
-    );
+    let endAt = combineDateAndTime(data.overtime_date, data.requested_end_time);
 
-    if (
-      !startAt ||
-      !endAt ||
-      dayjs(endAt).isSame(startAt) ||
-      dayjs(endAt).isBefore(startAt)
-    ) {
+    if (!startAt || !endAt) {
       dispatch(
         showToast({
           visible: true,
@@ -553,6 +594,10 @@ const OvertimeRequestTableData = () => {
         }),
       );
       return;
+    }
+
+    if (!dayjs(endAt).isAfter(startAt)) {
+      endAt = dayjs(endAt).add(1, "day").toDate();
     }
 
     if (isAddNew) {
@@ -785,6 +830,25 @@ const OvertimeRequestTableData = () => {
             onClick={() => onClickApprovalDetail(rowData)}
           />
         )}
+
+        {canCancel &&
+          !rowData.deleted_at &&
+          (rowData.status?.toUpperCase() === "PENDING" ||
+            rowData.status?.toUpperCase() === "APPROVED") && (
+            <Button
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              tooltip="cancel overtime"
+              rounded
+              severity="warning"
+              icon="pi pi-ban"
+              size="small"
+              onClick={() => {
+                setSelectedData(rowData);
+                setCancelReason("");
+                setCancelDialogVisible(true);
+              }}
+            />
+          )}
 
         {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
           <>
@@ -1298,6 +1362,75 @@ const OvertimeRequestTableData = () => {
             </div>
           </div>
         )}
+      </Dialog>
+
+      <Dialog
+        header="Cancel Overtime Request"
+        visible={cancelDialogVisible}
+        style={{ width: "95vw", maxWidth: "36rem" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
+        closable={!isCancelling}
+        closeOnEscape={!isCancelling}
+        onHide={() => {
+          if (isCancelling) return;
+          setCancelDialogVisible(false);
+          setSelectedData(null);
+          setCancelReason("");
+        }}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button
+              type="button"
+              label="Close"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={isCancelling}
+              onClick={() => {
+                setCancelDialogVisible(false);
+                setSelectedData(null);
+                setCancelReason("");
+              }}
+            />
+            <Button
+              type="button"
+              label="Cancel Overtime"
+              icon="pi pi-ban"
+              severity="warning"
+              loading={isCancelling}
+              disabled={isCancelling}
+              onClick={() => void handleCancel()}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-3 pt-2">
+          {selectedData && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              Cancel overtime on {formatDate(selectedData.overtime_date)}?
+            </div>
+          )}
+          <label
+            htmlFor="selfCancelReason"
+            className="text-sm font-medium text-slate-700"
+          >
+            Cancellation reason <span className="text-red-500">*</span>
+          </label>
+          <InputTextarea
+            id="selfCancelReason"
+            value={cancelReason}
+            rows={5}
+            autoResize
+            maxLength={1000}
+            disabled={isCancelling}
+            className="w-full"
+            placeholder="Explain why you are cancelling this request"
+            onChange={(event) => setCancelReason(event.target.value)}
+          />
+        </div>
       </Dialog>
     </>
   );

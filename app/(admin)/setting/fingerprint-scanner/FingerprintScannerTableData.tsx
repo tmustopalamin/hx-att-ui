@@ -96,6 +96,7 @@ const EMPTY_FORM: FingerprintScanner = {
   ip: "",
   port: "",
   password: "",
+  has_password: false,
 
   last_pull_time: null,
   last_sync_at: null,
@@ -456,7 +457,7 @@ const FingerprintScannerTableData = () => {
       name: data.name ?? "",
       ip: data.ip ?? "",
       port: String(data.port ?? ""),
-      password: data.password ?? "",
+      password: "",
       timezone_offset_minutes: data.timezone_offset_minutes ?? 420,
       auto_sync_enabled: data.auto_sync_enabled ?? true,
       sync_interval_minutes: data.sync_interval_minutes ?? 5,
@@ -877,6 +878,15 @@ const FingerprintScannerTableData = () => {
       />
     );
   };
+
+  const credentialStatusBodyTemplate = (rowData: FingerprintScanner) => (
+    <Tag
+      value={rowData.has_password ? "Configured" : "Missing"}
+      severity={rowData.has_password ? "success" : "danger"}
+      icon={rowData.has_password ? "pi pi-lock" : "pi pi-exclamation-triangle"}
+      rounded
+    />
+  );
 
   const autoSyncBodyTemplate = (rowData: FingerprintScanner) => {
     if (!rowData.auto_sync_enabled) {
@@ -1363,6 +1373,15 @@ const FingerprintScannerTableData = () => {
               />
 
               <Column
+                field="has_password"
+                header="Credential"
+                body={credentialStatusBodyTemplate}
+                style={{
+                  minWidth: "11rem",
+                }}
+              />
+
+              <Column
                 field="auto_sync_enabled"
                 header="Auto Sync"
                 sortable
@@ -1701,14 +1720,16 @@ const FingerprintScannerTableData = () => {
                   className="text-sm font-medium text-slate-700"
                 >
                   Communication Key
-                  <span className="ml-1 text-red-500">*</span>
+                  {isAddNew && <span className="ml-1 text-red-500">*</span>}
                 </label>
 
                 <Controller
                   name="password"
                   control={control}
                   rules={{
-                    required: "Communication key is required.",
+                    required: isAddNew
+                      ? "Communication key is required."
+                      : false,
                     maxLength: {
                       value: 100,
                       message:
@@ -1723,7 +1744,11 @@ const FingerprintScannerTableData = () => {
                         feedback={false}
                         toggleMask
                         autoComplete="off"
-                        placeholder="Enter scanner communication key"
+                        placeholder={
+                          isAddNew
+                            ? "Enter scanner communication key"
+                            : "Leave blank to keep the configured key"
+                        }
                         disabled={isSaving}
                         inputClassName="w-full"
                         className={`w-full ${
@@ -1737,6 +1762,14 @@ const FingerprintScannerTableData = () => {
                       {fieldState.error && (
                         <small className="p-error">
                           {fieldState.error.message}
+                        </small>
+                      )}
+
+                      {!isAddNew && !fieldState.error && (
+                        <small className="text-slate-500">
+                          {selectedData?.has_password
+                            ? "Leave blank to keep the configured key."
+                            : "Set a communication key to connect to this scanner."}
                         </small>
                       )}
                     </>

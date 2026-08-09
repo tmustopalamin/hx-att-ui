@@ -191,15 +191,15 @@ const getEmployeeCode = (user: UserListRow) => {
 };
 
 const getUserRoles = (user: UserListRow) => {
-  if (Array.isArray(user.role)) {
-    return user.role;
-  }
+  const roles = Array.isArray(user.role)
+    ? user.role
+    : Array.isArray(user.roles)
+      ? user.roles
+      : [];
 
-  if (Array.isArray(user.roles)) {
-    return user.roles;
-  }
-
-  return [];
+  return [
+    ...new Set(roles.map((role) => role.trim().toLowerCase()).filter(Boolean)),
+  ];
 };
 
 const formatRoleLabel = (role: string) => {
@@ -342,6 +342,12 @@ const UserTableData = () => {
   const currentUserId = Number(profileRecord.user_id ?? profileRecord.id ?? 0);
 
   const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+  const userPermissions = new Set(profileState.permissions);
+  const canCreateUser = userPermissions.has("user.create");
+  const canUpdateUser = userPermissions.has("user.update");
+  const canDeleteUser = userPermissions.has("user.delete");
+  const canRestoreUser = userPermissions.has("user.restore");
+  const canPurgeUser = userPermissions.has("user.purge");
 
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -502,10 +508,13 @@ const UserTableData = () => {
     return roleRows
       .filter((role) => !role.deleted_at && role.is_active !== false)
       .map((role) => {
-        const value = role.name || role.code || "";
+        // User assignments and the authorization layer use role codes. Using
+        // the display name here causes an existing assignment such as
+        // `admin`/`approver` not to match the MultiSelect option value.
+        const value = role.code?.trim().toLowerCase() || "";
 
         return {
-          label: role.description || formatRoleLabel(value),
+          label: role.name || role.description || formatRoleLabel(value),
 
           value,
         };
@@ -1146,29 +1155,74 @@ const UserTableData = () => {
     const isCurrentRow = processingRowId === rowData.id;
 
     if (rowData.deleted_at) {
-      if (!isSuperadmin) {
+      if (!canRestoreUser && !canPurgeUser) {
         return <span className="text-sm text-slate-400">No action</span>;
       }
 
       return (
         <div className="flex flex-nowrap justify-end gap-2">
+          {canRestoreUser && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              size="small"
+              severity="success"
+              loading={isCurrentRow && processingAction === "restore"}
+              disabled={isProcessing}
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
+
+          {canPurgeUser && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              size="small"
+              severity="danger"
+              loading={isCurrentRow && processingAction === "purge"}
+              disabled={isProcessing}
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap justify-end gap-2">
+        {canUpdateUser && (
           <Button
             type="button"
-            icon="pi pi-refresh"
+            icon="pi pi-pencil"
             rounded
             outlined
             size="small"
-            severity="success"
-            loading={isCurrentRow && processingAction === "restore"}
+            severity="help"
             disabled={isProcessing}
-            tooltip="Restore"
+            tooltip="Edit"
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
             }}
-            onClick={() => onClickRestore(rowData)}
+            onClick={() => openEdit(rowData)}
           />
+        )}
 
+        {canDeleteUser && (
           <Button
             type="button"
             icon="pi pi-trash"
@@ -1176,57 +1230,20 @@ const UserTableData = () => {
             outlined
             size="small"
             severity="danger"
-            loading={isCurrentRow && processingAction === "purge"}
-            disabled={isProcessing}
-            tooltip="Delete permanently"
+            loading={isCurrentRow && processingAction === "delete"}
+            disabled={isProcessing || rowData.id === currentUserId}
+            tooltip={
+              rowData.id === currentUserId
+                ? "You cannot delete your own account"
+                : "Delete"
+            }
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
             }}
-            onClick={() => onClickPurge(rowData)}
+            onClick={() => onClickDelete(rowData)}
           />
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-nowrap justify-end gap-2">
-        <Button
-          type="button"
-          icon="pi pi-pencil"
-          rounded
-          outlined
-          size="small"
-          severity="help"
-          disabled={isProcessing}
-          tooltip="Edit"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => openEdit(rowData)}
-        />
-
-        <Button
-          type="button"
-          icon="pi pi-trash"
-          rounded
-          outlined
-          size="small"
-          severity="danger"
-          loading={isCurrentRow && processingAction === "delete"}
-          disabled={isProcessing || rowData.id === currentUserId}
-          tooltip={
-            rowData.id === currentUserId
-              ? "You cannot delete your own account"
-              : "Delete"
-          }
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickDelete(rowData)}
-        />
+        )}
       </div>
     );
   };
@@ -1308,20 +1325,22 @@ const UserTableData = () => {
             </div>
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-              <Button
-                type="button"
-                label="Refresh"
-                icon="pi pi-refresh"
-                severity="secondary"
-                outlined
-                size="small"
-                loading={isValidating}
-                disabled={
-                  isValidating || isProcessing || isSaving || isExporting
-                }
-                className="w-full sm:w-auto"
-                onClick={handleRefresh}
-              />
+              {canCreateUser && (
+                <Button
+                  type="button"
+                  label="Refresh"
+                  icon="pi pi-refresh"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  loading={isValidating}
+                  disabled={
+                    isValidating || isProcessing || isSaving || isExporting
+                  }
+                  className="w-full sm:w-auto"
+                  onClick={handleRefresh}
+                />
+              )}
 
               <Button
                 type="button"
@@ -1340,15 +1359,17 @@ const UserTableData = () => {
                 onClick={exportExistingUsers}
               />
 
-              <Button
-                type="button"
-                label="New User"
-                icon="pi pi-plus"
-                size="small"
-                disabled={isProcessing || isSaving || isExporting}
-                className="w-full sm:w-auto"
-                onClick={openNew}
-              />
+              {canCreateUser && (
+                <Button
+                  type="button"
+                  label="New User"
+                  icon="pi pi-plus"
+                  size="small"
+                  disabled={isProcessing || isSaving || isExporting}
+                  className="w-full sm:w-auto"
+                  onClick={openNew}
+                />
+              )}
             </div>
           </div>
 
@@ -1389,7 +1410,7 @@ const UserTableData = () => {
 
           {/* Search */}
           <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
-            {isSuperadmin ? (
+            {canRestoreUser || canPurgeUser ? (
               <div className="flex items-center gap-2">
                 <Checkbox
                   inputId="show_deleted_users"

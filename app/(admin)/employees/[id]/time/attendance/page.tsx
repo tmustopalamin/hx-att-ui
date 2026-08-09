@@ -1,4 +1,5 @@
 import FingerprintTableData from "./FingerprintTableData";
+import EmployeeTimeHistoryPanel from "../_components/EmployeeTimeHistoryPanel";
 
 export const metadata = {
   title: "Attendance - PT. Hexing Technology",
@@ -6,7 +7,12 @@ export const metadata = {
 };
 
 const EmployeeFingerprintData = () => {
-  return <FingerprintTableData />;
+  return (
+    <div className="flex flex-col gap-5">
+      <EmployeeTimeHistoryPanel view="attendance" />
+      <FingerprintTableData />
+    </div>
+  );
 };
 
 export default EmployeeFingerprintData;

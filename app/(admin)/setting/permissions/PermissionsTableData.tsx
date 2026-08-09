@@ -42,7 +42,6 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -80,6 +79,12 @@ const PermissionsTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const permissionPermissions = new Set(profileState.permissions);
+  const canCreatePermission = permissionPermissions.has("permission.create");
+  const canUpdatePermission = permissionPermissions.has("permission.update");
+  const canDeletePermission = permissionPermissions.has("permission.delete");
+  const canRestorePermission = permissionPermissions.has("permission.restore");
+  const canPurgePermission = permissionPermissions.has("permission.purge");
 
   const [selectedData, setSelectedData] = useState<Permissions | null>(null);
 
@@ -567,30 +572,70 @@ const PermissionsTableData = () => {
   const actionColumnBody = (rowData: Permissions) => {
     const isDeleted = Boolean(rowData.deleted_at);
 
-    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
-
     if (isDeleted) {
-      if (!isSuperadmin) {
+      if (!canRestorePermission && !canPurgePermission) {
         return <span className="text-sm text-slate-400">No action</span>;
       }
 
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
+          {canRestorePermission && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
+
+          {canPurgePermission && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-nowrap items-center justify-end gap-2">
+        {canUpdatePermission && (
           <Button
             type="button"
-            icon="pi pi-refresh"
+            icon="pi pi-pencil"
             rounded
             outlined
-            severity="success"
+            severity="secondary"
             size="small"
-            tooltip="Restore"
+            tooltip="Edit"
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
             }}
-            onClick={() => onClickRestore(rowData)}
+            onClick={() => onClickUpdate(rowData)}
           />
+        )}
 
+        {canDeletePermission && (
           <Button
             type="button"
             icon="pi pi-trash"
@@ -598,48 +643,14 @@ const PermissionsTableData = () => {
             outlined
             severity="danger"
             size="small"
-            tooltip="Delete permanently"
+            tooltip="Delete"
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
             }}
-            onClick={() => onClickPurge(rowData)}
+            onClick={() => onClickDelete(rowData)}
           />
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex flex-nowrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          icon="pi pi-pencil"
-          rounded
-          outlined
-          severity="secondary"
-          size="small"
-          tooltip="Edit"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickUpdate(rowData)}
-        />
-
-        <Button
-          type="button"
-          icon="pi pi-trash"
-          rounded
-          outlined
-          severity="danger"
-          size="small"
-          tooltip="Delete"
-          tooltipOptions={{
-            appendTo: getBody,
-            position: "top",
-          }}
-          onClick={() => onClickDelete(rowData)}
-        />
+        )}
       </div>
     );
   };
@@ -716,14 +727,16 @@ const PermissionsTableData = () => {
                 onClick={handleRefresh}
               />
 
-              <Button
-                type="button"
-                label="New Permission"
-                icon="pi pi-plus"
-                size="small"
-                className="w-full sm:w-auto"
-                onClick={onClickNew}
-              />
+              {canCreatePermission && (
+                <Button
+                  type="button"
+                  label="New Permission"
+                  icon="pi pi-plus"
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={onClickNew}
+                />
+              )}
             </div>
           </div>
 

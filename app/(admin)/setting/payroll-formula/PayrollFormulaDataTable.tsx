@@ -1,773 +1,629 @@
 "use client";
 
-import { Card } from "primereact/card";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
+import { type ChangeEvent, useState } from "react";
+import useSWR from "swr";
+import { useDispatch, useSelector } from "react-redux";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
-import { Dialog } from "primereact/dialog";
-import { Controller, useForm } from "react-hook-form";
-import CardTitle from "@/app/_components/CardTitle";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
-import { InputSwitch } from "primereact/inputswitch";
-import { useState } from "react";
-import useSWR, { mutate } from "swr";
-import { fetcher } from "@/app/utils/fetcher";
-import {
-  ResponseType,
-  ResponseTypeCreateSuccess,
-} from "@/app/types/response-type";
-import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
-import {
-  isResponseTypeError,
-  getErrorMessage,
-} from "@/app/utils/error-messages";
-import { showToast } from "@/store/ToastSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { Tag } from "primereact/tag";
+import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
-import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
-import { PayrollFormula } from "@/app/types/payroll-formula";
+import { Column } from "primereact/column";
+import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputSwitch } from "primereact/inputswitch";
+import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Tag } from "primereact/tag";
+
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import {
   createPayrollFormula,
-  updatePayrollFormula,
   deletePayrollFormula,
   purgePayrollFormula,
   restorePayrollFormula,
+  updatePayrollFormula,
 } from "@/app/services/payroll-formula-service";
+import type {
+  PayrollFormula,
+  PayrollFormulaPayload,
+} from "@/app/types/payroll-formula";
+import {
+  getErrorMessage,
+  isResponseTypeError,
+} from "@/app/utils/error-messages";
+import { fetcher } from "@/app/utils/fetcher";
+import { hasRole } from "@/app/utils/role-utils";
+import type { RootState } from "@/store/store";
+import { showToast } from "@/store/ToastSlice";
 
-const PayrollFormulaDataTable = () => {
+const formulaUrl = (showDeleted: boolean) =>
+  `/api/payroll-formula?show_all=${showDeleted}`;
+const emptyPayload = (): PayrollFormulaPayload => ({
+  code: "",
+  name: "",
+  expression: "",
+  description: null,
+  is_active: true,
+});
+const getBody = () => document.body;
+
+export default function PayrollFormulaDataTable() {
   const dispatch = useDispatch();
-  const profileState = useSelector((state: RootState) => state.profile);
-  const [selectedData, setSelectedData] = useState<PayrollFormula | null>(null);
-  const [globalFilterValue, setGlobalFilterValue] = useState("");
+  const profile = useSelector((state: RootState) => state.profile);
+  const canManage = profile.permissions.includes("payroll-config.manage");
+  const isSuperadmin = hasRole(profile.role, ["superadmin"]);
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
-  const [isAddNew, setIsAddNew] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
-  const {
-    control,
-    handleSubmit,
-    setFocus,
-    formState: { isValid },
-    reset,
-    clearErrors,
-  } = useForm<PayrollFormula>();
-  const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
-    useState(false);
+  const [selected, setSelected] = useState<PayrollFormula | null>(null);
+  const [form, setForm] = useState<PayrollFormulaPayload>(emptyPayload);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const listKey = formulaUrl(showDeleted);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    PayrollFormula[]
+  >(listKey, fetcher);
 
-  const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const _filters = { ...filters };
-
-    _filters["global"].value = value;
-
-    setFilters(_filters);
-    setGlobalFilterValue(value);
+  const notify = (severity: "success" | "error", detail: string) =>
+    dispatch(
+      showToast({
+        visible: true,
+        severity,
+        summary: severity === "success" ? "Success" : "Error",
+        detail,
+      }),
+    );
+  const showError = (requestError: unknown) =>
+    notify(
+      "error",
+      isResponseTypeError(requestError)
+        ? getErrorMessage(requestError, "message")
+        : requestError instanceof Error
+          ? requestError.message
+          : "An unexpected error occurred.",
+    );
+  const closeDialog = () => {
+    setDialogVisible(false);
+    setSelected(null);
+    setForm(emptyPayload());
   };
-
-  const onClickNew = () => {
-    clearErrors();
-    setIsAddNew(true);
-    setVisible(true);
-    setPopupHeaderTitle("New Payroll Formula");
-    reset({
-      id: 0,
-      code: "",
-      name: "",
-      is_active: true,
-      deleted_at: "",
-      row_version: 0,
+  const openNew = () => {
+    setSelected(null);
+    setForm(emptyPayload());
+    setDialogVisible(true);
+  };
+  const openEdit = (row: PayrollFormula) => {
+    setSelected(row);
+    setForm({
+      code: row.code ?? "",
+      name: row.name,
+      expression: row.expression,
+      description: row.description,
+      is_active: row.is_active,
+    });
+    setDialogVisible(true);
+  };
+  const submit = async () => {
+    const code = form.code?.trim().toUpperCase() || "";
+    const name = form.name.trim();
+    const expression = form.expression.trim();
+    if (!code || !name || !expression) {
+      notify("error", "Code, name, and expression are required.");
+      return;
+    }
+    if (/\s/.test(code)) {
+      notify("error", "Formula code must not contain spaces.");
+      return;
+    }
+    try {
+      setSaving(true);
+      const payload: PayrollFormulaPayload = {
+        code,
+        name,
+        expression,
+        description: form.description?.trim() || null,
+        is_active: form.is_active,
+      };
+      if (selected)
+        await updatePayrollFormula(selected.id, selected.row_version, payload);
+      else await createPayrollFormula(payload);
+      await mutate();
+      closeDialog();
+      notify("success", "Payroll formula saved successfully.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const remove = async (row: PayrollFormula) => {
+    try {
+      await deletePayrollFormula(row.id, row.row_version);
+      await mutate();
+      notify("success", "Payroll formula deleted successfully.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    }
+  };
+  const restore = async (row: PayrollFormula) => {
+    try {
+      await restorePayrollFormula(row.id, row.row_version);
+      await mutate();
+      notify("success", "Payroll formula restored successfully.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    }
+  };
+  const purge = async (row: PayrollFormula) => {
+    try {
+      await purgePayrollFormula(row.id);
+      await mutate();
+      notify("success", "Payroll formula permanently deleted.");
+    } catch (requestError: unknown) {
+      showError(requestError);
+    }
+  };
+  const ask = (row: PayrollFormula, action: "delete" | "restore" | "purge") => {
+    const label =
+      action === "delete"
+        ? "Delete"
+        : action === "restore"
+          ? "Restore"
+          : "Delete Permanently";
+    const detail =
+      action === "delete"
+        ? "This formula will no longer be available for new component configuration."
+        : action === "restore"
+          ? "This formula will be available again."
+          : "This action cannot be undone.";
+    confirmDialog({
+      header: `${label} Payroll Formula`,
+      message: (
+        <div className="flex flex-col gap-1">
+          <span className="text-slate-600">{detail}</span>
+          <span className="font-semibold text-slate-800">{row.name}</span>
+        </div>
+      ),
+      icon:
+        action === "restore" ? "pi pi-refresh" : "pi pi-exclamation-triangle",
+      defaultFocus: "reject",
+      accept: () =>
+        void (action === "delete"
+          ? remove(row)
+          : action === "restore"
+            ? restore(row)
+            : purge(row)),
+      reject: () => undefined,
+      footer: (options) => (
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            label="Cancel"
+            icon="pi pi-times"
+            text
+            severity="secondary"
+            onClick={options.reject}
+          />
+          <Button
+            type="button"
+            label={label}
+            icon={action === "restore" ? "pi pi-refresh" : "pi pi-trash"}
+            severity={action === "restore" ? "success" : "danger"}
+            onClick={options.accept}
+          />
+        </div>
+      ),
     });
   };
-
-  const footerContent = (
-    <div className="text-right flex gap-5 justify-end">
-      <Button
-        type="button"
-        label="Cancel"
-        icon="pi pi-times"
-        onClick={() => {
-          setVisible(false);
-        }}
-        className="p-button-text"
-      />
-      <Button
-        type="submit"
-        label={isAddNew ? "Submit" : "Save"}
-        icon="pi pi-check"
-      />
-    </div>
-  );
-
-  const {
-    data: PayrollFormulaData,
-    error,
-    isLoading,
-  } = useSWR<PayrollFormula[]>(
-    `/api/payroll-formula?show_all=${isShowDeletedDataChecked}`,
-    fetcher,
-  );
-
-  if (isLoading) return <LoadingDataTable />;
-  if (error) {
+  const status = (row: PayrollFormula) => {
+    if (row.deleted_at)
+      return (
+        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+      );
+    if (!row.is_active)
+      return (
+        <Tag
+          value="Inactive"
+          severity="warning"
+          icon="pi pi-minus-circle"
+          rounded
+        />
+      );
     return (
-      <ErrorNotConnectedToApi mutateKey="/api/payroll-formula?show_all=true" />
-    );
-  }
-
-  const onIngredientsChange = () => {
-    setIsShowDeletedDataChecked(!isShowDeletedDataChecked);
-  };
-
-  const handleSubmitNew = async (data: PayrollFormula) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await createPayrollFormula(data);
-      setVisible(false);
-      reset();
-      mutate(`/api/payroll-formula?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleUpdate = async (data: PayrollFormula) => {
-    if (!selectedData) {
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: "error",
-          detail: "please select data",
-        }),
-      );
-      return;
-    }
-
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await updatePayrollFormula(
-          selectedData.id,
-          selectedData.row_version,
-          data,
-        );
-
-      setVisible(false);
-      mutate(`/api/payroll-formula?show_all=${isShowDeletedDataChecked}`);
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-      reset();
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleDelete = async (data: PayrollFormula) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await deletePayrollFormula(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/payroll-formula?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handlePurge = async (data: PayrollFormula) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await purgePayrollFormula(data.id);
-      setVisible(false);
-      reset();
-      mutate(`/api/payroll-formula?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const handleRestore = async (data: PayrollFormula) => {
-    try {
-      const res: ResponseType<ResponseTypeCreateSuccess> =
-        await restorePayrollFormula(data.id, data.row_version);
-      setVisible(false);
-      reset();
-      mutate(`/api/payroll-formula?show_all=${isShowDeletedDataChecked}`);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "success",
-          summary: "success",
-          detail: res.message,
-        }),
-      );
-    } catch (err: unknown) {
-      if (isResponseTypeError(err)) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: getErrorMessage(err, "message"),
-          }),
-        );
-      } else if (err instanceof Error) {
-        dispatch(
-          showToast({
-            visible: true,
-            severity: "error",
-            summary: "error",
-            detail: err.message,
-          }),
-        );
-      }
-    }
-  };
-
-  const onSubmit = (data: PayrollFormula) => {
-    if (!isValid) return;
-
-    if (isAddNew) {
-      handleSubmitNew(data);
-      return;
-    }
-
-    if (selectedData) {
-      handleUpdate(data);
-    }
-  };
-
-  const onClickUpdate = (data: PayrollFormula) => {
-    setVisible(true);
-    setIsAddNew(false);
-    setPopupHeaderTitle("Update Payroll Formula");
-
-    reset(data);
-    setSelectedData(data);
-  };
-
-  const activeColumnBody = (rowData: PayrollFormula) => {
-    return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
-    ) : (
-      <Tag value="Inactive" severity="danger" />
+      <Tag
+        value={row.status || "Active"}
+        severity={row.status === "PUBLISHED" ? "success" : "info"}
+        rounded
+      />
     );
   };
-
-  const actionColumnBody = (rowData: PayrollFormula) => {
-    return (
-      <>
-        <div className="flex gap-2">
-          {hasRole(profileState.role, ["superadmin"]) && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              label=""
-              icon="pi pi-times"
-              size="small"
-              onClick={() => {
-                onClickPurge(rowData);
-              }}
-            />
-          )}
-
-          {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              label=""
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => {
-                onClickRestore(rowData);
-              }}
-            />
-          )}
-
-          {!rowData.deleted_at && (
-            <Button
-              tooltipOptions={{
-                appendTo: () => document.body,
-                position: "top",
-              }}
-              tooltip="delete"
-              rounded
-              severity="danger"
-              label=""
-              icon="pi pi-trash"
-              size="small"
-              onClick={() => {
-                onClickDelete(rowData);
-              }}
-            />
-          )}
-
+  const actions = (row: PayrollFormula) => {
+    if (!canManage)
+      return <span className="text-sm text-slate-400">No action</span>;
+    if (row.deleted_at)
+      return isSuperadmin ? (
+        <div className="flex justify-end gap-2">
           <Button
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="update"
+            type="button"
+            icon="pi pi-refresh"
             rounded
-            severity="help"
-            label=""
-            icon="pi pi-pencil"
+            outlined
+            severity="success"
             size="small"
-            onClick={() => {
-              onClickUpdate(rowData);
-            }}
+            tooltip="Restore"
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            onClick={() => ask(row, "restore")}
+          />
+          <Button
+            type="button"
+            icon="pi pi-trash"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Delete permanently"
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            onClick={() => ask(row, "purge")}
           />
         </div>
-      </>
+      ) : (
+        <span className="text-sm text-slate-400">No action</span>
+      );
+    return (
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          icon="pi pi-pencil"
+          rounded
+          outlined
+          severity="secondary"
+          size="small"
+          tooltip="Edit"
+          tooltipOptions={{ appendTo: getBody, position: "top" }}
+          onClick={() => openEdit(row)}
+        />
+        <Button
+          type="button"
+          icon="pi pi-trash"
+          rounded
+          outlined
+          severity="danger"
+          size="small"
+          tooltip="Delete"
+          tooltipOptions={{ appendTo: getBody, position: "top" }}
+          onClick={() => ask(row, "delete")}
+        />
+      </div>
     );
   };
-
-  const onClickDelete = (data: PayrollFormula) => {
-    confirmDialog({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      acceptClassName: "p-button-danger ml-3",
-      accept: () => {
-        setSelectedData(data);
-        handleDelete(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
+  const onSearch = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setSearch(value);
+    setFilters({ global: { value, matchMode: FilterMatchMode.CONTAINS } });
   };
-
-  const onClickRestore = (data: PayrollFormula) => {
-    confirmDialog({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      accept: () => {
-        setSelectedData(data);
-        handleRestore(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-success"
-          />
-        </div>
-      ),
-    });
-  };
-
-  const onClickPurge = (data: PayrollFormula) => {
-    confirmDialog({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
-      icon: "pi pi-info-circle",
-      defaultFocus: "accept",
-      acceptClassName: "p-button-danger ml-3",
-      accept: () => {
-        handlePurge(data);
-      },
-      reject: () => {},
-      footer: (options) => (
-        <div className="flex gap-3 justify-end">
-          <Button
-            label="No"
-            icon="pi pi-times"
-            onClick={options.reject}
-            className="p-button-text"
-          />
-          <Button
-            label="Yes"
-            icon="pi pi-check"
-            onClick={options.accept}
-            className="p-button-danger"
-          />
-        </div>
-      ),
-    });
-  };
+  if (isLoading) return <LoadingDataTable />;
+  if (error) return <ErrorNotConnectedToApi mutateKey={listKey} />;
 
   return (
     <>
       <ConfirmDialog />
-      <Card title={<CardTitle title="Payroll Formula" url="" />}>
-        <div className="p-3 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Button
-                label="New"
-                icon="pi pi-plus"
-                size="small"
-                onClick={() => {
-                  onClickNew();
-                }}
-              />
-
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  show deleted data
-                </label>
+      <Card className="border border-slate-200 shadow-sm">
+        <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 sm:flex">
+                <i className="pi pi-calculator text-xl" />
+              </div>
+              <div>
+                <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
+                  Payroll Formula
+                </h1>
+                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
+                  Manage reusable expressions used by formula-based payroll
+                  components.
+                </p>
               </div>
             </div>
-
-            <IconField iconPosition="left">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <Button
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                onClick={() => void mutate()}
+                className="w-full sm:w-auto"
+              />
+              {canManage && (
+                <Button
+                  type="button"
+                  label="New Payroll Formula"
+                  icon="pi pi-plus"
+                  size="small"
+                  onClick={openNew}
+                  className="w-full sm:w-auto"
+                />
+              )}
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                inputId="formula-show-deleted"
+                checked={showDeleted}
+                onChange={(event) => setShowDeleted(Boolean(event.checked))}
+              />
+              <label
+                htmlFor="formula-show-deleted"
+                className="cursor-pointer select-none text-sm text-slate-600"
+              >
+                Show deleted records
+              </label>
+            </div>
+            <IconField iconPosition="left" className="w-full md:w-80">
               <InputIcon className="pi pi-search" />
               <InputText
-                className="p-inputtext-sm"
-                value={globalFilterValue}
-                onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
+                value={search}
+                onChange={onSearch}
+                placeholder="Search code, name, or expression"
+                className="w-full"
               />
             </IconField>
           </div>
-
-          <DataTable
-            value={PayrollFormulaData}
-            tableStyle={{ minWidth: "50rem" }}
-            stripedRows
-            paginator
-            scrollable
-            scrollHeight="500px"
-            rows={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            dataKey="id"
-            globalFilterFields={["name"]}
-            emptyMessage="No Payroll Formula found."
-            header={<></>}
-            filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
-            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-            loading={isLoading}
-          >
-            <Column
-              header="#"
-              headerStyle={{ width: "3rem" }}
-              body={(data, options) => options.rowIndex + 1}
-            ></Column>
-            <Column field="code" header="Code"></Column>
-            <Column field="name" header="Name"></Column>
-            <Column field="description" header="Description"></Column>
-            <Column field="expression" header="Expression"></Column>
-            <Column
-              field="is_active"
-              header="Active"
-              body={activeColumnBody}
-            ></Column>
-            <Column
-              headerClassName="bg-white"
-              className="bg-white"
-              header="Action"
-              body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
-              alignFrozen="right"
-            ></Column>
-          </DataTable>
+          <div className="w-full overflow-hidden">
+            <DataTable
+              value={data ?? []}
+              dataKey="id"
+              filters={filters}
+              globalFilterFields={[
+                "code",
+                "name",
+                "expression",
+                "description",
+                "status",
+              ]}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              stripedRows
+              rowHover
+              scrollable
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              loading={isValidating}
+              tableStyle={{ minWidth: "68rem" }}
+              emptyMessage="No payroll formula found."
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+            >
+              <Column
+                header="#"
+                body={(_, options) => options.rowIndex + 1}
+                headerStyle={{ width: "4rem" }}
+                bodyStyle={{ width: "4rem" }}
+              />
+              <Column
+                field="code"
+                header="Code"
+                sortable
+                body={(row: PayrollFormula) => (
+                  <span className="font-mono text-sm font-semibold text-slate-700">
+                    {row.code ?? "-"}
+                  </span>
+                )}
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                field="name"
+                header="Formula Name"
+                sortable
+                body={(row: PayrollFormula) => (
+                  <span className="font-medium text-slate-800">{row.name}</span>
+                )}
+                style={{ minWidth: "14rem" }}
+              />
+              <Column
+                field="expression"
+                header="Expression"
+                sortable
+                body={(row: PayrollFormula) => (
+                  <code className="text-xs text-slate-700">
+                    {row.expression}
+                  </code>
+                )}
+                style={{ minWidth: "16rem" }}
+              />
+              <Column
+                field="version"
+                header="Version"
+                sortable
+                style={{ minWidth: "7rem" }}
+              />
+              <Column
+                header="Status"
+                body={status}
+                style={{ minWidth: "10rem" }}
+              />
+              <Column
+                header="Action"
+                body={actions}
+                frozen
+                alignFrozen="right"
+                headerClassName="bg-white"
+                bodyClassName="bg-white"
+                headerStyle={{
+                  width: "9rem",
+                  minWidth: "9rem",
+                  textAlign: "right",
+                }}
+                bodyStyle={{ width: "9rem", minWidth: "9rem" }}
+              />
+            </DataTable>
+          </div>
         </div>
       </Card>
-
-      <form onSubmit={handleSubmit((data) => onSubmit(data))}>
-        <Dialog
-          header={popupHeaderTitle}
-          visible={visible}
-          style={{ width: "50vw" }}
-          onHide={() => {
-            if (!visible) return;
-            setVisible(false);
-            reset();
-          }}
-          footer={footerContent}
-          onShow={() => {
-            setFocus("name");
+      <Dialog
+        header={selected ? "Edit Payroll Formula" : "New Payroll Formula"}
+        visible={dialogVisible}
+        style={{ width: "95vw", maxWidth: "44rem" }}
+        breakpoints={{ "640px": "95vw" }}
+        modal
+        draggable={false}
+        resizable={false}
+        closeOnEscape={!saving}
+        closable={!saving}
+        onHide={closeDialog}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+            <Button
+              type="button"
+              label="Cancel"
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={saving}
+              className="w-full sm:w-auto"
+              onClick={closeDialog}
+            />
+            <Button
+              type="submit"
+              form="payroll-formula-form"
+              label={selected ? "Save Changes" : "Create Payroll Formula"}
+              icon="pi pi-check"
+              loading={saving}
+              disabled={saving}
+              className="w-full sm:w-auto"
+            />
+          </div>
+        }
+      >
+        <form
+          id="payroll-formula-form"
+          className="flex flex-col gap-5 pt-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
           }}
         >
-          <div className="flex flex-col gap-5">
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
-              <Controller
-                name="code"
-                control={control}
-                rules={{
-                  required: "*required",
-                  validate: (value) =>
-                    !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="code"
-                      placeholder=""
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <Field label="Code" required>
+              <InputText
+                value={form.code ?? ""}
+                maxLength={50}
+                className="w-full"
+                autoComplete="off"
+                placeholder="e.g. OVERTIME_RATE"
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    code: event.target.value,
+                  }))
+                }
               />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="name"
-                      placeholder=""
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
+              <small className="text-slate-500">
+                Use a unique code without spaces.
+              </small>
+            </Field>
+            <Field label="Name" required>
+              <InputText
+                value={form.name}
+                maxLength={100}
+                className="w-full"
+                autoComplete="off"
+                placeholder="e.g. Overtime Rate"
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
               />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="description">Description</label>
-              <Controller
-                name="description"
-                control={control}
-                rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="description"
-                      placeholder=""
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="expression">Expression</label>
-              <Controller
-                name="expression"
-                control={control}
-                rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
-                }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <InputText
-                      id="expression"
-                      placeholder=""
-                      {...field}
-                      className={fieldState.invalid ? "p-invalid" : ""}
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
-              <Controller
-                name="is_active"
-                control={control}
-                defaultValue={true}
-                render={({ field }) => (
-                  <InputSwitch
-                    id="is_active"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
-                )}
-              />
-            </div>
+            </Field>
           </div>
-        </Dialog>
-      </form>
+
+          <Field label="Expression" required>
+            <InputTextarea
+              value={form.expression}
+              rows={6}
+              autoResize
+              className="w-full font-mono"
+              placeholder="e.g. base_salary / 173"
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  expression: event.target.value,
+                }))
+              }
+            />
+            <small className="leading-5 text-slate-500">
+              Use the supported payroll formula expression syntax. Validate the
+              formula before using it in an active component.
+            </small>
+          </Field>
+
+          <Field label="Description">
+            <InputTextarea
+              value={form.description ?? ""}
+              rows={3}
+              autoResize
+              className="w-full"
+              maxLength={500}
+              placeholder="Optional description"
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  description: event.target.value,
+                }))
+              }
+            />
+          </Field>
+
+          <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+            <label
+              htmlFor="formula-active"
+              className="cursor-pointer text-sm font-medium text-slate-700"
+            >
+              Active
+            </label>
+            <InputSwitch
+              inputId="formula-active"
+              checked={form.is_active}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, is_active: event.value }))
+              }
+            />
+          </div>
+        </form>
+      </Dialog>
     </>
   );
-};
+}
 
-export default PayrollFormulaDataTable;
+function Field({
+  label,
+  required = false,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-sm font-medium text-slate-700">
+        {label}
+        {required && <span className="ml-1 text-red-500">*</span>}
+      </span>
+      {children}
+    </label>
+  );
+}

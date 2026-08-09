@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
 import { Card } from "primereact/card";
 import { Button } from "primereact/button";
 import { Tag } from "primereact/tag";
@@ -12,11 +13,13 @@ import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import { getEmployeeDashboard } from "@/app/services/employee-dashboard-service";
 import { EmployeeDashboardResponse } from "@/app/types/employee-dashboard";
+import { RootState } from "@/store/store";
 
 type QuickAccessItem = {
   label: string;
   icon: string;
   href: string;
+  permission?: string;
 };
 
 const formatTime = (value?: string | null) => {
@@ -89,6 +92,9 @@ const getStatusSeverity = (status: string) => {
 
 const EmployeeDashboardPageComponent = () => {
   const router = useRouter();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
 
   const { data, error, isLoading } = useSWR<EmployeeDashboardResponse>(
     "/api/dashboard/employee",
@@ -101,6 +107,7 @@ const EmployeeDashboardPageComponent = () => {
         label: "Mobile Attendance",
         icon: "pi-map-marker",
         href: "/my-attendance/mobile-attendance",
+        permission: "mobile-attendance.create",
       },
       {
         label: "Attendance History",
@@ -111,29 +118,42 @@ const EmployeeDashboardPageComponent = () => {
         label: "Request Leave",
         icon: "pi-calendar",
         href: "/request-leave",
+        permission: "request-leave.read",
       },
       {
         label: "Overtime Request",
         icon: "pi-clock",
         href: "/overtime/request",
+        permission: "overtime.read",
       },
     ];
   }, []);
 
+  const permittedQuickAccessItems = useMemo(
+    () =>
+      quickAccessItems.filter(
+        (item) => !item.permission || permissions.includes(item.permission),
+      ),
+    [permissions, quickAccessItems],
+  );
+
   const quickAccessWithApproval = useMemo(() => {
     if (!data?.approval_summary.is_approver) {
-      return quickAccessItems;
+      return permittedQuickAccessItems;
     }
 
     return [
-      ...quickAccessItems,
+      ...permittedQuickAccessItems,
       {
         label: "Approval Inbox",
         icon: "pi-inbox",
         href: "/approval",
+        permission: "approval.read",
       },
-    ];
-  }, [data, quickAccessItems]);
+    ].filter(
+      (item) => !item.permission || permissions.includes(item.permission),
+    );
+  }, [data, permittedQuickAccessItems, permissions]);
 
   if (isLoading) {
     return <LoadingDataTable />;

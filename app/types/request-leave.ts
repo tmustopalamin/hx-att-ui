@@ -50,6 +50,40 @@ export interface RequestLeaveForm {
   row_version: number;
 }
 
+export interface RequestLeaveOptionType {
+  id: number;
+  code: string;
+  name: string;
+  is_paid: boolean;
+  is_deductible: boolean;
+  max_days: number | null;
+  requires_attachment: boolean;
+  requires_reason: boolean;
+  requires_approval: boolean;
+}
+
+export interface RequestLeaveOptionBalance {
+  id: number;
+  employee_id: number;
+  leave_type_id: number;
+  leave_type_name: string | null;
+  period_start: string;
+  period_end: string;
+  opening_balance: number;
+  entitlement: number;
+  taken: number;
+  adjustment: number;
+  closing_balance: number;
+  expired_balance: number;
+  deleted_at: string | null;
+  row_version: number;
+}
+
+export interface RequestLeaveOptions {
+  leave_types: RequestLeaveOptionType[];
+  balances: RequestLeaveOptionBalance[];
+}
+
 export const defaultRequestLeaveFormValue: RequestLeaveForm = {
   id: 0,
   leave_type_id: 0,

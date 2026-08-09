@@ -1,9 +1,11 @@
-import { ComponentCategory } from "../types/component-category";
+import { ComponentCategoryPayload } from "../types/component-category";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/component-category";
 
-export const createComponentCategory = async (data: ComponentCategory) => {
+export const createComponentCategory = async (
+  data: ComponentCategoryPayload,
+) => {
   const res = await fetch(API_URL, {
     method: "POST",
     credentials: "include",
@@ -43,7 +45,7 @@ export const createComponentCategory = async (data: ComponentCategory) => {
 export const updateComponentCategory = async (
   id: number,
   rowVersion: number,
-  data: ComponentCategory,
+  data: ComponentCategoryPayload,
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 

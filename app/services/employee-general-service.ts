@@ -10,6 +10,7 @@ import {
   EmployeeWorkExperienceRow,
   OptionItem,
 } from "../types/employee-general";
+import type { EmployeeApprovalOption } from "../types/employee";
 import { ResponseTypeError } from "../types/response-type";
 
 const parseError = async (res: Response): Promise<ResponseTypeError> => {
@@ -709,7 +710,39 @@ export const getEmployeeOptions = async () => {
         [firstName, lastName].filter(Boolean).join(" ") ||
         name ||
         `Employee #${id}`,
-      is_active: item.is_active === true,
+      // The general employee endpoint does not expose `is_active`. Treat an
+      // omitted value as active; only exclude an employee when the API
+      // explicitly marks the record inactive.
+      is_active: item.is_active !== false,
     };
+  });
+};
+
+export const getApprovalEmployeeOptions = async (): Promise<
+  EmployeeApprovalOption[]
+> => {
+  const res = await fetch("/api/employees/approval-options", {
+    credentials: "include",
+  });
+
+  await ensureOk(res);
+  const data: unknown = await res.json();
+  if (!Array.isArray(data)) {
+    throw new Error("Invalid approver employee options response");
+  }
+
+  return data.map((value: unknown) => {
+    const item =
+      typeof value === "object" && value !== null
+        ? (value as Record<string, unknown>)
+        : {};
+    const id = typeof item.id === "number" ? item.id : Number(item.id);
+    const name = typeof item.name === "string" ? item.name.trim() : "";
+
+    if (!Number.isSafeInteger(id) || id <= 0 || !name) {
+      throw new Error("Invalid approver employee option");
+    }
+
+    return { id, name };
   });
 };
