@@ -9,7 +9,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { IconField } from "primereact/iconfield";
@@ -42,6 +42,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { fetcher } from "@/app/utils/fetcher";
 
 import { RootState } from "@/store/store";
@@ -63,12 +64,13 @@ const RoleTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("role");
   const rolePermissions = new Set(profileState.permissions);
   const canCreateRole = rolePermissions.has("role.create");
   const canUpdateRole = rolePermissions.has("role.update");
   const canDeleteRole = rolePermissions.has("role.delete");
-  const canRestoreRole = rolePermissions.has("role.restore");
-  const canPurgeRole = rolePermissions.has("role.purge");
+  const canRestoreRole = archivedAccess.canRestore;
+  const canPurgeRole = archivedAccess.canPurge;
 
   const [selectedData, setSelectedData] = useState<Role | null>(null);
 
@@ -92,7 +94,9 @@ const RoleTableData = () => {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentKey = `/api/roles?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `/api/roles?show_all=${
+    archivedAccess.canShowDeleted && isShowDeletedDataChecked
+  }`;
 
   const {
     data: roleData,
@@ -337,7 +341,7 @@ const RoleTableData = () => {
   };
 
   const onClickDelete = (data: Role) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Role",
       message: (
         <div className="flex flex-col gap-1">
@@ -378,7 +382,7 @@ const RoleTableData = () => {
   };
 
   const onClickRestore = (data: Role) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore Role",
       message: (
         <div className="flex flex-col gap-1">
@@ -419,7 +423,7 @@ const RoleTableData = () => {
   };
 
   const onClickPurge = (data: Role) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Role Permanently",
       message: (
         <div className="flex flex-col gap-2">
@@ -625,8 +629,6 @@ const RoleTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
@@ -678,20 +680,24 @@ const RoleTableData = () => {
           {/* Table Toolbar */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2">
-              <Checkbox
-                inputId="showDeletedData"
-                checked={isShowDeletedDataChecked}
-                onChange={(event) =>
-                  onShowDeletedChange(Boolean(event.checked))
-                }
-              />
+              {archivedAccess.canShowDeleted && (
+                <>
+                  <Checkbox
+                    inputId="showDeletedData"
+                    checked={isShowDeletedDataChecked}
+                    onChange={(event) =>
+                      onShowDeletedChange(Boolean(event.checked))
+                    }
+                  />
 
-              <label
-                htmlFor="showDeletedData"
-                className="cursor-pointer select-none text-sm text-slate-600"
-              >
-                Show deleted records
-              </label>
+                  <label
+                    htmlFor="showDeletedData"
+                    className="cursor-pointer select-none text-sm text-slate-600"
+                  >
+                    Show deleted records
+                  </label>
+                </>
+              )}
             </div>
 
             <IconField iconPosition="left" className="w-full md:w-80">

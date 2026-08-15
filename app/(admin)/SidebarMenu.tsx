@@ -5,11 +5,16 @@ import { useSelector } from "react-redux";
 import ActiveLink from "./ActiveLinkProps";
 import AppLogo from "../_components/sidebar-menu/AppLogo";
 import { RootState } from "@/store/store";
+import {
+  normalizePermissionCode,
+  toPermissionSet,
+} from "@/app/utils/permission-utils";
 type MenuItem = {
   href: string;
   label: string;
   icon: string;
   permission?: string;
+  superadminOnly?: boolean;
 };
 type MenuSection = {
   key: string;
@@ -378,24 +383,28 @@ const settingSubMenus: SettingSubMenu[] = [
         label: "Users",
         icon: "pi-user",
         permission: "user.read",
+        superadminOnly: true,
       },
       {
         href: "/setting/role",
         label: "Roles",
         icon: "pi-users",
         permission: "role.read",
+        superadminOnly: true,
       },
       {
         href: "/setting/permissions",
         label: "Permissions",
         icon: "pi-lock",
         permission: "permission.read",
+        superadminOnly: true,
       },
       {
         href: "/setting/role-permissions",
         label: "Role Permissions",
         icon: "pi-key",
         permission: "role-permission.read",
+        superadminOnly: true,
       },
     ],
   },
@@ -447,16 +456,28 @@ export default function SidebarMenu() {
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const [openSubMenuKey, setOpenSubMenuKey] = useState<string | null>(null);
   const permissionSet = useMemo(() => {
-    return new Set(getProfilePermissions(profileState));
+    return toPermissionSet(getProfilePermissions(profileState));
   }, [profileState]);
-  const hasPermission = (permission?: string) => {
+  const isSuperadmin = useMemo(
+    () =>
+      profileState.role.some(
+        (role) => role.trim().toLowerCase() === "superadmin",
+      ),
+    [profileState.role],
+  );
+  const hasPermission = (permission?: string, superadminOnly = false) => {
+    if (superadminOnly && !isSuperadmin) {
+      return false;
+    }
     if (!permission) {
       return true;
     }
-    return permissionSet.has(permission);
+    return permissionSet.has(normalizePermissionCode(permission));
   };
   const getVisibleItems = (items: MenuItem[]) => {
-    return items.filter((item) => hasPermission(item.permission));
+    return items.filter((item) =>
+      hasPermission(item.permission, item.superadminOnly),
+    );
   };
   const visibleTopMenuSections = useMemo(() => {
     return topMenuSections

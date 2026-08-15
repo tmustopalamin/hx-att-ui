@@ -1,3 +1,6 @@
 export function hasRole(userRoles: string[], allowedRoles: string[]): boolean {
-  return userRoles.some((role) => allowedRoles.includes(role));
+  const allowed = new Set(
+    allowedRoles.map((role) => role.trim().toLowerCase()),
+  );
+  return userRoles.some((role) => allowed.has(role.trim().toLowerCase()));
 }

@@ -1,14 +1,14 @@
 export interface EmployeeDeductionComponent {
   id: number;
   employee_id: number;
-  component_id: number;
-  based_on_component_id: number;
+  deduction_component_master_id: number;
   amount: number;
-  frequency: string;
-  start_date: Date | null;
-  end_date: Date | null;
+  frequency: number | null;
+  start_date: string | Date | null;
+  end_date: string | Date | null;
   is_active: boolean;
-  notes: string;
-  deleted_at: string;
+  notes: string | null;
+  deleted_at: string | null;
   row_version: number;
+  deduction_component_name?: string | null;
 }

@@ -12,6 +12,8 @@ import type {
   PayrollAdjustment,
   PayrollAdjustmentOptions,
   PayrollBatchValidationResult,
+  PayrollPerformanceEarningPreview,
+  PayrollPerformanceEarningGeneration,
 } from "@/app/types/payroll-batch";
 import { apiFetch, parseApiError } from "@/app/utils/api-client";
 
@@ -96,6 +98,16 @@ export const getPayrollAdjustmentOptions = (
   batchId: number,
 ): Promise<PayrollAdjustmentOptions> =>
   apiFetch(`${URL}/${batchId}/adjustment-options`);
+export const previewPayrollPerformanceEarnings = (
+  batchId: number,
+): Promise<PayrollPerformanceEarningPreview[]> =>
+  apiFetch(`${URL}/${batchId}/performance-earnings/preview`);
+export const generatePayrollPerformanceEarnings = (
+  batchId: number,
+): Promise<PayrollPerformanceEarningGeneration> =>
+  apiFetch(`${URL}/${batchId}/performance-earnings/generate`, {
+    method: "POST",
+  });
 
 export const createPayrollAdjustment = (
   batchId: number,

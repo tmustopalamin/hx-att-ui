@@ -4,13 +4,13 @@ import useSWR from "swr";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createAssetCategory,
@@ -32,6 +32,7 @@ import type { Employee } from "@/app/types/employee";
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import type { RootState } from "@/store/store";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 const emptyAsset = {
   asset_category_id: 0,
   asset_tag: "",
@@ -201,6 +202,17 @@ export default function AssetsData() {
       setSaving(false);
     }
   };
+  const confirmReturnAsset = (row: AssetAssignment) => {
+    requestActionConfirmation({
+      action: "Return asset",
+      target: `${row.asset_tag} · ${row.employee_name}`,
+      severity: "warning",
+      confirmLabel: "Return Asset",
+      confirmIcon: "pi pi-undo",
+      description: "Close this assignment and return the asset?",
+      onAccept: () => returnAsset(row),
+    });
+  };
   const changeAssetStatus = async (
     row: CompanyAsset,
     status: "AVAILABLE" | "REPAIR" | "RETIRED",
@@ -220,19 +232,35 @@ export default function AssetsData() {
       setSaving(false);
     }
   };
+  const confirmAssetStatus = (
+    row: CompanyAsset,
+    status: "AVAILABLE" | "REPAIR",
+  ) => {
+    const makingAvailable = status === "AVAILABLE";
+    requestActionConfirmation({
+      action: makingAvailable ? "Mark asset available" : "Send asset to repair",
+      target: `${row.asset_tag} · ${row.name}`,
+      severity: makingAvailable ? "warning" : "danger",
+      confirmLabel: makingAvailable ? "Available" : "Repair",
+      confirmIcon: makingAvailable ? "pi pi-check" : "pi pi-wrench",
+      description: makingAvailable
+        ? "Make this asset available for assignment?"
+        : "Send this asset to repair?",
+      onAccept: () => changeAssetStatus(row, status),
+    });
+  };
   const retireAsset = (row: CompanyAsset) =>
-    confirmDialog({
-      header: "Retire Asset",
-      message: `Retire ${row.asset_tag}? Retired assets cannot be assigned again.`,
-      icon: "pi pi-exclamation-triangle",
-      acceptLabel: "Retire",
-      rejectLabel: "Cancel",
-      acceptClassName: "p-button-danger",
-      accept: () => void changeAssetStatus(row, "RETIRED"),
+    requestActionConfirmation({
+      action: "Retire asset",
+      target: `${row.asset_tag} · ${row.name}`,
+      severity: "danger",
+      confirmLabel: "Retire",
+      confirmIcon: "pi pi-ban",
+      description: "Retire this asset? It cannot be assigned again.",
+      onAccept: () => changeAssetStatus(row, "RETIRED"),
     });
   return (
     <>
-      <ConfirmDialog />
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
@@ -323,7 +351,7 @@ export default function AssetsData() {
                       label="Repair"
                       text
                       size="small"
-                      onClick={() => void changeAssetStatus(row, "REPAIR")}
+                      onClick={() => confirmAssetStatus(row, "REPAIR")}
                     />
                   ) : null}
                   {canManage && row.status === "REPAIR" ? (
@@ -331,7 +359,7 @@ export default function AssetsData() {
                       label="Available"
                       text
                       size="small"
-                      onClick={() => void changeAssetStatus(row, "AVAILABLE")}
+                      onClick={() => confirmAssetStatus(row, "AVAILABLE")}
                     />
                   ) : null}
                   {canManage && ["AVAILABLE", "REPAIR"].includes(row.status) ? (
@@ -390,7 +418,7 @@ export default function AssetsData() {
                       severity="secondary"
                       size="small"
                       disabled={saving}
-                      onClick={() => void returnAsset(row)}
+                      onClick={() => confirmReturnAsset(row)}
                     />
                   ) : null
                 }
@@ -576,11 +604,10 @@ export default function AssetsData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Acquired Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={asset.acquired_date}
-              onChange={(event) =>
-                setAsset({ ...asset, acquired_date: event.target.value })
+              onValueChange={(value) =>
+                setAsset({ ...asset, acquired_date: value })
               }
             />
           </label>
@@ -617,7 +644,21 @@ export default function AssetsData() {
               label="Assign"
               icon="pi pi-user-plus"
               loading={saving}
-              onClick={() => void assign()}
+              onClick={() => {
+                if (!assigning || !employeeId) {
+                  void assign();
+                  return;
+                }
+                requestActionConfirmation({
+                  action: "Assign asset",
+                  target: `${assigning.asset_tag} · ${employeeOptions.find((item) => item.value === employeeId)?.label ?? "selected employee"}`,
+                  severity: "warning",
+                  confirmLabel: "Assign Asset",
+                  confirmIcon: "pi pi-user-plus",
+                  description: "Assign this asset to the selected employee?",
+                  onAccept: () => assign(),
+                });
+              }}
             />
           </div>
         }
@@ -637,11 +678,7 @@ export default function AssetsData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Due Return Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
-              value={dueDate}
-              onChange={(event) => setDueDate(event.target.value)}
-            />
+            <PrimeDatePicker value={dueDate} onValueChange={setDueDate} />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Assignment Note{" "}

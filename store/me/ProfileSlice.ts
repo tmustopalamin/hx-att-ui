@@ -1,4 +1,5 @@
 import { Me } from "@/app/types/me";
+import { normalizePermissionList } from "@/app/utils/permission-utils";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface ProfileState {
@@ -28,7 +29,7 @@ export const ProfileSlice = createSlice({
       state.email = action.payload.email;
       state.name = action.payload.name;
       state.role = action.payload.role;
-      state.permissions = action.payload.permissions;
+      state.permissions = normalizePermissionList(action.payload.permissions);
       state.photo_url = action.payload.photo_url;
     },
     clearProfile: () => {

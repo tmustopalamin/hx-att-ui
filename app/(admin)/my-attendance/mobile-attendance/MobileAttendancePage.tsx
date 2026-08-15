@@ -22,6 +22,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 type PermissionStateUi = "idle" | "granted" | "denied" | "loading" | "error";
 
@@ -573,6 +574,18 @@ const MobileAttendancePage = () => {
     }
   };
 
+  const confirmSubmitAttendance = () => {
+    requestActionConfirmation({
+      action: "Submit attendance",
+      target: currentProfile.employee_name ?? "current employee",
+      description: "Submit the captured photo and location as attendance?",
+      severity: "info",
+      confirmLabel: "Submit attendance",
+      confirmIcon: "pi pi-send",
+      onAccept: handleSubmitAttendance,
+    });
+  };
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-3 py-4 md:px-4 lg:gap-5">
       <Card className="shadow-sm">
@@ -911,7 +924,7 @@ const MobileAttendancePage = () => {
                 type="button"
                 icon={isSubmitting ? undefined : "pi pi-send"}
                 label={isSubmitting ? "Submitting..." : "Submit Attendance"}
-                onClick={handleSubmitAttendance}
+                onClick={confirmSubmitAttendance}
                 disabled={!canSubmit}
                 className="w-full"
                 size="large"

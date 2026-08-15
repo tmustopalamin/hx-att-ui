@@ -14,6 +14,7 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Message } from "primereact/message";
 import { Tag } from "primereact/tag";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 import type { RootState } from "@/store/store";
 import {
@@ -129,13 +130,6 @@ export default function PayrollAdjustmentPanel({
     row: PayrollAdjustment,
     actionName: AdjustmentAction,
   ) => {
-    if (
-      actionName === "apply" &&
-      !window.confirm(
-        "Apply this adjustment to the calculated payroll? This cannot be undone.",
-      )
-    )
-      return;
     setError(null);
     setBusyId(row.id);
     try {
@@ -153,6 +147,43 @@ export default function PayrollAdjustmentPanel({
     } finally {
       setBusyId(null);
     }
+  };
+
+  const confirmAction = (
+    row: PayrollAdjustment,
+    actionName: AdjustmentAction,
+  ) => {
+    const labels: Record<AdjustmentAction, string> = {
+      submit: "Submit",
+      approve: "Approve",
+      apply: "Apply",
+      cancel: "Cancel",
+    };
+    const isDanger = actionName === "cancel";
+    requestActionConfirmation({
+      action: labels[actionName],
+      target:
+        employeeLabels.get(row.employee_id) ?? `Employee #${row.employee_id}`,
+      severity: isDanger
+        ? "danger"
+        : actionName === "apply"
+          ? "warning"
+          : "info",
+      confirmLabel: labels[actionName],
+      confirmIcon:
+        actionName === "cancel"
+          ? "pi pi-times"
+          : actionName === "apply"
+            ? "pi pi-check-circle"
+            : "pi pi-check",
+      description:
+        actionName === "apply"
+          ? "Apply this payroll adjustment?"
+          : actionName === "cancel"
+            ? "Cancel this payroll adjustment?"
+            : `${labels[actionName]} this payroll adjustment?`,
+      onAccept: () => action(row, actionName),
+    });
   };
 
   const reject = async () => {
@@ -286,14 +317,14 @@ export default function PayrollAdjustmentPanel({
                       size="small"
                       label="Submit"
                       loading={busyId === row.id}
-                      onClick={() => void action(row, "submit")}
+                      onClick={() => confirmAction(row, "submit")}
                     />
                     <Button
                       size="small"
                       text
                       label="Cancel"
                       disabled={busyId === row.id}
-                      onClick={() => void action(row, "cancel")}
+                      onClick={() => confirmAction(row, "cancel")}
                     />
                   </>
                 )}
@@ -303,7 +334,7 @@ export default function PayrollAdjustmentPanel({
                       size="small"
                       label="Approve"
                       loading={busyId === row.id}
-                      onClick={() => void action(row, "approve")}
+                      onClick={() => confirmAction(row, "approve")}
                     />
                     <Button
                       size="small"
@@ -323,7 +354,7 @@ export default function PayrollAdjustmentPanel({
                     size="small"
                     label="Apply"
                     loading={busyId === row.id}
-                    onClick={() => void action(row, "apply")}
+                    onClick={() => confirmAction(row, "apply")}
                   />
                 )}
               </div>

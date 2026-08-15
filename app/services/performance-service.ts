@@ -3,6 +3,7 @@ import type {
   PerformanceCycle,
   PerformanceGoal,
   PerformanceReview,
+  PerformanceEarningPolicy,
 } from "@/app/types/performance";
 type Envelope<T> = { success: boolean; data: T; message: string };
 const unwrap = <T>(request: Promise<Envelope<T>>): Promise<T> =>
@@ -25,6 +26,68 @@ export const getPerformanceGoals = (id: number) =>
 export const createPerformanceCycle = (data: Record<string, unknown>) =>
   unwrap(
     apiFetch<Envelope<{ id: number }>>("/api/performance/cycles", post(data)),
+  );
+export const finalizePerformanceReview = (id: number, version: number) =>
+  unwrap(
+    apiFetch<Envelope<{ row_version: number }>>(
+      `/api/performance/reviews/${id}/finalize`,
+      {
+        ...post({}),
+        headers: {
+          "Content-Type": "application/json",
+          "If-Match": String(version),
+        },
+      },
+    ),
+  );
+export const getPerformanceEarningPolicies = () =>
+  unwrap(
+    apiFetch<Envelope<PerformanceEarningPolicy[]>>(
+      "/api/performance/earning-policies",
+    ),
+  );
+export const createPerformanceEarningPolicy = (data: Record<string, unknown>) =>
+  unwrap(
+    apiFetch<Envelope<{ id: number }>>(
+      "/api/performance/earning-policies",
+      post(data),
+    ),
+  );
+export const updatePerformanceEarningPolicy = (
+  id: number,
+  version: number,
+  data: Record<string, unknown>,
+) =>
+  unwrap(
+    apiFetch<Envelope<{ row_version: number }>>(
+      `/api/performance/earning-policies/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "If-Match": String(version),
+        },
+        body: JSON.stringify(data),
+      },
+    ),
+  );
+export const updatePerformanceEarningPolicyStatus = (
+  id: number,
+  version: number,
+  status: "PUBLISHED" | "RETIRED",
+) =>
+  unwrap(
+    apiFetch<Envelope<{ row_version: number }>>(
+      `/api/performance/earning-policies/${id}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "If-Match": String(version),
+        },
+        body: JSON.stringify({ status }),
+      },
+    ),
   );
 export const updatePerformanceCycleStatus = (
   id: number,

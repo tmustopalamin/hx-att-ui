@@ -9,7 +9,7 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -767,7 +767,7 @@ const ApprovalInboxTableData = () => {
 
     const isApprove = actionType === "approve";
 
-    confirmDialog({
+    requestActionConfirmation({
       header: isApprove ? "Approve Request" : "Reject Request",
 
       message: (
@@ -1231,8 +1231,6 @@ const ApprovalInboxTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <div className="flex flex-col gap-5">
         {/* Summary */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

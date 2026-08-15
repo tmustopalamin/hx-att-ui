@@ -10,7 +10,7 @@ import { Card } from "primereact/card";
 import { Calendar } from "primereact/calendar";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -27,11 +27,11 @@ import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 
 import { fetcher } from "@/app/utils/fetcher";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
-import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -201,6 +201,7 @@ const hasApprovalDetail = (rowData: OvertimeRequest) => {
 const OvertimeRequestTableData = () => {
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("overtime");
 
   const [selectedData, setSelectedData] = useState<OvertimeRequest | null>(
     null,
@@ -224,7 +225,9 @@ const OvertimeRequestTableData = () => {
   const [approvalDetail, setApprovalDetail] =
     useState<OvertimeRequestApprovalDetail | null>(null);
 
-  const currentKey = `/api/overtime-request?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `/api/overtime-request?show_all=${
+    archivedAccess.canShowDeleted && isShowDeletedDataChecked
+  }`;
   const timeOptions = useMemo(() => buildTimeOptions(15), []);
 
   const {
@@ -609,7 +612,7 @@ const OvertimeRequestTableData = () => {
   };
 
   const onClickSubmit = (data: OvertimeRequest) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to submit this overtime request for approval?",
       header: "Submit Confirmation",
       icon: "pi pi-send",
@@ -636,7 +639,7 @@ const OvertimeRequestTableData = () => {
   };
 
   const onClickDelete = (data: OvertimeRequest) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this overtime request?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -663,7 +666,7 @@ const OvertimeRequestTableData = () => {
   };
 
   const onClickRestore = (data: OvertimeRequest) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to restore this overtime request?",
       header: "Restore Confirmation",
       icon: "pi pi-info-circle",
@@ -690,7 +693,7 @@ const OvertimeRequestTableData = () => {
   };
 
   const onClickPurge = (data: OvertimeRequest) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this overtime request forever?",
       header: "Delete Forever Confirmation",
       icon: "pi pi-info-circle",
@@ -850,27 +853,31 @@ const OvertimeRequestTableData = () => {
             />
           )}
 
-        {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
+        {rowData.deleted_at && archivedAccess.canShowDeleted && (
           <>
-            <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => onClickRestore(rowData)}
-            />
+            {archivedAccess.canRestore && (
+              <Button
+                tooltipOptions={{ appendTo: getBody, position: "top" }}
+                tooltip="restore"
+                rounded
+                severity="success"
+                icon="pi pi-refresh"
+                size="small"
+                onClick={() => onClickRestore(rowData)}
+              />
+            )}
 
-            <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              icon="pi pi-times"
-              size="small"
-              onClick={() => onClickPurge(rowData)}
-            />
+            {archivedAccess.canPurge && (
+              <Button
+                tooltipOptions={{ appendTo: getBody, position: "top" }}
+                tooltip="delete forever"
+                rounded
+                severity="secondary"
+                icon="pi pi-times"
+                size="small"
+                onClick={() => onClickPurge(rowData)}
+              />
+            )}
           </>
         )}
       </div>
@@ -906,8 +913,6 @@ const OvertimeRequestTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-100 shadow-sm">
         <div className="flex flex-col gap-5 p-4 md:p-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
@@ -921,18 +926,23 @@ const OvertimeRequestTableData = () => {
             </div>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  inputId="showDeleted"
-                  checked={isShowDeletedDataChecked}
-                  onChange={(e) =>
-                    setIsShowDeletedDataChecked(Boolean(e.checked))
-                  }
-                />
-                <label htmlFor="showDeleted" className="text-sm text-slate-700">
-                  Show deleted data
-                </label>
-              </div>
+              {archivedAccess.canShowDeleted && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    inputId="showDeleted"
+                    checked={isShowDeletedDataChecked}
+                    onChange={(e) =>
+                      setIsShowDeletedDataChecked(Boolean(e.checked))
+                    }
+                  />
+                  <label
+                    htmlFor="showDeleted"
+                    className="text-sm text-slate-700"
+                  >
+                    Show deleted data
+                  </label>
+                </div>
+              )}
 
               <IconField iconPosition="left">
                 <InputIcon className="pi pi-search" />

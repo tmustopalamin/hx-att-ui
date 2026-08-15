@@ -12,6 +12,7 @@ import {
 import {
   EmployeeEmploymentData,
   OptionItem,
+  EmploymentStatusOption,
 } from "@/app/types/employee-general";
 import {
   getErrorMessage,
@@ -54,6 +55,8 @@ type FormData = {
   supervisor_employee_id: number | null;
   join_date: Date | null;
   end_date: Date | null;
+  probation_end_date: Date | null;
+  confirmation_date: Date | null;
 };
 
 const getBody = () => document.body;
@@ -82,6 +85,8 @@ const EmployeeDetailEmployment = () => {
       supervisor_employee_id: null,
       join_date: null,
       end_date: null,
+      probation_end_date: null,
+      confirmation_date: null,
     },
   });
 
@@ -91,9 +96,9 @@ const EmployeeDetailEmployment = () => {
 
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
-  const [employmentStatuses, setEmploymentStatuses] = useState<OptionItem[]>(
-    [],
-  );
+  const [employmentStatuses, setEmploymentStatuses] = useState<
+    EmploymentStatusOption[]
+  >([]);
   const [agencies, setAgencies] = useState<OptionItem[]>([]);
   const [branches, setBranches] = useState<BranchOption[]>([]);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
@@ -208,6 +213,12 @@ const EmployeeDetailEmployment = () => {
           end_date: employmentData.end_date
             ? dayjs(employmentData.end_date).toDate()
             : null,
+          probation_end_date: employmentData.probation_end_date
+            ? dayjs(employmentData.probation_end_date).toDate()
+            : null,
+          confirmation_date: employmentData.confirmation_date
+            ? dayjs(employmentData.confirmation_date).toDate()
+            : null,
         });
       } else {
         reset({
@@ -220,6 +231,8 @@ const EmployeeDetailEmployment = () => {
           supervisor_employee_id: null,
           join_date: null,
           end_date: null,
+          probation_end_date: null,
+          confirmation_date: null,
         });
       }
     } catch (err: unknown) {
@@ -279,6 +292,12 @@ const EmployeeDetailEmployment = () => {
         : "",
       end_date: data.end_date
         ? dayjs(data.end_date).format("YYYY-MM-DD")
+        : null,
+      probation_end_date: data.probation_end_date
+        ? dayjs(data.probation_end_date).format("YYYY-MM-DD")
+        : null,
+      confirmation_date: data.confirmation_date
+        ? dayjs(data.confirmation_date).format("YYYY-MM-DD")
         : null,
       department_id: Number(data.department_id),
       position_id: Number(data.position_id),
@@ -450,6 +469,14 @@ const EmployeeDetailEmployment = () => {
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
+                )}
+                {field.value && (
+                  <small className="mt-1 block text-slate-500">
+                    Tax treatment:{" "}
+                    {employmentStatuses.find(
+                      (status) => Number(status.id) === Number(field.value),
+                    )?.default_tax_employee_type ?? "Not configured"}
+                  </small>
                 )}
               </div>
             )}
@@ -650,6 +677,56 @@ const EmployeeDetailEmployment = () => {
                   onChange={(e) => field.onChange(e.value)}
                   className="w-full"
                 />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="probation_end_date"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label htmlFor="probation_end_date" className={fieldLabelClass}>
+                  Probation End Date
+                </label>
+                <Calendar
+                  id="probation_end_date"
+                  appendTo={getBody}
+                  disabled={!isPageEdit}
+                  dateFormat="dd-mm-yy"
+                  showIcon
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.value)}
+                  className="w-full"
+                />
+                <small className="text-slate-500">
+                  Last day of the probation period.
+                </small>
+              </div>
+            )}
+          />
+
+          <Controller
+            name="confirmation_date"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label htmlFor="confirmation_date" className={fieldLabelClass}>
+                  Confirmation Date
+                </label>
+                <Calendar
+                  id="confirmation_date"
+                  appendTo={getBody}
+                  disabled={!isPageEdit}
+                  dateFormat="dd-mm-yy"
+                  showIcon
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.value)}
+                  className="w-full"
+                />
+                <small className="text-slate-500">
+                  Date the employee is formally confirmed after probation.
+                </small>
               </div>
             )}
           />

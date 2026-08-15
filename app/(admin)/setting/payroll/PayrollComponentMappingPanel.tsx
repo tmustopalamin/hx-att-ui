@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
-import { confirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -24,6 +24,7 @@ import type {
   SavePayrollComponentMapping,
 } from "@/app/types/payroll-configuration";
 import { fetcher } from "@/app/utils/fetcher";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 
 interface Props {
   onSuccess: (message: string) => void;
@@ -144,7 +145,7 @@ export default function PayrollComponentMappingPanel({
   };
 
   const remove = (row: PayrollComponentMapping) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Mapping",
       message: `Delete ${row.component_code} mapping for ${row.regulation_program}?`,
       icon: "pi pi-exclamation-triangle",
@@ -346,26 +347,21 @@ export default function PayrollComponentMappingPanel({
             />
           </Field>
           <Field label="Effective From *">
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={form.effective_from}
-              onChange={(event) =>
-                setForm((value) => ({
-                  ...value,
-                  effective_from: event.target.value,
-                }))
+              onValueChange={(value) =>
+                setForm((current) => ({ ...current, effective_from: value }))
               }
               className="w-full"
             />
           </Field>
           <Field label="Effective To">
-            <InputText
-              type="date"
-              value={form.effective_to ?? ""}
-              onChange={(event) =>
-                setForm((value) => ({
-                  ...value,
-                  effective_to: event.target.value || null,
+            <PrimeDatePicker
+              value={form.effective_to}
+              onValueChange={(value) =>
+                setForm((current) => ({
+                  ...current,
+                  effective_to: value || null,
                 }))
               }
               className="w-full"

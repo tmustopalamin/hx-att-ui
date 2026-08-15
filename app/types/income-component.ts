@@ -13,6 +13,10 @@ export interface IncomeComponent {
   row_version: number;
   calculation_method_name: string | null;
   calculation_method_code: string | null;
+  assignment_mode: "EMPLOYEE" | "SYSTEM";
+  is_fixed_allowance: boolean;
+  include_in_bpjs_health: boolean;
+  include_in_bpjs_employment: boolean;
 }
 
 export type IncomeComponentPayload = Pick<
@@ -25,4 +29,7 @@ export type IncomeComponentPayload = Pick<
   | "category"
   | "calculation_display"
   | "is_active"
+  | "is_fixed_allowance"
+  | "include_in_bpjs_health"
+  | "include_in_bpjs_employment"
 >;

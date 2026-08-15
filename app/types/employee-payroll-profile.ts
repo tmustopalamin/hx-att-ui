@@ -44,10 +44,15 @@ export interface EmployeeTaxProfile {
   nik_masked: string | null;
   npwp_masked: string | null;
   ptkp_code: string;
+  ptkp_amount: string | null;
   ter_category: string | null;
   tax_residency: string;
   tax_method: string;
   employee_tax_type: string;
+  tax_type_source: "EMPLOYMENT_STATUS" | "OVERRIDE" | "LEGACY";
+  source_employment_status_id: number | null;
+  source_employment_status_name: string | null;
+  tax_type_override_reason: string | null;
   effective_from: string;
   effective_to: string | null;
   previous_employer_gross: string;
@@ -64,6 +69,10 @@ export interface EmployeeSalaryHistory {
   currency_code: string;
   payroll_setting_id: number | null;
   payroll_setting_name: string | null;
+  frequency_id: number;
+  frequency_code: string;
+  frequency_name: string;
+  frequency_days_in_period: number;
   effective_from: string;
   effective_to: string | null;
   change_reason: string | null;
@@ -127,7 +136,8 @@ export interface NewTaxProfile {
   ter_category: string | null;
   tax_residency: string;
   tax_method: string;
-  employee_tax_type: string;
+  tax_type_override: string | null;
+  tax_type_override_reason: string | null;
   effective_from: string;
   effective_to: string | null;
   previous_employer_gross: string;
@@ -140,6 +150,7 @@ export type NewSalaryHistory = Pick<
   | "base_salary"
   | "currency_code"
   | "payroll_setting_id"
+  | "frequency_id"
   | "effective_from"
   | "effective_to"
   | "change_reason"

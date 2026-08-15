@@ -23,6 +23,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 const employmentChangeFields: Array<{
   key: keyof EmployeeLifecycleEmploymentSnapshot;
@@ -94,6 +95,20 @@ export default function MyLifecycleTasksData() {
       );
       return false;
     }
+  };
+  const confirmComplete = (task: EmployeeLifecycleAssignedTask) => {
+    requestActionConfirmation({
+      action: "Complete task",
+      target: `${task.employee_name} · ${task.name}`,
+      severity: "warning",
+      confirmLabel: "Complete Task",
+      confirmIcon: "pi pi-check",
+      description: "Mark this lifecycle task as complete?",
+      onAccept: async () => {
+        const completed = await complete(task);
+        if (completed) setReviewTask(null);
+      },
+    });
   };
   if (error)
     return (
@@ -201,10 +216,7 @@ export default function MyLifecycleTasksData() {
               icon="pi pi-check"
               disabled={!reviewTask || !lifecycleDetail || isLoadingDetail}
               onClick={() => {
-                if (!reviewTask) return;
-                void complete(reviewTask).then((completed) => {
-                  if (completed) setReviewTask(null);
-                });
+                if (reviewTask) confirmComplete(reviewTask);
               }}
             />
           </div>

@@ -4,15 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import useSWR from "swr";
+import dayjs from "dayjs";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
+import { Calendar } from "primereact/calendar";
 import { InputTextarea } from "primereact/inputtextarea";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import type { Employee, EmployeeApprovalOption } from "@/app/types/employee";
 import type {
   EmployeeLifecycleCase,
@@ -48,6 +51,8 @@ import {
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import type { RootState } from "@/store/store";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
 
 const emptyForm = (): NewEmployeeLifecycleCase => ({
   employee_id: 0,
@@ -69,6 +74,14 @@ const emptyEmploymentChange = (): EmploymentChangeProposal => ({
   confirmation_date: null,
   notes: null,
 });
+
+const toCalendarDate = (value?: string | null): Date | null =>
+  value ? dayjs(value).toDate() : null;
+
+const toDateString = (value: Date | null | undefined): string | null =>
+  value ? dayjs(value).format("YYYY-MM-DD") : null;
+
+const getBody = () => document.body;
 const statusSeverity = (
   status: string,
 ): "success" | "danger" | "warning" | "secondary" =>
@@ -97,6 +110,16 @@ export default function EmployeeLifecycleData() {
   const [employmentChange, setEmploymentChange] =
     useState<EmploymentChangeProposal>(emptyEmploymentChange);
   const [saving, setSaving] = useState(false);
+  const lifecycleFormDirty =
+    visible &&
+    (form.employee_id > 0 ||
+      form.lifecycle_type !== "ONBOARDING" ||
+      Boolean(form.effective_date) ||
+      Boolean(form.reason?.trim()) ||
+      Object.values(employmentChange).some(
+        (value) => value !== null && value !== "",
+      ));
+  const { confirmDiscard } = useDirtyFormGuard(lifecycleFormDirty, !saving);
   const didPrefillRequest = useRef(false);
   const employmentPrefillEmployeeId = useRef<number | null>(null);
   const canCreate = profile.permissions.includes("employee-lifecycle.create");
@@ -230,12 +253,14 @@ export default function EmployeeLifecycleData() {
         code: requestedEmployment.code ?? null,
         agency_id: requestedEmployment.agency_id ?? null,
         branch_id: requestedEmployment.branch_id ?? null,
-        department_id: requestedEmployment.department_id,
-        position_id: requestedEmployment.position_id,
-        employment_status_id: requestedEmployment.employment_status_id,
+        department_id: requestedEmployment.department_id ?? null,
+        position_id: requestedEmployment.position_id ?? null,
+        employment_status_id: requestedEmployment.employment_status_id ?? null,
         supervisor_employee_id:
           requestedEmployment.supervisor_employee_id ?? null,
         end_date: requestedEmployment.end_date ?? null,
+        probation_end_date: requestedEmployment.probation_end_date ?? null,
+        confirmation_date: requestedEmployment.confirmation_date ?? null,
       });
     }
     setVisible(true);
@@ -254,12 +279,14 @@ export default function EmployeeLifecycleData() {
       code: requestedEmployment.code ?? null,
       agency_id: requestedEmployment.agency_id ?? null,
       branch_id: requestedEmployment.branch_id ?? null,
-      department_id: requestedEmployment.department_id,
-      position_id: requestedEmployment.position_id,
-      employment_status_id: requestedEmployment.employment_status_id,
+      department_id: requestedEmployment.department_id ?? null,
+      position_id: requestedEmployment.position_id ?? null,
+      employment_status_id: requestedEmployment.employment_status_id ?? null,
       supervisor_employee_id:
         requestedEmployment.supervisor_employee_id ?? null,
       end_date: requestedEmployment.end_date ?? null,
+      probation_end_date: requestedEmployment.probation_end_date ?? null,
+      confirmation_date: requestedEmployment.confirmation_date ?? null,
     });
   }, [requestedEmployeeId, requestedEmployment, requestedType]);
   useEffect(() => {
@@ -281,12 +308,16 @@ export default function EmployeeLifecycleData() {
         code: selectedEmployeeEmployment.code ?? null,
         agency_id: selectedEmployeeEmployment.agency_id ?? null,
         branch_id: selectedEmployeeEmployment.branch_id ?? null,
-        department_id: selectedEmployeeEmployment.department_id,
-        position_id: selectedEmployeeEmployment.position_id,
-        employment_status_id: selectedEmployeeEmployment.employment_status_id,
+        department_id: selectedEmployeeEmployment.department_id ?? null,
+        position_id: selectedEmployeeEmployment.position_id ?? null,
+        employment_status_id:
+          selectedEmployeeEmployment.employment_status_id ?? null,
         supervisor_employee_id:
           selectedEmployeeEmployment.supervisor_employee_id ?? null,
         end_date: selectedEmployeeEmployment.end_date ?? null,
+        probation_end_date:
+          selectedEmployeeEmployment.probation_end_date ?? null,
+        confirmation_date: selectedEmployeeEmployment.confirmation_date ?? null,
       });
     }
   }, [
@@ -347,6 +378,16 @@ export default function EmployeeLifecycleData() {
       setSaving(false);
     }
   };
+  const closeCreateCase = () => {
+    if (saving) return;
+    if (!lifecycleFormDirty) {
+      setVisible(false);
+      return;
+    }
+    void confirmDiscard().then((discard) => {
+      if (discard) setVisible(false);
+    });
+  };
   const transition = async (
     row: EmployeeLifecycleCase,
     action: "submit" | "cancel",
@@ -378,6 +419,23 @@ export default function EmployeeLifecycleData() {
     } finally {
       setSaving(false);
     }
+  };
+  const confirmTransition = (
+    row: EmployeeLifecycleCase,
+    action: "submit" | "cancel",
+  ) => {
+    const isCancel = action === "cancel";
+    requestActionConfirmation({
+      action: isCancel ? "Cancel lifecycle case" : "Submit lifecycle case",
+      target: `${row.employee_name} · ${row.lifecycle_type.replaceAll("_", " ")}`,
+      severity: isCancel ? "danger" : "warning",
+      confirmLabel: isCancel ? "Cancel Case" : "Submit for Approval",
+      confirmIcon: isCancel ? "pi pi-times" : "pi pi-send",
+      description: isCancel
+        ? "Cancel this lifecycle case?"
+        : "Submit this lifecycle case for approval?",
+      onAccept: () => transition(row, action),
+    });
   };
   const assignTask = async (
     taskId: number,
@@ -533,7 +591,7 @@ export default function EmployeeLifecycleData() {
                           rounded
                           aria-label="Submit"
                           disabled={saving}
-                          onClick={() => void transition(row, "submit")}
+                          onClick={() => confirmTransition(row, "submit")}
                         />
                       )}
                     {canCreate &&
@@ -554,7 +612,7 @@ export default function EmployeeLifecycleData() {
                           severity="danger"
                           aria-label="Cancel"
                           disabled={saving}
-                          onClick={() => void transition(row, "cancel")}
+                          onClick={() => confirmTransition(row, "cancel")}
                         />
                       )}
                   </div>
@@ -571,7 +629,7 @@ export default function EmployeeLifecycleData() {
         draggable={false}
         resizable={false}
         style={{ width: "95vw", maxWidth: "48rem" }}
-        onHide={() => !saving && setVisible(false)}
+        onHide={closeCreateCase}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
@@ -579,7 +637,7 @@ export default function EmployeeLifecycleData() {
               text
               severity="secondary"
               disabled={saving}
-              onClick={() => setVisible(false)}
+              onClick={closeCreateCase}
             />
             <Button
               label="Create Case"
@@ -628,11 +686,10 @@ export default function EmployeeLifecycleData() {
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Effective Date
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={form.effective_date}
-              onChange={(event) =>
-                setForm({ ...form, effective_date: event.target.value })
+              onValueChange={(value) =>
+                setForm({ ...form, effective_date: value })
               }
             />
           </label>
@@ -662,6 +719,23 @@ export default function EmployeeLifecycleData() {
                   )}
               </div>
               <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  Join Date
+                  <Calendar
+                    value={toCalendarDate(
+                      selectedEmployeeEmployment?.join_date,
+                    )}
+                    appendTo={getBody}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    disabled
+                    className="w-full"
+                  />
+                  <small className="font-normal text-slate-500">
+                    Inherited from the current employment record and not changed
+                    by Employment Change.
+                  </small>
+                </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                   Employee Code
                   <InputText
@@ -803,47 +877,63 @@ export default function EmployeeLifecycleData() {
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                   Employment End Date{" "}
                   <span className="font-normal text-slate-400">(optional)</span>
-                  <InputText
-                    type="date"
-                    value={employmentChange.end_date ?? ""}
-                    min={form.effective_date || undefined}
+                  <Calendar
+                    value={toCalendarDate(employmentChange.end_date)}
+                    appendTo={getBody}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    showButtonBar
+                    minDate={toCalendarDate(form.effective_date) ?? undefined}
+                    className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
                         ...employmentChange,
-                        end_date: event.target.value || null,
+                        end_date: toDateString(event.value),
                       })
                     }
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Probation End{" "}
+                  Probation End Date{" "}
                   <span className="font-normal text-slate-400">(optional)</span>
-                  <InputText
-                    type="date"
-                    value={employmentChange.probation_end_date ?? ""}
-                    min={form.effective_date || undefined}
+                  <Calendar
+                    value={toCalendarDate(employmentChange.probation_end_date)}
+                    appendTo={getBody}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    showButtonBar
+                    className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
                         ...employmentChange,
-                        probation_end_date: event.target.value || null,
+                        probation_end_date: toDateString(event.value),
                       })
                     }
                   />
+                  <small className="font-normal text-slate-500">
+                    Backdating is allowed for historical probation records.
+                  </small>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                   Confirmation Date{" "}
                   <span className="font-normal text-slate-400">(optional)</span>
-                  <InputText
-                    type="date"
-                    value={employmentChange.confirmation_date ?? ""}
-                    min={form.effective_date || undefined}
+                  <Calendar
+                    value={toCalendarDate(employmentChange.confirmation_date)}
+                    appendTo={getBody}
+                    dateFormat="dd-mm-yy"
+                    showIcon
+                    showButtonBar
+                    className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
                         ...employmentChange,
-                        confirmation_date: event.target.value || null,
+                        confirmation_date: toDateString(event.value),
                       })
                     }
                   />
+                  <small className="font-normal text-slate-500">
+                    Backdating is allowed for historical confirmation records.
+                  </small>
                 </label>
               </div>
               <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -1027,15 +1117,23 @@ export default function EmployeeLifecycleData() {
               disabled={saving || detail.data?.case.status !== "DRAFT"}
               onClick={() => {
                 if (!assignmentTask) return;
-                void (async () => {
-                  const isSaved = await assignTask(
-                    assignmentTask.id,
-                    assignmentTask.row_version,
-                    taskAssignment.assignedEmployeeId,
-                    taskAssignment.dueDate || null,
-                  );
-                  if (isSaved) setAssignmentTask(null);
-                })();
+                requestActionConfirmation({
+                  action: "Save task assignment",
+                  target: assignmentTask.name,
+                  severity: "info",
+                  confirmLabel: "Save Assignment",
+                  confirmIcon: "pi pi-check",
+                  description: "Update this task assignment?",
+                  onAccept: async () => {
+                    const isSaved = await assignTask(
+                      assignmentTask.id,
+                      assignmentTask.row_version,
+                      taskAssignment.assignedEmployeeId,
+                      taskAssignment.dueDate || null,
+                    );
+                    if (isSaved) setAssignmentTask(null);
+                  },
+                });
               }}
             />
           </div>
@@ -1074,16 +1172,12 @@ export default function EmployeeLifecycleData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Due Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={taskAssignment.dueDate}
               className="w-full"
               disabled={saving || detail.data?.case.status !== "DRAFT"}
-              onChange={(event) =>
-                setTaskAssignment({
-                  ...taskAssignment,
-                  dueDate: event.target.value,
-                })
+              onValueChange={(value) =>
+                setTaskAssignment({ ...taskAssignment, dueDate: value })
               }
             />
           </label>

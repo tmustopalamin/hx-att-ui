@@ -14,7 +14,7 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -54,8 +54,8 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -187,6 +187,7 @@ const EmployeesDataTable = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("employee");
 
   const [globalFilterValue, setGlobalFilterValue] = useState("");
 
@@ -216,7 +217,9 @@ const EmployeesDataTable = () => {
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
 
-  const listKey = `/api/employees/list?show_all=${isShowDeletedDataChecked}`;
+  const listKey = `/api/employees/list?show_all=${
+    archivedAccess.canShowDeleted && isShowDeletedDataChecked
+  }`;
 
   const {
     data: employeesData,
@@ -279,15 +282,14 @@ const EmployeesDataTable = () => {
       name: "last_name",
     }) ?? "";
 
-  const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
   const permissionSet = useMemo(
     () => new Set(profileState.permissions),
     [profileState.permissions],
   );
   const canCreateEmployee = permissionSet.has("employee.create");
   const canDeleteEmployee = permissionSet.has("employee.delete");
-  const canRestoreEmployee = permissionSet.has("employee.restore");
-  const canPurgeEmployee = permissionSet.has("employee.purge");
+  const canRestoreEmployee = archivedAccess.canRestore;
+  const canPurgeEmployee = archivedAccess.canPurge;
 
   const isProcessing = processingRowId !== null;
 
@@ -734,7 +736,7 @@ const EmployeesDataTable = () => {
   };
 
   const onClickDelete = (data: EmployeeListRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Employee",
       message: (
         <div className="flex flex-col gap-2">
@@ -783,7 +785,7 @@ const EmployeesDataTable = () => {
   };
 
   const onClickRestore = (data: EmployeeListRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore Employee",
       message: (
         <div className="flex flex-col gap-2">
@@ -830,7 +832,7 @@ const EmployeesDataTable = () => {
   };
 
   const onClickPurge = (data: EmployeeListRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Employee Permanently",
       message: (
         <div className="flex flex-col gap-2">
@@ -1247,8 +1249,6 @@ const EmployeesDataTable = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <div className="flex flex-col gap-5">
         <EmployeeSummaryCards summary={summary} />
 
@@ -1289,7 +1289,7 @@ const EmployeesDataTable = () => {
             />
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              {isSuperadmin ? (
+              {archivedAccess.canShowDeleted ? (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     inputId="showDeletedData"

@@ -37,6 +37,9 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import type { ResponseTypeError } from "@/app/types/response-type";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 type DialogName =
   "course" | "session" | "enroll" | "enrollmentStatus" | "certification" | null;
 const severity = (s: string) =>
@@ -180,11 +183,19 @@ export default function TrainingData() {
       setDialog(null);
       await refresh();
       notify("success", "Saved", success);
-    } catch {
+    } catch (error: unknown) {
+      const apiError =
+        typeof error === "object" &&
+        error !== null &&
+        "message" in error &&
+        typeof (error as ResponseTypeError).message === "string"
+          ? (error as ResponseTypeError)
+          : null;
       notify(
         "error",
         "Unable to save",
-        "Review the data and refresh if it was changed by another user.",
+        apiError?.message ??
+          "Review the data and refresh if it was changed by another user.",
       );
     } finally {
       setSaving(false);
@@ -213,6 +224,34 @@ export default function TrainingData() {
       setSaving(false);
     }
   };
+  const confirmSessionAction = (
+    row: TrainingSession,
+    status: "OPEN" | "COMPLETED" | "CANCELLED",
+  ) => {
+    const cancelling = status === "CANCELLED";
+    const completing = status === "COMPLETED";
+    requestActionConfirmation({
+      action: completing
+        ? "Complete training session"
+        : cancelling
+          ? "Cancel training session"
+          : "Open training session",
+      target: `${row.code} · ${row.course_name}`,
+      severity: cancelling ? "danger" : "warning",
+      confirmLabel: completing ? "Complete" : cancelling ? "Cancel" : "Open",
+      confirmIcon: completing
+        ? "pi pi-check"
+        : cancelling
+          ? "pi pi-times"
+          : "pi pi-folder-open",
+      description: completing
+        ? "Complete this training session?"
+        : cancelling
+          ? "Cancel this training session?"
+          : "Open this training session?",
+      onAccept: () => sessionAction(row, status),
+    });
+  };
   const courseAction = async (row: TrainingCourse) => {
     setSaving(true);
     try {
@@ -232,6 +271,20 @@ export default function TrainingData() {
     } finally {
       setSaving(false);
     }
+  };
+  const confirmCourseAction = (row: TrainingCourse) => {
+    const nextState = row.is_active ? "deactivate" : "activate";
+    requestActionConfirmation({
+      action: `${nextState} training course`,
+      target: `${row.code} · ${row.name}`,
+      severity: row.is_active ? "danger" : "warning",
+      confirmLabel: row.is_active ? "Deactivate" : "Activate",
+      confirmIcon: row.is_active ? "pi pi-ban" : "pi pi-check",
+      description: row.is_active
+        ? "Deactivate this training course?"
+        : "Activate this training course?",
+      onAccept: () => courseAction(row),
+    });
   };
   const certificationAction = async (
     row: EmployeeCertification,
@@ -255,6 +308,23 @@ export default function TrainingData() {
     } finally {
       setSaving(false);
     }
+  };
+  const confirmCertificationAction = (
+    row: EmployeeCertification,
+    status: "ACTIVE" | "REVOKED",
+  ) => {
+    const revoking = status === "REVOKED";
+    requestActionConfirmation({
+      action: revoking ? "Revoke certification" : "Restore certification",
+      target: row.certification_name,
+      severity: revoking ? "danger" : "warning",
+      confirmLabel: revoking ? "Revoke" : "Restore",
+      confirmIcon: revoking ? "pi pi-times" : "pi pi-refresh",
+      description: revoking
+        ? "Revoke this certification?"
+        : "Restore this certification?",
+      onAccept: () => certificationAction(row, status),
+    });
   };
   return (
     <Card className="border border-slate-200 shadow-sm">
@@ -328,7 +398,7 @@ export default function TrainingData() {
                       severity={r.is_active ? "danger" : "secondary"}
                       size="small"
                       disabled={saving}
-                      onClick={() => void courseAction(r)}
+                      onClick={() => confirmCourseAction(r)}
                     />
                   )}
                 />
@@ -386,14 +456,14 @@ export default function TrainingData() {
                             label="Open"
                             text
                             size="small"
-                            onClick={() => void sessionAction(r, "OPEN")}
+                            onClick={() => confirmSessionAction(r, "OPEN")}
                           />
                           <Button
                             label="Cancel"
                             text
                             severity="danger"
                             size="small"
-                            onClick={() => void sessionAction(r, "CANCELLED")}
+                            onClick={() => confirmSessionAction(r, "CANCELLED")}
                           />
                         </>
                       )}{" "}
@@ -403,14 +473,14 @@ export default function TrainingData() {
                             label="Complete"
                             text
                             size="small"
-                            onClick={() => void sessionAction(r, "COMPLETED")}
+                            onClick={() => confirmSessionAction(r, "COMPLETED")}
                           />
                           <Button
                             label="Cancel"
                             text
                             severity="danger"
                             size="small"
-                            onClick={() => void sessionAction(r, "CANCELLED")}
+                            onClick={() => confirmSessionAction(r, "CANCELLED")}
                           />
                         </>
                       )}
@@ -526,7 +596,9 @@ export default function TrainingData() {
                           severity="danger"
                           size="small"
                           disabled={saving}
-                          onClick={() => void certificationAction(r, "REVOKED")}
+                          onClick={() =>
+                            confirmCertificationAction(r, "REVOKED")
+                          }
                         />
                       ) : (
                         <Button
@@ -534,7 +606,9 @@ export default function TrainingData() {
                           text
                           size="small"
                           disabled={saving}
-                          onClick={() => void certificationAction(r, "ACTIVE")}
+                          onClick={() =>
+                            confirmCertificationAction(r, "ACTIVE")
+                          }
                         />
                       )}
                     </div>
@@ -698,21 +772,21 @@ export default function TrainingData() {
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Start
-            <InputText
-              type="datetime-local"
+            <PrimeDatePicker
               value={session.start_at}
-              onChange={(e) =>
-                setSession({ ...session, start_at: e.target.value })
+              withTime
+              onValueChange={(value) =>
+                setSession({ ...session, start_at: value })
               }
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             End
-            <InputText
-              type="datetime-local"
+            <PrimeDatePicker
               value={session.end_at}
-              onChange={(e) =>
-                setSession({ ...session, end_at: e.target.value })
+              withTime
+              onValueChange={(value) =>
+                setSession({ ...session, end_at: value })
               }
             />
           </label>
@@ -839,13 +913,12 @@ export default function TrainingData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Completion Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={enrollmentStatus.completion_date}
-              onChange={(e) =>
+              onValueChange={(value) =>
                 setEnrollmentStatus({
                   ...enrollmentStatus,
-                  completion_date: e.target.value,
+                  completion_date: value,
                 })
               }
             />
@@ -974,28 +1047,20 @@ export default function TrainingData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Issued Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={certification.issued_date}
-              onChange={(e) =>
-                setCertification({
-                  ...certification,
-                  issued_date: e.target.value,
-                })
+              onValueChange={(value) =>
+                setCertification({ ...certification, issued_date: value })
               }
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Expiry Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={certification.expiry_date}
-              onChange={(e) =>
-                setCertification({
-                  ...certification,
-                  expiry_date: e.target.value,
-                })
+              onValueChange={(value) =>
+                setCertification({ ...certification, expiry_date: value })
               }
             />
           </label>

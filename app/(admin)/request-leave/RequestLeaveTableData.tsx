@@ -10,7 +10,7 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -27,6 +27,7 @@ import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 
 import { fetcher } from "@/app/utils/fetcher";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import {
   getErrorMessage,
   isResponseTypeError,
@@ -336,6 +337,7 @@ const hasApprovalDetail = (rowData: RequestLeave) => {
 const RequestLeaveTableData = () => {
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("request-leave");
   const permissionSet = useMemo(
     () => new Set(profileState.permissions),
     [profileState.permissions],
@@ -364,7 +366,9 @@ const RequestLeaveTableData = () => {
   const [approvalDetail, setApprovalDetail] =
     useState<RequestLeaveApprovalDetail | null>(null);
 
-  const currentKey = `${REQUEST_LEAVE_KEY_PREFIX}?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `${REQUEST_LEAVE_KEY_PREFIX}?show_all=${
+    archivedAccess.canShowDeleted && isShowDeletedDataChecked
+  }`;
 
   const {
     control,
@@ -610,7 +614,7 @@ const RequestLeaveTableData = () => {
   };
 
   const onClickDeleteAttachment = (attachment: RequestLeaveAttachment) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: `Do you want to delete ${attachment.original_file_name}?`,
       header: "Delete Attachment",
       icon: "pi pi-info-circle",
@@ -971,7 +975,7 @@ const RequestLeaveTableData = () => {
   };
 
   const onClickSubmit = (data: RequestLeave) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to submit this leave request for approval?",
       header: "Submit Confirmation",
       icon: "pi pi-send",
@@ -998,7 +1002,7 @@ const RequestLeaveTableData = () => {
   };
 
   const onClickDelete = (data: RequestLeave) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this leave request?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -1025,7 +1029,7 @@ const RequestLeaveTableData = () => {
   };
 
   const onClickRestore = (data: RequestLeave) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to restore this leave request?",
       header: "Restore Confirmation",
       icon: "pi pi-info-circle",
@@ -1052,7 +1056,7 @@ const RequestLeaveTableData = () => {
   };
 
   const onClickPurge = (data: RequestLeave) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this leave request forever?",
       header: "Delete Forever Confirmation",
       icon: "pi pi-info-circle",
@@ -1231,33 +1235,37 @@ const RequestLeaveTableData = () => {
           />
         )}
 
-        {canDelete && rowData.deleted_at && (
+        {rowData.deleted_at && archivedAccess.canShowDeleted && (
           <>
-            <Button
-              tooltipOptions={{
-                appendTo: getBody,
-                position: "top",
-              }}
-              tooltip="restore"
-              rounded
-              severity="success"
-              icon="pi pi-refresh"
-              size="small"
-              onClick={() => onClickRestore(rowData)}
-            />
+            {archivedAccess.canRestore && (
+              <Button
+                tooltipOptions={{
+                  appendTo: getBody,
+                  position: "top",
+                }}
+                tooltip="restore"
+                rounded
+                severity="success"
+                icon="pi pi-refresh"
+                size="small"
+                onClick={() => onClickRestore(rowData)}
+              />
+            )}
 
-            <Button
-              tooltipOptions={{
-                appendTo: getBody,
-                position: "top",
-              }}
-              tooltip="delete forever"
-              rounded
-              severity="secondary"
-              icon="pi pi-times"
-              size="small"
-              onClick={() => onClickPurge(rowData)}
-            />
+            {archivedAccess.canPurge && (
+              <Button
+                tooltipOptions={{
+                  appendTo: getBody,
+                  position: "top",
+                }}
+                tooltip="delete forever"
+                rounded
+                severity="secondary"
+                icon="pi pi-times"
+                size="small"
+                onClick={() => onClickPurge(rowData)}
+              />
+            )}
           </>
         )}
       </div>
@@ -1294,8 +1302,6 @@ const RequestLeaveTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-100 shadow-sm">
         <div className="flex flex-col gap-5 p-4 md:p-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
@@ -1309,18 +1315,23 @@ const RequestLeaveTableData = () => {
             </div>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  inputId="showDeleted"
-                  checked={isShowDeletedDataChecked}
-                  onChange={(e) =>
-                    setIsShowDeletedDataChecked(Boolean(e.checked))
-                  }
-                />
-                <label htmlFor="showDeleted" className="text-sm text-slate-700">
-                  Show deleted data
-                </label>
-              </div>
+              {archivedAccess.canShowDeleted && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    inputId="showDeleted"
+                    checked={isShowDeletedDataChecked}
+                    onChange={(e) =>
+                      setIsShowDeletedDataChecked(Boolean(e.checked))
+                    }
+                  />
+                  <label
+                    htmlFor="showDeleted"
+                    className="text-sm text-slate-700"
+                  >
+                    Show deleted data
+                  </label>
+                </div>
+              )}
 
               <IconField iconPosition="left">
                 <InputIcon className="pi pi-search" />

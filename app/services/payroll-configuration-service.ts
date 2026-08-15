@@ -8,6 +8,10 @@ import type {
   PayrollRegulationTestCase,
   PayrollRegulationTestRun,
   PayrollSetting,
+  PayrollPeriodRule,
+  PayrollPeriodPreview,
+  NewPayrollPeriodRule,
+  UpdatePayrollPeriodRule,
   SavePayrollRegulationParameter,
   SavePayrollRegulationRateBracket,
   SavePayrollRegulationTestCase,
@@ -40,6 +44,50 @@ export const updatePayrollSetting = (
   data: UpdatePayrollSetting,
 ): Promise<PayrollSetting> =>
   apiFetch(`${SETTING_URL}/${id}`, jsonRequest("PUT", data, rowVersion));
+
+export const getPayrollPeriodRules = (
+  settingId: number,
+  showAll = false,
+): Promise<PayrollPeriodRule[]> =>
+  apiFetch(`${SETTING_URL}/${settingId}/period-rules?show_all=${showAll}`);
+
+export const createPayrollPeriodRule = (
+  settingId: number,
+  data: NewPayrollPeriodRule,
+): Promise<PayrollPeriodRule> =>
+  apiFetch(
+    `${SETTING_URL}/${settingId}/period-rules`,
+    jsonRequest("POST", data),
+  );
+
+export const updatePayrollPeriodRule = (
+  settingId: number,
+  ruleId: number,
+  rowVersion: number,
+  data: UpdatePayrollPeriodRule,
+): Promise<PayrollPeriodRule> =>
+  apiFetch(
+    `${SETTING_URL}/${settingId}/period-rules/${ruleId}`,
+    jsonRequest("PUT", data, rowVersion),
+  );
+
+export const deletePayrollPeriodRule = (
+  settingId: number,
+  ruleId: number,
+  rowVersion: number,
+): Promise<void> =>
+  apiFetch(`${SETTING_URL}/${settingId}/period-rules/${ruleId}`, {
+    method: "DELETE",
+    headers: { "If-Match": String(rowVersion) },
+  });
+
+export const getPayrollPeriodPreview = (
+  settingId: number,
+  referenceMonth: string,
+): Promise<PayrollPeriodPreview> =>
+  apiFetch(
+    `${SETTING_URL}/${settingId}/period-preview?reference_month=${encodeURIComponent(referenceMonth)}`,
+  );
 
 export const createPayrollRegulation = (
   data: NewPayrollRegulationPackage,

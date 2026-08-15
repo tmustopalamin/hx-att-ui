@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,6 +11,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
+import { InputSwitch } from "primereact/inputswitch";
 import { Tag } from "primereact/tag";
 
 import {
@@ -27,10 +28,12 @@ import type {
   NewTaxProfile,
 } from "@/app/types/employee-payroll-profile";
 import type { PayrollSetting } from "@/app/types/payroll-configuration";
+import type { Frequency } from "@/app/types/frequency";
 import type { ResponseTypeError } from "@/app/types/response-type";
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 
 type Mode = "bpjs" | "tax" | "salary";
 const ENROLLMENT: NewStatutoryEnrollment = {
@@ -58,7 +61,8 @@ const TAX: NewTaxProfile = {
   ter_category: "A",
   tax_residency: "RESIDENT",
   tax_method: "GROSS",
-  employee_tax_type: "PERMANENT",
+  tax_type_override: null,
+  tax_type_override_reason: null,
   effective_from: "",
   effective_to: null,
   previous_employer_gross: "0",
@@ -66,10 +70,73 @@ const TAX: NewTaxProfile = {
   previous_employer_net: "0",
   notes: null,
 };
+const PTKP_OPTIONS = [
+  {
+    code: "TK/0",
+    label: "TK/0 — Tidak kawin, tanpa tanggungan",
+    amount: "54000000",
+    ter: "A",
+  },
+  {
+    code: "TK/1",
+    label: "TK/1 — Tidak kawin, 1 tanggungan",
+    amount: "58500000",
+    ter: "A",
+  },
+  {
+    code: "TK/2",
+    label: "TK/2 — Tidak kawin, 2 tanggungan",
+    amount: "63000000",
+    ter: "B",
+  },
+  {
+    code: "TK/3",
+    label: "TK/3 — Tidak kawin, 3 tanggungan",
+    amount: "67500000",
+    ter: "B",
+  },
+  {
+    code: "K/0",
+    label: "K/0 — Kawin, tanpa tanggungan",
+    amount: "58500000",
+    ter: "A",
+  },
+  {
+    code: "K/1",
+    label: "K/1 — Kawin, 1 tanggungan",
+    amount: "63000000",
+    ter: "B",
+  },
+  {
+    code: "K/2",
+    label: "K/2 — Kawin, 2 tanggungan",
+    amount: "67500000",
+    ter: "B",
+  },
+  {
+    code: "K/3",
+    label: "K/3 — Kawin, 3 tanggungan",
+    amount: "72000000",
+    ter: "C",
+  },
+];
+
+const formatIdr = (value: string | null | undefined) => {
+  if (!value) return "—";
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+      }).format(amount)
+    : "—";
+};
 const SALARY: NewSalaryHistory = {
   base_salary: "0",
   currency_code: "IDR",
   payroll_setting_id: null,
+  frequency_id: 0,
   effective_from: "",
   effective_to: null,
   change_reason: null,
@@ -83,6 +150,9 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
   const canCreate = useSelector((state: RootState) =>
     state.profile.permissions.includes("payroll.create"),
   );
+  const canOverrideTaxType = useSelector((state: RootState) =>
+    state.profile.permissions.includes("payroll.tax-override"),
+  );
   const key = Number.isFinite(employeeId)
     ? `/api/employees/${employeeId}/payroll-profile`
     : null;
@@ -92,12 +162,31 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
     mode === "salary" ? "/api/payroll-settings" : null,
     fetcher,
   );
+  const { data: frequencies } = useSWR<Frequency[]>(
+    mode === "salary" ? "/api/frequency" : null,
+    fetcher,
+  );
   const [dialog, setDialog] = useState<"primary" | "wage" | null>(null);
   const [saving, setSaving] = useState(false);
   const [enrollment, setEnrollment] = useState(ENROLLMENT);
   const [wage, setWage] = useState(WAGE);
   const [tax, setTax] = useState(TAX);
   const [salary, setSalary] = useState(SALARY);
+
+  useEffect(() => {
+    if (mode !== "salary" || salary.frequency_id > 0 || !frequencies?.length) {
+      return;
+    }
+    const monthly = frequencies.find(
+      (frequency) =>
+        frequency.is_active &&
+        !frequency.deleted_at &&
+        frequency.code.toUpperCase() === "MONTHLY",
+    );
+    if (monthly) {
+      setSalary((current) => ({ ...current, frequency_id: monthly.id }));
+    }
+  }, [frequencies, mode, salary.frequency_id]);
 
   const notify = (severity: "success" | "error", detail: string) =>
     dispatch(
@@ -137,9 +226,9 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
         : "Salary History";
   const description =
     mode === "bpjs"
-      ? "Manage program enrollment and effective statutory wage history."
+      ? "Manage BPJS enrollment. The statutory wage base is derived automatically from salary plus classified fixed allowances."
       : mode === "tax"
-        ? "Manage effective-dated PPh 21 identity and treatment."
+        ? "Select the employee's PTKP status; the annual PTKP value and TER category are derived automatically."
         : "Manage effective-dated base salary without overwriting payroll history.";
 
   return (
@@ -164,7 +253,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             />
             {canCreate && mode === "bpjs" && (
               <Button
-                label="New Wage"
+                label="Advanced Wage Override"
                 icon="pi pi-money-bill"
                 severity="secondary"
                 outlined
@@ -223,8 +312,14 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               />
             </DataTable>
             <h2 className="text-base font-semibold text-slate-800">
-              Statutory Wage History
+              Statutory Wage Overrides (optional)
             </h2>
+            <p className="m-0 -mt-3 text-sm leading-6 text-slate-500">
+              Normally leave this empty. Payroll derives the statutory wage from
+              active Salary History plus income components marked as fixed and
+              included for the relevant BPJS program. Use an override only for a
+              documented company or regulatory exception.
+            </p>
             <DataTable
               value={data?.statutory_wages ?? []}
               loading={isLoading}
@@ -255,9 +350,39 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             <Column field="nik_masked" header="NIK" />
             <Column field="npwp_masked" header="NPWP" />
             <Column field="ptkp_code" header="PTKP" />
-            <Column field="ter_category" header="TER" />
+            <Column
+              field="ptkp_amount"
+              header="Annual PTKP"
+              body={(row) =>
+                formatIdr(
+                  row.ptkp_amount ??
+                    PTKP_OPTIONS.find((option) => option.code === row.ptkp_code)
+                      ?.amount,
+                )
+              }
+            />
+            <Column
+              field="ter_category"
+              header="TER (derived)"
+              body={(row) => row.ter_category ?? "—"}
+            />
             <Column field="tax_method" header="Method" />
-            <Column field="employee_tax_type" header="Employee Type" />
+            <Column
+              field="employee_tax_type"
+              header="Tax Treatment"
+              body={(row) => (
+                <div className="flex flex-col gap-1">
+                  <span>{row.employee_tax_type}</span>
+                  <small className="text-slate-500">
+                    {row.tax_type_source === "EMPLOYMENT_STATUS"
+                      ? `From ${row.source_employment_status_name ?? "Employment Status"}`
+                      : row.tax_type_source === "OVERRIDE"
+                        ? "Approved override"
+                        : "Legacy profile"}
+                  </small>
+                </div>
+              )}
+            />
             <Column field="effective_from" header="Effective From" />
             <Column
               field="effective_to"
@@ -277,6 +402,18 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
           >
             <Column field="base_salary" header="Base Salary" />
             <Column field="currency_code" header="Currency" />
+            <Column
+              field="frequency_name"
+              header="Frequency"
+              body={(row) => (
+                <div className="flex flex-col">
+                  <span>{row.frequency_name}</span>
+                  <small className="text-slate-500">
+                    {row.frequency_days_in_period} day(s) per period
+                  </small>
+                </div>
+              )}
+            />
             <Column field="payroll_setting_name" header="Payroll Setting" />
             <Column
               field="status"
@@ -301,7 +438,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
       <Dialog
         header={
           dialog === "wage"
-            ? "New Statutory Wage"
+            ? "New Statutory Wage Override"
             : mode === "bpjs"
               ? "New Enrollment"
               : mode === "tax"
@@ -362,12 +499,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             profile={data}
           />
         ) : mode === "tax" ? (
-          <TaxForm value={tax} change={setTax} />
+          <TaxForm
+            value={tax}
+            change={setTax}
+            canOverride={canOverrideTaxType}
+          />
         ) : (
           <SalaryForm
             value={salary}
             change={setSalary}
             settings={settings ?? []}
+            frequencies={frequencies ?? []}
           />
         )}
       </Dialog>
@@ -517,10 +659,15 @@ function WageForm({
 function TaxForm({
   value,
   change,
+  canOverride,
 }: {
   value: NewTaxProfile;
   change: React.Dispatch<React.SetStateAction<NewTaxProfile>>;
+  canOverride: boolean;
 }) {
+  const selectedPtkp = PTKP_OPTIONS.find(
+    (option) => option.code === value.ptkp_code,
+  );
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
       <Field label="NIK">
@@ -539,21 +686,42 @@ function TaxForm({
           }
         />
       </Field>
-      <Field label="PTKP">
-        <InputText
-          value={value.ptkp_code}
-          onChange={(e) => change((v) => ({ ...v, ptkp_code: e.target.value }))}
-        />
-      </Field>
-      <Field label="TER Category">
+      <Field label="PTKP Status *">
         <Dropdown
-          value={value.ter_category}
-          options={["A", "B", "C"]}
-          onChange={(e) =>
-            change((v) => ({ ...v, ter_category: String(e.value) }))
-          }
+          value={value.ptkp_code}
+          options={PTKP_OPTIONS}
+          optionLabel="label"
+          optionValue="code"
+          className="w-full"
+          onChange={(e) => {
+            const option = PTKP_OPTIONS.find((item) => item.code === e.value);
+            change((current) => ({
+              ...current,
+              ptkp_code: String(e.value),
+              ter_category: option?.ter ?? null,
+            }));
+          }}
         />
       </Field>
+      <Field label="Annual PTKP">
+        <InputText
+          value={formatIdr(selectedPtkp?.amount)}
+          readOnly
+          className="bg-slate-50"
+        />
+      </Field>
+      <Field label="TER Category (automatic)">
+        <InputText
+          value={selectedPtkp?.ter ?? ""}
+          readOnly
+          className="bg-slate-50"
+        />
+      </Field>
+      <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-6 text-blue-800 sm:col-span-2">
+        TER is derived from the PTKP status. It is used for monthly PPh 21
+        withholding; the final tax month uses the annual Article 17 calculation
+        with the same PTKP status.
+      </div>
       <Field label="Tax Method">
         <Dropdown
           value={value.tax_method}
@@ -563,15 +731,68 @@ function TaxForm({
           }
         />
       </Field>
-      <Field label="Employee Type">
-        <Dropdown
-          value={value.employee_tax_type}
-          options={["PERMANENT", "NON_PERMANENT", "COMMISSIONER", "PENSIONER"]}
-          onChange={(e) =>
-            change((v) => ({ ...v, employee_tax_type: String(e.value) }))
-          }
-        />
-      </Field>
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-slate-700">
+            Tax Treatment
+          </span>
+          <p className="m-0 text-sm leading-6 text-slate-600">
+            The treatment is resolved from the employee's active Employment
+            Status when this profile is saved. It is stored as a snapshot for
+            payroll history.
+          </p>
+          {canOverride && (
+            <div className="mt-2 flex items-center justify-between gap-4 border-t border-slate-200 pt-3">
+              <div>
+                <span className="text-sm font-medium text-slate-700">
+                  Override tax treatment
+                </span>
+                <p className="m-0 mt-1 text-xs text-slate-500">
+                  Use only for an approved tax exception and provide a reason.
+                </p>
+              </div>
+              <InputSwitch
+                checked={Boolean(value.tax_type_override)}
+                onChange={(event) =>
+                  change((current) => ({
+                    ...current,
+                    tax_type_override: event.value ? "PERMANENT" : null,
+                    tax_type_override_reason: event.value
+                      ? current.tax_type_override_reason
+                      : null,
+                  }))
+                }
+              />
+            </div>
+          )}
+          {value.tax_type_override && (
+            <>
+              <Dropdown
+                value={value.tax_type_override}
+                options={["PERMANENT", "NON_PERMANENT"]}
+                onChange={(event) =>
+                  change((current) => ({
+                    ...current,
+                    tax_type_override: String(event.value),
+                  }))
+                }
+                className="w-full"
+              />
+              <InputText
+                value={value.tax_type_override_reason ?? ""}
+                placeholder="Override reason *"
+                onChange={(event) =>
+                  change((current) => ({
+                    ...current,
+                    tax_type_override_reason: event.target.value || null,
+                  }))
+                }
+                className="w-full"
+              />
+            </>
+          )}
+        </div>
+      </div>
       <Dates
         from={value.effective_from}
         to={value.effective_to}
@@ -586,11 +807,16 @@ function SalaryForm({
   value,
   change,
   settings,
+  frequencies,
 }: {
   value: NewSalaryHistory;
   change: React.Dispatch<React.SetStateAction<NewSalaryHistory>>;
   settings: PayrollSetting[];
+  frequencies: Frequency[];
 }) {
+  const activeFrequencies = frequencies.filter(
+    (frequency) => frequency.is_active && !frequency.deleted_at,
+  );
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
       <Field label="Base Salary *">
@@ -612,6 +838,25 @@ function SalaryForm({
             }))
           }
         />
+      </Field>
+      <Field label="Frequency *">
+        <Dropdown
+          value={value.frequency_id || null}
+          options={activeFrequencies}
+          optionLabel="name"
+          optionValue="id"
+          placeholder="Select salary frequency"
+          className="w-full"
+          onChange={(event) =>
+            change((current) => ({
+              ...current,
+              frequency_id: event.value ? Number(event.value) : 0,
+            }))
+          }
+        />
+        <small className="text-xs leading-5 text-slate-500">
+          Base salary is the amount for the selected frequency period.
+        </small>
       </Field>
       <Field label="Payroll Setting">
         <Dropdown
@@ -665,17 +910,15 @@ function Dates({
   return (
     <>
       <Field label="Effective From *">
-        <InputText
-          type="date"
+        <PrimeDatePicker
           value={from}
-          onChange={(e) => set(e.target.value, to)}
+          onValueChange={(value) => set(value, to)}
         />
       </Field>
       <Field label="Effective To">
-        <InputText
-          type="date"
-          value={to ?? ""}
-          onChange={(e) => set(from, e.target.value || null)}
+        <PrimeDatePicker
+          value={to}
+          onValueChange={(value) => set(from, value || null)}
         />
       </Field>
     </>

@@ -15,6 +15,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import {
   createEmployeeLeaveBalance,
@@ -35,7 +36,7 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -74,6 +75,7 @@ const LeaveTableData = () => {
   const params = useParams();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
+  const archivedAccess = useArchivedDataAccess("employee-leave-balance");
 
   const [selectedData, setSelectedData] = useState<EmployeeLeaveBalance | null>(
     null,
@@ -101,7 +103,9 @@ const LeaveTableData = () => {
     mode: "onChange",
   });
 
-  const leaveBalanceKey = `/api/employees/${employeeId}/leave-balance?show_all=${isShowDeletedDataChecked}`;
+  const leaveBalanceKey = `/api/employees/${employeeId}/leave-balance?show_all=${
+    archivedAccess.canShowDeleted && isShowDeletedDataChecked
+  }`;
 
   const {
     data: leaveBalanceData,
@@ -411,7 +415,7 @@ const LeaveTableData = () => {
   };
 
   const onClickDelete = (data: EmployeeLeaveBalance) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this leave balance?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -423,7 +427,7 @@ const LeaveTableData = () => {
   };
 
   const onClickRestore = (data: EmployeeLeaveBalance) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to restore this leave balance?",
       header: "Restore Confirmation",
       icon: "pi pi-info-circle",
@@ -435,7 +439,7 @@ const LeaveTableData = () => {
   };
 
   const onClickPurge = (data: EmployeeLeaveBalance) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to permanently delete this leave balance?",
       header: "Permanent Delete Confirmation",
       icon: "pi pi-exclamation-triangle",
@@ -483,26 +487,36 @@ const LeaveTableData = () => {
     if (rowData.deleted_at) {
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
-          <Button
-            rounded
-            outlined
-            severity="success"
-            icon="pi pi-refresh"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            onClick={() => onClickRestore(rowData)}
-          />
-          <Button
-            rounded
-            outlined
-            severity="danger"
-            icon="pi pi-trash"
-            size="small"
-            tooltip="Delete Forever"
-            tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            onClick={() => onClickPurge(rowData)}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              rounded
+              outlined
+              severity="success"
+              icon="pi pi-refresh"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: () => document.body,
+                position: "top",
+              }}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
+          {archivedAccess.canPurge && (
+            <Button
+              rounded
+              outlined
+              severity="danger"
+              icon="pi pi-trash"
+              size="small"
+              tooltip="Delete Forever"
+              tooltipOptions={{
+                appendTo: () => document.body,
+                position: "top",
+              }}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
         </div>
       );
     }
@@ -541,8 +555,6 @@ const LeaveTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
@@ -557,19 +569,23 @@ const LeaveTableData = () => {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-              <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                <Checkbox
-                  inputId="showDeletedData"
-                  checked={isShowDeletedDataChecked}
-                  onChange={() => setIsShowDeletedDataChecked((prev) => !prev)}
-                />
-                <label
-                  htmlFor="showDeletedData"
-                  className="cursor-pointer text-sm text-slate-700"
-                >
-                  Show deleted data
-                </label>
-              </div>
+              {archivedAccess.canShowDeleted && (
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    checked={isShowDeletedDataChecked}
+                    onChange={() =>
+                      setIsShowDeletedDataChecked((prev) => !prev)
+                    }
+                  />
+                  <label
+                    htmlFor="showDeletedData"
+                    className="cursor-pointer text-sm text-slate-700"
+                  >
+                    Show deleted data
+                  </label>
+                </div>
+              )}
 
               <IconField iconPosition="left">
                 <InputIcon className="pi pi-search" />

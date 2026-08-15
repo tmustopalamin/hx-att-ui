@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getSafeInternalPath } from "@/app/utils/safe-navigation";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { ProgressSpinner } from "primereact/progressspinner";
+import { requestActionConfirmation } from "./ActionConfirmDialog";
 
 import {
   archiveNotification,
@@ -196,12 +197,7 @@ const NotificationBell = () => {
     }
   };
 
-  const handleArchive = async (
-    event: React.MouseEvent<HTMLButtonElement>,
-    notification: NotificationItem,
-  ) => {
-    event.stopPropagation();
-
+  const handleArchive = async (notification: NotificationItem) => {
     try {
       setActionLoadingId(notification.id);
 
@@ -211,6 +207,22 @@ const NotificationBell = () => {
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const confirmArchive = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    notification: NotificationItem,
+  ) => {
+    event.stopPropagation();
+    requestActionConfirmation({
+      action: "Archive notification",
+      target: notification.title,
+      severity: "warning",
+      confirmLabel: "Archive",
+      confirmIcon: "pi pi-archive",
+      description: "Archive this notification?",
+      onAccept: () => handleArchive(notification),
+    });
   };
 
   const handleViewAll = () => {
@@ -358,7 +370,7 @@ const NotificationBell = () => {
                         <button
                           type="button"
                           onClick={(event) =>
-                            handleArchive(event, notification)
+                            confirmArchive(event, notification)
                           }
                           className="shrink-0 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
                           aria-label="Archive notification"

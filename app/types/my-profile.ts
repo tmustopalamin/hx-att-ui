@@ -31,6 +31,8 @@ export type MyProfileEmploymentData = {
   code?: string | null;
   join_date?: string | null;
   end_date?: string | null;
+  probation_end_date?: string | null;
+  confirmation_date?: string | null;
 
   agency_id?: number | null;
   agency_name?: string | null;

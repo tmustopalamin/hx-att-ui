@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import useSWR from "swr";
@@ -23,16 +23,20 @@ import {
   validatePayrollBatch,
   transitionPayrollBatch,
 } from "@/app/services/payroll-batch-service";
+import { getPayrollPeriodPreview } from "@/app/services/payroll-configuration-service";
 import type {
   NewPayrollBatch,
   PayrollBatch,
   PayrollBatchCreateOptions,
   PayrollBatchStatus,
 } from "@/app/types/payroll-batch";
+import type { PayrollPeriodPreview } from "@/app/types/payroll-configuration";
 import type { ResponseTypeError } from "@/app/types/response-type";
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import PayrollPaymentDialog from "./PayrollPaymentDialog";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 const BATCH_URL = "/api/payroll-batches";
 const OPTIONS_URL = "/api/payroll-batches/options";
@@ -43,6 +47,8 @@ const emptyBatch = (): NewPayrollBatch => ({
   period_start: "",
   period_end: "",
   attendance_cutoff_date: "",
+  period_reference_month: "",
+  payroll_period_rule_id: null,
   payroll_date: "",
   notes: null,
   regulation_package_ids: [],
@@ -68,6 +74,9 @@ export default function RunPayrollTableData() {
   const [transitioningId, setTransitioningId] = useState<number | null>(null);
   const [paymentBatch, setPaymentBatch] = useState<PayrollBatch | null>(null);
   const [batch, setBatch] = useState<NewPayrollBatch>(emptyBatch);
+  const [periodPreview, setPeriodPreview] =
+    useState<PayrollPeriodPreview | null>(null);
+  const [periodPreviewLoading, setPeriodPreviewLoading] = useState(false);
   const {
     data: batches,
     error: batchError,
@@ -120,8 +129,55 @@ export default function RunPayrollTableData() {
 
   const openCreate = () => {
     setBatch(emptyBatch());
+    setPeriodPreview(null);
     setVisible(true);
   };
+
+  useEffect(() => {
+    if (
+      !visible ||
+      batch.payroll_setting_id <= 0 ||
+      !batch.period_reference_month
+    ) {
+      setPeriodPreview(null);
+      return;
+    }
+    let cancelled = false;
+    setPeriodPreviewLoading(true);
+    void getPayrollPeriodPreview(
+      batch.payroll_setting_id,
+      `${batch.period_reference_month.slice(0, 7)}-01`,
+    )
+      .then((preview) => {
+        if (cancelled) return;
+        setPeriodPreview(preview);
+        setBatch((current) => ({
+          ...current,
+          period_start: preview.period_start,
+          period_end: preview.period_end,
+          attendance_cutoff_date: preview.attendance_cutoff_date,
+          payroll_period_rule_id: preview.payroll_period_rule_id,
+        }));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPeriodPreview(null);
+          setBatch((current) => ({
+            ...current,
+            period_start: "",
+            period_end: "",
+            attendance_cutoff_date: "",
+            payroll_period_rule_id: null,
+          }));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPeriodPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [batch.payroll_setting_id, batch.period_reference_month, visible]);
 
   const save = async () => {
     if (
@@ -130,6 +186,8 @@ export default function RunPayrollTableData() {
       !batch.period_start ||
       !batch.period_end ||
       !batch.attendance_cutoff_date ||
+      !batch.period_reference_month ||
+      !batch.payroll_period_rule_id ||
       !batch.payroll_date ||
       batch.regulation_package_ids.length === 0
     ) {
@@ -177,6 +235,17 @@ export default function RunPayrollTableData() {
       setValidatingId(null);
     }
   };
+  const confirmValidate = (row: PayrollBatch) => {
+    requestActionConfirmation({
+      action: "Validate payroll batch",
+      target: row.batch_no,
+      severity: "warning",
+      confirmLabel: "Validate",
+      confirmIcon: "pi pi-check-circle",
+      description: "Validate this payroll batch?",
+      onAccept: () => validate(row),
+    });
+  };
 
   const calculate = async (row: PayrollBatch) => {
     try {
@@ -202,6 +271,17 @@ export default function RunPayrollTableData() {
       setCalculatingId(null);
     }
   };
+  const confirmCalculate = (row: PayrollBatch) => {
+    requestActionConfirmation({
+      action: "Calculate payroll",
+      target: row.batch_no,
+      severity: "warning",
+      confirmLabel: "Calculate",
+      confirmIcon: "pi pi-calculator",
+      description: "Calculate this payroll batch?",
+      onAccept: () => calculate(row),
+    });
+  };
   const transition = async (
     row: PayrollBatch,
     status: "REVIEWED" | "PENDING_APPROVAL" | "APPROVED" | "POSTED",
@@ -216,6 +296,31 @@ export default function RunPayrollTableData() {
     } finally {
       setTransitioningId(null);
     }
+  };
+  const confirmTransition = (
+    row: PayrollBatch,
+    status: "REVIEWED" | "PENDING_APPROVAL" | "APPROVED" | "POSTED",
+  ) => {
+    const label =
+      status === "PENDING_APPROVAL"
+        ? "Submit payroll for approval"
+        : status === "APPROVED"
+          ? "Approve payroll"
+          : status === "POSTED"
+            ? "Post payroll"
+            : "Mark payroll reviewed";
+    requestActionConfirmation({
+      action: label,
+      target: row.batch_no,
+      severity: status === "POSTED" ? "danger" : "warning",
+      confirmLabel: status === "POSTED" ? "Post" : label,
+      confirmIcon: status === "POSTED" ? "pi pi-lock" : "pi pi-check",
+      description:
+        status === "POSTED"
+          ? "Post this payroll batch?"
+          : `Move payroll to ${status.replaceAll("_", " ").toLowerCase()}?`,
+      onAccept: () => transition(row, status),
+    });
   };
   const nextTransition = (
     status: PayrollBatchStatus,
@@ -328,7 +433,7 @@ export default function RunPayrollTableData() {
                     size="small"
                     loading={calculatingId === row.id}
                     disabled={calculatingId !== null || validatingId !== null}
-                    onClick={() => void calculate(row)}
+                    onClick={() => confirmCalculate(row)}
                   />
                 ) : next ? (
                   <Button
@@ -340,7 +445,7 @@ export default function RunPayrollTableData() {
                       calculatingId !== null ||
                       validatingId !== null
                     }
-                    onClick={() => void transition(row, next.status)}
+                    onClick={() => confirmTransition(row, next.status)}
                   />
                 ) : row.status === "DRAFT" || row.status === "FAILED" ? (
                   <Button
@@ -351,7 +456,7 @@ export default function RunPayrollTableData() {
                     outlined
                     loading={validatingId === row.id}
                     disabled={validatingId !== null || calculatingId !== null}
-                    onClick={() => void validate(row)}
+                    onClick={() => confirmValidate(row)}
                   />
                 ) : row.status === "POSTED" ? (
                   <Button
@@ -429,58 +534,67 @@ export default function RunPayrollTableData() {
               }
             />
           </Field>
-          <Field label="Period Start *">
+          <Field label="Reference Month *">
             <InputText
-              type="date"
-              value={batch.period_start}
+              type="month"
+              value={batch.period_reference_month.slice(0, 7)}
               className="w-full"
               onChange={(event) =>
                 setBatch((current) => ({
                   ...current,
-                  period_start: event.target.value,
+                  period_reference_month: event.target.value
+                    ? `${event.target.value}-01`
+                    : "",
+                  period_start: "",
+                  period_end: "",
+                  attendance_cutoff_date: "",
+                  payroll_period_rule_id: null,
                 }))
               }
+            />
+          </Field>
+          <Field label="Period Start *">
+            <PrimeDatePicker
+              value={batch.period_start}
+              disabled
+              className="w-full"
+              onValueChange={() => undefined}
             />
           </Field>
           <Field label="Period End *">
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={batch.period_end}
+              disabled
               className="w-full"
-              onChange={(event) =>
-                setBatch((current) => ({
-                  ...current,
-                  period_end: event.target.value,
-                }))
-              }
+              onValueChange={() => undefined}
             />
           </Field>
           <Field label="Attendance Cutoff *">
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={batch.attendance_cutoff_date}
+              disabled
               className="w-full"
-              onChange={(event) =>
-                setBatch((current) => ({
-                  ...current,
-                  attendance_cutoff_date: event.target.value,
-                }))
-              }
+              onValueChange={() => undefined}
             />
           </Field>
           <Field label="Payroll Date *">
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={batch.payroll_date}
               className="w-full"
-              onChange={(event) =>
-                setBatch((current) => ({
-                  ...current,
-                  payroll_date: event.target.value,
-                }))
+              onValueChange={(value) =>
+                setBatch((current) => ({ ...current, payroll_date: value }))
               }
             />
           </Field>
+          <div className="sm:col-span-2">
+            <p className="m-0 text-xs leading-5 text-slate-500">
+              {periodPreviewLoading
+                ? "Calculating the configured payroll period…"
+                : periodPreview
+                  ? `Cutoff day ${periodPreview.cutoff_day}; dates are derived by the server and cannot be edited.`
+                  : "Select a payroll setting and reference month to preview the configured period."}
+            </p>
+          </div>
           <div className="sm:col-span-2">
             <Field label="Published Regulation Packages *">
               <MultiSelect

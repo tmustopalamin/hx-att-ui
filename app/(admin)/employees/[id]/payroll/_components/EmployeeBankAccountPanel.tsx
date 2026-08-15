@@ -29,6 +29,8 @@ import type { ResponseTypeError } from "@/app/types/response-type";
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
 
 type BankForm = NewEmployeeBankAccount & { id?: number; row_version?: number };
 
@@ -59,6 +61,9 @@ export default function EmployeeBankAccountPanel() {
   const [form, setForm] = useState<BankForm>(emptyForm);
   const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [formTouched, setFormTouched] = useState(false);
+  const { confirmDiscard } = useDirtyFormGuard(visible && formTouched, !saving);
 
   const notify = (severity: "success" | "error", detail: string) =>
     dispatch(
@@ -76,6 +81,7 @@ export default function EmployeeBankAccountPanel() {
 
   const openNew = () => {
     setForm(emptyForm());
+    setFormTouched(false);
     setVisible(true);
   };
   const openEdit = (account: EmployeeBankAccount) => {
@@ -88,7 +94,18 @@ export default function EmployeeBankAccountPanel() {
       is_primary: account.is_primary,
       is_active: account.is_active,
     });
+    setFormTouched(false);
     setVisible(true);
+  };
+  const closeForm = () => {
+    if (saving) return;
+    if (!formTouched) {
+      setVisible(false);
+      return;
+    }
+    void confirmDiscard().then((discard) => {
+      if (discard) setVisible(false);
+    });
   };
   const save = async () => {
     try {
@@ -114,6 +131,7 @@ export default function EmployeeBankAccountPanel() {
         await createEmployeeBankAccount(employeeId, form);
         notify("success", "Bank account added.");
       }
+      setFormTouched(false);
       setVisible(false);
       await mutate();
     } catch (error: unknown) {
@@ -122,25 +140,32 @@ export default function EmployeeBankAccountPanel() {
       setSaving(false);
     }
   };
-  const remove = async (account: EmployeeBankAccount) => {
-    if (
-      !window.confirm(
-        `Remove the bank account ending ${account.account_number_masked}?`,
-      )
-    )
-      return;
-    try {
-      await deletePayrollProfileItem(
-        employeeId,
-        "bank-accounts",
-        account.id,
-        account.row_version,
-      );
-      notify("success", "Bank account removed.");
-      await mutate();
-    } catch (error: unknown) {
-      notify("error", message(error));
-    }
+  const remove = (account: EmployeeBankAccount) => {
+    requestActionConfirmation({
+      action: "Remove bank account",
+      target: account.account_number_masked,
+      severity: "danger",
+      confirmLabel: "Remove",
+      confirmIcon: "pi pi-trash",
+      description: "Remove this payroll bank account?",
+      onAccept: async () => {
+        setDeletingId(account.id);
+        try {
+          await deletePayrollProfileItem(
+            employeeId,
+            "bank-accounts",
+            account.id,
+            account.row_version,
+          );
+          notify("success", "Bank account removed.");
+          await mutate();
+        } catch (error: unknown) {
+          notify("error", message(error));
+        } finally {
+          setDeletingId(null);
+        }
+      },
+    });
   };
 
   return (
@@ -237,7 +262,9 @@ export default function EmployeeBankAccountPanel() {
                       rounded
                       severity="danger"
                       aria-label="Remove bank account"
-                      onClick={() => void remove(row)}
+                      loading={deletingId === row.id}
+                      disabled={deletingId !== null}
+                      onClick={() => remove(row)}
                     />
                   )}
                 </div>
@@ -249,7 +276,7 @@ export default function EmployeeBankAccountPanel() {
       <Dialog
         header={form.id ? "Edit Bank Account" : "Add Bank Account"}
         visible={visible}
-        onHide={() => setVisible(false)}
+        onHide={closeForm}
         modal
         draggable={false}
         resizable={false}
@@ -261,7 +288,7 @@ export default function EmployeeBankAccountPanel() {
               text
               severity="secondary"
               disabled={saving}
-              onClick={() => setVisible(false)}
+              onClick={closeForm}
             />
             <Button
               label={form.id ? "Save Changes" : "Add Account"}
@@ -283,12 +310,13 @@ export default function EmployeeBankAccountPanel() {
               showClear
               placeholder="Select bank"
               className="w-full"
-              onChange={(event) =>
+              onChange={(event) => {
+                setFormTouched(true);
                 setForm((value) => ({
                   ...value,
                   bank_id: Number(event.value) || 0,
-                }))
-              }
+                }));
+              }}
             />
           </Field>
           <Field label={form.id ? "New Account Number" : "Account Number *"}>
@@ -300,37 +328,40 @@ export default function EmployeeBankAccountPanel() {
               placeholder={
                 form.id ? "Leave empty to keep current number" : "Digits only"
               }
-              onChange={(event) =>
+              onChange={(event) => {
+                setFormTouched(true);
                 setForm((value) => ({
                   ...value,
                   account_number: event.target.value,
-                }))
-              }
+                }));
+              }}
             />
           </Field>
           <Field label="Account Holder *">
             <InputText
               value={form.account_holder_name}
               className="w-full"
-              onChange={(event) =>
+              onChange={(event) => {
+                setFormTouched(true);
                 setForm((value) => ({
                   ...value,
                   account_holder_name: event.target.value,
-                }))
-              }
+                }));
+              }}
             />
           </Field>
           <div className="flex items-end gap-6 pb-2">
             <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
               <InputSwitch
                 checked={form.is_active}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setFormTouched(true);
                   setForm((value) => ({
                     ...value,
                     is_active: Boolean(event.value),
                     is_primary: event.value ? value.is_primary : false,
-                  }))
-                }
+                  }));
+                }}
               />
               Active
             </label>
@@ -338,12 +369,13 @@ export default function EmployeeBankAccountPanel() {
               <InputSwitch
                 checked={form.is_primary}
                 disabled={!form.is_active}
-                onChange={(event) =>
+                onChange={(event) => {
+                  setFormTouched(true);
                   setForm((value) => ({
                     ...value,
                     is_primary: Boolean(event.value),
-                  }))
-                }
+                  }));
+                }}
               />
               Primary
             </label>

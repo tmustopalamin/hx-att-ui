@@ -15,6 +15,7 @@ import {
   NotificationItem,
 } from "@/app/services/notification-service";
 import { getSafeInternalPath } from "@/app/utils/safe-navigation";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 const moduleOptions = [
   { label: "All Modules", value: "" },
@@ -133,7 +134,7 @@ const NotificationCenterTableData = () => {
     }
   };
 
-  const handleArchive = async (notification: NotificationItem) => {
+  const archive = async (notification: NotificationItem) => {
     try {
       setActionLoadingId(notification.id);
       await archiveNotification(notification.id);
@@ -141,6 +142,18 @@ const NotificationCenterTableData = () => {
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const handleArchive = (notification: NotificationItem) => {
+    requestActionConfirmation({
+      action: "Archive notification",
+      target: notification.title,
+      description: "Remove this notification from the active list?",
+      severity: "warning",
+      confirmLabel: "Archive",
+      confirmIcon: "pi pi-archive",
+      onAccept: () => archive(notification),
+    });
   };
 
   const handleMarkAllRead = async () => {

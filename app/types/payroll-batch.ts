@@ -19,6 +19,8 @@ export interface PayrollBatch {
   period_start: string;
   period_end: string;
   attendance_cutoff_date: string;
+  period_reference_month: string | null;
+  payroll_period_rule_id: number | null;
   payroll_date: string;
   status: PayrollBatchStatus;
   notes: string | null;
@@ -56,6 +58,8 @@ export interface NewPayrollBatch {
   period_start: string;
   period_end: string;
   attendance_cutoff_date: string;
+  period_reference_month: string;
+  payroll_period_rule_id: number | null;
   payroll_date: string;
   notes: string | null;
   regulation_package_ids: number[];
@@ -271,4 +275,28 @@ export interface PayrollAdjustmentOptions {
   }>;
   income_components: Array<{ id: number; code: string; name: string }>;
   deduction_components: Array<{ id: number; code: string; name: string }>;
+}
+
+export interface PayrollPerformanceEarningPreview {
+  performance_review_id: number;
+  performance_cycle_id: number;
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  score: string | number | null;
+  base_salary: string | number;
+  policy_id: number | null;
+  policy_code: string | null;
+  policy_version: number | null;
+  income_component_id: number | null;
+  income_component_code: string | null;
+  income_component_name: string | null;
+  amount_mode: string | null;
+  amount: string | number | null;
+  reason: string | null;
+  existing_adjustment_status: string | null;
+}
+export interface PayrollPerformanceEarningGeneration {
+  created: PayrollAdjustment[];
+  skipped: PayrollPerformanceEarningPreview[];
 }

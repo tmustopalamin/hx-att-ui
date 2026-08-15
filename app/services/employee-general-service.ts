@@ -97,7 +97,13 @@ export const getPositionOptions = async (): Promise<
   return res.json();
 };
 
-export const getEmploymentStatusOptions = async (): Promise<OptionItem[]> => {
+export type EmploymentStatusOption = OptionItem & {
+  default_tax_employee_type: string | null;
+};
+
+export const getEmploymentStatusOptions = async (): Promise<
+  EmploymentStatusOption[]
+> => {
   const res = await fetch("/api/employment-status", { credentials: "include" });
   await ensureOk(res);
   return res.json();
@@ -195,6 +201,8 @@ export const updateEmployeeEmploymentData = async (
       employee_id: employeeId,
       join_date: toDateString(payload.join_date),
       end_date: toDateString(payload.end_date),
+      probation_end_date: toDateString(payload.probation_end_date),
+      confirmation_date: toDateString(payload.confirmation_date),
       department_id: payload.department_id,
       position_id: payload.position_id,
       supervisor_employee_id: payload.supervisor_employee_id,

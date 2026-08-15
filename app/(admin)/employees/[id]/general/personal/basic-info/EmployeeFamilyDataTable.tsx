@@ -21,7 +21,7 @@ import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -221,7 +221,7 @@ const EmployeeFamilyDataTable = () => {
   };
 
   const onDelete = (row: EmployeeFamilyRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this family record?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -280,8 +280,6 @@ const EmployeeFamilyDataTable = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>

@@ -15,6 +15,7 @@ import {
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { EmployeeFingerprint } from "@/app/types/employee-fingerprint";
 import { FingerprintScanner } from "@/app/types/fingerprint-scanner";
@@ -33,7 +34,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -68,14 +69,15 @@ const EmployeeFingerprintTableData = () => {
   const params = useParams();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
+  const archivedAccess = useArchivedDataAccess("employee");
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
   );
   const canCreate = permissions.includes("employee.create");
   const canUpdate = permissions.includes("employee.update");
   const canDelete = permissions.includes("employee.delete");
-  const canRestore = permissions.includes("employee.restore");
-  const canPurge = permissions.includes("employee.purge");
+  const canRestore = archivedAccess.canRestore;
+  const canPurge = archivedAccess.canPurge;
 
   const [selectedData, setSelectedData] = useState<EmployeeFingerprint | null>(
     null,
@@ -110,7 +112,9 @@ const EmployeeFingerprintTableData = () => {
     mode: "onChange",
   });
 
-  const fingerprintKey = `/api/employees/${employeeId}/fingerprint?show_all=${isShowDeletedDataChecked}`;
+  const fingerprintKey = `/api/employees/${employeeId}/fingerprint?show_all=${
+    archivedAccess.canShowDeleted && isShowDeletedDataChecked
+  }`;
 
   const {
     data: employeeFingerprintData,
@@ -573,7 +577,7 @@ const EmployeeFingerprintTableData = () => {
   };
 
   const onClickDelete = (data: EmployeeFingerprint) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this fingerprint mapping?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -585,7 +589,7 @@ const EmployeeFingerprintTableData = () => {
   };
 
   const onClickRestore = (data: EmployeeFingerprint) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to restore this fingerprint mapping?",
       header: "Restore Confirmation",
       icon: "pi pi-info-circle",
@@ -597,7 +601,7 @@ const EmployeeFingerprintTableData = () => {
   };
 
   const onClickPurge = (data: EmployeeFingerprint) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to permanently delete this fingerprint mapping?",
       header: "Permanent Delete Confirmation",
       icon: "pi pi-exclamation-triangle",
@@ -782,8 +786,6 @@ const EmployeeFingerprintTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-4">
           <div className="border-b border-slate-200 pb-4">
@@ -799,19 +801,21 @@ const EmployeeFingerprintTableData = () => {
 
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-auto">
-                  <Checkbox
-                    inputId="showDeletedFingerprint"
-                    checked={isShowDeletedDataChecked}
-                    onChange={onShowDeletedDataChecked}
-                  />
-                  <label
-                    htmlFor="showDeletedFingerprint"
-                    className="cursor-pointer text-sm text-slate-700"
-                  >
-                    Show deleted data
-                  </label>
-                </div>
+                {archivedAccess.canShowDeleted && (
+                  <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-auto">
+                    <Checkbox
+                      inputId="showDeletedFingerprint"
+                      checked={isShowDeletedDataChecked}
+                      onChange={onShowDeletedDataChecked}
+                    />
+                    <label
+                      htmlFor="showDeletedFingerprint"
+                      className="cursor-pointer text-sm text-slate-700"
+                    >
+                      Show deleted data
+                    </label>
+                  </div>
+                )}
 
                 <IconField iconPosition="left" className="w-full sm:w-72">
                   <InputIcon className="pi pi-search" />

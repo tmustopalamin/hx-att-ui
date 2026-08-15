@@ -18,13 +18,14 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -65,6 +66,7 @@ const PersonalIdentityAndAddress = () => {
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
+  const archivedAccess = useArchivedDataAccess("employee");
 
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
@@ -218,7 +220,7 @@ const PersonalIdentityAndAddress = () => {
   };
 
   const onDelete = (row: EmployeeIdentityRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this identity record?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -278,7 +280,7 @@ const PersonalIdentityAndAddress = () => {
   };
 
   const onPurge = (row: EmployeeIdentityRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "This will permanently delete the identity record. Continue?",
       header: "Permanent Delete Confirmation",
       icon: "pi pi-exclamation-triangle",
@@ -363,7 +365,7 @@ const PersonalIdentityAndAddress = () => {
           </>
         )}
 
-        {isDeleted && (
+        {isDeleted && archivedAccess.canShowDeleted && (
           <>
             <Button
               type="button"
@@ -416,8 +418,6 @@ const PersonalIdentityAndAddress = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-start md:justify-between">
           <div>

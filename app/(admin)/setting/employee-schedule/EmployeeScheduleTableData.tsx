@@ -11,7 +11,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Controller, useForm } from "react-hook-form";
 import CardTitle from "@/app/_components/CardTitle";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { InputSwitch } from "primereact/inputswitch";
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -31,7 +31,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Tag } from "primereact/tag";
 import { Checkbox } from "primereact/checkbox";
 import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { Bank } from "@/app/types/bank";
 import {
   createBank,
@@ -44,6 +44,7 @@ import {
 const EmployeeScheduleTableData = () => {
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("master-data");
   const [selectedData, setSelectedData] = useState<Bank | null>(null);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
@@ -111,11 +112,18 @@ const EmployeeScheduleTableData = () => {
     data: BankData,
     error,
     isLoading,
-  } = useSWR<Bank[]>(`/api/bank?show_all=${isShowDeletedDataChecked}`, fetcher);
+  } = useSWR<Bank[]>(
+    `/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+    fetcher,
+  );
 
   if (isLoading) return <LoadingDataTable />;
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey="/api/bank?show_all=true" />;
+    return (
+      <ErrorNotConnectedToApi
+        mutateKey={`/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`}
+      />
+    );
   }
 
   const onIngredientsChange = () => {
@@ -128,7 +136,9 @@ const EmployeeScheduleTableData = () => {
         await createBank(data);
       setVisible(false);
       reset();
-      mutate(`/api/bank?show_all=${isShowDeletedDataChecked}`);
+      mutate(
+        `/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+      );
       dispatch(
         showToast({
           visible: true,
@@ -181,7 +191,9 @@ const EmployeeScheduleTableData = () => {
       );
 
       setVisible(false);
-      mutate(`/api/bank?show_all=${isShowDeletedDataChecked}`);
+      mutate(
+        `/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+      );
       dispatch(
         showToast({
           visible: true,
@@ -222,7 +234,9 @@ const EmployeeScheduleTableData = () => {
       );
       setVisible(false);
       reset();
-      mutate(`/api/bank?show_all=${isShowDeletedDataChecked}`);
+      mutate(
+        `/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+      );
 
       dispatch(
         showToast({
@@ -262,7 +276,9 @@ const EmployeeScheduleTableData = () => {
       );
       setVisible(false);
       reset();
-      mutate(`/api/bank?show_all=${isShowDeletedDataChecked}`);
+      mutate(
+        `/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+      );
 
       dispatch(
         showToast({
@@ -303,7 +319,9 @@ const EmployeeScheduleTableData = () => {
       );
       setVisible(false);
       reset();
-      mutate(`/api/bank?show_all=${isShowDeletedDataChecked}`);
+      mutate(
+        `/api/bank?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+      );
 
       dispatch(
         showToast({
@@ -370,7 +388,7 @@ const EmployeeScheduleTableData = () => {
     return (
       <>
         <div className="flex gap-2">
-          {hasRole(profileState.role, ["superadmin"]) && (
+          {archivedAccess.canPurge && (
             <Button
               tooltipOptions={{
                 appendTo: () => document.body,
@@ -388,7 +406,7 @@ const EmployeeScheduleTableData = () => {
             />
           )}
 
-          {hasRole(profileState.role, ["superadmin"]) && rowData.deleted_at && (
+          {archivedAccess.canRestore && rowData.deleted_at && (
             <Button
               tooltipOptions={{
                 appendTo: () => document.body,
@@ -442,7 +460,7 @@ const EmployeeScheduleTableData = () => {
   };
 
   const onClickDelete = (data: Bank) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this record?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -472,7 +490,7 @@ const EmployeeScheduleTableData = () => {
   };
 
   const onClickRestore = (data: Bank) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to restore this record?",
       header: "Restore Confirmation",
       icon: "pi pi-info-circle",
@@ -502,7 +520,7 @@ const EmployeeScheduleTableData = () => {
   };
 
   const onClickPurge = (data: Bank) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this record forever?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -532,7 +550,6 @@ const EmployeeScheduleTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
       <Card title={<CardTitle title="Bank" url="" />}>
         <div className="p-3 flex flex-col gap-5">
           <div className="flex items-center justify-between">
@@ -546,18 +563,20 @@ const EmployeeScheduleTableData = () => {
                 }}
               />
 
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  show deleted data
-                </label>
-              </div>
+              {archivedAccess.canShowDeleted && (
+                <div className="flex align-items-center pl-5">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    name="showDeletedData"
+                    value="yes"
+                    onChange={onIngredientsChange}
+                    checked={isShowDeletedDataChecked}
+                  />
+                  <label htmlFor="showDeletedData" className="ml-2">
+                    show deleted data
+                  </label>
+                </div>
+              )}
             </div>
 
             <IconField iconPosition="left">

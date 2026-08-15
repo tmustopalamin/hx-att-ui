@@ -8,7 +8,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { IconField } from "primereact/iconfield";
@@ -34,7 +34,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
@@ -51,8 +51,9 @@ const emptyPayload = (): FrequencyPayload => ({
 export default function FrequencyDataTable() {
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("payroll-config");
   const canManage = profile.permissions.includes("payroll-config.manage");
-  const isSuperadmin = hasRole(profile.role, ["superadmin"]);
+  const isSuperadmin = archivedAccess.canShowDeleted;
   const [showDeleted, setShowDeleted] = useState(false);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
@@ -62,7 +63,7 @@ export default function FrequencyDataTable() {
   const [form, setForm] = useState<FrequencyPayload>(emptyPayload);
   const [dialogVisible, setDialogVisible] = useState(false);
   const [saving, setSaving] = useState(false);
-  const currentUrl = listUrl(showDeleted);
+  const currentUrl = listUrl(archivedAccess.canShowDeleted && showDeleted);
   const { data, error, isLoading, isValidating, mutate } = useSWR<Frequency[]>(
     currentUrl,
     fetcher,
@@ -177,7 +178,7 @@ export default function FrequencyDataTable() {
         : action === "restore"
           ? "This frequency will be available again."
           : "This action cannot be undone.";
-    confirmDialog({
+    requestActionConfirmation({
       header: `${label} Pay Frequency`,
       message: (
         <div className="flex flex-col gap-1">
@@ -224,28 +225,32 @@ export default function FrequencyDataTable() {
     if (row.deleted_at) {
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
-            onClick={() => ask(row, "restore")}
-          />
-          <Button
-            type="button"
-            icon="pi pi-trash"
-            rounded
-            outlined
-            severity="danger"
-            size="small"
-            tooltip="Delete permanently"
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
-            onClick={() => ask(row, "purge")}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              onClick={() => ask(row, "restore")}
+            />
+          )}
+          {archivedAccess.canPurge && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              onClick={() => ask(row, "purge")}
+            />
+          )}
         </div>
       ) : (
         <span className="text-sm text-slate-400">No action</span>
@@ -289,7 +294,6 @@ export default function FrequencyDataTable() {
 
   return (
     <>
-      <ConfirmDialog />
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
@@ -332,19 +336,21 @@ export default function FrequencyDataTable() {
             </div>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                inputId="frequency-show-deleted"
-                checked={showDeleted}
-                onChange={(event) => setShowDeleted(Boolean(event.checked))}
-              />
-              <label
-                htmlFor="frequency-show-deleted"
-                className="cursor-pointer select-none text-sm text-slate-600"
-              >
-                Show deleted records
-              </label>
-            </div>
+            {archivedAccess.canShowDeleted && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="frequency-show-deleted"
+                  checked={showDeleted}
+                  onChange={(event) => setShowDeleted(Boolean(event.checked))}
+                />
+                <label
+                  htmlFor="frequency-show-deleted"
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Show deleted records
+                </label>
+              </div>
+            )}
             <IconField iconPosition="left" className="w-full md:w-80">
               <InputIcon className="pi pi-search" />
               <InputText

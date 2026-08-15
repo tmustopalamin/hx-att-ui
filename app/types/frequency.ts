@@ -1,5 +1,6 @@
 export interface Frequency {
   id: number;
+  code: string;
   name: string;
   description: string | null;
   days_in_period: number;

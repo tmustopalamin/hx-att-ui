@@ -25,6 +25,9 @@ import type {
 import type { ResponseTypeError } from "@/app/types/response-type";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
 
 interface PayrollPaymentDialogProps {
   batch: PayrollBatch | null;
@@ -87,6 +90,7 @@ export default function PayrollPaymentDialog({
   const [paymentDate, setPaymentDate] = useState("");
   const [bankCode, setBankCode] = useState("");
   const [references, setReferences] = useState<Record<number, string>>({});
+  const [paymentFormTouched, setPaymentFormTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settling, setSettling] = useState(false);
   const [reconciling, setReconciling] = useState(false);
@@ -95,6 +99,11 @@ export default function PayrollPaymentDialog({
   );
   const canPay = permissions.includes("payroll.pay");
   const canExport = permissions.includes("payroll.export");
+  const paymentFormDirty = visible && paymentFormTouched;
+  const { confirmDiscard } = useDirtyFormGuard(
+    paymentFormDirty,
+    !saving && !settling && !reconciling,
+  );
 
   const draftValues = useMemo(() => {
     if (!batch) return { paymentBatchNo: "", paymentDate: "" };
@@ -108,6 +117,16 @@ export default function PayrollPaymentDialog({
     setPaymentBatchNo(draftValues.paymentBatchNo);
     setPaymentDate(draftValues.paymentDate);
     setBankCode("");
+    setPaymentFormTouched(false);
+  };
+  const handleHide = () => {
+    if (!paymentFormDirty) {
+      onHide();
+      return;
+    }
+    void confirmDiscard().then((discard) => {
+      if (discard) onHide();
+    });
   };
 
   const create = async () => {
@@ -167,6 +186,17 @@ export default function PayrollPaymentDialog({
       setSettling(false);
     }
   };
+  const confirmSettle = () => {
+    requestActionConfirmation({
+      action: "Settle payroll payment",
+      target: paymentDetail?.batch.payment_batch_no,
+      severity: "danger",
+      confirmLabel: "Confirm Settlement",
+      confirmIcon: "pi pi-check-circle",
+      description: "Settle all payment items and mark payroll as paid?",
+      onAccept: () => settle(),
+    });
+  };
 
   const exportFile = async () => {
     if (!detail || !canExport) return;
@@ -209,6 +239,18 @@ export default function PayrollPaymentDialog({
       setReconciling(false);
     }
   };
+  const confirmReconcileFile = (file: File | undefined) => {
+    if (!file) return;
+    requestActionConfirmation({
+      action: "Import bank reconciliation",
+      target: file.name,
+      severity: "warning",
+      confirmLabel: "Import Result",
+      confirmIcon: "pi pi-upload",
+      description: "Import this bank reconciliation result?",
+      onAccept: () => reconcileFile(file),
+    });
+  };
 
   const detail = paymentDetail;
   const isDraft = detail?.batch.status === "DRAFT";
@@ -224,7 +266,7 @@ export default function PayrollPaymentDialog({
       onShow={() => {
         if (!paymentBatches?.length) openDraftValues();
       }}
-      onHide={onHide}
+      onHide={handleHide}
       footer={
         <div className="flex justify-end gap-2">
           <Button
@@ -232,14 +274,14 @@ export default function PayrollPaymentDialog({
             severity="secondary"
             text
             disabled={saving || settling || reconciling}
-            onClick={onHide}
+            onClick={handleHide}
           />
           {isDraft && canPay && (
             <Button
               label="Confirm Payment Settlement"
               icon="pi pi-check"
               loading={settling}
-              onClick={() => void settle()}
+              onClick={confirmSettle}
             />
           )}
         </div>
@@ -251,24 +293,30 @@ export default function PayrollPaymentDialog({
             <InputText
               value={paymentBatchNo || draftValues.paymentBatchNo}
               className="w-full"
-              onChange={(event) => setPaymentBatchNo(event.target.value)}
+              onChange={(event) => {
+                setPaymentFormTouched(true);
+                setPaymentBatchNo(event.target.value);
+              }}
             />
           </Field>
           <Field label="Payment Date *">
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={paymentDate || draftValues.paymentDate}
               className="w-full"
-              onChange={(event) => setPaymentDate(event.target.value)}
+              onValueChange={(value) => {
+                setPaymentFormTouched(true);
+                setPaymentDate(value);
+              }}
             />
           </Field>
           <Field label="Originating Bank Code">
             <InputText
               value={bankCode}
               className="w-full"
-              onChange={(event) =>
-                setBankCode(event.target.value.toUpperCase())
-              }
+              onChange={(event) => {
+                setPaymentFormTouched(true);
+                setBankCode(event.target.value.toUpperCase());
+              }}
             />
           </Field>
           <div className="flex items-end">
@@ -336,7 +384,7 @@ export default function PayrollPaymentDialog({
                     onChange={(event) => {
                       const file = event.currentTarget.files?.[0];
                       event.currentTarget.value = "";
-                      void reconcileFile(file);
+                      confirmReconcileFile(file);
                     }}
                   />
                 </label>
@@ -374,12 +422,13 @@ export default function PayrollPaymentDialog({
                     value={references[row.id] ?? row.bank_reference ?? ""}
                     className="w-full"
                     maxLength={100}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setPaymentFormTouched(true);
                       setReferences((current) => ({
                         ...current,
                         [row.id]: event.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                   />
                 ) : (
                   (row.bank_reference ?? "-")

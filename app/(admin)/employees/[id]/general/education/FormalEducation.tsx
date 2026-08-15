@@ -17,7 +17,7 @@ import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { InputSwitch } from "primereact/inputswitch";
@@ -214,7 +214,7 @@ const FormalEducation = () => {
   };
 
   const onDelete = (row: EmployeeEducationRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this formal education record?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -329,8 +329,6 @@ const FormalEducation = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-start md:justify-between">
           <div>

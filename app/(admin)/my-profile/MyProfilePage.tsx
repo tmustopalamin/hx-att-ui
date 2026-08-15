@@ -396,6 +396,14 @@ const MyProfilePage = () => {
           <InfoItem label="Employee Code" value={data?.code} />
           <InfoItem label="Join Date" value={formatDate(data?.join_date)} />
           <InfoItem label="End Date" value={formatDate(data?.end_date)} />
+          <InfoItem
+            label="Probation End Date"
+            value={formatDate(data?.probation_end_date)}
+          />
+          <InfoItem
+            label="Confirmation Date"
+            value={formatDate(data?.confirmation_date)}
+          />
 
           <InfoItem
             label="Agency"

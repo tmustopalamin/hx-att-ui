@@ -12,7 +12,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -33,6 +33,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { fetcher } from "@/app/utils/fetcher";
 import { hasRole } from "@/app/utils/role-utils";
 
@@ -336,6 +337,7 @@ const UserTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("user");
 
   const profileRecord = profileState as unknown as Record<string, unknown>;
 
@@ -346,8 +348,8 @@ const UserTableData = () => {
   const canCreateUser = userPermissions.has("user.create");
   const canUpdateUser = userPermissions.has("user.update");
   const canDeleteUser = userPermissions.has("user.delete");
-  const canRestoreUser = userPermissions.has("user.restore");
-  const canPurgeUser = userPermissions.has("user.purge");
+  const canRestoreUser = archivedAccess.canRestore;
+  const canPurgeUser = archivedAccess.canPurge;
 
   const [showDeleted, setShowDeleted] = useState(false);
 
@@ -375,7 +377,9 @@ const UserTableData = () => {
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
 
-  const userKey = `${USER_API_URL}?show_all=${showDeleted}`;
+  const userKey = `${USER_API_URL}?show_all=${
+    archivedAccess.canShowDeleted && showDeleted
+  }`;
 
   const {
     data: userResponse,
@@ -839,7 +843,7 @@ const UserTableData = () => {
   };
 
   const onClickDelete = (data: UserListRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete User",
 
       message: (
@@ -892,7 +896,7 @@ const UserTableData = () => {
   };
 
   const onClickRestore = (data: UserListRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore User",
 
       message: "Restore this user account?",
@@ -910,7 +914,7 @@ const UserTableData = () => {
   };
 
   const onClickPurge = (data: UserListRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete User Permanently",
 
       message: (
@@ -1301,8 +1305,6 @@ const UserTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Header */}
@@ -1410,7 +1412,7 @@ const UserTableData = () => {
 
           {/* Search */}
           <section className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:flex-row md:items-center md:justify-between">
-            {canRestoreUser || canPurgeUser ? (
+            {archivedAccess.canShowDeleted ? (
               <div className="flex items-center gap-2">
                 <Checkbox
                   inputId="show_deleted_users"

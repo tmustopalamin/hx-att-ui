@@ -8,9 +8,10 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
+import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputSwitch } from "primereact/inputswitch";
@@ -28,6 +29,7 @@ interface EmploymentStatus {
   id: number;
   name: string;
   is_active: boolean;
+  default_tax_employee_type: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +37,7 @@ interface EmploymentStatus {
 interface EmploymentStatusFormData {
   name: string;
   is_active: boolean;
+  default_tax_employee_type: string | null;
 }
 
 interface ApiResponse {
@@ -46,7 +49,15 @@ const API_URL = "/api/employment-status";
 const EMPTY_EMPLOYMENT_STATUS: EmploymentStatusFormData = {
   name: "",
   is_active: true,
+  default_tax_employee_type: "PERMANENT",
 };
+
+const TAX_EMPLOYEE_TYPE_OPTIONS = [
+  { label: "Permanent employee", value: "PERMANENT" },
+  { label: "Non-permanent employee", value: "NON_PERMANENT" },
+  { label: "Commissioner / supervisor", value: "COMMISSIONER" },
+  { label: "Pensioner", value: "PENSIONER" },
+];
 
 const getBody = () => document.body;
 
@@ -231,6 +242,7 @@ const EmploymentStatusSettingPage = () => {
     reset({
       name: data.name,
       is_active: data.is_active,
+      default_tax_employee_type: data.default_tax_employee_type ?? null,
     });
 
     setVisible(true);
@@ -243,6 +255,7 @@ const EmploymentStatusSettingPage = () => {
       const response = await submitEmploymentStatusRequest("POST", {
         name: data.name,
         is_active: data.is_active,
+        default_tax_employee_type: data.default_tax_employee_type,
       });
 
       await refreshEmploymentStatusData();
@@ -273,6 +286,7 @@ const EmploymentStatusSettingPage = () => {
         id: selectedData.id,
         name: data.name,
         is_active: data.is_active,
+        default_tax_employee_type: data.default_tax_employee_type,
       });
 
       await refreshEmploymentStatusData();
@@ -319,7 +333,7 @@ const EmploymentStatusSettingPage = () => {
   };
 
   const onClickDelete = (data: EmploymentStatus) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Employment Status",
       message: (
         <div className="flex flex-col gap-1">
@@ -450,8 +464,6 @@ const EmploymentStatusSettingPage = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
@@ -571,6 +583,22 @@ const EmploymentStatusSettingPage = () => {
               />
 
               <Column
+                field="default_tax_employee_type"
+                header="Tax Treatment"
+                body={(rowData: EmploymentStatus) =>
+                  rowData.default_tax_employee_type ? (
+                    <Tag
+                      value={rowData.default_tax_employee_type}
+                      severity="info"
+                    />
+                  ) : (
+                    <Tag value="Not configured" severity="warning" />
+                  )
+                }
+                style={{ minWidth: "14rem" }}
+              />
+
+              <Column
                 header="Action"
                 body={actionColumnBody}
                 frozen
@@ -660,6 +688,46 @@ const EmploymentStatusSettingPage = () => {
                   ) : (
                     <small className="text-slate-500">
                       Enter the employment status shown in employee records.
+                    </small>
+                  )}
+                </>
+              )}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="default_tax_employee_type"
+              className="text-sm font-medium text-slate-700"
+            >
+              Default Tax Treatment
+              <span className="ml-1 text-red-500">*</span>
+            </label>
+
+            <Controller
+              name="default_tax_employee_type"
+              control={control}
+              rules={{ required: "Tax treatment is required." }}
+              render={({ field, fieldState }) => (
+                <>
+                  <Dropdown
+                    id="default_tax_employee_type"
+                    value={field.value}
+                    options={TAX_EMPLOYEE_TYPE_OPTIONS}
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select tax treatment"
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                    onChange={(event) => field.onChange(event.value)}
+                  />
+                  {fieldState.error ? (
+                    <small className="p-error">
+                      {fieldState.error.message}
+                    </small>
+                  ) : (
+                    <small className="text-slate-500">
+                      This is the default PPh 21 treatment derived for employees
+                      using this employment status.
                     </small>
                   )}
                 </>

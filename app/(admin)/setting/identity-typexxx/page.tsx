@@ -5,7 +5,7 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { IconField } from "primereact/iconfield";
@@ -282,7 +282,7 @@ const IdentityTypeSettingPage = () => {
   };
 
   const onClickDelete = (id: number) => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to delete this record?",
       header: "Delete Confirmation",
       icon: "pi pi-info-circle",
@@ -298,7 +298,6 @@ const IdentityTypeSettingPage = () => {
   return (
     <>
       <Toast ref={toast} position="top-center" />
-      <ConfirmDialog />
       <Card title={<CardTitle title="Identity Type" url="" />}>
         <div className="p-3">
           <div className="flex items-center justify-between">

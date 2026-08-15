@@ -9,7 +9,7 @@ import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import {
   DataTable,
   DataTableExpandedRows,
@@ -818,7 +818,7 @@ const AttendanceSummaryTableData = () => {
       return;
     }
 
-    confirmDialog({
+    requestActionConfirmation({
       header: "Process Attendance Summary",
       message: (
         <div className="flex flex-col gap-2">
@@ -1386,8 +1386,6 @@ const AttendanceSummaryTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}

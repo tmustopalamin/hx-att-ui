@@ -11,7 +11,6 @@
 // import { Dialog } from 'primereact/dialog';
 // import { Controller, useFieldArray, useForm } from 'react-hook-form';
 // import CardTitle from '@/app/_components/CardTitle';
-// import { confirmDialog, ConfirmDialog } from 'primereact/confirmdialog';
 // import { InputSwitch } from 'primereact/inputswitch';
 // import { useState } from 'react';
 // import useSWR, { mutate } from 'swr';
@@ -320,7 +319,7 @@
 //     };
 
 //     const onClickDelete = (data: EmployeeShiftRule) => {
-//         confirmDialog({
+//         requestActionConfirmation({
 //             message: 'Do you want to delete this record?',
 //             header: 'Delete Confirmation',
 //             icon: 'pi pi-info-circle',
@@ -340,7 +339,7 @@
 //     };
 
 //     const onClickRestore = (data: EmployeeShiftRule) => {
-//         confirmDialog({
+//         requestActionConfirmation({
 //             message: 'Do you want to restore this record?',
 //             header: 'Restore Confirmation',
 //             icon: 'pi pi-info-circle',
@@ -360,7 +359,7 @@
 //     };
 
 //     const onClickPurge = (data: EmployeeShiftRule) => {
-//         confirmDialog({
+//         requestActionConfirmation({
 //             message: 'Do you want to delete this record forever?',
 //             header: 'Delete Confirmation',
 //             icon: 'pi pi-info-circle',
@@ -380,7 +379,6 @@
 
 //     return (
 //         <>
-//             <ConfirmDialog />
 
 //             <Card>
 //                 <div className="p-4 flex flex-col gap-4">

@@ -17,7 +17,6 @@ import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
-import { ConfirmDialog } from "primereact/confirmdialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import React, { useEffect, useState } from "react";
@@ -197,7 +196,6 @@ const PersonalData = () => {
 
   return (
     <>
-      <ConfirmDialog />
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">

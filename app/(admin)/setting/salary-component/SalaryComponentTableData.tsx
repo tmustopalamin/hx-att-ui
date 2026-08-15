@@ -10,7 +10,7 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { InputSwitch } from "primereact/inputswitch";
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -28,7 +28,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Tag } from "primereact/tag";
 import { Checkbox } from "primereact/checkbox";
 import { RootState } from "@/store/store";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import {
   createSalaryComponent,
   updateSalaryComponent,
@@ -47,6 +47,7 @@ import { Calendar } from "primereact/calendar";
 const SalaryComponentTableData = () => {
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("payroll");
   const [selectedData, setSelectedData] = useState<SalaryComponent | null>(
     null,
   );
@@ -78,14 +79,16 @@ const SalaryComponentTableData = () => {
     error,
     isLoading,
   } = useSWR<SalaryComponent[]>(
-    `/api/salary-component?show_all=${isShowDeletedDataChecked}`,
+    `/api/salary-component?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
     fetcher,
   );
 
   if (isLoading) return <LoadingDataTable />;
   if (error)
     return (
-      <ErrorNotConnectedToApi mutateKey="/api/salary-component?show_all=true" />
+      <ErrorNotConnectedToApi
+        mutateKey={`/api/salary-component?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`}
+      />
     );
 
   const onGlobalFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,8 +154,6 @@ const SalaryComponentTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card>
         <div className="p-4 flex flex-col gap-4">
           {/* HEADER */}
@@ -165,18 +166,20 @@ const SalaryComponentTableData = () => {
             </div>
 
             <div className="flex items-center gap-5">
-              <div className="flex align-items-center pl-5">
-                <Checkbox
-                  inputId="showDeletedData"
-                  name="showDeletedData"
-                  value="yes"
-                  onChange={onIngredientsChange}
-                  checked={isShowDeletedDataChecked}
-                />
-                <label htmlFor="showDeletedData" className="ml-2">
-                  show deleted data
-                </label>
-              </div>
+              {archivedAccess.canShowDeleted && (
+                <div className="flex align-items-center pl-5">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    name="showDeletedData"
+                    value="yes"
+                    onChange={onIngredientsChange}
+                    checked={isShowDeletedDataChecked}
+                  />
+                  <label htmlFor="showDeletedData" className="ml-2">
+                    show deleted data
+                  </label>
+                </div>
+              )}
 
               <IconField iconPosition="left">
                 <InputIcon className="pi pi-search" />

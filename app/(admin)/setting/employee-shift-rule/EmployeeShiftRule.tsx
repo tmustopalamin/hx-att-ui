@@ -13,7 +13,7 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
@@ -41,7 +41,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -122,6 +122,7 @@ const EmployeeShiftRuleTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("employee-shift-rule");
 
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
@@ -144,7 +145,7 @@ const EmployeeShiftRuleTableData = () => {
     },
   });
 
-  const currentKey = `/api/shift-employee?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `/api/shift-employee?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`;
 
   const {
     data: employeeShiftRuleData,
@@ -230,7 +231,7 @@ const EmployeeShiftRuleTableData = () => {
 
   const isProcessing = processingRowId !== null;
 
-  const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+  const isSuperadmin = archivedAccess.canShowDeleted;
 
   const showSuccess = (message: string) => {
     dispatch(
@@ -370,7 +371,7 @@ const EmployeeShiftRuleTableData = () => {
   };
 
   const onClickDelete = (rowData: EmployeeShiftRule) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Employee Shift Rule",
       message: (
         <div className="flex flex-col gap-1">
@@ -417,7 +418,7 @@ const EmployeeShiftRuleTableData = () => {
   };
 
   const onClickRestore = (rowData: EmployeeShiftRule) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore Employee Shift Rule",
       message: (
         <div className="flex flex-col gap-1">
@@ -597,22 +598,24 @@ const EmployeeShiftRuleTableData = () => {
 
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            loading={isCurrentRowProcessing && processingAction === "restore"}
-            disabled={isProcessing}
-            onClick={() => onClickRestore(rowData)}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              loading={isCurrentRowProcessing && processingAction === "restore"}
+              disabled={isProcessing}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
         </div>
       );
     }
@@ -649,8 +652,6 @@ const EmployeeShiftRuleTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
@@ -792,22 +793,24 @@ const EmployeeShiftRuleTableData = () => {
             </div>
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  inputId="showDeletedData"
-                  checked={isShowDeletedDataChecked}
-                  onChange={(event) =>
-                    setIsShowDeletedDataChecked(Boolean(event.checked))
-                  }
-                />
+              {archivedAccess.canShowDeleted && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    checked={isShowDeletedDataChecked}
+                    onChange={(event) =>
+                      setIsShowDeletedDataChecked(Boolean(event.checked))
+                    }
+                  />
 
-                <label
-                  htmlFor="showDeletedData"
-                  className="cursor-pointer select-none text-sm text-slate-600"
-                >
-                  Show deleted records
-                </label>
-              </div>
+                  <label
+                    htmlFor="showDeletedData"
+                    className="cursor-pointer select-none text-sm text-slate-600"
+                  >
+                    Show deleted records
+                  </label>
+                </div>
+              )}
 
               {dateRangeLabel && (
                 <div className="flex flex-wrap items-center gap-2">

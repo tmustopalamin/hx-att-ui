@@ -9,7 +9,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { IconField } from "primereact/iconfield";
@@ -42,7 +42,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -62,6 +62,7 @@ const CountryTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("master-data");
 
   const [selectedData, setSelectedData] = useState<Country | null>(null);
 
@@ -84,7 +85,7 @@ const CountryTableData = () => {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentKey = `/api/country?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `/api/country?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`;
 
   const {
     data: countryData,
@@ -291,7 +292,7 @@ const CountryTableData = () => {
   };
 
   const onClickDelete = (data: Country) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Country",
       message: (
         <div className="flex flex-col gap-1">
@@ -330,7 +331,7 @@ const CountryTableData = () => {
   };
 
   const onClickRestore = (data: Country) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore Country",
       message: (
         <div className="flex flex-col gap-1">
@@ -369,7 +370,7 @@ const CountryTableData = () => {
   };
 
   const onClickPurge = (data: Country) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Country Permanently",
       message: (
         <div className="flex flex-col gap-2">
@@ -438,7 +439,7 @@ const CountryTableData = () => {
   const actionColumnBody = (rowData: Country) => {
     const isDeleted = Boolean(rowData.deleted_at);
 
-    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+    const isSuperadmin = archivedAccess.canShowDeleted;
 
     if (isDeleted) {
       if (!isSuperadmin) {
@@ -447,35 +448,39 @@ const CountryTableData = () => {
 
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            onClick={() => onClickRestore(rowData)}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
 
-          <Button
-            type="button"
-            icon="pi pi-trash"
-            rounded
-            outlined
-            severity="danger"
-            size="small"
-            tooltip="Delete permanently"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            onClick={() => onClickPurge(rowData)}
-          />
+          {archivedAccess.canPurge && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
         </div>
       );
     }
@@ -550,8 +555,6 @@ const CountryTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
@@ -599,22 +602,24 @@ const CountryTableData = () => {
 
           {/* Table Toolbar */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                inputId="showDeletedData"
-                checked={isShowDeletedDataChecked}
-                onChange={(event) =>
-                  onShowDeletedChange(Boolean(event.checked))
-                }
-              />
+            {archivedAccess.canShowDeleted && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="showDeletedData"
+                  checked={isShowDeletedDataChecked}
+                  onChange={(event) =>
+                    onShowDeletedChange(Boolean(event.checked))
+                  }
+                />
 
-              <label
-                htmlFor="showDeletedData"
-                className="cursor-pointer select-none text-sm text-slate-600"
-              >
-                Show deleted records
-              </label>
-            </div>
+                <label
+                  htmlFor="showDeletedData"
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Show deleted records
+                </label>
+              </div>
+            )}
 
             <IconField iconPosition="left" className="w-full md:w-80">
               <InputIcon className="pi pi-search" />

@@ -17,6 +17,39 @@ export interface PayrollSetting {
   row_version: number;
 }
 
+export interface PayrollPeriodRule {
+  id: number;
+  payroll_setting_id: number;
+  cutoff_day: number;
+  effective_month: string;
+  notes: string | null;
+  created_at: string;
+  created_by: number | null;
+  updated_at: string;
+  updated_by: number | null;
+  deleted_at: string | null;
+  deleted_by: number | null;
+  row_version: number;
+}
+
+export interface NewPayrollPeriodRule {
+  cutoff_day: number;
+  effective_month: string;
+  notes: string | null;
+}
+
+export type UpdatePayrollPeriodRule = NewPayrollPeriodRule;
+
+export interface PayrollPeriodPreview {
+  payroll_setting_id: number;
+  payroll_period_rule_id: number;
+  cutoff_day: number;
+  effective_month: string;
+  period_start: string;
+  period_end: string;
+  attendance_cutoff_date: string;
+}
+
 export type UpdatePayrollSetting = Omit<
   PayrollSetting,
   "id" | "branch_id" | "code" | "updated_at" | "row_version"

@@ -6,7 +6,6 @@ import { useDispatch } from "react-redux";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { ConfirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -19,18 +18,24 @@ import { TabPanel, TabView } from "primereact/tabview";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import {
+  createPayrollPeriodRule,
   createPayrollRegulation,
+  deletePayrollPeriodRule,
+  getPayrollPeriodRules,
   runPayrollRegulationTests,
   transitionPayrollRegulation,
+  updatePayrollPeriodRule,
   updatePayrollSetting,
 } from "@/app/services/payroll-configuration-service";
 import type {
+  NewPayrollPeriodRule,
   NewPayrollRegulationPackage,
   PayrollRegulationPackage,
   PayrollRegulationStatus,
   PayrollRegulationTestCaseResult,
   PayrollRegulationTestRun,
   PayrollSetting,
+  PayrollPeriodRule,
   UpdatePayrollSetting,
 } from "@/app/types/payroll-configuration";
 import type { ResponseTypeError } from "@/app/types/response-type";
@@ -38,6 +43,9 @@ import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import PayrollRegulationDetailDialog from "./PayrollRegulationDetailDialog";
 import PayrollComponentMappingPanel from "./PayrollComponentMappingPanel";
+import type { Frequency } from "@/app/types/frequency";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 const SETTING_URL = "/api/payroll-settings";
 const REGULATION_URL = "/api/payroll-regulations";
@@ -51,6 +59,12 @@ const EMPTY_REGULATION: NewPayrollRegulationPackage = {
   effective_from: "",
   effective_to: null,
   source_url: null,
+  notes: null,
+};
+
+const EMPTY_PERIOD_RULE: NewPayrollPeriodRule = {
+  cutoff_day: 15,
+  effective_month: "",
   notes: null,
 };
 
@@ -88,6 +102,7 @@ const optional = (value: string): string | null => value.trim() || null;
 
 export default function PayrollConfiguration() {
   const dispatch = useDispatch();
+  const [setting, setSetting] = useState<PayrollSetting | null>(null);
   const {
     data: settings,
     error: settingError,
@@ -102,8 +117,18 @@ export default function PayrollConfiguration() {
     isValidating: regulationValidating,
     mutate: refreshRegulations,
   } = useSWR<PayrollRegulationPackage[]>(REGULATION_URL, fetcher);
+  const { data: frequencies } = useSWR<Frequency[]>("/api/frequency", fetcher);
+  const {
+    data: periodRules,
+    error: periodRuleError,
+    isLoading: periodRuleLoading,
+    isValidating: periodRuleValidating,
+    mutate: refreshPeriodRules,
+  } = useSWR<PayrollPeriodRule[]>(
+    setting ? `${SETTING_URL}/${setting.id}/period-rules` : null,
+    fetcher,
+  );
 
-  const [setting, setSetting] = useState<PayrollSetting | null>(null);
   const [savingSetting, setSavingSetting] = useState(false);
   const [showRegulationDialog, setShowRegulationDialog] = useState(false);
   const [savingRegulation, setSavingRegulation] = useState(false);
@@ -114,6 +139,15 @@ export default function PayrollConfiguration() {
     useState<PayrollRegulationPackage | null>(null);
   const [regulation, setRegulation] =
     useState<NewPayrollRegulationPackage>(EMPTY_REGULATION);
+  const [showPeriodRuleDialog, setShowPeriodRuleDialog] = useState(false);
+  const [savingPeriodRule, setSavingPeriodRule] = useState(false);
+  const [deletingPeriodRuleId, setDeletingPeriodRuleId] = useState<
+    number | null
+  >(null);
+  const [editingPeriodRule, setEditingPeriodRule] =
+    useState<PayrollPeriodRule | null>(null);
+  const [periodRule, setPeriodRule] =
+    useState<NewPayrollPeriodRule>(EMPTY_PERIOD_RULE);
 
   useEffect(() => {
     if (settings?.[0]) setSetting(settings[0]);
@@ -169,6 +203,88 @@ export default function PayrollConfiguration() {
     }
   };
 
+  const openPeriodRule = (rule?: PayrollPeriodRule) => {
+    setEditingPeriodRule(rule ?? null);
+    setPeriodRule(
+      rule
+        ? {
+            cutoff_day: rule.cutoff_day,
+            effective_month: rule.effective_month.slice(0, 7),
+            notes: rule.notes,
+          }
+        : EMPTY_PERIOD_RULE,
+    );
+    setShowPeriodRuleDialog(true);
+  };
+
+  const savePeriodRule = async () => {
+    if (
+      !setting ||
+      !periodRule.effective_month ||
+      periodRule.cutoff_day < 1 ||
+      periodRule.cutoff_day > 31
+    ) {
+      toast(
+        "error",
+        "Validation",
+        "Choose an effective month and cutoff day from 1 to 31.",
+      );
+      return;
+    }
+    const effectiveMonth = `${periodRule.effective_month.slice(0, 7)}-01`;
+    try {
+      setSavingPeriodRule(true);
+      const payload = {
+        ...periodRule,
+        effective_month: effectiveMonth,
+        notes: optional(periodRule.notes ?? ""),
+      };
+      if (editingPeriodRule) {
+        await updatePayrollPeriodRule(
+          setting.id,
+          editingPeriodRule.id,
+          editingPeriodRule.row_version,
+          payload,
+        );
+      } else {
+        await createPayrollPeriodRule(setting.id, payload);
+      }
+      await refreshPeriodRules();
+      setShowPeriodRuleDialog(false);
+      toast("success", "Success", "Payroll period rule saved.");
+    } catch (error: unknown) {
+      showError(error);
+    } finally {
+      setSavingPeriodRule(false);
+    }
+  };
+
+  const removePeriodRule = async (rule: PayrollPeriodRule) => {
+    if (!setting) return;
+    try {
+      setDeletingPeriodRuleId(rule.id);
+      await deletePayrollPeriodRule(setting.id, rule.id, rule.row_version);
+      await refreshPeriodRules();
+      toast("success", "Success", "Payroll period rule retired.");
+    } catch (error: unknown) {
+      showError(error);
+    } finally {
+      setDeletingPeriodRuleId(null);
+    }
+  };
+
+  const confirmRemovePeriodRule = (rule: PayrollPeriodRule) => {
+    requestActionConfirmation({
+      action: "Retire payroll period rule",
+      target: `Cutoff day ${rule.cutoff_day} · effective ${rule.effective_month}`,
+      severity: "danger",
+      confirmLabel: "Retire rule",
+      confirmIcon: "pi pi-trash",
+      description: "Retire this future cutoff rule?",
+      onAccept: () => removePeriodRule(rule),
+    });
+  };
+
   const createRegulation = async () => {
     if (
       !regulation.code.trim() ||
@@ -214,6 +330,25 @@ export default function PayrollConfiguration() {
       setTransitioningId(null);
     }
   };
+  const confirmTransition = (row: PayrollRegulationPackage) => {
+    const target = nextStatus(row.status);
+    if (!target) return;
+    const finalAction = target === "PUBLISHED" || target === "RETIRED";
+    requestActionConfirmation({
+      action: `${target === "RETIRED" ? "Retire" : target === "PUBLISHED" ? "Publish" : target === "APPROVED" ? "Approve" : "Mark tested"} regulation`,
+      target: `${row.code} · ${row.version}`,
+      severity: finalAction ? "danger" : "warning",
+      confirmLabel: target === "RETIRED" ? "Retire" : target,
+      confirmIcon: target === "RETIRED" ? "pi pi-ban" : "pi pi-check",
+      description:
+        target === "RETIRED"
+          ? "Retire this regulation package?"
+          : target === "PUBLISHED"
+            ? "Publish this regulation package?"
+            : `Mark this regulation ${target.toLowerCase()}?`,
+      onAccept: () => transition(row),
+    });
+  };
 
   const runTests = async (row: PayrollRegulationPackage) => {
     try {
@@ -230,6 +365,17 @@ export default function PayrollConfiguration() {
     } finally {
       setTestingId(null);
     }
+  };
+  const confirmRunTests = (row: PayrollRegulationPackage) => {
+    requestActionConfirmation({
+      action: "Run regulation tests",
+      target: `${row.code} · ${row.version}`,
+      severity: "info",
+      confirmLabel: "Run Tests",
+      confirmIcon: "pi pi-play",
+      description: "Run regulation tests for this package?",
+      onAccept: () => runTests(row),
+    });
   };
 
   if (settingLoading || regulationLoading) return <LoadingDataTable />;
@@ -280,7 +426,13 @@ export default function PayrollConfiguration() {
                   <Field label="Payroll Frequency">
                     <Dropdown
                       value={setting.frequency_code}
-                      options={["MONTHLY", "WEEKLY", "DAILY"]}
+                      options={(frequencies ?? []).filter(
+                        (frequency) =>
+                          frequency.is_active && !frequency.deleted_at,
+                      )}
+                      optionLabel="name"
+                      optionValue="code"
+                      placeholder="Select payroll frequency"
                       onChange={(event) =>
                         changeSetting("frequency_code", String(event.value))
                       }
@@ -304,18 +456,14 @@ export default function PayrollConfiguration() {
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Attendance Cutoff Day">
-                    <InputNumber
-                      value={setting.attendance_cutoff_day}
-                      min={1}
-                      max={31}
-                      useGrouping={false}
-                      onValueChange={(event) =>
-                        changeSetting(
-                          "attendance_cutoff_day",
-                          event.value ?? null,
-                        )
+                  <Field label="Attendance Cutoff">
+                    <InputText
+                      value={
+                        periodRules?.[0]
+                          ? `Configured by effective rules (latest: day ${periodRules[0].cutoff_day})`
+                          : "No effective period rule"
                       }
+                      disabled
                       className="w-full"
                     />
                   </Field>
@@ -383,6 +531,100 @@ export default function PayrollConfiguration() {
                     disabled={savingSetting}
                     onClick={saveSetting}
                   />
+                </div>
+                <div className="flex flex-col gap-4 border-t border-slate-200 pt-5">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="m-0 text-base font-semibold text-slate-800">
+                        Payroll Period Rules
+                      </h2>
+                      <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                        Effective-dated rules define the inclusive period. A
+                        cutoff of 15 means the period runs from the 16th of the
+                        previous month through the 15th.
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        label="Refresh"
+                        icon="pi pi-refresh"
+                        severity="secondary"
+                        outlined
+                        size="small"
+                        loading={periodRuleValidating}
+                        onClick={() => void refreshPeriodRules()}
+                      />
+                      <Button
+                        label="Add Period Rule"
+                        icon="pi pi-plus"
+                        size="small"
+                        disabled={
+                          setting.frequency_code.toUpperCase() !== "MONTHLY"
+                        }
+                        onClick={() => openPeriodRule()}
+                      />
+                    </div>
+                  </div>
+                  {periodRuleError ? (
+                    <p className="m-0 text-sm text-red-600">
+                      Unable to load payroll period rules.
+                    </p>
+                  ) : periodRuleLoading ? (
+                    <p className="m-0 text-sm text-slate-500">
+                      Loading period rules…
+                    </p>
+                  ) : (
+                    <DataTable
+                      value={periodRules ?? []}
+                      dataKey="id"
+                      stripedRows
+                      rowHover
+                      size="small"
+                      emptyMessage="No payroll period rule configured."
+                    >
+                      <Column
+                        header="Effective Month"
+                        body={(row: PayrollPeriodRule) =>
+                          row.effective_month.slice(0, 7)
+                        }
+                      />
+                      <Column field="cutoff_day" header="Cutoff Day" />
+                      <Column field="notes" header="Notes" />
+                      <Column
+                        header="Action"
+                        frozen
+                        alignFrozen="right"
+                        body={(row: PayrollPeriodRule) => (
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              icon="pi pi-pencil"
+                              rounded
+                              text
+                              severity="secondary"
+                              tooltip="Edit future rule"
+                              onClick={() => openPeriodRule(row)}
+                            />
+                            <Button
+                              icon="pi pi-trash"
+                              rounded
+                              text
+                              severity="danger"
+                              tooltip="Retire future rule"
+                              loading={deletingPeriodRuleId === row.id}
+                              disabled={deletingPeriodRuleId !== null}
+                              onClick={() => confirmRemovePeriodRule(row)}
+                            />
+                          </div>
+                        )}
+                      />
+                    </DataTable>
+                  )}
+                  {setting.frequency_code.toUpperCase() !== "MONTHLY" && (
+                    <p className="m-0 text-xs text-amber-700">
+                      Automatic cutoff rules are available for monthly payroll
+                      settings only.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
@@ -483,7 +725,7 @@ export default function PayrollConfiguration() {
                               disabled={
                                 testingId !== null || transitioningId !== null
                               }
-                              onClick={() => void runTests(row)}
+                              onClick={() => confirmRunTests(row)}
                             />
                           )}
                           {target ? (
@@ -504,7 +746,7 @@ export default function PayrollConfiguration() {
                               disabled={
                                 transitioningId !== null || testingId !== null
                               }
-                              onClick={() => void transition(row)}
+                              onClick={() => confirmTransition(row)}
                             />
                           ) : (
                             <span className="self-center text-sm text-slate-400">
@@ -527,6 +769,82 @@ export default function PayrollConfiguration() {
           </TabPanel>
         </TabView>
       </div>
+
+      <Dialog
+        header={
+          editingPeriodRule
+            ? "Edit Payroll Period Rule"
+            : "Add Payroll Period Rule"
+        }
+        visible={showPeriodRuleDialog}
+        modal
+        draggable={false}
+        resizable={false}
+        style={{ width: "95vw", maxWidth: "34rem" }}
+        onHide={() => setShowPeriodRuleDialog(false)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              text
+              disabled={savingPeriodRule}
+              onClick={() => setShowPeriodRuleDialog(false)}
+            />
+            <Button
+              label="Save Rule"
+              icon="pi pi-check"
+              loading={savingPeriodRule}
+              onClick={() => void savePeriodRule()}
+            />
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
+          <Field label="Effective Month *">
+            <InputText
+              type="month"
+              value={periodRule.effective_month.slice(0, 7)}
+              className="w-full"
+              onChange={(event) =>
+                setPeriodRule((current) => ({
+                  ...current,
+                  effective_month: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Cutoff Day *">
+            <InputNumber
+              value={periodRule.cutoff_day}
+              min={1}
+              max={31}
+              useGrouping={false}
+              className="w-full"
+              onValueChange={(event) =>
+                setPeriodRule((current) => ({
+                  ...current,
+                  cutoff_day: event.value ?? 1,
+                }))
+              }
+            />
+          </Field>
+          <div className="sm:col-span-2">
+            <Field label="Notes">
+              <InputText
+                value={periodRule.notes ?? ""}
+                className="w-full"
+                onChange={(event) =>
+                  setPeriodRule((current) => ({
+                    ...current,
+                    notes: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+          </div>
+        </div>
+      </Dialog>
 
       <Dialog
         header="New Regulatory Package"
@@ -628,26 +946,24 @@ export default function PayrollConfiguration() {
             />
           </Field>
           <Field label="Effective From *">
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={regulation.effective_from}
-              onChange={(event) =>
+              onValueChange={(value) =>
                 setRegulation((current) => ({
                   ...current,
-                  effective_from: event.target.value,
+                  effective_from: value,
                 }))
               }
               className="w-full"
             />
           </Field>
           <Field label="Effective To">
-            <InputText
-              type="date"
-              value={regulation.effective_to ?? ""}
-              onChange={(event) =>
+            <PrimeDatePicker
+              value={regulation.effective_to}
+              onValueChange={(value) =>
                 setRegulation((current) => ({
                   ...current,
-                  effective_to: event.target.value,
+                  effective_to: value || null,
                 }))
               }
               className="w-full"
@@ -668,7 +984,6 @@ export default function PayrollConfiguration() {
         testRun={testRun}
         onHide={() => setTestRun(null)}
       />
-      <ConfirmDialog />
     </Card>
   );
 }

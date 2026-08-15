@@ -10,7 +10,7 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import IndeterminateCheckbox from "@/app/_components/IndeterminateCheckbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
@@ -548,7 +548,7 @@ const EmployeeShiftRuleAssignForm = () => {
       return;
     }
 
-    confirmDialog({
+    requestActionConfirmation({
       header: "Assign Shift Rule",
 
       message: (
@@ -743,8 +743,6 @@ const EmployeeShiftRuleAssignForm = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <div className="flex flex-col gap-5">
         {/* Header */}
         <Card className="border border-slate-200 shadow-sm">

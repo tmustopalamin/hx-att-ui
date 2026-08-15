@@ -10,6 +10,7 @@ import BProgressProvider from "../utils/providers/BProgressProvider";
 import AvatarWithSidebar from "./AvatarWithSidebar";
 import SidebarMenu from "./SidebarMenu";
 import NotificationBell from "../_components/NotificationBell";
+import { GlobalActionConfirmDialog } from "../_components/ActionConfirmDialog";
 
 const AppMain = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -103,6 +104,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       {/* Mobile sidebar drawer */}
+      <GlobalActionConfirmDialog />
       <Sidebar
         appendTo={getBody}
         visible={isMobileSidebarOpen}

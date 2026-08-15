@@ -36,6 +36,7 @@ import type {
   EmployeeLifecycleSettings,
   LifecycleAssignmentSource,
 } from "@/app/types/employee-lifecycle-settings";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 
 const typeOptions: {
   label: string;
@@ -460,27 +461,22 @@ export default function EmployeeLifecycleSettingsData() {
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
               Effective From
-              <InputText
-                type="date"
+              <PrimeDatePicker
                 value={draft.effective_from}
                 className="w-full"
-                onChange={(event) =>
-                  setDraft({ ...draft, effective_from: event.target.value })
+                onValueChange={(value) =>
+                  setDraft({ ...draft, effective_from: value })
                 }
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
               Effective To{" "}
               <span className="font-normal text-slate-400">(optional)</span>
-              <InputText
-                type="date"
-                value={draft.effective_to ?? ""}
+              <PrimeDatePicker
+                value={draft.effective_to}
                 className="w-full"
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    effective_to: event.target.value || null,
-                  })
+                onValueChange={(value) =>
+                  setDraft({ ...draft, effective_to: value || null })
                 }
               />
             </label>

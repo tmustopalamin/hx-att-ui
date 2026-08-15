@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
@@ -18,6 +17,7 @@ import type {
   PayrollEmployeeResultDetail,
 } from "@/app/types/payroll-batch";
 import PayrollAdjustmentPanel from "./PayrollAdjustmentPanel";
+import PerformanceEarningPanel from "./PerformanceEarningPanel";
 
 interface PayrollBatchDetailDataProps {
   batchId: number;
@@ -171,6 +171,10 @@ export default function PayrollBatchDetailData({
       </Card>
 
       {selectedResult && <EmployeeResultPanel result={selectedResult} />}
+      <PerformanceEarningPanel
+        batchId={data.batch.id}
+        batchStatus={data.batch.status}
+      />
       <PayrollAdjustmentPanel
         batchId={data.batch.id}
         batchStatus={data.batch.status}
@@ -197,9 +201,14 @@ function EmployeeResultPanel({
               </span>
             </h2>
             {result.error_message && (
-              <p className="m-0 mt-1 text-sm text-red-600">
-                {result.error_message}
-              </p>
+              <div className="mt-1 flex flex-col gap-0.5 text-sm text-red-600">
+                <p className="m-0">{result.error_message}</p>
+                {result.error_code && (
+                  <small className="text-xs text-red-500">
+                    Code: {result.error_code}
+                  </small>
+                )}
+              </div>
             )}
           </div>
           <Tag value={result.status} severity={statusSeverity(result.status)} />
@@ -283,6 +292,15 @@ function EmployeeResultPanel({
             <Column field="component_name" header="Component" />
             <Column field="component_type" header="Type" />
             <Column field="source" header="Source" />
+            <Column
+              header="Calculation"
+              body={(row: PayrollComponentResult) => {
+                const calculator = row.calculation_details_json?.calculator;
+                return typeof calculator === "string"
+                  ? calculator.replaceAll("_", " ")
+                  : "-";
+              }}
+            />
             <Column
               header="Base"
               body={(row: PayrollComponentResult) =>

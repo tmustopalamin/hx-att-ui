@@ -8,7 +8,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -44,7 +44,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
@@ -60,6 +60,9 @@ type ComponentForm = {
   calculation_display: string;
   is_taxable: boolean;
   is_active: boolean;
+  is_fixed_allowance: boolean;
+  include_in_bpjs_health: boolean;
+  include_in_bpjs_employment: boolean;
 };
 
 const emptyForm = (): ComponentForm => ({
@@ -71,6 +74,9 @@ const emptyForm = (): ComponentForm => ({
   calculation_display: "",
   is_taxable: true,
   is_active: true,
+  is_fixed_allowance: false,
+  include_in_bpjs_health: false,
+  include_in_bpjs_employment: false,
 });
 
 const getBody = () => document.body;
@@ -91,10 +97,11 @@ export default function PayrollComponentMasterTable({
 }) {
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("payroll-config");
   const title = titleFor(kind);
   const endpoint = endpointFor(kind);
   const canManage = profile.permissions.includes("payroll-config.manage");
-  const isSuperadmin = hasRole(profile.role, ["superadmin"]);
+  const isSuperadmin = archivedAccess.canShowDeleted;
   const [showDeleted, setShowDeleted] = useState(false);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState({
@@ -105,7 +112,7 @@ export default function PayrollComponentMasterTable({
   const [dialogVisible, setDialogVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const listKey = `${endpoint}?show_all=${showDeleted}`;
+  const listKey = `${endpoint}?show_all=${archivedAccess.canShowDeleted && showDeleted}`;
   const { data, error, isLoading, isValidating, mutate } = useSWR<
     PayrollComponent[]
   >(listKey, fetcher);
@@ -174,6 +181,10 @@ export default function PayrollComponentMasterTable({
     setDialogVisible(true);
   };
   const openEdit = (row: PayrollComponent) => {
+    if (row.assignment_mode === "SYSTEM") {
+      notify("error", "System-managed components cannot be edited here.");
+      return;
+    }
     setSelected(row);
     setForm({
       code: row.code ?? "",
@@ -184,6 +195,14 @@ export default function PayrollComponentMasterTable({
       calculation_display: row.calculation_display ?? "",
       is_taxable: row.is_taxable,
       is_active: row.is_active,
+      is_fixed_allowance:
+        "is_fixed_allowance" in row ? row.is_fixed_allowance : false,
+      include_in_bpjs_health:
+        "include_in_bpjs_health" in row ? row.include_in_bpjs_health : false,
+      include_in_bpjs_employment:
+        "include_in_bpjs_employment" in row
+          ? row.include_in_bpjs_employment
+          : false,
     });
     setDialogVisible(true);
   };
@@ -211,6 +230,17 @@ export default function PayrollComponentMasterTable({
       notify("error", "Select a formula for this calculation method.");
       return;
     }
+    if (
+      kind === "income" &&
+      (form.include_in_bpjs_health || form.include_in_bpjs_employment) &&
+      !form.is_fixed_allowance
+    ) {
+      notify(
+        "error",
+        "Only fixed allowances can be included in a BPJS wage base.",
+      );
+      return;
+    }
     const payload = {
       code,
       name,
@@ -220,6 +250,9 @@ export default function PayrollComponentMasterTable({
       calculation_display: form.calculation_display.trim() || null,
       is_taxable: form.is_taxable,
       is_active: form.is_active,
+      is_fixed_allowance: form.is_fixed_allowance,
+      include_in_bpjs_health: form.include_in_bpjs_health,
+      include_in_bpjs_employment: form.include_in_bpjs_employment,
     };
     try {
       setSaving(true);
@@ -285,6 +318,10 @@ export default function PayrollComponentMasterTable({
     row: PayrollComponent,
     action: "delete" | "restore" | "purge",
   ) => {
+    if (row.assignment_mode === "SYSTEM") {
+      notify("error", "System-managed components cannot be deleted.");
+      return;
+    }
     const labels =
       action === "delete"
         ? [
@@ -294,7 +331,7 @@ export default function PayrollComponentMasterTable({
         : action === "restore"
           ? ["Restore", "This component will be available again."]
           : ["Delete Permanently", "This cannot be undone."];
-    confirmDialog({
+    requestActionConfirmation({
       header: `${labels[0]} ${title}`,
       message: (
         <div className="flex flex-col gap-1">
@@ -360,31 +397,39 @@ export default function PayrollComponentMasterTable({
     if (row.deleted_at)
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
-            onClick={() => ask(row, "restore")}
-          />
-          <Button
-            type="button"
-            icon="pi pi-trash"
-            rounded
-            outlined
-            severity="danger"
-            size="small"
-            tooltip="Delete permanently"
-            tooltipOptions={{ appendTo: getBody, position: "top" }}
-            onClick={() => ask(row, "purge")}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              onClick={() => ask(row, "restore")}
+            />
+          )}
+          {archivedAccess.canPurge && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{ appendTo: getBody, position: "top" }}
+              onClick={() => ask(row, "purge")}
+            />
+          )}
         </div>
       ) : (
         <span className="text-sm text-slate-400">No action</span>
+      );
+    if (row.assignment_mode === "SYSTEM")
+      return (
+        <Tag value="System managed" severity="info" icon="pi pi-lock" rounded />
       );
     return (
       <div className="flex justify-end gap-2">
@@ -424,7 +469,6 @@ export default function PayrollComponentMasterTable({
 
   return (
     <>
-      <ConfirmDialog />
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
@@ -469,19 +513,21 @@ export default function PayrollComponentMasterTable({
             </div>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                inputId={`${kind}-show-deleted`}
-                checked={showDeleted}
-                onChange={(event) => setShowDeleted(Boolean(event.checked))}
-              />
-              <label
-                htmlFor={`${kind}-show-deleted`}
-                className="cursor-pointer select-none text-sm text-slate-600"
-              >
-                Show deleted records
-              </label>
-            </div>
+            {archivedAccess.canShowDeleted && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId={`${kind}-show-deleted`}
+                  checked={showDeleted}
+                  onChange={(event) => setShowDeleted(Boolean(event.checked))}
+                />
+                <label
+                  htmlFor={`${kind}-show-deleted`}
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Show deleted records
+                </label>
+              </div>
+            )}
             <IconField iconPosition="left" className="w-full md:w-80">
               <InputIcon className="pi pi-search" />
               <InputText
@@ -567,6 +613,40 @@ export default function PayrollComponentMasterTable({
                   )
                 }
                 style={{ minWidth: "8rem" }}
+              />
+              {kind === "income" && (
+                <Column
+                  header="Statutory Base"
+                  body={(row: PayrollComponent) => {
+                    const income = row as IncomeComponent;
+                    if (!income.is_fixed_allowance)
+                      return <Tag value="Variable" severity="secondary" />;
+                    const programs = [
+                      income.include_in_bpjs_health ? "Health" : null,
+                      income.include_in_bpjs_employment ? "Employment" : null,
+                    ].filter(Boolean);
+                    return (
+                      <Tag
+                        value={
+                          programs.length ? programs.join(" + ") : "Excluded"
+                        }
+                        severity={programs.length ? "success" : "secondary"}
+                      />
+                    );
+                  }}
+                  style={{ minWidth: "13rem" }}
+                />
+              )}
+              <Column
+                header="Assignment"
+                body={(row: PayrollComponent) =>
+                  row.assignment_mode === "SYSTEM" ? (
+                    <Tag value="System" severity="info" icon="pi pi-lock" />
+                  ) : (
+                    <Tag value="Employee" severity="secondary" />
+                  )
+                }
+                style={{ minWidth: "10rem" }}
               />
               <Column
                 header="Status"
@@ -759,6 +839,82 @@ export default function PayrollComponentMasterTable({
               />
             </div>
           </div>
+          {kind === "income" && (
+            <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+              <div>
+                <p className="m-0 text-sm font-semibold text-slate-800">
+                  BPJS wage-base classification
+                </p>
+                <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
+                  Mark only recurring fixed allowances. Variable attendance,
+                  overtime, commission, bonus, and reimbursement components are
+                  excluded by default. The payroll engine adds selected fixed
+                  allowances to Salary History base salary and stores the result
+                  in the batch snapshot.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
+                  <Checkbox
+                    inputId={`${kind}-fixed-allowance`}
+                    checked={form.is_fixed_allowance}
+                    onChange={(event) => {
+                      const checked = Boolean(event.checked);
+                      updateForm("is_fixed_allowance", checked);
+                      if (!checked) {
+                        updateForm("include_in_bpjs_health", false);
+                        updateForm("include_in_bpjs_employment", false);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`${kind}-fixed-allowance`}
+                    className="cursor-pointer text-sm font-medium text-slate-700"
+                  >
+                    Fixed allowance
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
+                  <Checkbox
+                    inputId={`${kind}-bpjs-health`}
+                    checked={form.include_in_bpjs_health}
+                    disabled={!form.is_fixed_allowance}
+                    onChange={(event) =>
+                      updateForm(
+                        "include_in_bpjs_health",
+                        Boolean(event.checked),
+                      )
+                    }
+                  />
+                  <label
+                    htmlFor={`${kind}-bpjs-health`}
+                    className="cursor-pointer text-sm font-medium text-slate-700"
+                  >
+                    Include BPJS Kesehatan
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
+                  <Checkbox
+                    inputId={`${kind}-bpjs-employment`}
+                    checked={form.include_in_bpjs_employment}
+                    disabled={!form.is_fixed_allowance}
+                    onChange={(event) =>
+                      updateForm(
+                        "include_in_bpjs_employment",
+                        Boolean(event.checked),
+                      )
+                    }
+                  />
+                  <label
+                    htmlFor={`${kind}-bpjs-employment`}
+                    className="cursor-pointer text-sm font-medium text-slate-700"
+                  >
+                    Include BPJS Ketenagakerjaan
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </Dialog>
     </>

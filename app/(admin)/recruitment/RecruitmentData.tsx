@@ -48,6 +48,8 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 type DialogName =
   | "requisition"
@@ -307,6 +309,37 @@ export default function RecruitmentData() {
       setSaving(false);
     }
   };
+  const confirmRequisitionStatus = (
+    row: RecruitmentRequisition,
+    status: "OPEN" | "CLOSED" | "CANCELLED",
+  ) => {
+    const cancelling = status === "CANCELLED";
+    requestActionConfirmation({
+      action: cancelling
+        ? "Cancel requisition"
+        : status === "CLOSED"
+          ? "Close requisition"
+          : "Open requisition",
+      target: `${row.code} · ${row.job_title}`,
+      severity: cancelling || status === "CLOSED" ? "danger" : "warning",
+      confirmLabel: cancelling
+        ? "Cancel"
+        : status === "CLOSED"
+          ? "Close"
+          : "Open",
+      confirmIcon: cancelling
+        ? "pi pi-times"
+        : status === "CLOSED"
+          ? "pi pi-lock"
+          : "pi pi-folder-open",
+      description: cancelling
+        ? "Cancel this requisition?"
+        : status === "CLOSED"
+          ? "Close this requisition?"
+          : "Open this requisition?",
+      onAccept: () => changeRequisitionStatus(row, status),
+    });
+  };
   const changeCandidateStatus = async (
     row: RecruitmentCandidate,
     status: "ACTIVE" | "ARCHIVED",
@@ -325,6 +358,23 @@ export default function RecruitmentData() {
     } finally {
       setSaving(false);
     }
+  };
+  const confirmCandidateStatus = (
+    row: RecruitmentCandidate,
+    status: "ACTIVE" | "ARCHIVED",
+  ) => {
+    const archiving = status === "ARCHIVED";
+    requestActionConfirmation({
+      action: archiving ? "Archive candidate" : "Reactivate candidate",
+      target: row.full_name,
+      severity: archiving ? "danger" : "warning",
+      confirmLabel: archiving ? "Archive" : "Reactivate",
+      confirmIcon: archiving ? "pi pi-folder" : "pi pi-refresh",
+      description: archiving
+        ? "Archive this candidate?"
+        : "Reactivate this candidate?",
+      onAccept: () => changeCandidateStatus(row, status),
+    });
   };
   const changeOfferStatus = async (
     row: RecruitmentOffer,
@@ -347,6 +397,34 @@ export default function RecruitmentData() {
     } finally {
       setSaving(false);
     }
+  };
+  const confirmOfferStatus = (
+    row: RecruitmentOffer,
+    status: "SENT" | "ACCEPTED" | "DECLINED",
+  ) => {
+    const declining = status === "DECLINED";
+    const accepting = status === "ACCEPTED";
+    requestActionConfirmation({
+      action: declining
+        ? "Decline offer"
+        : accepting
+          ? "Accept offer"
+          : "Send offer",
+      target: `${row.candidate_name} · ${row.job_title}`,
+      severity: declining ? "danger" : "warning",
+      confirmLabel: declining ? "Decline" : accepting ? "Accept" : "Send",
+      confirmIcon: declining
+        ? "pi pi-times"
+        : accepting
+          ? "pi pi-check"
+          : "pi pi-send",
+      description: declining
+        ? "Decline this offer?"
+        : accepting
+          ? "Accept this offer?"
+          : "Send this offer?",
+      onAccept: () => changeOfferStatus(row, status),
+    });
   };
   const openLink = (row: RecruitmentOffer) => {
     setSelectedOffer(row);
@@ -425,7 +503,7 @@ export default function RecruitmentData() {
           label="Open"
           text
           size="small"
-          onClick={() => void changeRequisitionStatus(row, "OPEN")}
+          onClick={() => confirmRequisitionStatus(row, "OPEN")}
           disabled={saving}
         />
       ) : null}
@@ -435,7 +513,7 @@ export default function RecruitmentData() {
           text
           severity="secondary"
           size="small"
-          onClick={() => void changeRequisitionStatus(row, "CLOSED")}
+          onClick={() => confirmRequisitionStatus(row, "CLOSED")}
           disabled={saving}
         />
       ) : null}
@@ -445,7 +523,7 @@ export default function RecruitmentData() {
           text
           severity="danger"
           size="small"
-          onClick={() => void changeRequisitionStatus(row, "CANCELLED")}
+          onClick={() => confirmRequisitionStatus(row, "CANCELLED")}
           disabled={saving}
         />
       ) : null}
@@ -490,7 +568,7 @@ export default function RecruitmentData() {
           severity="danger"
           size="small"
           disabled={saving}
-          onClick={() => void changeCandidateStatus(row, "ARCHIVED")}
+          onClick={() => confirmCandidateStatus(row, "ARCHIVED")}
         />
       ) : null}
       {canManage && row.status === "ARCHIVED" ? (
@@ -499,7 +577,7 @@ export default function RecruitmentData() {
           text
           size="small"
           disabled={saving}
-          onClick={() => void changeCandidateStatus(row, "ACTIVE")}
+          onClick={() => confirmCandidateStatus(row, "ACTIVE")}
         />
       ) : null}
     </div>
@@ -511,7 +589,7 @@ export default function RecruitmentData() {
           label="Send"
           text
           size="small"
-          onClick={() => void changeOfferStatus(row, "SENT")}
+          onClick={() => confirmOfferStatus(row, "SENT")}
           disabled={saving}
         />
       ) : null}
@@ -521,7 +599,7 @@ export default function RecruitmentData() {
             label="Accept"
             text
             size="small"
-            onClick={() => void changeOfferStatus(row, "ACCEPTED")}
+            onClick={() => confirmOfferStatus(row, "ACCEPTED")}
             disabled={saving}
           />
           <Button
@@ -529,7 +607,7 @@ export default function RecruitmentData() {
             text
             severity="danger"
             size="small"
-            onClick={() => void changeOfferStatus(row, "DECLINED")}
+            onClick={() => confirmOfferStatus(row, "DECLINED")}
             disabled={saving}
           />
         </>
@@ -587,6 +665,68 @@ export default function RecruitmentData() {
       />
     </div>
   );
+  const confirmCompleteInterview = () => {
+    if (!selectedInterview) return;
+    const score = completion.score.trim() ? Number(completion.score) : null;
+    if (
+      score !== null &&
+      (!Number.isFinite(score) || score < 0 || score > 100)
+    ) {
+      notify("error", "Validation", "Score must be between 0 and 100.");
+      return;
+    }
+    requestActionConfirmation({
+      action: "Complete interview",
+      target: `Interview #${selectedInterview.id}`,
+      severity: "warning",
+      confirmLabel: "Complete interview",
+      confirmIcon: "pi pi-check-circle",
+      description: "Complete this interview?",
+      onAccept: () =>
+        save(
+          () =>
+            completeRecruitmentInterview(
+              selectedInterview.id,
+              selectedInterview.row_version,
+              { score, feedback: completion.feedback.trim() || null },
+            ),
+          "Interview completed.",
+          () => {
+            setSelectedInterview(null);
+            setCompletion({ score: "", feedback: "" });
+          },
+        ),
+    });
+  };
+  const confirmCancelInterview = () => {
+    const reason = interviewCancellationReason.trim();
+    if (!selectedInterview || !reason) {
+      notify("error", "Validation", "Cancellation reason is required.");
+      return;
+    }
+    requestActionConfirmation({
+      action: "Cancel interview",
+      target: `Interview #${selectedInterview.id}`,
+      severity: "danger",
+      confirmLabel: "Cancel interview",
+      confirmIcon: "pi pi-times",
+      description: "Cancel this interview?",
+      onAccept: () =>
+        save(
+          () =>
+            cancelRecruitmentInterview(
+              selectedInterview.id,
+              selectedInterview.row_version,
+              reason,
+            ),
+          "Interview cancelled.",
+          () => {
+            setSelectedInterview(null);
+            setInterviewCancellationReason("");
+          },
+        ),
+    });
+  };
   return (
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
@@ -946,14 +1086,10 @@ export default function RecruitmentData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Target Start{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={requisition.target_start_date}
-              onChange={(event) =>
-                setRequisition({
-                  ...requisition,
-                  target_start_date: event.target.value,
-                })
+              onValueChange={(value) =>
+                setRequisition({ ...requisition, target_start_date: value })
               }
             />
           </label>
@@ -1166,11 +1302,11 @@ export default function RecruitmentData() {
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Schedule
-            <InputText
-              type="datetime-local"
+            <PrimeDatePicker
               value={interview.scheduled_at}
-              onChange={(event) =>
-                setInterview({ ...interview, scheduled_at: event.target.value })
+              withTime
+              onValueChange={(value) =>
+                setInterview({ ...interview, scheduled_at: value })
               }
             />
           </label>
@@ -1249,32 +1385,7 @@ export default function RecruitmentData() {
         resizable={false}
         style={{ width: "95vw", maxWidth: "34rem" }}
         onHide={close}
-        footer={footer("Complete", () => {
-          if (!selectedInterview) return;
-          const score = completion.score.trim()
-            ? Number(completion.score)
-            : null;
-          if (
-            score !== null &&
-            (!Number.isFinite(score) || score < 0 || score > 100)
-          ) {
-            notify("error", "Validation", "Score must be between 0 and 100.");
-            return;
-          }
-          void save(
-            () =>
-              completeRecruitmentInterview(
-                selectedInterview.id,
-                selectedInterview.row_version,
-                { score, feedback: completion.feedback.trim() || null },
-              ),
-            "Interview completed.",
-            () => {
-              setSelectedInterview(null);
-              setCompletion({ score: "", feedback: "" });
-            },
-          );
-        })}
+        footer={footer("Complete", confirmCompleteInterview)}
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -1316,26 +1427,7 @@ export default function RecruitmentData() {
         resizable={false}
         style={{ width: "95vw", maxWidth: "34rem" }}
         onHide={close}
-        footer={footer("Cancel Interview", () => {
-          const reason = interviewCancellationReason.trim();
-          if (!selectedInterview || !reason) {
-            notify("error", "Validation", "Cancellation reason is required.");
-            return;
-          }
-          void save(
-            () =>
-              cancelRecruitmentInterview(
-                selectedInterview.id,
-                selectedInterview.row_version,
-                reason,
-              ),
-            "Interview cancelled.",
-            () => {
-              setSelectedInterview(null);
-              setInterviewCancellationReason("");
-            },
-          );
-        })}
+        footer={footer("Cancel Interview", confirmCancelInterview)}
       >
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
@@ -1421,22 +1513,21 @@ export default function RecruitmentData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Proposed Start{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={offer.proposed_start_date}
-              onChange={(event) =>
-                setOffer({ ...offer, proposed_start_date: event.target.value })
+              onValueChange={(value) =>
+                setOffer({ ...offer, proposed_start_date: value })
               }
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Offer Expiry{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="datetime-local"
+            <PrimeDatePicker
               value={offer.expires_at}
-              onChange={(event) =>
-                setOffer({ ...offer, expires_at: event.target.value })
+              withTime
+              onValueChange={(value) =>
+                setOffer({ ...offer, expires_at: value })
               }
             />
           </label>
@@ -1657,14 +1748,10 @@ export default function RecruitmentData() {
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Onboarding Effective Date
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={employeeLink.effective_date}
-              onChange={(event) =>
-                setEmployeeLink({
-                  ...employeeLink,
-                  effective_date: event.target.value,
-                })
+              onValueChange={(value) =>
+                setEmployeeLink({ ...employeeLink, effective_date: value })
               }
             />
           </label>

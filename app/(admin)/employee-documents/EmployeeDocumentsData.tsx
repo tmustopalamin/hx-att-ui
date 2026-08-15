@@ -6,16 +6,17 @@ import useSWR from "swr";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
+import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { fetcher } from "@/app/utils/fetcher";
 import type { Employee } from "@/app/types/employee";
 import type {
@@ -291,7 +292,7 @@ export default function EmployeeDocumentsData() {
     }
   };
   const confirmActive = (row: EmployeeDocument, isActive: boolean) =>
-    confirmDialog({
+    requestActionConfirmation({
       header: isActive ? "Activate Document" : "Deactivate Document",
       message: isActive
         ? "Activate this document?"
@@ -302,10 +303,19 @@ export default function EmployeeDocumentsData() {
       acceptClassName: isActive ? undefined : "p-button-danger",
       accept: () => void changeActive(row, isActive),
     });
+  const confirmVerify = (row: EmployeeDocument) =>
+    requestActionConfirmation({
+      action: "Verify document",
+      target: `${row.employee_name} · ${row.document_name || "Document"}`,
+      severity: "warning",
+      confirmLabel: "Verify",
+      confirmIcon: "pi pi-check-circle",
+      description: "Verify this employee document?",
+      onAccept: () => verify(row, "VERIFIED"),
+    });
 
   return (
     <>
-      <ConfirmDialog />
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
@@ -430,7 +440,7 @@ export default function EmployeeDocumentsData() {
                         text
                         rounded
                         aria-label="Verify"
-                        onClick={() => void verify(row, "VERIFIED")}
+                        onClick={() => confirmVerify(row)}
                       />
                     )}
                   {canVerify &&
@@ -546,21 +556,19 @@ export default function EmployeeDocumentsData() {
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
               Issued Date{" "}
-              <InputText
-                type="date"
+              <PrimeDatePicker
                 value={document.issued_date}
-                onChange={(event) =>
-                  setDocument({ ...document, issued_date: event.target.value })
+                onValueChange={(value) =>
+                  setDocument({ ...document, issued_date: value })
                 }
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
               Expiry Date{" "}
-              <InputText
-                type="date"
+              <PrimeDatePicker
                 value={document.expired_date}
-                onChange={(event) =>
-                  setDocument({ ...document, expired_date: event.target.value })
+                onValueChange={(value) =>
+                  setDocument({ ...document, expired_date: value })
                 }
               />
             </label>
@@ -804,22 +812,20 @@ export default function EmployeeDocumentsData() {
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Issued Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={editForm.issued_date}
-              onChange={(event) =>
-                setEditForm({ ...editForm, issued_date: event.target.value })
+              onValueChange={(value) =>
+                setEditForm({ ...editForm, issued_date: value })
               }
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Expiry Date{" "}
             <span className="font-normal text-slate-400">(optional)</span>
-            <InputText
-              type="date"
+            <PrimeDatePicker
               value={editForm.expired_date}
-              onChange={(event) =>
-                setEditForm({ ...editForm, expired_date: event.target.value })
+              onValueChange={(value) =>
+                setEditForm({ ...editForm, expired_date: value })
               }
             />
           </label>

@@ -8,7 +8,7 @@ import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -549,7 +549,7 @@ const OvertimeManagementTableData = () => {
   };
 
   const onClickApprove = (row: OvertimeRequest) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Approve Overtime Request",
       message: (
         <div className="flex flex-col gap-2">
@@ -875,8 +875,6 @@ const OvertimeManagementTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}

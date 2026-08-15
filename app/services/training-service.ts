@@ -83,11 +83,12 @@ export const updateTrainingEnrollmentStatus = (
     apiFetch<Envelope<Record<string, never>>>(
       `/api/training/enrollments/${id}/status`,
       {
-        ...post(data),
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           "If-Match": String(version),
         },
+        body: JSON.stringify(data),
       },
     ),
   );

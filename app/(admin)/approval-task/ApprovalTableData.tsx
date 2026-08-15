@@ -17,7 +17,7 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { IconField } from "primereact/iconfield";
@@ -85,7 +85,7 @@ const ApprovalTableData = () => {
   };
 
   const onClickApprove = () => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to approve this record?",
       header: "Approve Confirmation",
       icon: "pi pi-info-circle",
@@ -153,7 +153,7 @@ const ApprovalTableData = () => {
   };
 
   const onClickReject = () => {
-    confirmDialog({
+    requestActionConfirmation({
       message: "Do you want to reject this record?",
       header: "Reject Confirmation",
       icon: "pi pi-info-circle",
@@ -228,7 +228,6 @@ const ApprovalTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
       <Card title={<CardTitle title="Approval Task" url="" />}>
         <div className="p-3 flex flex-col gap-5">
           <div className="flex items-center justify-between">

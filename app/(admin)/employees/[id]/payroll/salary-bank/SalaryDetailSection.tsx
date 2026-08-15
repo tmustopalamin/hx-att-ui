@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
-import { ConfirmDialog } from "primereact/confirmdialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { Toast } from "primereact/toast";
@@ -78,7 +77,6 @@ const SalaryDetailSection = () => {
   return (
     <>
       <Toast ref={toast} position="top-center" />
-      <ConfirmDialog />
       <form
         onSubmit={handleSubmit((data: FormData) => onSubmit(data), onInvalid)}
       >

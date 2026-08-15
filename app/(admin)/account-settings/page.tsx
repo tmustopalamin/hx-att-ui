@@ -10,7 +10,7 @@ import dayjs from "dayjs";
 
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { Password } from "primereact/password";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { TabPanel, TabView } from "primereact/tabview";
@@ -196,7 +196,7 @@ const AccountSettingsPage = () => {
   };
 
   const askRevokeOthers = () =>
-    confirmDialog({
+    requestActionConfirmation({
       header: "Sign out other sessions?",
       message:
         "Other browsers and devices will need to sign in again. This session will remain active.",
@@ -209,7 +209,6 @@ const AccountSettingsPage = () => {
 
   return (
     <Card title={<CardTitle title="Account Settings" url="" />}>
-      <ConfirmDialog />
       <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
         Account Settings controls sign-in and account security. Employee
         information remains available in{" "}

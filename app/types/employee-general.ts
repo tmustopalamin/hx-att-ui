@@ -4,6 +4,10 @@ export type OptionItem = {
   is_active?: boolean;
 };
 
+export type EmploymentStatusOption = OptionItem & {
+  default_tax_employee_type: string | null;
+};
+
 export type EmployeePersonalData = {
   first_name: string;
   middle_name?: string | null;
@@ -24,11 +28,13 @@ export type EmployeePersonalData = {
 export type EmployeeEmploymentData = {
   code?: string | null;
   employee_id: number;
-  join_date: string;
+  join_date?: string | null;
   end_date?: string | null;
-  department_id: number;
-  position_id: number;
-  employment_status_id: number;
+  probation_end_date?: string | null;
+  confirmation_date?: string | null;
+  department_id?: number | null;
+  position_id?: number | null;
+  employment_status_id?: number | null;
   supervisor_employee_id?: number | null;
   position_name?: string | null;
   agency_id?: number | null;

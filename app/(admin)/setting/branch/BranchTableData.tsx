@@ -9,7 +9,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -41,7 +41,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -90,6 +90,7 @@ const BranchTableData = () => {
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("master-data");
 
   const [selectedData, setSelectedData] = useState<Branch | null>(null);
 
@@ -113,7 +114,7 @@ const BranchTableData = () => {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentKey = `/api/branch?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `/api/branch?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`;
   const agencyKey = "/api/agency?show_all=false";
   const stateKey = "/api/state?show_all=false";
   const cityKey = "/api/city?show_all=false";
@@ -425,7 +426,7 @@ const BranchTableData = () => {
   };
 
   const onClickDelete = (data: Branch) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Branch",
       message: (
         <div className="flex flex-col gap-1">
@@ -464,7 +465,7 @@ const BranchTableData = () => {
   };
 
   const onClickRestore = (data: Branch) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore Branch",
       message: (
         <div className="flex flex-col gap-1">
@@ -503,7 +504,7 @@ const BranchTableData = () => {
   };
 
   const onClickPurge = (data: Branch) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Branch Permanently",
       message: (
         <div className="flex flex-col gap-2">
@@ -580,7 +581,7 @@ const BranchTableData = () => {
   const actionColumnBody = (rowData: Branch) => {
     const isDeleted = Boolean(rowData.deleted_at);
 
-    const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
+    const isSuperadmin = archivedAccess.canShowDeleted;
 
     if (isDeleted) {
       if (!isSuperadmin) {
@@ -589,35 +590,39 @@ const BranchTableData = () => {
 
       return (
         <div className="flex flex-nowrap items-center justify-end gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            onClick={() => onClickRestore(rowData)}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickRestore(rowData)}
+            />
+          )}
 
-          <Button
-            type="button"
-            icon="pi pi-trash"
-            rounded
-            outlined
-            severity="danger"
-            size="small"
-            tooltip="Delete permanently"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            onClick={() => onClickPurge(rowData)}
-          />
+          {archivedAccess.canPurge && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              onClick={() => onClickPurge(rowData)}
+            />
+          )}
         </div>
       );
     }
@@ -701,8 +706,6 @@ const BranchTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
@@ -751,22 +754,24 @@ const BranchTableData = () => {
 
           {/* Table Toolbar */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                inputId="showDeletedData"
-                checked={isShowDeletedDataChecked}
-                onChange={(event) =>
-                  onShowDeletedChange(Boolean(event.checked))
-                }
-              />
+            {archivedAccess.canShowDeleted && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  inputId="showDeletedData"
+                  checked={isShowDeletedDataChecked}
+                  onChange={(event) =>
+                    onShowDeletedChange(Boolean(event.checked))
+                  }
+                />
 
-              <label
-                htmlFor="showDeletedData"
-                className="cursor-pointer select-none text-sm text-slate-600"
-              >
-                Show deleted records
-              </label>
-            </div>
+                <label
+                  htmlFor="showDeletedData"
+                  className="cursor-pointer select-none text-sm text-slate-600"
+                >
+                  Show deleted records
+                </label>
+              </div>
+            )}
 
             <IconField iconPosition="left" className="w-full md:w-80">
               <InputIcon className="pi pi-search" />

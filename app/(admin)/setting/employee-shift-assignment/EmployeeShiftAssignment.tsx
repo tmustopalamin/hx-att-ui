@@ -9,13 +9,13 @@ import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -37,9 +37,8 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasRole } from "@/app/utils/role-utils";
+import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
-import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
 type EmployeeShiftAssignmentRow = EmployeeShiftAssignment & {
@@ -74,7 +73,7 @@ const EmployeeShiftAssignmentListPage = () => {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const profileState = useSelector((state: RootState) => state.profile);
+  const archivedAccess = useArchivedDataAccess("employee-shift-rule");
 
   const [defaultWeekFrom, defaultWeekTo] = getDefaultWeekRange();
 
@@ -96,7 +95,7 @@ const EmployeeShiftAssignmentListPage = () => {
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
 
-  const currentKey = `/api/employee-shift-assignment?show_all=${isShowDeletedDataChecked}`;
+  const currentKey = `/api/employee-shift-assignment?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`;
 
   const {
     data: assignmentData,
@@ -107,8 +106,6 @@ const EmployeeShiftAssignmentListPage = () => {
   } = useSWR<EmployeeShiftAssignmentRow[]>(currentKey, fetcher);
 
   const rows = assignmentData ?? [];
-
-  const isSuperadmin = hasRole(profileState.role, ["superadmin"]);
 
   const isProcessing = processingRowId !== null;
 
@@ -458,7 +455,7 @@ const EmployeeShiftAssignmentListPage = () => {
   };
 
   const onClickDelete = (row: EmployeeShiftAssignmentRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Schedule",
       message: (
         <div className="flex flex-col gap-1">
@@ -508,7 +505,7 @@ const EmployeeShiftAssignmentListPage = () => {
   };
 
   const onClickRestore = (row: EmployeeShiftAssignmentRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Restore Schedule",
       message: (
         <div className="flex flex-col gap-1">
@@ -558,7 +555,7 @@ const EmployeeShiftAssignmentListPage = () => {
   };
 
   const onClickPurge = (row: EmployeeShiftAssignmentRow) => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Delete Schedule Permanently",
       message: (
         <div className="flex flex-col gap-2">
@@ -648,45 +645,49 @@ const EmployeeShiftAssignmentListPage = () => {
     const isCurrentRowProcessing = processingRowId === row.id;
 
     if (row.deleted_at) {
-      if (!isSuperadmin) {
+      if (!archivedAccess.canRestore && !archivedAccess.canPurge) {
         return <span className="text-sm text-slate-400">No action</span>;
       }
 
       return (
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            icon="pi pi-refresh"
-            rounded
-            outlined
-            severity="success"
-            size="small"
-            tooltip="Restore"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            loading={isCurrentRowProcessing && processingAction === "restore"}
-            disabled={isProcessing}
-            onClick={() => onClickRestore(row)}
-          />
+          {archivedAccess.canRestore && (
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              rounded
+              outlined
+              severity="success"
+              size="small"
+              tooltip="Restore"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              loading={isCurrentRowProcessing && processingAction === "restore"}
+              disabled={isProcessing}
+              onClick={() => onClickRestore(row)}
+            />
+          )}
 
-          <Button
-            type="button"
-            icon="pi pi-trash"
-            rounded
-            outlined
-            severity="danger"
-            size="small"
-            tooltip="Delete permanently"
-            tooltipOptions={{
-              appendTo: getBody,
-              position: "top",
-            }}
-            loading={isCurrentRowProcessing && processingAction === "purge"}
-            disabled={isProcessing}
-            onClick={() => onClickPurge(row)}
-          />
+          {archivedAccess.canPurge && (
+            <Button
+              type="button"
+              icon="pi pi-trash"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Delete permanently"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              loading={isCurrentRowProcessing && processingAction === "purge"}
+              disabled={isProcessing}
+              onClick={() => onClickPurge(row)}
+            />
+          )}
         </div>
       );
     }
@@ -721,8 +722,6 @@ const EmployeeShiftAssignmentListPage = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
@@ -902,24 +901,26 @@ const EmployeeShiftAssignmentListPage = () => {
             )}
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  inputId="showDeletedData"
-                  checked={isShowDeletedDataChecked}
-                  onChange={(event) => {
-                    setIsShowDeletedDataChecked(Boolean(event.checked));
+              {archivedAccess.canShowDeleted && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    inputId="showDeletedData"
+                    checked={isShowDeletedDataChecked}
+                    onChange={(event) => {
+                      setIsShowDeletedDataChecked(Boolean(event.checked));
 
-                    setSelectedCell(null);
-                  }}
-                />
+                      setSelectedCell(null);
+                    }}
+                  />
 
-                <label
-                  htmlFor="showDeletedData"
-                  className="cursor-pointer select-none text-sm text-slate-600"
-                >
-                  Show deleted records
-                </label>
-              </div>
+                  <label
+                    htmlFor="showDeletedData"
+                    className="cursor-pointer select-none text-sm text-slate-600"
+                  >
+                    Show deleted records
+                  </label>
+                </div>
+              )}
 
               {dateRangeLabel && (
                 <div className="flex flex-wrap items-center gap-2">

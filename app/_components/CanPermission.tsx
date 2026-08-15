@@ -1,4 +1,9 @@
 import { RootState } from "@/store/store";
+import {
+  hasAllPermissions,
+  hasAnyPermission,
+  hasPermission,
+} from "@/app/utils/permission-utils";
 import { useSelector } from "react-redux";
 
 type Props = {
@@ -13,18 +18,14 @@ const Can = ({ permission, anyOf, allOf, children, fallback }: Props) => {
   const profile = useSelector((state: RootState) => state.profile);
   const permissions = profile?.permissions || [];
 
-  let allowed = false;
-
-  if (permission) {
-    allowed = permissions.includes(permission);
-  }
+  let allowed = permission ? hasPermission(permissions, permission) : false;
 
   if (anyOf) {
-    allowed = anyOf.some((p) => permissions.includes(p));
+    allowed = hasAnyPermission(permissions, anyOf);
   }
 
   if (allOf) {
-    allowed = allOf.every((p) => permissions.includes(p));
+    allowed = hasAllPermissions(permissions, allOf);
   }
 
   if (!allowed) return <>{fallback}</>;

@@ -50,7 +50,8 @@ type ActiveFilter = "ALL" | "ACTIVE" | "INACTIVE";
 
 type TagSeverity = "success" | "secondary" | "info" | "warning" | "danger";
 
-const API_KEY = "/api/approval/workflow-settings?show_all=true";
+const approvalSettingsUrl = (showDeleted: boolean) =>
+  `/api/approval/workflow-settings?show_all=${showDeleted}`;
 
 const MAX_WORKFLOW_NAME_LENGTH = 100;
 const MAX_REQUIRED_STEPS = 10;
@@ -124,6 +125,9 @@ const getModuleSeverity = (moduleCode?: string | null): TagSeverity => {
 
 const ApprovalSettingsTableData = () => {
   const dispatch = useDispatch();
+  // Archived workflow settings are opt-in; this table has no deleted-data
+  // toggle, so keep the normal list scoped to active records.
+  const apiKey = approvalSettingsUrl(false);
 
   const [selectedData, setSelectedData] =
     useState<ApprovalWorkflowSetting | null>(null);
@@ -150,7 +154,7 @@ const ApprovalSettingsTableData = () => {
     isLoading,
     isValidating,
     mutate: refreshApprovalSettingsData,
-  } = useSWR<ApprovalWorkflowSettingListResponse>(API_KEY, fetcher, {
+  } = useSWR<ApprovalWorkflowSettingListResponse>(apiKey, fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -519,7 +523,7 @@ const ApprovalSettingsTableData = () => {
   }
 
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey={API_KEY} />;
+    return <ErrorNotConnectedToApi mutateKey={apiKey} />;
   }
 
   return (

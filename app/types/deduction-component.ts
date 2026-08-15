@@ -11,6 +11,7 @@ export interface DeductionComponent {
   deleted_at: string | null;
   updated_at: string;
   calculation_method_name: string | null;
+  assignment_mode: "EMPLOYEE" | "SYSTEM";
   row_version: number;
 }
 

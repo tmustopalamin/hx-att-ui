@@ -10,7 +10,7 @@ import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { confirmDialog, ConfirmDialog } from "primereact/confirmdialog";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -443,7 +443,7 @@ const AttendanceLogTableData = () => {
   };
 
   const onClickSyncLog = () => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Sync Attendance Log",
       message: (
         <div className="flex flex-col gap-2">
@@ -516,7 +516,7 @@ const AttendanceLogTableData = () => {
   };
 
   const onClickRemapEmployee = () => {
-    confirmDialog({
+    requestActionConfirmation({
       header: "Remap Employees",
       message: (
         <div className="flex flex-col gap-2">
@@ -969,8 +969,6 @@ const AttendanceLogTableData = () => {
 
   return (
     <>
-      <ConfirmDialog />
-
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
           {/* Page Header */}
