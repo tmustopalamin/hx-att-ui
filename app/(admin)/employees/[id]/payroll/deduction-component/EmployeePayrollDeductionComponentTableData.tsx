@@ -4,8 +4,6 @@ import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
@@ -27,11 +25,11 @@ import {
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { showToast } from "@/store/ToastSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { Checkbox } from "primereact/checkbox";
 import { RootState } from "@/store/store";
 import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
+import { InputTextarea } from "primereact/inputtextarea";
 import { EmployeePersonalData } from "@/app/types/employee-general";
 import { EmployeeDeductionComponent } from "@/app/types/employee-deduction-component";
 import { useParams } from "next/navigation";
@@ -47,6 +45,12 @@ import { InputSwitch } from "primereact/inputswitch";
 import { Tag } from "primereact/tag";
 import { Frequency } from "@/app/types/frequency";
 import { DeductionComponent } from "@/app/types/deduction-component";
+import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
+import {
+  formatPayrollCurrency,
+  formatPayrollDate,
+} from "@/app/(admin)/employees/[id]/payroll/_components/payroll-display-formatters";
 
 const EmployeePayrollDeductionComponentTableData = () => {
   const params = useParams();
@@ -74,10 +78,14 @@ const EmployeePayrollDeductionComponentTableData = () => {
     control,
     handleSubmit,
     setFocus,
-    formState: { isValid },
+    formState: { isDirty, isSubmitting },
     reset,
     clearErrors,
   } = useForm<EmployeeDeductionComponent>();
+  const { confirmDiscard } = useDirtyFormGuard(
+    visible && isDirty,
+    !isSubmitting,
+  );
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
@@ -111,6 +119,22 @@ const EmployeePayrollDeductionComponentTableData = () => {
     });
   };
 
+  const closeForm = () => {
+    if (isSubmitting) return;
+    if (!isDirty) {
+      setVisible(false);
+      reset();
+      return;
+    }
+
+    void confirmDiscard().then((discard) => {
+      if (discard) {
+        setVisible(false);
+        reset();
+      }
+    });
+  };
+
   const footerContent = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
@@ -119,16 +143,17 @@ const EmployeePayrollDeductionComponentTableData = () => {
         icon="pi pi-times"
         text
         severity="secondary"
+        disabled={isSubmitting}
         className="w-full sm:w-auto"
-        onClick={() => {
-          setVisible(false);
-        }}
+        onClick={closeForm}
       />
       <Button
         type="submit"
         form="employee-deduction-component-form"
-        label={isAddNew ? "Submit" : "Save"}
+        label={isAddNew ? "Create Deduction Component" : "Save Changes"}
         icon="pi pi-check"
+        loading={isSubmitting}
+        disabled={isSubmitting}
         className="w-full sm:w-auto"
       />
     </div>
@@ -138,6 +163,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
     data: EmployeeDeductionComponentData,
     error,
     isLoading,
+    isValidating,
   } = useSWR<EmployeeDeductionComponent[]>(
     `/api/employees/${id}/deduction-component?show_all=${
       archivedAccess.canShowDeleted && isShowDeletedDataChecked
@@ -420,16 +446,14 @@ const EmployeePayrollDeductionComponentTableData = () => {
     }
   };
 
-  const onSubmit = (data: EmployeeDeductionComponent) => {
-    if (!isValid) return;
-
+  const onSubmit = async (data: EmployeeDeductionComponent) => {
     if (isAddNew) {
-      handleSubmitNew(data);
+      await handleSubmitNew(data);
       return;
     }
 
     if (selectedData) {
-      handleUpdate(data);
+      await handleUpdate(data);
     }
   };
 
@@ -440,8 +464,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
     const updatedData = {
       ...data,
-      start_date: dayjs(data.start_date).toDate(),
-      end_date: dayjs(data.end_date).toDate(),
+      start_date: data.start_date ? dayjs(data.start_date).toDate() : null,
+      end_date: data.end_date ? dayjs(data.end_date).toDate() : null,
     };
 
     reset(updatedData);
@@ -450,28 +474,40 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const activeColumnBody = (rowData: EmployeeDeductionComponent) => {
     return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag
+        value="Active"
+        severity="success"
+        icon="pi pi-check-circle"
+        rounded
+      />
     ) : (
-      <Tag value="Inactive" severity="danger" />
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
     );
   };
 
   const actionColumnBody = (rowData: EmployeeDeductionComponent) => {
     return (
       <>
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           {canPurge && rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="delete forever"
+              tooltip="Delete permanently"
               rounded
-              severity="secondary"
-              label=""
-              icon="pi pi-times"
+              outlined
+              severity="danger"
+              icon="pi pi-trash"
               size="small"
+              aria-label="Delete deduction component permanently"
               onClick={() => {
                 onClickPurge(rowData);
               }}
@@ -480,16 +516,18 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
           {canRestore && rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
               tooltip="restore"
               rounded
+              outlined
               severity="success"
-              label=""
               icon="pi pi-refresh"
               size="small"
+              aria-label="Restore deduction component"
               onClick={() => {
                 onClickRestore(rowData);
               }}
@@ -498,16 +536,18 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
           {canDelete && !rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
               tooltip="delete"
               rounded
+              outlined
               severity="danger"
-              label=""
               icon="pi pi-trash"
               size="small"
+              aria-label="Delete deduction component"
               onClick={() => {
                 onClickDelete(rowData);
               }}
@@ -516,16 +556,18 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
           {canUpdate && !rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
               tooltip="update"
               rounded
-              severity="help"
-              label=""
+              outlined
+              severity="secondary"
               icon="pi pi-pencil"
               size="small"
+              aria-label="Edit deduction component"
               onClick={() => {
                 onClickUpdate(rowData);
               }}
@@ -625,73 +667,123 @@ const EmployeePayrollDeductionComponentTableData = () => {
     });
   };
 
+  const componentCalculationBody = (row: EmployeeDeductionComponent) => {
+    const master = employeeDeductionComponentData?.find(
+      (component) => component.id === row.deduction_component_master_id,
+    );
+    const methodName =
+      master?.calculation_method_name ??
+      master?.calculation_display ??
+      "Not configured";
+
+    return (
+      <div className="flex min-w-[15rem] flex-col gap-1">
+        <Tag value={methodName} severity="warning" />
+        <span className="font-semibold text-slate-800">
+          Amount: {formatPayrollCurrency(Number(row.amount ?? 0))}
+        </span>
+      </div>
+    );
+  };
+
+  const frequencyBody = (row: EmployeeDeductionComponent) => {
+    if (!row.frequency) {
+      return <span className="text-slate-500">Not set</span>;
+    }
+
+    const frequency = frequencyData?.find((item) => item.id === row.frequency);
+    if (!frequency) {
+      return <span className="text-slate-500">Loading frequency...</span>;
+    }
+
+    return (
+      <div className="flex min-w-[9rem] flex-col">
+        <span className="font-medium text-slate-800">{frequency.name}</span>
+        <span className="text-xs text-slate-500">
+          {frequency.code} · {frequency.days_in_period} day(s)
+        </span>
+      </div>
+    );
+  };
+
+  const periodBody = (row: EmployeeDeductionComponent) => (
+    <div className="flex min-w-[12rem] flex-col">
+      <span className="text-sm text-slate-800">
+        {formatPayrollDate(row.start_date)}
+      </span>
+      <span className="text-xs text-slate-500">
+        Until {formatPayrollDate(row.end_date)}
+      </span>
+    </div>
+  );
+
   return (
     <>
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Deduction Component
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                Manage recurring and one-time deduction components for this
-                employee.
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
-              {canCreate && (
+          <EmployeeDetailTableHeader
+            title="Deduction Component"
+            description="Manage recurring and one-time deduction components for this employee."
+            showDeleted={
+              archivedAccess.canShowDeleted
+                ? {
+                    checked: isShowDeletedDataChecked,
+                    onChange: onIngredientsChange,
+                    label: "Show deleted data",
+                  }
+                : undefined
+            }
+            search={{
+              value: globalFilterValue,
+              onChange: onGlobalFilterChange,
+              placeholder: "Search deduction component",
+            }}
+            actions={
+              <>
                 <Button
-                  label="New Deduction Component"
-                  icon="pi pi-plus"
+                  type="button"
+                  label="Refresh"
+                  icon="pi pi-refresh"
+                  severity="secondary"
+                  outlined
                   size="small"
+                  loading={isValidating}
+                  disabled={isValidating}
                   className="w-full sm:w-auto"
-                  onClick={() => onClickNew()}
+                  onClick={() =>
+                    void mutate(
+                      `/api/employees/${id}/deduction-component?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+                    )
+                  }
                 />
-              )}
-
-              {archivedAccess.canShowDeleted && (
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    inputId="showDeletedData"
-                    name="showDeletedData"
-                    value="yes"
-                    onChange={onIngredientsChange}
-                    checked={isShowDeletedDataChecked}
+                {canCreate && (
+                  <Button
+                    type="button"
+                    label="New Deduction Component"
+                    icon="pi pi-plus"
+                    size="small"
+                    className="w-full sm:w-auto"
+                    onClick={onClickNew}
                   />
-                  <label
-                    htmlFor="showDeletedData"
-                    className="cursor-pointer select-none text-sm text-slate-600"
-                  >
-                    Show deleted records
-                  </label>
-                </div>
-              )}
-
-              <IconField iconPosition="left" className="w-full sm:w-72">
-                <InputIcon className="pi pi-search" />
-                <InputText
-                  className="w-full"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Search deduction component"
-                />
-              </IconField>
-            </div>
-          </div>
+                )}
+              </>
+            }
+          />
 
           <DataTable
-            value={EmployeeDeductionComponentData}
-            tableStyle={{ minWidth: "50rem" }}
+            value={EmployeeDeductionComponentData ?? []}
+            tableStyle={{ minWidth: "78rem" }}
             stripedRows
+            rowHover
             paginator
             scrollable
-            scrollHeight="500px"
+            responsiveLayout="scroll"
+            removableSort
+            size="small"
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={["name"]}
+            globalFilterFields={["deduction_component_name", "notes"]}
             emptyMessage="No data found."
             filters={filters}
             currentPageReportTemplate="{first} to {last} of {totalRecords}"
@@ -703,20 +795,78 @@ const EmployeePayrollDeductionComponentTableData = () => {
               headerStyle={{ width: "3rem" }}
               body={(data, options) => options.rowIndex + 1}
             />
-            <Column field="deduction_component_name" header="Component" />
-            <Column field="start_date" header="Start Date" />
-            <Column field="end_date" header="End Date" />
-            <Column field="amount" header="Amount" />
-            <Column field="frequency" header="Frequency" />
-            <Column field="notes" header="Notes" />
-            <Column field="is_active" header="Active" body={activeColumnBody} />
+            <Column
+              field="deduction_component_name"
+              header="Component"
+              sortable
+              style={{ minWidth: "16rem" }}
+              body={(row: EmployeeDeductionComponent) => {
+                const master = employeeDeductionComponentData?.find(
+                  (component) =>
+                    component.id === row.deduction_component_master_id,
+                );
+                return (
+                  <div className="flex min-w-[14rem] flex-col">
+                    <span className="font-medium text-slate-800">
+                      {row.deduction_component_name ?? "Not configured"}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {master?.code ?? ""}
+                    </span>
+                  </div>
+                );
+              }}
+            />
+            <Column
+              header="Calculation"
+              body={componentCalculationBody}
+              style={{ minWidth: "17rem" }}
+            />
+            <Column
+              header="Effective Period"
+              body={periodBody}
+              style={{ minWidth: "14rem" }}
+            />
+            <Column
+              field="frequency"
+              header="Frequency"
+              sortable
+              body={frequencyBody}
+              style={{ minWidth: "11rem" }}
+            />
+            <Column
+              field="notes"
+              header="Notes"
+              style={{ minWidth: "14rem" }}
+              body={(row: EmployeeDeductionComponent) => (
+                <span
+                  className="block max-w-[14rem] truncate text-slate-600"
+                  title={row.notes ?? ""}
+                >
+                  {row.notes || "-"}
+                </span>
+              )}
+            />
+            <Column
+              field="is_active"
+              header="Status"
+              sortable
+              body={activeColumnBody}
+              style={{ minWidth: "9rem" }}
+            />
             <Column
               headerClassName="bg-white"
-              className="bg-white"
+              bodyClassName="bg-white"
               header="Action"
               body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
+              frozen
               alignFrozen="right"
+              headerStyle={{
+                width: "11rem",
+                minWidth: "11rem",
+                textAlign: "right",
+              }}
+              bodyStyle={{ width: "11rem", minWidth: "11rem" }}
             />
           </DataTable>
         </div>
@@ -725,18 +875,14 @@ const EmployeePayrollDeductionComponentTableData = () => {
       <Dialog
         header={popupHeaderTitle}
         visible={visible}
-        style={{ width: "95vw", maxWidth: "42rem" }}
+        style={{ width: "95vw", maxWidth: "46rem" }}
         breakpoints={{ "640px": "95vw" }}
         modal
         draggable={false}
         resizable={false}
-        closeOnEscape
-        closable
-        onHide={() => {
-          if (!visible) return;
-          setVisible(false);
-          reset();
-        }}
+        closeOnEscape={!isSubmitting}
+        closable={!isSubmitting}
+        onHide={closeForm}
         footer={footerContent}
         onShow={() => {
           setTimeout(() => setFocus("deduction_component_master_id"), 0);
@@ -745,9 +891,9 @@ const EmployeePayrollDeductionComponentTableData = () => {
         <form
           id="employee-deduction-component-form"
           onSubmit={handleSubmit((data) => onSubmit(data))}
-          className="flex flex-col gap-4 pt-1"
+          className="grid grid-cols-1 gap-5 pt-2 sm:grid-cols-2"
         >
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <label
               htmlFor="employee_id"
               className="text-sm font-medium text-slate-700"
@@ -765,13 +911,15 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     appendTo={() => document.body}
                     value={field.value}
                     options={employeeActive}
-                    loading={isLoading}
+                    loading={employeeIsLoading}
                     disabled={employeeIsLoading || !!employeeError}
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="full_name"
                     optionValue="id"
                     placeholder={
-                      isLoading ? "Loading employees..." : "Select an employee"
+                      employeeIsLoading
+                        ? "Loading employees..."
+                        : "Select an employee"
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -790,7 +938,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <label
               htmlFor="deduction_component_master_id"
               className="text-sm font-medium text-slate-700"
@@ -809,7 +957,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     appendTo={() => document.body}
                     value={field.value}
                     options={employeeDeductionComponentActive}
-                    loading={isLoading}
+                    loading={employeeDeductionComponentIsLoading}
                     disabled={
                       employeeDeductionComponentIsLoading ||
                       !!employeeDeductionComponentError
@@ -818,9 +966,9 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     optionLabel="name"
                     optionValue="id"
                     placeholder={
-                      isLoading
-                        ? "Loading Deduction components..."
-                        : "Select a Deduction component"
+                      employeeDeductionComponentIsLoading
+                        ? "Loading deduction components..."
+                        : "Select a deduction component"
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -856,8 +1004,12 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 <>
                   <InputNumber
                     id="amount"
-                    placeholder="input amount of balance"
+                    placeholder="Enter amount"
                     inputRef={field.ref}
+                    mode="currency"
+                    currency="IDR"
+                    locale="id-ID"
+                    min={0}
                     onValueChange={(e) => {
                       field.onChange(e.value);
                     }}
@@ -877,7 +1029,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           </div>
 
-          <div className="m-0 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <label
               htmlFor="frequency"
               className="text-sm font-medium text-slate-700"
@@ -915,11 +1067,11 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           </div>
 
-          <div className="flex w-full gap-5">
-            <div className="flex w-full flex-col gap-2 sm:w-1/2">
+          <div className="grid grid-cols-1 gap-5 sm:col-span-2 sm:grid-cols-2">
+            <div className="flex flex-col gap-2">
               <label
                 htmlFor="start_date"
-                className="text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
                 Start Date<span className="ml-1 text-red-500">*</span>
               </label>
@@ -931,6 +1083,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                   <>
                     <Calendar
                       dateFormat="dd-mm-yy"
+                      showIcon
                       appendTo={() => document.body}
                       {...field}
                       id="start_date"
@@ -952,10 +1105,10 @@ const EmployeePayrollDeductionComponentTableData = () => {
               />
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:w-1/2">
+            <div className="flex flex-col gap-2">
               <label
                 htmlFor="end_date"
-                className="text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
                 End Date
               </label>
@@ -966,6 +1119,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                   <>
                     <Calendar
                       dateFormat="dd-mm-yy"
+                      showIcon
                       appendTo={() => document.body}
                       {...field}
                       id="end_date"
@@ -988,7 +1142,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             </div>
           </div>
 
-          <div className="m-0 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <label
               htmlFor="notes"
               className="text-sm font-medium text-slate-700"
@@ -1000,10 +1154,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
               control={control}
               render={({ field, fieldState }) => (
                 <>
-                  <InputText
+                  <InputTextarea
                     id="notes"
-                    placeholder=""
+                    placeholder="Optional notes"
                     {...field}
+                    value={field.value ?? ""}
+                    rows={3}
+                    autoResize
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
                   {fieldState.error && (
@@ -1017,23 +1174,31 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
           </div>
 
-          <div className="m-0 flex flex-col gap-2">
-            <label
-              htmlFor="is_active"
-              className="text-sm font-medium text-slate-700"
-            >
-              Active
-            </label>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
             <Controller
               name="is_active"
               control={control}
               defaultValue={true}
               render={({ field }) => (
-                <InputSwitch
-                  id="is_active"
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.value)}
-                />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active component
+                    </label>
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive components are excluded from new payroll
+                      calculations.
+                    </p>
+                  </div>
+                  <InputSwitch
+                    id="is_active"
+                    checked={Boolean(field.value)}
+                    onChange={(e) => field.onChange(e.value)}
+                  />
+                </div>
               )}
             />
           </div>

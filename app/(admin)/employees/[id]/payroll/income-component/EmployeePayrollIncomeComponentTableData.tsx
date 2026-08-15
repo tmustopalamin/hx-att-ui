@@ -4,8 +4,6 @@ import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { InputText } from "primereact/inputtext";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
@@ -27,11 +25,11 @@ import {
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { showToast } from "@/store/ToastSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { Checkbox } from "primereact/checkbox";
 import { RootState } from "@/store/store";
 import { Dropdown } from "primereact/dropdown";
 import { Calendar } from "primereact/calendar";
 import { InputNumber } from "primereact/inputnumber";
+import { InputTextarea } from "primereact/inputtextarea";
 import { EmployeePersonalData } from "@/app/types/employee-general";
 import { EmployeeIncomeComponent } from "@/app/types/employee-income-component";
 import { useParams } from "next/navigation";
@@ -47,6 +45,13 @@ import { InputSwitch } from "primereact/inputswitch";
 import { Tag } from "primereact/tag";
 import { Frequency } from "@/app/types/frequency";
 import { IncomeComponent } from "@/app/types/income-component";
+import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
+import {
+  formatPayrollCurrency,
+  formatPayrollDate,
+  formatPayrollPercentage,
+} from "@/app/(admin)/employees/[id]/payroll/_components/payroll-display-formatters";
 
 const EmployeePayrollEmployeeIncomeComponentTableData = () => {
   const params = useParams();
@@ -76,10 +81,14 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     control,
     handleSubmit,
     setFocus,
-    formState: { isValid },
+    formState: { isDirty, isSubmitting },
     reset,
     clearErrors,
   } = useForm<EmployeeIncomeComponent>();
+  const { confirmDiscard } = useDirtyFormGuard(
+    visible && isDirty,
+    !isSubmitting,
+  );
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
@@ -115,6 +124,22 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     });
   };
 
+  const closeForm = () => {
+    if (isSubmitting) return;
+    if (!isDirty) {
+      setVisible(false);
+      reset();
+      return;
+    }
+
+    void confirmDiscard().then((discard) => {
+      if (discard) {
+        setVisible(false);
+        reset();
+      }
+    });
+  };
+
   const footerContent = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
@@ -123,16 +148,17 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         icon="pi pi-times"
         text
         severity="secondary"
+        disabled={isSubmitting}
         className="w-full sm:w-auto"
-        onClick={() => {
-          setVisible(false);
-        }}
+        onClick={closeForm}
       />
       <Button
         type="submit"
         form="employee-income-component-form"
-        label={isAddNew ? "Submit" : "Save"}
+        label={isAddNew ? "Create Income Component" : "Save Changes"}
         icon="pi pi-check"
+        loading={isSubmitting}
+        disabled={isSubmitting}
         className="w-full sm:w-auto"
       />
     </div>
@@ -142,6 +168,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     data: EmployeeIncomeComponentData,
     error,
     isLoading,
+    isValidating,
   } = useSWR<EmployeeIncomeComponent[]>(
     `/api/employees/${id}/income-component?show_all=${
       archivedAccess.canShowDeleted && isShowDeletedDataChecked
@@ -168,6 +195,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
   } = useSWR<Frequency[]>(`/api/frequency`, fetcher);
   const employeeIncomeComponentActive = incomeComponentData?.filter(
     (a) => a.is_active && a.assignment_mode === "EMPLOYEE",
+  );
+  const incomeComponentReferenceOptions = incomeComponentData?.filter(
+    (a) =>
+      a.is_active &&
+      (a.assignment_mode === "EMPLOYEE" ||
+        (a.assignment_mode === "SYSTEM" &&
+          a.code?.toUpperCase() === "BASIC_SALARY")),
   );
   const employeeActive = employeeData
     ? [
@@ -421,16 +455,14 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     }
   };
 
-  const onSubmit = (data: EmployeeIncomeComponent) => {
-    if (!isValid) return;
-
+  const onSubmit = async (data: EmployeeIncomeComponent) => {
     if (isAddNew) {
-      handleSubmitNew(data);
+      await handleSubmitNew(data);
       return;
     }
 
     if (selectedData) {
-      handleUpdate(data);
+      await handleUpdate(data);
     }
   };
 
@@ -441,8 +473,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
     const updatedData = {
       ...data,
-      start_date: dayjs(data.start_date).toDate(),
-      end_date: dayjs(data.end_date).toDate(),
+      start_date: data.start_date ? dayjs(data.start_date).toDate() : null,
+      end_date: data.end_date ? dayjs(data.end_date).toDate() : null,
     };
 
     reset(updatedData);
@@ -456,28 +488,40 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const activeColumnBody = (rowData: EmployeeIncomeComponent) => {
     return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag
+        value="Active"
+        severity="success"
+        icon="pi pi-check-circle"
+        rounded
+      />
     ) : (
-      <Tag value="Inactive" severity="danger" />
+      <Tag
+        value="Inactive"
+        severity="warning"
+        icon="pi pi-minus-circle"
+        rounded
+      />
     );
   };
 
   const actionColumnBody = (rowData: EmployeeIncomeComponent) => {
     return (
       <>
-        <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center justify-end gap-2">
           {canPurge && rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="delete forever"
+              tooltip="Delete permanently"
               rounded
-              severity="secondary"
-              label=""
-              icon="pi pi-times"
+              outlined
+              severity="danger"
+              icon="pi pi-trash"
               size="small"
+              aria-label="Delete income component permanently"
               onClick={() => {
                 onClickPurge(rowData);
               }}
@@ -486,16 +530,18 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
           {canRestore && rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
               tooltip="restore"
               rounded
+              outlined
               severity="success"
-              label=""
               icon="pi pi-refresh"
               size="small"
+              aria-label="Restore income component"
               onClick={() => {
                 onClickRestore(rowData);
               }}
@@ -504,16 +550,18 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
           {canDelete && !rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
               tooltip="delete"
               rounded
+              outlined
               severity="danger"
-              label=""
               icon="pi pi-trash"
               size="small"
+              aria-label="Delete income component"
               onClick={() => {
                 onClickDelete(rowData);
               }}
@@ -522,16 +570,18 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
           {canUpdate && !rowData.deleted_at && (
             <Button
+              type="button"
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
               }}
               tooltip="update"
               rounded
-              severity="help"
-              label=""
+              outlined
+              severity="secondary"
               icon="pi pi-pencil"
               size="small"
+              aria-label="Edit income component"
               onClick={() => {
                 onClickUpdate(rowData);
               }}
@@ -647,73 +697,173 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     calculationMethodCode === "FIXED";
   const isPercentage = calculationMethodCode === "PERCENTAGE";
 
+  const incomeComponentReferenceOptionTemplate = (option: IncomeComponent) => (
+    <div className="flex min-w-0 items-center justify-between gap-3">
+      <span className="truncate text-sm text-slate-800">{option.name}</span>
+      <Tag
+        value={option.assignment_mode === "SYSTEM" ? "System" : "Employee"}
+        severity={option.assignment_mode === "SYSTEM" ? "info" : "secondary"}
+      />
+    </div>
+  );
+
+  const componentCalculationBody = (row: EmployeeIncomeComponent) => {
+    const master = incomeComponentData?.find(
+      (component) => component.id === row.income_component_master_id,
+    );
+    const methodCode = master?.calculation_method_code?.toUpperCase();
+    const methodName =
+      master?.calculation_method_name ??
+      master?.calculation_display ??
+      methodCode;
+
+    if (methodCode === "PERCENTAGE") {
+      const reference = row.based_on_component_id
+        ? incomeComponentData?.find(
+            (component) => component.id === row.based_on_component_id,
+          )
+        : null;
+      const referenceLabel = reference
+        ? `${reference.name}${reference.code ? ` (${reference.code})` : ""}`
+        : "Basic Salary (default)";
+
+      return (
+        <div className="flex min-w-[15rem] flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Tag value={methodName ?? "Percentage"} severity="info" />
+            <span className="font-semibold text-slate-800">
+              {formatPayrollPercentage(row.percentage)}
+            </span>
+          </div>
+          <span className="text-xs text-slate-500">
+            Base:{" "}
+            <span className="font-medium text-slate-700">{referenceLabel}</span>
+          </span>
+        </div>
+      );
+    }
+
+    if (methodCode === "FIXED_AMOUNT" || methodCode === "FIXED") {
+      return (
+        <div className="flex min-w-[12rem] flex-col gap-1">
+          <Tag value={methodName ?? "Fixed amount"} severity="success" />
+          <span className="font-semibold text-slate-800">
+            {formatPayrollCurrency(Number(row.amount ?? 0))}
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex min-w-[12rem] flex-col gap-1">
+        <span className="font-medium text-slate-800">
+          {methodName ?? "Not configured"}
+        </span>
+        <span className="text-xs text-slate-500">
+          Value: {formatPayrollCurrency(Number(row.amount ?? 0))}
+        </span>
+      </div>
+    );
+  };
+
+  const frequencyBody = (row: EmployeeIncomeComponent) => {
+    if (!row.frequency) {
+      return <span className="text-slate-500">Not set</span>;
+    }
+
+    const frequency = frequencyData?.find((item) => item.id === row.frequency);
+    if (!frequency) {
+      return <span className="text-slate-500">Loading frequency...</span>;
+    }
+
+    return (
+      <div className="flex min-w-[9rem] flex-col">
+        <span className="font-medium text-slate-800">{frequency.name}</span>
+        <span className="text-xs text-slate-500">
+          {frequency.code} · {frequency.days_in_period} day(s)
+        </span>
+      </div>
+    );
+  };
+
+  const periodBody = (row: EmployeeIncomeComponent) => (
+    <div className="flex min-w-[12rem] flex-col">
+      <span className="text-sm text-slate-800">
+        {formatPayrollDate(row.start_date)}
+      </span>
+      <span className="text-xs text-slate-500">
+        Until {formatPayrollDate(row.end_date)}
+      </span>
+    </div>
+  );
+
   return (
     <>
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900">
-                Income Component
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                Manage recurring and one-time income components for this
-                employee.
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
-              {canCreate && (
+          <EmployeeDetailTableHeader
+            title="Income Component"
+            description="Manage recurring and one-time income components for this employee."
+            showDeleted={
+              archivedAccess.canShowDeleted
+                ? {
+                    checked: isShowDeletedDataChecked,
+                    onChange: onIngredientsChange,
+                    label: "Show deleted data",
+                  }
+                : undefined
+            }
+            search={{
+              value: globalFilterValue,
+              onChange: onGlobalFilterChange,
+              placeholder: "Search income component",
+            }}
+            actions={
+              <>
                 <Button
-                  label="New Income Component"
-                  icon="pi pi-plus"
+                  type="button"
+                  label="Refresh"
+                  icon="pi pi-refresh"
+                  severity="secondary"
+                  outlined
                   size="small"
+                  loading={isValidating}
+                  disabled={isValidating}
                   className="w-full sm:w-auto"
-                  onClick={() => onClickNew()}
+                  onClick={() =>
+                    void mutate(
+                      `/api/employees/${id}/income-component?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`,
+                    )
+                  }
                 />
-              )}
-
-              {archivedAccess.canShowDeleted && (
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    inputId="showDeletedData"
-                    name="showDeletedData"
-                    value="yes"
-                    onChange={onIngredientsChange}
-                    checked={isShowDeletedDataChecked}
+                {canCreate && (
+                  <Button
+                    type="button"
+                    label="New Income Component"
+                    icon="pi pi-plus"
+                    size="small"
+                    className="w-full sm:w-auto"
+                    onClick={onClickNew}
                   />
-                  <label
-                    htmlFor="showDeletedData"
-                    className="cursor-pointer select-none text-sm text-slate-600"
-                  >
-                    Show deleted records
-                  </label>
-                </div>
-              )}
-
-              <IconField iconPosition="left" className="w-full sm:w-72">
-                <InputIcon className="pi pi-search" />
-                <InputText
-                  className="w-full"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Search income component"
-                />
-              </IconField>
-            </div>
-          </div>
+                )}
+              </>
+            }
+          />
 
           <DataTable
-            value={EmployeeIncomeComponentData}
-            tableStyle={{ minWidth: "50rem" }}
+            value={EmployeeIncomeComponentData ?? []}
+            tableStyle={{ minWidth: "78rem" }}
             stripedRows
+            rowHover
             paginator
             scrollable
-            scrollHeight="500px"
+            responsiveLayout="scroll"
+            removableSort
+            size="small"
             rows={10}
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
-            globalFilterFields={["name"]}
+            globalFilterFields={["income_component_name", "notes"]}
             emptyMessage="No data found."
             filters={filters}
             currentPageReportTemplate="{first} to {last} of {totalRecords}"
@@ -725,9 +875,36 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               headerStyle={{ width: "3rem" }}
               body={(data, options) => options.rowIndex + 1}
             />
-            <Column field="income_component_name" header="Component" />
+            <Column
+              field="income_component_name"
+              header="Component"
+              sortable
+              style={{ minWidth: "16rem" }}
+              body={(row: EmployeeIncomeComponent) => {
+                const master = incomeComponentData?.find(
+                  (component) =>
+                    component.id === row.income_component_master_id,
+                );
+                return (
+                  <div className="flex min-w-[14rem] flex-col">
+                    <span className="font-medium text-slate-800">
+                      {row.income_component_name ?? "Not configured"}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {master?.code ?? ""}
+                    </span>
+                  </div>
+                );
+              }}
+            />
+            <Column
+              header="Calculation"
+              body={componentCalculationBody}
+              style={{ minWidth: "17rem" }}
+            />
             <Column
               header="BPJS Wage Base"
+              style={{ minWidth: "13rem" }}
               body={(row: EmployeeIncomeComponent) => {
                 if (!row.is_fixed_allowance) {
                   return <Tag value="Variable" severity="secondary" />;
@@ -744,19 +921,51 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 );
               }}
             />
-            <Column field="start_date" header="Start Date" />
-            <Column field="end_date" header="End Date" />
-            <Column field="amount" header="Amount" />
-            <Column field="frequency" header="Frequency" />
-            <Column field="notes" header="Notes" />
-            <Column field="is_active" header="Active" body={activeColumnBody} />
+            <Column
+              header="Effective Period"
+              body={periodBody}
+              style={{ minWidth: "14rem" }}
+            />
+            <Column
+              field="frequency"
+              header="Frequency"
+              sortable
+              body={frequencyBody}
+              style={{ minWidth: "11rem" }}
+            />
+            <Column
+              field="notes"
+              header="Notes"
+              style={{ minWidth: "14rem" }}
+              body={(row: EmployeeIncomeComponent) => (
+                <span
+                  className="block max-w-[14rem] truncate text-slate-600"
+                  title={row.notes ?? ""}
+                >
+                  {row.notes || "-"}
+                </span>
+              )}
+            />
+            <Column
+              field="is_active"
+              header="Status"
+              sortable
+              body={activeColumnBody}
+              style={{ minWidth: "9rem" }}
+            />
             <Column
               headerClassName="bg-white"
-              className="bg-white"
+              bodyClassName="bg-white"
               header="Action"
               body={(rowData) => actionColumnBody(rowData)}
-              frozen={true}
+              frozen
               alignFrozen="right"
+              headerStyle={{
+                width: "11rem",
+                minWidth: "11rem",
+                textAlign: "right",
+              }}
+              bodyStyle={{ width: "11rem", minWidth: "11rem" }}
             />
           </DataTable>
         </div>
@@ -765,18 +974,14 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       <Dialog
         header={popupHeaderTitle}
         visible={visible}
-        style={{ width: "95vw", maxWidth: "42rem" }}
+        style={{ width: "95vw", maxWidth: "46rem" }}
         breakpoints={{ "640px": "95vw" }}
         modal
         draggable={false}
         resizable={false}
-        closeOnEscape
-        closable
-        onHide={() => {
-          if (!visible) return;
-          setVisible(false);
-          reset();
-        }}
+        closeOnEscape={!isSubmitting}
+        closable={!isSubmitting}
+        onHide={closeForm}
         footer={footerContent}
         onShow={() => {
           setTimeout(() => setFocus("income_component_master_id"), 0);
@@ -785,9 +990,9 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         <form
           id="employee-income-component-form"
           onSubmit={handleSubmit((data) => onSubmit(data))}
-          className="flex flex-col gap-4 pt-1"
+          className="grid grid-cols-1 gap-5 pt-2 sm:grid-cols-2"
         >
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <label
               htmlFor="employee_id"
               className="text-sm font-medium text-slate-700"
@@ -805,13 +1010,15 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     appendTo={() => document.body}
                     value={field.value}
                     options={employeeActive}
-                    loading={isLoading}
+                    loading={employeeIsLoading}
                     disabled={employeeIsLoading || !!employeeError}
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="full_name"
                     optionValue="id"
                     placeholder={
-                      isLoading ? "Loading employees..." : "Select an employee"
+                      employeeIsLoading
+                        ? "Loading employees..."
+                        : "Select an employee"
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -830,7 +1037,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             />
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <label
               htmlFor="income_component_master_id"
               className="text-sm font-medium text-slate-700"
@@ -849,7 +1056,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     appendTo={() => document.body}
                     value={field.value}
                     options={employeeIncomeComponentActive}
-                    loading={isLoading}
+                    loading={incomeComponentIsLoading}
                     disabled={
                       incomeComponentIsLoading || !!incomeComponentError
                     }
@@ -860,9 +1067,9 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     optionLabel="name"
                     optionValue="id"
                     placeholder={
-                      isLoading
+                      incomeComponentIsLoading
                         ? "Loading income components..."
-                        : "Select a income component"
+                        : "Select an income component"
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -900,8 +1107,12 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     <>
                       <InputNumber
                         id="amount"
-                        placeholder="input amount of balance"
+                        placeholder="Enter amount"
                         inputRef={field.ref}
+                        mode="currency"
+                        currency="IDR"
+                        locale="id-ID"
+                        min={0}
                         onValueChange={(e) => {
                           field.onChange(e.value);
                         }}
@@ -923,7 +1134,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             </>
           )}
 
-          <div className="m-0 flex flex-col gap-2 flex-1">
+          <div className="flex flex-col gap-2">
             <label
               htmlFor="frequency"
               className="text-sm font-medium text-slate-700"
@@ -947,14 +1158,16 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     optionLabel="name"
                     optionValue="id"
                     placeholder={
-                      isLoading ? "Loading frequencys..." : "Select a frequency"
+                      isLoadingFrequency
+                        ? "Loading frequencies..."
+                        : "Select a frequency"
                     }
                     className={
                       fieldState.invalid ? "p-invalid w-full" : "w-full"
                     }
                   />
                   {fieldState.error && (
-                    <small className="font-bold">
+                    <small className="p-error">
                       {fieldState.error.message}
                     </small>
                   )}
@@ -968,11 +1181,11 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             />
           </div>
 
-          <div className="flex w-full gap-5">
-            <div className="flex w-full flex-col gap-2 sm:w-1/2">
+          <div className="grid grid-cols-1 gap-5 sm:col-span-2 sm:grid-cols-2">
+            <div className="flex flex-col">
               <label
                 htmlFor="start_date"
-                className="text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
                 Start Date<span className="ml-1 text-red-500">*</span>
               </label>
@@ -984,6 +1197,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   <>
                     <Calendar
                       dateFormat="dd-mm-yy"
+                      showIcon
                       appendTo={() => document.body}
                       {...field}
                       id="start_date"
@@ -1005,10 +1219,10 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               />
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:w-1/2">
+            <div className="flex flex-col">
               <label
                 htmlFor="end_date"
-                className="text-sm font-medium text-slate-700"
+                className="mb-2 block text-sm font-medium text-slate-700"
               >
                 End Date
               </label>
@@ -1019,6 +1233,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   <>
                     <Calendar
                       dateFormat="dd-mm-yy"
+                      showIcon
                       appendTo={() => document.body}
                       {...field}
                       id="end_date"
@@ -1043,7 +1258,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
           {isPercentage && (
             <>
-              <div className="m-0 flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 <label
                   htmlFor="based_on_component_id"
                   className="text-sm font-medium text-slate-700"
@@ -1059,18 +1274,21 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                         id="based_on_component_id"
                         appendTo={() => document.body}
                         value={field.value}
-                        options={employeeIncomeComponentActive}
-                        loading={isLoading}
+                        options={incomeComponentReferenceOptions}
+                        loading={incomeComponentIsLoading}
                         disabled={
                           incomeComponentIsLoading || !!incomeComponentError
                         }
                         onChange={(e) => field.onChange(e.value)}
                         optionLabel="name"
                         optionValue="id"
+                        itemTemplate={incomeComponentReferenceOptionTemplate}
+                        filter
+                        showClear
                         placeholder={
-                          isLoading
+                          incomeComponentIsLoading
                             ? "Loading income components..."
-                            : "Select a income component"
+                            : "Select an income component"
                         }
                         className={
                           fieldState.invalid ? "p-invalid w-full" : "w-full"
@@ -1096,7 +1314,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
           {isPercentage && (
             <>
-              <div className="m-0 flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 <label
                   htmlFor="percentage"
                   className="text-sm font-medium text-slate-700"
@@ -1112,8 +1330,11 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     <>
                       <InputNumber
                         id="percentage"
-                        placeholder="input amount of balance"
+                        placeholder="Enter percentage"
                         inputRef={field.ref}
+                        suffix="%"
+                        min={0}
+                        max={100}
                         onValueChange={(e) => field.onChange(e.value)}
                         value={Number(field.value ?? 0)}
                         className={
@@ -1132,10 +1353,10 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             </>
           )}
 
-          <div className="m-0 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 sm:col-span-2">
             <label
               htmlFor="notes"
-              className="text-sm font-medium text-slate-700"
+              className="mb-2 block text-sm font-medium text-slate-700"
             >
               Notes
             </label>
@@ -1144,10 +1365,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               control={control}
               render={({ field, fieldState }) => (
                 <>
-                  <InputText
+                  <InputTextarea
                     id="notes"
-                    placeholder=""
+                    placeholder="Optional notes"
                     {...field}
+                    value={field.value ?? ""}
+                    rows={3}
+                    autoResize
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
                   {fieldState.error && (
@@ -1161,23 +1385,31 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             />
           </div>
 
-          <div className="m-0 flex flex-col gap-2">
-            <label
-              htmlFor="is_active"
-              className="text-sm font-medium text-slate-700"
-            >
-              Active
-            </label>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
             <Controller
               name="is_active"
               control={control}
               defaultValue={true}
               render={({ field }) => (
-                <InputSwitch
-                  id="is_active"
-                  checked={field.value}
-                  onChange={(e) => field.onChange(e.value)}
-                />
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label
+                      htmlFor="is_active"
+                      className="cursor-pointer text-sm font-medium text-slate-700"
+                    >
+                      Active component
+                    </label>
+                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                      Inactive components are excluded from new payroll
+                      calculations.
+                    </p>
+                  </div>
+                  <InputSwitch
+                    id="is_active"
+                    checked={Boolean(field.value)}
+                    onChange={(e) => field.onChange(e.value)}
+                  />
+                </div>
               )}
             />
           </div>
