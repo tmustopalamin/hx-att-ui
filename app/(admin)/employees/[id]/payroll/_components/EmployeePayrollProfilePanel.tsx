@@ -34,6 +34,7 @@ import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 type Mode = "bpjs" | "tax" | "salary";
 const ENROLLMENT: NewStatutoryEnrollment = {
@@ -234,49 +235,54 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
   return (
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
-        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="m-0 text-xl font-semibold text-slate-800">
-              {title}
-            </h1>
-            <p className="m-0 mt-1 text-sm text-slate-500">{description}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              label="Refresh"
-              icon="pi pi-refresh"
-              severity="secondary"
-              outlined
-              size="small"
-              loading={isValidating}
-              onClick={() => void mutate()}
-            />
-            {canCreate && mode === "bpjs" && (
+        <EmployeeDetailTableHeader
+          title={title}
+          description={description}
+          actions={
+            <>
               <Button
-                label="Advanced Wage Override"
-                icon="pi pi-money-bill"
+                type="button"
+                label="Refresh"
+                icon="pi pi-refresh"
                 severity="secondary"
                 outlined
                 size="small"
-                onClick={() => setDialog("wage")}
+                loading={isValidating}
+                disabled={isValidating}
+                className="w-full sm:w-auto"
+                onClick={() => void mutate()}
               />
-            )}
-            {canCreate && (
-              <Button
-                label={
-                  mode === "bpjs"
-                    ? "New Enrollment"
-                    : mode === "tax"
-                      ? "New Tax Profile"
-                      : "New Salary"
-                }
-                icon="pi pi-plus"
-                size="small"
-                onClick={() => setDialog("primary")}
-              />
-            )}
-          </div>
-        </div>
+              {canCreate && mode === "bpjs" && (
+                <Button
+                  type="button"
+                  label="Advanced Wage Override"
+                  icon="pi pi-money-bill"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={() => setDialog("wage")}
+                />
+              )}
+              {canCreate && (
+                <Button
+                  type="button"
+                  label={
+                    mode === "bpjs"
+                      ? "New Enrollment"
+                      : mode === "tax"
+                        ? "New Tax Profile"
+                        : "New Salary"
+                  }
+                  icon="pi pi-plus"
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={() => setDialog("primary")}
+                />
+              )}
+            </>
+          }
+        />
         {mode === "bpjs" && (
           <>
             <DataTable
@@ -284,8 +290,15 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               loading={isLoading}
               size="small"
               stripedRows
+              rowHover
+              removableSort
+              responsiveLayout="scroll"
+              scrollable
               paginator
               rows={10}
+              tableStyle={{ minWidth: "52rem" }}
+              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column field="program_code" header="Program" />
               <Column field="participant_number" header="Participant No." />
@@ -325,6 +338,11 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               loading={isLoading}
               size="small"
               stripedRows
+              rowHover
+              removableSort
+              responsiveLayout="scroll"
+              scrollable
+              tableStyle={{ minWidth: "44rem" }}
             >
               <Column field="program_group" header="Group" />
               <Column field="wage_amount" header="Wage" />
@@ -344,8 +362,15 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             loading={isLoading}
             size="small"
             stripedRows
+            rowHover
+            removableSort
+            responsiveLayout="scroll"
+            scrollable
             paginator
             rows={10}
+            tableStyle={{ minWidth: "64rem" }}
+            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           >
             <Column field="nik_masked" header="NIK" />
             <Column field="npwp_masked" header="NPWP" />
@@ -397,8 +422,15 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             loading={isLoading}
             size="small"
             stripedRows
+            rowHover
+            removableSort
+            responsiveLayout="scroll"
+            scrollable
             paginator
             rows={10}
+            tableStyle={{ minWidth: "58rem" }}
+            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           >
             <Column field="base_salary" header="Base Salary" />
             <Column field="currency_code" header="Currency" />
@@ -450,20 +482,28 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
         modal
         draggable={false}
         resizable={false}
+        closeOnEscape={!saving}
+        closable={!saving}
         style={{ width: "95vw", maxWidth: "46rem" }}
         footer={
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
+              type="button"
               label="Cancel"
+              icon="pi pi-times"
               severity="secondary"
               text
               disabled={saving}
+              className="w-full sm:w-auto"
               onClick={() => setDialog(null)}
             />
             <Button
+              type="button"
               label="Create History"
               icon="pi pi-check"
               loading={saving}
+              disabled={saving}
+              className="w-full sm:w-auto"
               onClick={() => {
                 if (dialog === "wage")
                   void run(

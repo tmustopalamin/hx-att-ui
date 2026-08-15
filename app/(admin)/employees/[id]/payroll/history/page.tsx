@@ -12,6 +12,7 @@ import type {
   EmployeePayrollResultHistory,
 } from "@/app/types/employee-payroll-history";
 import { fetcher } from "@/app/utils/fetcher";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 const currency = (value: string) =>
   new Intl.NumberFormat("id-ID", {
@@ -38,8 +39,15 @@ export default function EmployeePayrollHistoryPage() {
           value={data?.results ?? []}
           loading={isLoading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
           paginator
           rows={10}
+          tableStyle={{ minWidth: "60rem" }}
+          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           emptyMessage="No payroll result is available."
         >
           <Column field="batch_no" header="Payroll Batch" />
@@ -92,6 +100,11 @@ export default function EmployeePayrollHistoryPage() {
           value={data?.payslips ?? []}
           loading={isLoading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
+          tableStyle={{ minWidth: "32rem" }}
           emptyMessage="No published payslip is available."
         >
           <Column field="payslip_no" header="Payslip No." />
@@ -112,6 +125,11 @@ export default function EmployeePayrollHistoryPage() {
           value={data?.adjustments ?? []}
           loading={isLoading}
           stripedRows
+          rowHover
+          removableSort
+          responsiveLayout="scroll"
+          size="small"
+          tableStyle={{ minWidth: "36rem" }}
           emptyMessage="No payroll adjustment is available."
         >
           <Column field="component_type" header="Type" />
@@ -147,10 +165,7 @@ function Panel({
   return (
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
-        <div className="border-b border-slate-200 pb-5">
-          <h1 className="m-0 text-xl font-semibold text-slate-800">{title}</h1>
-          <p className="m-0 mt-1 text-sm text-slate-500">{description}</p>
-        </div>
+        <EmployeeDetailTableHeader title={title} description={description} />
         {children}
       </div>
     </Card>

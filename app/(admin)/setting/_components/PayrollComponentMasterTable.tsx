@@ -60,9 +60,6 @@ type ComponentForm = {
   calculation_display: string;
   is_taxable: boolean;
   is_active: boolean;
-  is_fixed_allowance: boolean;
-  include_in_bpjs_health: boolean;
-  include_in_bpjs_employment: boolean;
 };
 
 const emptyForm = (): ComponentForm => ({
@@ -74,9 +71,6 @@ const emptyForm = (): ComponentForm => ({
   calculation_display: "",
   is_taxable: true,
   is_active: true,
-  is_fixed_allowance: false,
-  include_in_bpjs_health: false,
-  include_in_bpjs_employment: false,
 });
 
 const getBody = () => document.body;
@@ -149,6 +143,12 @@ export default function PayrollComponentMasterTable({
   const selectedMethod =
     activeMethods.find((item) => item.id === form.calculation_method) ?? null;
   const requiresFormula = Boolean(selectedMethod?.requires_formula);
+  const selectedCategory = availableCategories.find(
+    (item) => item.id === form.category,
+  );
+  const selectedCategoryIsFixed =
+    selectedCategory?.code?.toUpperCase() === "FIXED_ALLOWANCE" &&
+    selectedCategory.category_type === "EARNING";
 
   const notify = (severity: "success" | "error", detail: string) => {
     dispatch(
@@ -195,14 +195,6 @@ export default function PayrollComponentMasterTable({
       calculation_display: row.calculation_display ?? "",
       is_taxable: row.is_taxable,
       is_active: row.is_active,
-      is_fixed_allowance:
-        "is_fixed_allowance" in row ? row.is_fixed_allowance : false,
-      include_in_bpjs_health:
-        "include_in_bpjs_health" in row ? row.include_in_bpjs_health : false,
-      include_in_bpjs_employment:
-        "include_in_bpjs_employment" in row
-          ? row.include_in_bpjs_employment
-          : false,
     });
     setDialogVisible(true);
   };
@@ -230,17 +222,6 @@ export default function PayrollComponentMasterTable({
       notify("error", "Select a formula for this calculation method.");
       return;
     }
-    if (
-      kind === "income" &&
-      (form.include_in_bpjs_health || form.include_in_bpjs_employment) &&
-      !form.is_fixed_allowance
-    ) {
-      notify(
-        "error",
-        "Only fixed allowances can be included in a BPJS wage base.",
-      );
-      return;
-    }
     const payload = {
       code,
       name,
@@ -250,9 +231,6 @@ export default function PayrollComponentMasterTable({
       calculation_display: form.calculation_display.trim() || null,
       is_taxable: form.is_taxable,
       is_active: form.is_active,
-      is_fixed_allowance: form.is_fixed_allowance,
-      include_in_bpjs_health: form.include_in_bpjs_health,
-      include_in_bpjs_employment: form.include_in_bpjs_employment,
     };
     try {
       setSaving(true);
@@ -483,8 +461,8 @@ export default function PayrollComponentMasterTable({
                   {title}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Configure components used by payroll calculation and employee
-                  payroll profiles.
+                  Configure payroll components; BPJS wage treatment is inherited
+                  from Component Category.
                 </p>
               </div>
             </div>
@@ -602,6 +580,20 @@ export default function PayrollComponentMasterTable({
                   "-"
                 }
                 style={{ minWidth: "13rem" }}
+              />
+              <Column
+                header="Category"
+                body={(row: PayrollComponent) => {
+                  const category = availableCategories.find(
+                    (item) => item.id === row.category,
+                  );
+                  return (
+                    <span className="text-sm text-slate-700">
+                      {category?.name ?? "-"}
+                    </span>
+                  );
+                }}
+                style={{ minWidth: "14rem" }}
               />
               <Column
                 header="Taxable"
@@ -843,76 +835,44 @@ export default function PayrollComponentMasterTable({
             <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
               <div>
                 <p className="m-0 text-sm font-semibold text-slate-800">
-                  BPJS wage-base classification
+                  BPJS wage-base treatment
                 </p>
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
-                  Mark only recurring fixed allowances. Variable attendance,
-                  overtime, commission, bonus, and reimbursement components are
-                  excluded by default. The payroll engine adds selected fixed
-                  allowances to Salary History base salary and stores the result
-                  in the batch snapshot.
+                  This component inherits the BPJS treatment from its category.
+                  Configure it in Component Category; it is not entered per
+                  income component.
                 </p>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
-                  <Checkbox
-                    inputId={`${kind}-fixed-allowance`}
-                    checked={form.is_fixed_allowance}
-                    onChange={(event) => {
-                      const checked = Boolean(event.checked);
-                      updateForm("is_fixed_allowance", checked);
-                      if (!checked) {
-                        updateForm("include_in_bpjs_health", false);
-                        updateForm("include_in_bpjs_employment", false);
-                      }
-                    }}
-                  />
-                  <label
-                    htmlFor={`${kind}-fixed-allowance`}
-                    className="cursor-pointer text-sm font-medium text-slate-700"
-                  >
-                    Fixed allowance
-                  </label>
-                </div>
-                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
-                  <Checkbox
-                    inputId={`${kind}-bpjs-health`}
-                    checked={form.include_in_bpjs_health}
-                    disabled={!form.is_fixed_allowance}
-                    onChange={(event) =>
-                      updateForm(
-                        "include_in_bpjs_health",
-                        Boolean(event.checked),
-                      )
+              {selectedCategory ? (
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                  <Tag
+                    value={
+                      selectedCategoryIsFixed ? "Fixed allowance" : "Variable"
                     }
+                    severity={selectedCategoryIsFixed ? "info" : "secondary"}
                   />
-                  <label
-                    htmlFor={`${kind}-bpjs-health`}
-                    className="cursor-pointer text-sm font-medium text-slate-700"
-                  >
-                    Include BPJS Kesehatan
-                  </label>
+                  {selectedCategoryIsFixed &&
+                    selectedCategory.include_in_bpjs_health && (
+                      <Tag value="BPJS Kesehatan" severity="success" />
+                    )}
+                  {selectedCategoryIsFixed &&
+                    selectedCategory.include_in_bpjs_employment && (
+                      <Tag value="BPJS Ketenagakerjaan" severity="success" />
+                    )}
+                  {(!selectedCategoryIsFixed ||
+                    (!selectedCategory.include_in_bpjs_health &&
+                      !selectedCategory.include_in_bpjs_employment)) && (
+                    <Tag
+                      value="Excluded from BPJS wage base"
+                      severity="secondary"
+                    />
+                  )}
                 </div>
-                <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
-                  <Checkbox
-                    inputId={`${kind}-bpjs-employment`}
-                    checked={form.include_in_bpjs_employment}
-                    disabled={!form.is_fixed_allowance}
-                    onChange={(event) =>
-                      updateForm(
-                        "include_in_bpjs_employment",
-                        Boolean(event.checked),
-                      )
-                    }
-                  />
-                  <label
-                    htmlFor={`${kind}-bpjs-employment`}
-                    className="cursor-pointer text-sm font-medium text-slate-700"
-                  >
-                    Include BPJS Ketenagakerjaan
-                  </label>
-                </div>
-              </div>
+              ) : (
+                <span className="text-sm text-slate-500">
+                  Select a category to preview the inherited treatment.
+                </span>
+              )}
             </div>
           )}
         </form>

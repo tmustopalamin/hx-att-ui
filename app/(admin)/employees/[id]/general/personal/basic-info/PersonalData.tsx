@@ -22,6 +22,7 @@ import { InputText } from "primereact/inputtext";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 import useSWR from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 
@@ -198,54 +199,49 @@ const PersonalData = () => {
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h5 className="text-xl font-semibold text-slate-900">
-                Personal Data
-              </h5>
-              <p className="text-sm text-slate-500">
-                Basic employee identity, contacts, and nationality
-              </p>
-            </div>
-
-            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-              {isPageEdit ? (
-                <>
+          <EmployeeDetailTableHeader
+            title="Personal Data"
+            description="Basic employee identity, contacts, and nationality."
+            actions={
+              <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+                {isPageEdit ? (
+                  <>
+                    <Button
+                      type="button"
+                      label="Cancel"
+                      icon="pi pi-times"
+                      text
+                      severity="secondary"
+                      size="small"
+                      className="w-full sm:w-auto"
+                      onClick={() => {
+                        setIsPageEdit(false);
+                        void loadData();
+                      }}
+                    />
+                    <Button
+                      type="submit"
+                      label="Save Changes"
+                      icon="pi pi-check"
+                      size="small"
+                      className="w-full sm:w-auto"
+                    />
+                  </>
+                ) : (
                   <Button
                     type="button"
-                    label="Cancel"
-                    icon="pi pi-times"
-                    text
+                    icon="pi pi-pencil"
+                    label="Edit"
                     severity="secondary"
+                    outlined
                     size="small"
                     className="w-full sm:w-auto"
-                    onClick={() => {
-                      setIsPageEdit(false);
-                      void loadData();
-                    }}
+                    onClick={() => setIsPageEdit(true)}
                   />
-                  <Button
-                    type="submit"
-                    label="Save Changes"
-                    icon="pi pi-check"
-                    size="small"
-                    className="w-full sm:w-auto"
-                  />
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  icon="pi pi-pencil"
-                  label="Edit"
-                  severity="secondary"
-                  outlined
-                  size="small"
-                  className="w-full sm:w-auto"
-                  onClick={() => setIsPageEdit(true)}
-                />
-              )}
-            </div>
-          </div>
+                )}
+              </div>
+            }
+          />
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <Controller

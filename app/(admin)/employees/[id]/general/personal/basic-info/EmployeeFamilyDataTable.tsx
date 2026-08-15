@@ -18,6 +18,7 @@ import {
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Column } from "primereact/column";
@@ -281,23 +282,20 @@ const EmployeeFamilyDataTable = () => {
   return (
     <>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h5 className="text-xl font-semibold text-slate-900">Family</h5>
-            <p className="text-sm text-slate-500">
-              Manage employee spouse, child, or family information
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            label="New Family"
-            icon="pi pi-plus"
-            size="small"
-            className="w-full sm:w-auto"
-            onClick={openNew}
-          />
-        </div>
+        <EmployeeDetailTableHeader
+          title="Family"
+          description="Manage employee spouse, child, or family information."
+          actions={
+            <Button
+              type="button"
+              label="New Family"
+              icon="pi pi-plus"
+              size="small"
+              className="w-full sm:w-auto"
+              onClick={openNew}
+            />
+          }
+        />
 
         <DataTable
           value={rows}

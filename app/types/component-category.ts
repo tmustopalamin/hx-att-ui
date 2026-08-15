@@ -8,6 +8,8 @@ export interface ComponentCategory {
   is_active: boolean;
   deleted_at: string | null;
   row_version: number;
+  include_in_bpjs_health: boolean;
+  include_in_bpjs_employment: boolean;
 }
 
 export type ComponentCategoryPayload = Pick<
@@ -18,4 +20,6 @@ export type ComponentCategoryPayload = Pick<
   | "display_order"
   | "category_type"
   | "is_active"
+  | "include_in_bpjs_health"
+  | "include_in_bpjs_employment"
 >;

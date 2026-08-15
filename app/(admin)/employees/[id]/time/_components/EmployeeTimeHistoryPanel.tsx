@@ -14,6 +14,7 @@ import type {
   EmployeeTimeDetail,
 } from "@/app/types/employee-time";
 import { fetcher } from "@/app/utils/fetcher";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 type View = "attendance" | "overtime" | "leave";
 
@@ -79,10 +80,7 @@ function Panel({
   return (
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
-        <div className="border-b border-slate-200 pb-5">
-          <h1 className="m-0 text-xl font-semibold text-slate-800">{title}</h1>
-          <p className="m-0 mt-1 text-sm text-slate-500">{description}</p>
-        </div>
+        <EmployeeDetailTableHeader title={title} description={description} />
         {children}
       </div>
     </Card>
@@ -105,8 +103,15 @@ function AttendanceHistory({
         value={data}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={15}
+        tableStyle={{ minWidth: "56rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No attendance summary is available."
       >
         <Column field="summary_date" header="Date" />
@@ -164,8 +169,15 @@ function OvertimeHistory({
         value={data}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={15}
+        tableStyle={{ minWidth: "58rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No overtime request is available."
       >
         <Column field="overtime_date" header="Date" />
@@ -219,8 +231,15 @@ function LeaveHistory({
         value={data}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={15}
+        tableStyle={{ minWidth: "50rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No leave request is available."
       >
         <Column field="leave_type_name" header="Leave Type" />

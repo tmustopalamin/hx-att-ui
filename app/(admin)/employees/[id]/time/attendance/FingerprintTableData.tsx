@@ -32,18 +32,16 @@ import {
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
-import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { InputSwitch } from "primereact/inputswitch";
 import { InputText } from "primereact/inputtext";
 import { RadioButton } from "primereact/radiobutton";
 import { Tag } from "primereact/tag";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 type FormData = EmployeeFingerprint;
 type PinCheckState = "idle" | "checking" | "valid" | "invalid" | "error";
@@ -787,60 +785,37 @@ const EmployeeFingerprintTableData = () => {
   return (
     <>
       <Card className="border border-slate-200 shadow-sm">
-        <div className="flex flex-col gap-4">
-          <div className="border-b border-slate-200 pb-4">
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold leading-tight text-slate-900">
-                Employee Fingerprint
-              </h2>
-              <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
-                Map this employee to fingerprint device user using Fingerprint
-                User ID / PIN2.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                {archivedAccess.canShowDeleted && (
-                  <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 sm:w-auto">
-                    <Checkbox
-                      inputId="showDeletedFingerprint"
-                      checked={isShowDeletedDataChecked}
-                      onChange={onShowDeletedDataChecked}
-                    />
-                    <label
-                      htmlFor="showDeletedFingerprint"
-                      className="cursor-pointer text-sm text-slate-700"
-                    >
-                      Show deleted data
-                    </label>
-                  </div>
-                )}
-
-                <IconField iconPosition="left" className="w-full sm:w-72">
-                  <InputIcon className="pi pi-search" />
-                  <InputText
-                    className="w-full"
-                    value={globalFilterValue}
-                    onChange={onGlobalFilterChange}
-                    placeholder="Search fingerprint"
-                  />
-                </IconField>
-              </div>
-
-              <div className="flex w-full justify-start xl:w-auto xl:justify-end">
-                {canCreate && (
-                  <Button
-                    className="w-full sm:w-auto"
-                    label="New Fingerprint"
-                    icon="pi pi-plus"
-                    size="small"
-                    onClick={onClickNew}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-col gap-5">
+          <EmployeeDetailTableHeader
+            title="Employee Fingerprint"
+            description="Map this employee to a fingerprint device user using Fingerprint User ID / PIN2."
+            showDeleted={
+              archivedAccess.canShowDeleted
+                ? {
+                    checked: isShowDeletedDataChecked,
+                    onChange: () => onShowDeletedDataChecked(),
+                    inputId: "showDeletedFingerprint",
+                  }
+                : undefined
+            }
+            search={{
+              value: globalFilterValue,
+              onChange: onGlobalFilterChange,
+              placeholder: "Search fingerprint",
+            }}
+            actions={
+              canCreate ? (
+                <Button
+                  type="button"
+                  className="w-full sm:w-auto"
+                  label="New Fingerprint"
+                  icon="pi pi-plus"
+                  size="small"
+                  onClick={onClickNew}
+                />
+              ) : undefined
+            }
+          />
 
           <DataTable
             value={employeeFingerprintData ?? []}

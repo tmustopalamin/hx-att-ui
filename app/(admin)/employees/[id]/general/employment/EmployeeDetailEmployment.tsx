@@ -22,6 +22,7 @@ import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Dropdown } from "primereact/dropdown";
@@ -357,71 +358,68 @@ const EmployeeDetailEmployment = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h5 className="text-xl font-semibold text-slate-900">
-              Employment Data
-            </h5>
-            <p className="mt-1 text-sm text-slate-500">
-              {hasEmploymentHistory
-                ? "Employment changes are effective-dated and must be processed through Employee Lifecycle to preserve history."
-                : "Set the initial employment assignment, organization placement, and direct supervisor."}
-            </p>
-          </div>
-
-          <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
-            {isPageEdit ? (
-              <>
+        <EmployeeDetailTableHeader
+          title="Employment Data"
+          description={
+            hasEmploymentHistory
+              ? "Employment changes are effective-dated and must be processed through Employee Lifecycle to preserve history."
+              : "Set the initial employment assignment, organization placement, and direct supervisor."
+          }
+          actions={
+            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+              {isPageEdit ? (
+                <>
+                  <Button
+                    type="button"
+                    label="Cancel"
+                    icon="pi pi-times"
+                    text
+                    severity="secondary"
+                    size="small"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setIsPageEdit(false);
+                      void loadData();
+                    }}
+                  />
+                  <Button
+                    type="submit"
+                    label="Save Changes"
+                    icon="pi pi-check"
+                    size="small"
+                    className="w-full sm:w-auto"
+                  />
+                </>
+              ) : hasEmploymentHistory ? (
+                <Link
+                  href={`/employee-lifecycle?employee_id=${employeeId}&type=EMPLOYMENT_CHANGE`}
+                  className="w-full sm:w-auto"
+                >
+                  <Button
+                    type="button"
+                    label="Request Employment Change"
+                    icon="pi pi-send"
+                    severity="secondary"
+                    outlined
+                    size="small"
+                    className="w-full sm:w-auto"
+                  />
+                </Link>
+              ) : canUpdate ? (
                 <Button
                   type="button"
-                  label="Cancel"
-                  icon="pi pi-times"
-                  text
-                  severity="secondary"
-                  size="small"
-                  className="w-full sm:w-auto"
-                  onClick={() => {
-                    setIsPageEdit(false);
-                    void loadData();
-                  }}
-                />
-                <Button
-                  type="submit"
-                  label="Save Changes"
-                  icon="pi pi-check"
-                  size="small"
-                  className="w-full sm:w-auto"
-                />
-              </>
-            ) : hasEmploymentHistory ? (
-              <Link
-                href={`/employee-lifecycle?employee_id=${employeeId}&type=EMPLOYMENT_CHANGE`}
-                className="w-full sm:w-auto"
-              >
-                <Button
-                  type="button"
-                  label="Request Employment Change"
-                  icon="pi pi-send"
+                  label="Edit"
+                  icon="pi pi-pencil"
                   severity="secondary"
                   outlined
                   size="small"
                   className="w-full sm:w-auto"
+                  onClick={() => setIsPageEdit(true)}
                 />
-              </Link>
-            ) : canUpdate ? (
-              <Button
-                type="button"
-                label="Edit"
-                icon="pi pi-pencil"
-                severity="secondary"
-                outlined
-                size="small"
-                className="w-full sm:w-auto"
-                onClick={() => setIsPageEdit(true)}
-              />
-            ) : null}
-          </div>
-        </div>
+              ) : null}
+            </div>
+          }
+        />
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Controller

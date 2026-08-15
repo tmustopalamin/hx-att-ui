@@ -17,6 +17,7 @@ import type {
   TrainingEnrollment,
 } from "@/app/types/training";
 import { fetcher } from "@/app/utils/fetcher";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 type View = "documents" | "assets" | "lifecycle" | "performance" | "learning";
 const tagSeverity = (status: string) =>
@@ -71,10 +72,7 @@ function Section({
   return (
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
-        <div className="border-b border-slate-200 pb-5">
-          <h1 className="m-0 text-xl font-semibold text-slate-800">{title}</h1>
-          <p className="m-0 mt-1 text-sm text-slate-500">{description}</p>
-        </div>
+        <EmployeeDetailTableHeader title={title} description={description} />
         {children}
       </div>
     </Card>
@@ -112,8 +110,15 @@ function Documents({
         value={data ?? []}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={10}
+        tableStyle={{ minWidth: "44rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No employee document is available."
       >
         <Column field="document_type_name" header="Document Type" />
@@ -159,8 +164,15 @@ function Assets({
         value={data ?? []}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={10}
+        tableStyle={{ minWidth: "44rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No asset assignment is available."
       >
         <Column field="asset_tag" header="Asset Tag" />
@@ -206,8 +218,15 @@ function Lifecycle({
         value={data ?? []}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={10}
+        tableStyle={{ minWidth: "44rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No lifecycle case is available."
       >
         <Column field="lifecycle_type" header="Type" />
@@ -252,8 +271,15 @@ function Performance({
         value={data ?? []}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={10}
+        tableStyle={{ minWidth: "48rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No performance review is available."
       >
         <Column field="cycle_name" header="Cycle" />
@@ -301,8 +327,15 @@ function Learning({
         value={enrollments ?? []}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
         paginator
         rows={10}
+        tableStyle={{ minWidth: "44rem" }}
+        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No training enrollment is available."
       >
         <Column field="course_name" header="Course" />
@@ -331,6 +364,11 @@ function Learning({
         value={certifications ?? []}
         loading={loading}
         stripedRows
+        rowHover
+        removableSort
+        responsiveLayout="scroll"
+        size="small"
+        tableStyle={{ minWidth: "44rem" }}
         emptyMessage="No certification is available."
       >
         <Column field="certification_name" header="Certification" />

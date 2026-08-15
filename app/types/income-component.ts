@@ -29,7 +29,4 @@ export type IncomeComponentPayload = Pick<
   | "category"
   | "calculation_display"
   | "is_active"
-  | "is_fixed_allowance"
-  | "include_in_bpjs_health"
-  | "include_in_bpjs_employment"
 >;

@@ -8,6 +8,7 @@ import { DataTable } from "primereact/datatable";
 import { Tag } from "primereact/tag";
 import type { EmployeeOverview } from "@/app/types/employee-overview";
 import { fetcher } from "@/app/utils/fetcher";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 export default function EmployeeOverviewPage() {
   const params = useParams<{ id: string }>();
@@ -23,15 +24,10 @@ export default function EmployeeOverviewPage() {
     <div className="flex flex-col gap-5">
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
-          <div className="border-b border-slate-200 pb-5">
-            <h1 className="m-0 text-xl font-semibold text-slate-800">
-              Employee Overview
-            </h1>
-            <p className="m-0 mt-1 text-sm text-slate-500">
-              Current employee readiness, entitlement, and payroll record at a
-              glance.
-            </p>
-          </div>
+          <EmployeeDetailTableHeader
+            title="Employee Overview"
+            description="Current employee readiness, entitlement, and payroll record at a glance."
+          />
           <div className="grid gap-4 md:grid-cols-3">
             <Summary
               label="Payroll Ready"
@@ -80,6 +76,11 @@ export default function EmployeeOverviewPage() {
               value={data?.leave_balances ?? []}
               loading={isLoading}
               stripedRows
+              rowHover
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              tableStyle={{ minWidth: "34rem" }}
               emptyMessage="No leave balance is available."
             >
               <Column field="leave_type_name" header="Leave Type" />
@@ -102,6 +103,11 @@ export default function EmployeeOverviewPage() {
               value={data?.payslips ?? []}
               loading={isLoading}
               stripedRows
+              rowHover
+              removableSort
+              responsiveLayout="scroll"
+              size="small"
+              tableStyle={{ minWidth: "30rem" }}
               emptyMessage="No published payslip is available."
             >
               <Column field="payslip_no" header="Payslip No." />

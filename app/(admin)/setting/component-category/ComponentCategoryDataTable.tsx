@@ -57,6 +57,8 @@ const emptyPayload = (): ComponentCategoryPayload => ({
   display_order: 0,
   category_type: "EARNING",
   is_active: true,
+  include_in_bpjs_health: false,
+  include_in_bpjs_employment: false,
 });
 
 export default function ComponentCategoryDataTable() {
@@ -118,6 +120,8 @@ export default function ComponentCategoryDataTable() {
       display_order: row.display_order,
       category_type: row.category_type,
       is_active: row.is_active,
+      include_in_bpjs_health: row.include_in_bpjs_health,
+      include_in_bpjs_employment: row.include_in_bpjs_employment,
     });
     setDialogVisible(true);
   };
@@ -140,6 +144,19 @@ export default function ComponentCategoryDataTable() {
       return;
     }
 
+    const isFixedAllowance =
+      form.category_type === "EARNING" && code === "FIXED_ALLOWANCE";
+    if (
+      !isFixedAllowance &&
+      (form.include_in_bpjs_health || form.include_in_bpjs_employment)
+    ) {
+      notify(
+        "error",
+        "Only the FIXED_ALLOWANCE category can be included in a BPJS wage base.",
+      );
+      return;
+    }
+
     try {
       setSaving(true);
       const payload: ComponentCategoryPayload = {
@@ -147,6 +164,12 @@ export default function ComponentCategoryDataTable() {
         code,
         name,
         description: form.description?.trim() || null,
+        include_in_bpjs_health: isFixedAllowance
+          ? form.include_in_bpjs_health
+          : false,
+        include_in_bpjs_employment: isFixedAllowance
+          ? form.include_in_bpjs_employment
+          : false,
       };
       if (selected) {
         await updateComponentCategory(
@@ -337,8 +360,8 @@ export default function ComponentCategoryDataTable() {
                   Component Category
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Classify earnings, deductions, and employer contributions for
-                  payroll and payslip reporting.
+                  Classify payroll components and configure inherited BPJS wage
+                  treatment.
                 </p>
               </div>
             </div>
@@ -469,6 +492,30 @@ export default function ComponentCategoryDataTable() {
                 style={{ minWidth: "7rem" }}
               />
               <Column
+                header="BPJS Wage Base"
+                body={(row: ComponentCategory) => {
+                  if (
+                    row.code?.toUpperCase() !== "FIXED_ALLOWANCE" ||
+                    row.category_type !== "EARNING"
+                  ) {
+                    return <Tag value="Not applicable" severity="secondary" />;
+                  }
+                  const programs = [
+                    row.include_in_bpjs_health ? "Health" : null,
+                    row.include_in_bpjs_employment ? "Employment" : null,
+                  ].filter(Boolean);
+                  return (
+                    <Tag
+                      value={
+                        programs.length ? programs.join(" + ") : "Excluded"
+                      }
+                      severity={programs.length ? "success" : "secondary"}
+                    />
+                  );
+                }}
+                style={{ minWidth: "14rem" }}
+              />
+              <Column
                 header="Status"
                 body={status}
                 style={{ minWidth: "10rem" }}
@@ -543,7 +590,17 @@ export default function ComponentCategoryDataTable() {
                 autoComplete="off"
                 className="w-full"
                 placeholder="e.g. FIXED_ALLOWANCE"
-                onChange={(event) => updateForm("code", event.target.value)}
+                onChange={(event) => {
+                  const code = event.target.value;
+                  updateForm("code", code);
+                  if (!(
+                    form.category_type === "EARNING" &&
+                    code.trim().toUpperCase() === "FIXED_ALLOWANCE"
+                  )) {
+                    updateForm("include_in_bpjs_health", false);
+                    updateForm("include_in_bpjs_employment", false);
+                  }
+                }}
               />
               <small className="text-slate-500">
                 Uppercase letters, numbers, and underscores only.
@@ -568,9 +625,14 @@ export default function ComponentCategoryDataTable() {
                 appendTo={getBody}
                 disabled={Boolean(selected)}
                 className="w-full"
-                onChange={(event) =>
-                  updateForm("category_type", event.value as string)
-                }
+                onChange={(event) => {
+                  const categoryType = event.value as string;
+                  updateForm("category_type", categoryType);
+                  if (categoryType !== "EARNING") {
+                    updateForm("include_in_bpjs_health", false);
+                    updateForm("include_in_bpjs_employment", false);
+                  }
+                }}
               />
               {selected && (
                 <small className="text-slate-500">
@@ -608,6 +670,64 @@ export default function ComponentCategoryDataTable() {
               }
             />
           </Field>
+          <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+            <div>
+              <p className="m-0 text-sm font-semibold text-slate-800">
+                BPJS wage-base treatment
+              </p>
+              <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
+                Income components inherit this category setting. Only the
+                FIXED_ALLOWANCE category can be included in the BPJS wage base.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
+                <Checkbox
+                  inputId="category-bpjs-health"
+                  checked={form.include_in_bpjs_health}
+                  disabled={
+                    !(
+                      form.category_type === "EARNING" &&
+                      form.code?.trim().toUpperCase() === "FIXED_ALLOWANCE"
+                    )
+                  }
+                  onChange={(event) =>
+                    updateForm("include_in_bpjs_health", Boolean(event.checked))
+                  }
+                />
+                <label
+                  htmlFor="category-bpjs-health"
+                  className="cursor-pointer text-sm font-medium text-slate-700"
+                >
+                  Include BPJS Kesehatan
+                </label>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
+                <Checkbox
+                  inputId="category-bpjs-employment"
+                  checked={form.include_in_bpjs_employment}
+                  disabled={
+                    !(
+                      form.category_type === "EARNING" &&
+                      form.code?.trim().toUpperCase() === "FIXED_ALLOWANCE"
+                    )
+                  }
+                  onChange={(event) =>
+                    updateForm(
+                      "include_in_bpjs_employment",
+                      Boolean(event.checked),
+                    )
+                  }
+                />
+                <label
+                  htmlFor="category-bpjs-employment"
+                  className="cursor-pointer text-sm font-medium text-slate-700"
+                >
+                  Include BPJS Ketenagakerjaan
+                </label>
+              </div>
+            </div>
+          </div>
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
             <label
               htmlFor="category-active"

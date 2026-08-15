@@ -14,6 +14,7 @@ import {
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Column } from "primereact/column";
@@ -330,25 +331,20 @@ const InformalEducation = () => {
   return (
     <>
       <div className="flex flex-col gap-5">
-        <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h5 className="text-xl font-semibold text-slate-900">
-              Informal Education
-            </h5>
-            <p className="mt-1 text-sm text-slate-500">
-              Manage course, workshop, training, and certification records.
-            </p>
-          </div>
-
-          <Button
-            type="button"
-            label="New Education"
-            icon="pi pi-plus"
-            size="small"
-            className="w-full sm:w-auto"
-            onClick={openNew}
-          />
-        </div>
+        <EmployeeDetailTableHeader
+          title="Informal Education"
+          description="Manage course, workshop, training, and certification records."
+          actions={
+            <Button
+              type="button"
+              label="New Education"
+              icon="pi pi-plus"
+              size="small"
+              className="w-full sm:w-auto"
+              onClick={openNew}
+            />
+          }
+        />
 
         <DataTable
           value={rows}

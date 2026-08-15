@@ -16,6 +16,7 @@ import {
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
+import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 import {
   createEmployeeLeaveBalance,
@@ -34,14 +35,11 @@ import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
-import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
 import { InputNumber } from "primereact/inputnumber";
 import { Tag } from "primereact/tag";
 
@@ -557,55 +555,33 @@ const LeaveTableData = () => {
     <>
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h5 className="text-xl font-semibold text-slate-900">
-                Leave Balance
-              </h5>
-              <p className="mt-1 text-sm text-slate-500">
-                Manage employee leave balance period, entitlement, usage, and
-                remaining balance.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-              {archivedAccess.canShowDeleted && (
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <Checkbox
-                    inputId="showDeletedData"
-                    checked={isShowDeletedDataChecked}
-                    onChange={() =>
-                      setIsShowDeletedDataChecked((prev) => !prev)
-                    }
-                  />
-                  <label
-                    htmlFor="showDeletedData"
-                    className="cursor-pointer text-sm text-slate-700"
-                  >
-                    Show deleted data
-                  </label>
-                </div>
-              )}
-
-              <IconField iconPosition="left">
-                <InputIcon className="pi pi-search" />
-                <input
-                  className="p-inputtext p-component w-full sm:w-64"
-                  value={globalFilterValue}
-                  onChange={onGlobalFilterChange}
-                  placeholder="Search leave balance"
-                />
-              </IconField>
-
+          <EmployeeDetailTableHeader
+            title="Leave Balance"
+            description="Manage employee leave balance period, entitlement, usage, and remaining balance."
+            showDeleted={
+              archivedAccess.canShowDeleted
+                ? {
+                    checked: isShowDeletedDataChecked,
+                    onChange: setIsShowDeletedDataChecked,
+                  }
+                : undefined
+            }
+            search={{
+              value: globalFilterValue,
+              onChange: onGlobalFilterChange,
+              placeholder: "Search leave balance",
+            }}
+            actions={
               <Button
+                type="button"
                 label="New Leave Balance"
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
                 onClick={openNew}
               />
-            </div>
-          </div>
+            }
+          />
 
           <DataTable
             value={leaveBalanceData ?? []}
