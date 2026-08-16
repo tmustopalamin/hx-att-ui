@@ -36,4 +36,18 @@ describe("parseApiError", () => {
     expect(result.code).toBe("500");
     expect(result.message).toHaveLength(500);
   });
+
+  it("uses an actionable message when the API returns only an error code", async () => {
+    const response = createResponse(
+      { success: false, code: "PAYROLL_PERIOD_RULE_NOT_FOUND" },
+      409,
+    );
+
+    await expect(parseApiError(response)).resolves.toMatchObject({
+      code: "PAYROLL_PERIOD_RULE_NOT_FOUND",
+      message: expect.stringContaining(
+        "Payroll Configuration > General Settings",
+      ),
+    });
+  });
 });

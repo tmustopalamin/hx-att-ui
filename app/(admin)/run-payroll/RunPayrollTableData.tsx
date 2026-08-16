@@ -23,6 +23,7 @@ import {
   validatePayrollBatch,
   transitionPayrollBatch,
 } from "@/app/services/payroll-batch-service";
+import { getBranchOptions } from "@/app/services/employee-general-service";
 import { getPayrollPeriodPreview } from "@/app/services/payroll-configuration-service";
 import type {
   NewPayrollBatch,
@@ -31,7 +32,7 @@ import type {
   PayrollBatchStatus,
 } from "@/app/types/payroll-batch";
 import type { PayrollPeriodPreview } from "@/app/types/payroll-configuration";
-import type { ResponseTypeError } from "@/app/types/response-type";
+import { getErrorMessage } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import PayrollPaymentDialog from "./PayrollPaymentDialog";
@@ -92,14 +93,27 @@ export default function RunPayrollTableData() {
     OPTIONS_URL,
     getPayrollBatchCreateOptions,
   );
+  const { data: branches = [] } = useSWR(
+    "payroll-batch-branches",
+    getBranchOptions,
+  );
+  const branchNames = useMemo(
+    () => new Map(branches.map((branch) => [Number(branch.id), branch.name])),
+    [branches],
+  );
 
   const settingOptions = useMemo(
     () =>
       (options?.settings ?? []).map((setting) => ({
-        label: `${setting.name} (${setting.code})`,
+        label: `${setting.name} · ${
+          setting.branch_id === null
+            ? "Global"
+            : (branchNames.get(setting.branch_id) ??
+              `Branch ${setting.branch_id}`)
+        } (${setting.code})`,
         value: setting.id,
       })),
-    [options?.settings],
+    [branchNames, options?.settings],
   );
   const regulationOptions = useMemo(
     () =>
@@ -117,14 +131,7 @@ export default function RunPayrollTableData() {
   ) => dispatch(showToast({ visible: true, severity, summary, detail }));
 
   const showError = (error: unknown) => {
-    const detail =
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof (error as ResponseTypeError).message === "string"
-        ? (error as ResponseTypeError).message
-        : "An unexpected error occurred.";
-    toast("error", "Payroll", detail);
+    toast("error", "Payroll", getErrorMessage(error));
   };
 
   const openCreate = () => {
@@ -159,7 +166,7 @@ export default function RunPayrollTableData() {
           payroll_period_rule_id: preview.payroll_period_rule_id,
         }));
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!cancelled) {
           setPeriodPreview(null);
           setBatch((current) => ({
@@ -169,6 +176,14 @@ export default function RunPayrollTableData() {
             attendance_cutoff_date: "",
             payroll_period_rule_id: null,
           }));
+          dispatch(
+            showToast({
+              visible: true,
+              severity: "error",
+              summary: "Payroll setup",
+              detail: getErrorMessage(error),
+            }),
+          );
         }
       })
       .finally(() => {
@@ -177,9 +192,22 @@ export default function RunPayrollTableData() {
     return () => {
       cancelled = true;
     };
-  }, [batch.payroll_setting_id, batch.period_reference_month, visible]);
+  }, [
+    batch.payroll_setting_id,
+    batch.period_reference_month,
+    dispatch,
+    visible,
+  ]);
 
   const save = async () => {
+    if (!batch.payroll_period_rule_id) {
+      toast(
+        "error",
+        "Payroll setup",
+        "No effective payroll period rule is configured for the selected payroll month. Add or update a rule in Payroll Configuration > General Settings.",
+      );
+      return;
+    }
     if (
       batch.payroll_setting_id <= 0 ||
       !batch.batch_no.trim() ||
@@ -187,7 +215,6 @@ export default function RunPayrollTableData() {
       !batch.period_end ||
       !batch.attendance_cutoff_date ||
       !batch.period_reference_month ||
-      !batch.payroll_period_rule_id ||
       !batch.payroll_date ||
       batch.regulation_package_ids.length === 0
     ) {
@@ -502,6 +529,7 @@ export default function RunPayrollTableData() {
               label="Create Draft"
               icon="pi pi-check"
               loading={saving}
+              disabled={saving || periodPreviewLoading || !periodPreview}
               onClick={() => void save()}
             />
           </div>

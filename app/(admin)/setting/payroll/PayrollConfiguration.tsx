@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
@@ -18,18 +18,20 @@ import { TabPanel, TabView } from "primereact/tabview";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import {
+  createPayrollSetting,
   createPayrollPeriodRule,
   createPayrollRegulation,
   deletePayrollPeriodRule,
-  getPayrollPeriodRules,
   runPayrollRegulationTests,
   transitionPayrollRegulation,
   updatePayrollPeriodRule,
   updatePayrollSetting,
 } from "@/app/services/payroll-configuration-service";
+import { getBranchOptions } from "@/app/services/employee-general-service";
 import type {
   NewPayrollPeriodRule,
   NewPayrollRegulationPackage,
+  NewPayrollSetting,
   PayrollRegulationPackage,
   PayrollRegulationStatus,
   PayrollRegulationTestCaseResult,
@@ -38,8 +40,9 @@ import type {
   PayrollPeriodRule,
   UpdatePayrollSetting,
 } from "@/app/types/payroll-configuration";
-import type { ResponseTypeError } from "@/app/types/response-type";
 import { fetcher } from "@/app/utils/fetcher";
+import { getErrorMessage } from "@/app/utils/error-messages";
+import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import PayrollRegulationDetailDialog from "./PayrollRegulationDetailDialog";
 import PayrollComponentMappingPanel from "./PayrollComponentMappingPanel";
@@ -67,6 +70,21 @@ const EMPTY_PERIOD_RULE: NewPayrollPeriodRule = {
   effective_month: "",
   notes: null,
 };
+
+const emptyPayrollSetting = (): NewPayrollSetting => ({
+  branch_id: null,
+  name: "",
+  currency_code: "IDR",
+  frequency_code: "MONTHLY",
+  default_proration_method: "WORKING_DAYS",
+  attendance_cutoff_day: null,
+  payment_day: null,
+  rounding_mode: "HALF_UP",
+  decimal_scale: 0,
+  require_maker_checker: true,
+  allow_negative_net_pay: false,
+  is_active: true,
+});
 
 const statusSeverity = (
   status: PayrollRegulationStatus,
@@ -102,14 +120,21 @@ const optional = (value: string): string | null => value.trim() || null;
 
 export default function PayrollConfiguration() {
   const dispatch = useDispatch();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canManage = permissions.includes("payroll-config.manage");
   const [setting, setSetting] = useState<PayrollSetting | null>(null);
   const {
     data: settings,
     error: settingError,
     isLoading: settingLoading,
-    isValidating: settingValidating,
     mutate: refreshSettings,
   } = useSWR<PayrollSetting[]>(SETTING_URL, fetcher);
+  const { data: branches = [] } = useSWR(
+    "payroll-configuration-branches",
+    getBranchOptions,
+  );
   const {
     data: regulations,
     error: regulationError,
@@ -130,6 +155,10 @@ export default function PayrollConfiguration() {
   );
 
   const [savingSetting, setSavingSetting] = useState(false);
+  const [showSettingDialog, setShowSettingDialog] = useState(false);
+  const [savingNewSetting, setSavingNewSetting] = useState(false);
+  const [newSetting, setNewSetting] =
+    useState<NewPayrollSetting>(emptyPayrollSetting);
   const [showRegulationDialog, setShowRegulationDialog] = useState(false);
   const [savingRegulation, setSavingRegulation] = useState(false);
   const [transitioningId, setTransitioningId] = useState<number | null>(null);
@@ -148,10 +177,39 @@ export default function PayrollConfiguration() {
     useState<PayrollPeriodRule | null>(null);
   const [periodRule, setPeriodRule] =
     useState<NewPayrollPeriodRule>(EMPTY_PERIOD_RULE);
+  const periodRuleNotificationKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (settings?.[0]) setSetting(settings[0]);
+    setSetting((current) => {
+      if (!settings?.length) return null;
+      return settings.find((item) => item.id === current?.id) ?? settings[0];
+    });
   }, [settings]);
+
+  const branchNames = useMemo(
+    () => new Map(branches.map((branch) => [Number(branch.id), branch.name])),
+    [branches],
+  );
+  const branchOptions = useMemo(
+    () =>
+      branches.map((branch) => ({
+        label: branch.name,
+        value: Number(branch.id),
+      })),
+    [branches],
+  );
+  const settingOptions = useMemo(
+    () =>
+      (settings ?? []).map((item) => ({
+        label: `${item.name} · ${
+          item.branch_id === null
+            ? "Global"
+            : (branchNames.get(item.branch_id) ?? `Branch ${item.branch_id}`)
+        }${item.is_active ? "" : " · Inactive"}`,
+        value: item.id,
+      })),
+    [branchNames, settings],
+  );
 
   const toast = (
     severity: "success" | "error",
@@ -160,15 +218,48 @@ export default function PayrollConfiguration() {
   ) => dispatch(showToast({ visible: true, severity, summary, detail }));
 
   const showError = (error: unknown) => {
-    const detail =
-      typeof error === "object" &&
-      error !== null &&
-      "message" in error &&
-      typeof (error as ResponseTypeError).message === "string"
-        ? (error as ResponseTypeError).message
-        : "An unexpected error occurred.";
-    toast("error", "Error", detail);
+    toast("error", "Error", getErrorMessage(error));
   };
+
+  useEffect(() => {
+    if (!setting) {
+      periodRuleNotificationKey.current = null;
+      return;
+    }
+    if (periodRuleError) {
+      const key = `error:${setting.id}`;
+      if (periodRuleNotificationKey.current !== key) {
+        periodRuleNotificationKey.current = key;
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Payroll setup",
+            detail: getErrorMessage(periodRuleError),
+          }),
+        );
+      }
+      return;
+    }
+    if (periodRuleLoading || !periodRules) return;
+    if (periodRules.length === 0) {
+      const key = `empty:${setting.id}`;
+      if (periodRuleNotificationKey.current !== key) {
+        periodRuleNotificationKey.current = key;
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: "Payroll setup",
+            detail:
+              "No payroll period rule is configured for this setting. Add an effective rule below before running payroll.",
+          }),
+        );
+      }
+      return;
+    }
+    periodRuleNotificationKey.current = null;
+  }, [dispatch, periodRuleError, periodRuleLoading, periodRules, setting]);
 
   const changeSetting = <K extends keyof PayrollSetting>(
     key: K,
@@ -177,7 +268,7 @@ export default function PayrollConfiguration() {
     setSetting((current) => (current ? { ...current, [key]: value } : current));
 
   const saveSetting = async () => {
-    if (!setting) return;
+    if (!setting || !canManage) return;
     const payload: UpdatePayrollSetting = {
       name: setting.name,
       currency_code: setting.currency_code,
@@ -200,6 +291,33 @@ export default function PayrollConfiguration() {
       showError(error);
     } finally {
       setSavingSetting(false);
+    }
+  };
+
+  const openNewSetting = () => {
+    setNewSetting(emptyPayrollSetting());
+    setShowSettingDialog(true);
+  };
+
+  const createSetting = async () => {
+    if (!newSetting.name.trim() || !canManage) {
+      toast("error", "Validation", "Setting name is required.");
+      return;
+    }
+    try {
+      setSavingNewSetting(true);
+      const created = await createPayrollSetting({
+        ...newSetting,
+        name: newSetting.name.trim(),
+      });
+      await refreshSettings();
+      setSetting(created);
+      setShowSettingDialog(false);
+      toast("success", "Success", "Payroll setting created.");
+    } catch (error: unknown) {
+      showError(error);
+    } finally {
+      setSavingNewSetting(false);
     }
   };
 
@@ -406,10 +524,38 @@ export default function PayrollConfiguration() {
               <ErrorNotConnectedToApi mutateKey={SETTING_URL} />
             ) : setting ? (
               <div className="flex flex-col gap-5 pt-3">
+                <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
+                  <div className="w-full md:max-w-xl">
+                    <Field label="Payroll Setting">
+                      <Dropdown
+                        value={setting.id}
+                        options={settingOptions}
+                        optionLabel="label"
+                        optionValue="value"
+                        className="w-full"
+                        onChange={(event) => {
+                          const selected = (settings ?? []).find(
+                            (item) => item.id === Number(event.value),
+                          );
+                          if (selected) setSetting(selected);
+                        }}
+                      />
+                    </Field>
+                  </div>
+                  {canManage && (
+                    <Button
+                      label="New Payroll Setting"
+                      icon="pi pi-plus"
+                      size="small"
+                      onClick={openNewSetting}
+                    />
+                  )}
+                </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <Field label="Setting Name">
                     <InputText
                       value={setting.name}
+                      disabled={!canManage}
                       onChange={(event) =>
                         changeSetting("name", event.target.value)
                       }
@@ -433,6 +579,7 @@ export default function PayrollConfiguration() {
                       optionLabel="name"
                       optionValue="code"
                       placeholder="Select payroll frequency"
+                      disabled={!canManage}
                       onChange={(event) =>
                         changeSetting("frequency_code", String(event.value))
                       }
@@ -447,6 +594,7 @@ export default function PayrollConfiguration() {
                         "WORKING_DAYS",
                         "FIXED_30_DAYS",
                       ]}
+                      disabled={!canManage}
                       onChange={(event) =>
                         changeSetting(
                           "default_proration_method",
@@ -461,7 +609,7 @@ export default function PayrollConfiguration() {
                       value={
                         periodRules?.[0]
                           ? `Configured by effective rules (latest: day ${periodRules[0].cutoff_day})`
-                          : "No effective period rule"
+                          : "Not configured — add an effective period rule below"
                       }
                       disabled
                       className="w-full"
@@ -473,6 +621,7 @@ export default function PayrollConfiguration() {
                       min={1}
                       max={31}
                       useGrouping={false}
+                      disabled={!canManage}
                       onValueChange={(event) =>
                         changeSetting("payment_day", event.value ?? null)
                       }
@@ -483,6 +632,7 @@ export default function PayrollConfiguration() {
                     <Dropdown
                       value={setting.rounding_mode}
                       options={["HALF_UP", "HALF_EVEN", "DOWN", "UP"]}
+                      disabled={!canManage}
                       onChange={(event) =>
                         changeSetting("rounding_mode", String(event.value))
                       }
@@ -495,6 +645,7 @@ export default function PayrollConfiguration() {
                       min={0}
                       max={4}
                       useGrouping={false}
+                      disabled={!canManage}
                       onValueChange={(event) =>
                         changeSetting("decimal_scale", event.value ?? 0)
                       }
@@ -506,6 +657,7 @@ export default function PayrollConfiguration() {
                   <SwitchField
                     label="Require maker-checker"
                     checked={setting.require_maker_checker}
+                    disabled={!canManage}
                     onChange={(value) =>
                       changeSetting("require_maker_checker", value)
                     }
@@ -513,6 +665,7 @@ export default function PayrollConfiguration() {
                   <SwitchField
                     label="Allow negative net pay"
                     checked={setting.allow_negative_net_pay}
+                    disabled={!canManage}
                     onChange={(value) =>
                       changeSetting("allow_negative_net_pay", value)
                     }
@@ -520,18 +673,21 @@ export default function PayrollConfiguration() {
                   <SwitchField
                     label="Active"
                     checked={setting.is_active}
+                    disabled={!canManage}
                     onChange={(value) => changeSetting("is_active", value)}
                   />
                 </div>
-                <div className="flex justify-end border-t border-slate-200 pt-4">
-                  <Button
-                    label="Save Changes"
-                    icon="pi pi-check"
-                    loading={savingSetting}
-                    disabled={savingSetting}
-                    onClick={saveSetting}
-                  />
-                </div>
+                {canManage && (
+                  <div className="flex justify-end border-t border-slate-200 pt-4">
+                    <Button
+                      label="Save Changes"
+                      icon="pi pi-check"
+                      loading={savingSetting}
+                      disabled={savingSetting}
+                      onClick={saveSetting}
+                    />
+                  </div>
+                )}
                 <div className="flex flex-col gap-4 border-t border-slate-200 pt-5">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -554,15 +710,18 @@ export default function PayrollConfiguration() {
                         loading={periodRuleValidating}
                         onClick={() => void refreshPeriodRules()}
                       />
-                      <Button
-                        label="Add Period Rule"
-                        icon="pi pi-plus"
-                        size="small"
-                        disabled={
-                          setting.frequency_code.toUpperCase() !== "MONTHLY"
-                        }
-                        onClick={() => openPeriodRule()}
-                      />
+                      {canManage && (
+                        <Button
+                          label="Add Period Rule"
+                          icon="pi pi-plus"
+                          size="small"
+                          disabled={
+                            !setting.is_active ||
+                            setting.frequency_code.toUpperCase() !== "MONTHLY"
+                          }
+                          onClick={() => openPeriodRule()}
+                        />
+                      )}
                     </div>
                   </div>
                   {periodRuleError ? (
@@ -590,33 +749,35 @@ export default function PayrollConfiguration() {
                       />
                       <Column field="cutoff_day" header="Cutoff Day" />
                       <Column field="notes" header="Notes" />
-                      <Column
-                        header="Action"
-                        frozen
-                        alignFrozen="right"
-                        body={(row: PayrollPeriodRule) => (
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              icon="pi pi-pencil"
-                              rounded
-                              text
-                              severity="secondary"
-                              tooltip="Edit future rule"
-                              onClick={() => openPeriodRule(row)}
-                            />
-                            <Button
-                              icon="pi pi-trash"
-                              rounded
-                              text
-                              severity="danger"
-                              tooltip="Retire future rule"
-                              loading={deletingPeriodRuleId === row.id}
-                              disabled={deletingPeriodRuleId !== null}
-                              onClick={() => confirmRemovePeriodRule(row)}
-                            />
-                          </div>
-                        )}
-                      />
+                      {canManage && (
+                        <Column
+                          header="Action"
+                          frozen
+                          alignFrozen="right"
+                          body={(row: PayrollPeriodRule) => (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                icon="pi pi-pencil"
+                                rounded
+                                text
+                                severity="secondary"
+                                tooltip="Edit future rule"
+                                onClick={() => openPeriodRule(row)}
+                              />
+                              <Button
+                                icon="pi pi-trash"
+                                rounded
+                                text
+                                severity="danger"
+                                tooltip="Retire future rule"
+                                loading={deletingPeriodRuleId === row.id}
+                                disabled={deletingPeriodRuleId !== null}
+                                onClick={() => confirmRemovePeriodRule(row)}
+                              />
+                            </div>
+                          )}
+                        />
+                      )}
                     </DataTable>
                   )}
                   {setting.frequency_code.toUpperCase() !== "MONTHLY" && (
@@ -628,9 +789,19 @@ export default function PayrollConfiguration() {
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-slate-500">
-                No payroll setting is configured.
-              </p>
+              <div className="flex flex-col items-start gap-3">
+                <p className="m-0 text-sm text-slate-500">
+                  No payroll setting is configured.
+                </p>
+                {canManage && (
+                  <Button
+                    label="New Payroll Setting"
+                    icon="pi pi-plus"
+                    size="small"
+                    onClick={openNewSetting}
+                  />
+                )}
+              </div>
             )}
           </TabPanel>
 
@@ -769,6 +940,69 @@ export default function PayrollConfiguration() {
           </TabPanel>
         </TabView>
       </div>
+
+      <Dialog
+        header="New Payroll Setting"
+        visible={showSettingDialog}
+        modal
+        draggable={false}
+        resizable={false}
+        style={{ width: "95vw", maxWidth: "34rem" }}
+        onHide={() => setShowSettingDialog(false)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              text
+              disabled={savingNewSetting}
+              onClick={() => setShowSettingDialog(false)}
+            />
+            <Button
+              label="Create Setting"
+              icon="pi pi-check"
+              loading={savingNewSetting}
+              onClick={() => void createSetting()}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4 pt-2">
+          <Field label="Setting Name *">
+            <InputText
+              value={newSetting.name}
+              autoFocus
+              className="w-full"
+              onChange={(event) =>
+                setNewSetting((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Branch Scope">
+            <Dropdown
+              value={newSetting.branch_id}
+              options={branchOptions}
+              showClear
+              filter
+              placeholder="Global (all branches)"
+              className="w-full"
+              onChange={(event) =>
+                setNewSetting((current) => ({
+                  ...current,
+                  branch_id: event.value ? Number(event.value) : null,
+                }))
+              }
+            />
+          </Field>
+          <p className="m-0 text-xs leading-5 text-slate-500">
+            The setting uses the standard monthly payroll defaults. You can
+            adjust the details after it is created.
+          </p>
+        </div>
+      </Dialog>
 
       <Dialog
         header={
@@ -1113,10 +1347,12 @@ function Field({
 function SwitchField({
   label,
   checked,
+  disabled = false,
   onChange,
 }: {
   label: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (value: boolean) => void;
 }) {
   return (
@@ -1124,6 +1360,7 @@ function SwitchField({
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <InputSwitch
         checked={checked}
+        disabled={disabled}
         onChange={(event) => onChange(Boolean(event.value))}
       />
     </div>

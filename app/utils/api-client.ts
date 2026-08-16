@@ -1,4 +1,5 @@
 import type { ResponseTypeError } from "@/app/types/response-type";
+import { getErrorMessage } from "./error-messages";
 
 const DEFAULT_ERROR_MESSAGE = "Request failed. Please try again.";
 const MAX_ERROR_MESSAGE_LENGTH = 500;
@@ -31,14 +32,19 @@ export async function parseApiError(
   }
 
   const data = isRecord(payload) ? payload : {};
+  const code =
+    typeof data.code === "string" && data.code.trim()
+      ? data.code
+      : String(response.status);
+  const message = normalizeMessage(data.message ?? payload);
 
   return {
     success: false,
-    code:
-      typeof data.code === "string" && data.code.trim()
-        ? data.code
-        : String(response.status),
-    message: normalizeMessage(data.message ?? payload),
+    code,
+    message:
+      message === DEFAULT_ERROR_MESSAGE
+        ? getErrorMessage({ code, message }, "code")
+        : message,
   };
 }
 

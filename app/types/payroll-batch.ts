@@ -33,6 +33,7 @@ export interface PayrollBatch {
 
 export interface PayrollBatchSettingOption {
   id: number;
+  branch_id: number | null;
   code: string;
   name: string;
   currency_code: string;

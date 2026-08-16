@@ -11,6 +11,7 @@ import type {
   PayrollPeriodRule,
   PayrollPeriodPreview,
   NewPayrollPeriodRule,
+  NewPayrollSetting,
   UpdatePayrollPeriodRule,
   SavePayrollRegulationParameter,
   SavePayrollRegulationRateBracket,
@@ -44,6 +45,10 @@ export const updatePayrollSetting = (
   data: UpdatePayrollSetting,
 ): Promise<PayrollSetting> =>
   apiFetch(`${SETTING_URL}/${id}`, jsonRequest("PUT", data, rowVersion));
+
+export const createPayrollSetting = (
+  data: NewPayrollSetting,
+): Promise<PayrollSetting> => apiFetch(SETTING_URL, jsonRequest("POST", data));
 
 export const getPayrollPeriodRules = (
   settingId: number,

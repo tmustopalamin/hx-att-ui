@@ -17,6 +17,11 @@ export interface PayrollSetting {
   row_version: number;
 }
 
+export type NewPayrollSetting = Omit<
+  PayrollSetting,
+  "id" | "code" | "updated_at" | "row_version"
+>;
+
 export interface PayrollPeriodRule {
   id: number;
   payroll_setting_id: number;
