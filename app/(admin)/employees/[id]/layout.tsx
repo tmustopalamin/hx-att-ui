@@ -57,6 +57,9 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
   const canReadEmployee = useSelector((state: RootState) =>
     state.profile.permissions.includes("employee.read"),
   );
+  const canReadEmployeeDocuments = useSelector((state: RootState) =>
+    state.profile.permissions.includes("employee-document.read"),
+  );
 
   const { data, error } = useSWR<EmployeePersonalData>(
     isValidEmployeeId && canReadEmployee
@@ -123,6 +126,21 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
           icon="pi pi-user"
           actions={
             <>
+              {canReadEmployeeDocuments && (
+                <Link
+                  href={`/employee-documents?employee_id=${employeeId}`}
+                  className="w-full sm:w-auto"
+                >
+                  <Button
+                    type="button"
+                    label="Manage Documents"
+                    icon="pi pi-file-check"
+                    outlined
+                    size="small"
+                    className="w-full"
+                  />
+                </Link>
+              )}
               <Link href="/employees" className="w-full sm:w-auto">
                 <Button
                   type="button"

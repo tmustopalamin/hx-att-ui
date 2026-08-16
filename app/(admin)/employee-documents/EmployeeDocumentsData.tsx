@@ -46,6 +46,9 @@ const emptyDocument = () => ({
   is_primary: false,
 });
 
+const getBody = () => document.body;
+const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
+
 export default function EmployeeDocumentsData() {
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
@@ -55,6 +58,9 @@ export default function EmployeeDocumentsData() {
   const canCreate = permissions.includes("employee-document.create");
   const canUpdate = permissions.includes("employee-document.update");
   const canVerify = permissions.includes("employee-document.verify");
+  const selectedEmployeeId = Number(searchParams.get("employee_id"));
+  const employeeScoped =
+    Number.isSafeInteger(selectedEmployeeId) && selectedEmployeeId > 0;
   const { data: types = [], mutate: reloadTypes } = useSWR(
     "employee-document-types",
     getEmployeeDocumentTypes,
@@ -63,21 +69,17 @@ export default function EmployeeDocumentsData() {
     data: documents = [],
     mutate: reloadDocuments,
     isValidating,
-  } = useSWR("employee-documents", () => getEmployeeDocuments());
+  } = useSWR(
+    employeeScoped
+      ? `employee-documents-${selectedEmployeeId}`
+      : "employee-documents",
+    () => getEmployeeDocuments(employeeScoped ? selectedEmployeeId : undefined),
+  );
   const { data: employees = [] } = useSWR<Employee[]>(
     "/api/employees/list?show_all=false",
     fetcher,
   );
-  const selectedEmployeeId = Number(searchParams.get("employee_id"));
-  const employeeScoped =
-    Number.isSafeInteger(selectedEmployeeId) && selectedEmployeeId > 0;
-  const visibleDocuments = useMemo(
-    () =>
-      employeeScoped
-        ? documents.filter((item) => item.employee_id === selectedEmployeeId)
-        : documents,
-    [documents, employeeScoped, selectedEmployeeId],
-  );
+  const visibleDocuments = documents;
   const [visible, setVisible] = useState(false);
   const [typeVisible, setTypeVisible] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -127,6 +129,14 @@ export default function EmployeeDocumentsData() {
   const refresh = async () => {
     await Promise.all([reloadTypes(), reloadDocuments()]);
   };
+  const openUpload = () => {
+    setDocument({
+      ...emptyDocument(),
+      employee_id: employeeScoped ? selectedEmployeeId : 0,
+    });
+    setFile(null);
+    setVisible(true);
+  };
 
   const createType = async () => {
     if (!documentType.code.trim() || !documentType.name.trim()) {
@@ -164,6 +174,10 @@ export default function EmployeeDocumentsData() {
         "Validation",
         "Employee, document type, and file are required.",
       );
+      return;
+    }
+    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
+      toast("error", "Unable to upload", "Maximum document size is 10 MB.");
       return;
     }
     setSaving(true);
@@ -351,7 +365,7 @@ export default function EmployeeDocumentsData() {
                   label="Upload Document"
                   icon="pi pi-upload"
                   size="small"
-                  onClick={() => setVisible(true)}
+                  onClick={openUpload}
                 />
               )}
             </div>
@@ -405,6 +419,8 @@ export default function EmployeeDocumentsData() {
                     rounded
                     severity="secondary"
                     aria-label="Download"
+                    tooltip="Download"
+                    tooltipOptions={{ appendTo: getBody, position: "top" }}
                     disabled={!row.original_file_name}
                     onClick={() =>
                       window.open(
@@ -420,6 +436,8 @@ export default function EmployeeDocumentsData() {
                     rounded
                     severity="secondary"
                     aria-label="File version history"
+                    tooltip="File version history"
+                    tooltipOptions={{ appendTo: getBody, position: "top" }}
                     onClick={() => setVersionDocument(row)}
                   />
                   {canUpdate && row.is_active && (
@@ -429,6 +447,8 @@ export default function EmployeeDocumentsData() {
                       rounded
                       severity="secondary"
                       aria-label="Edit or replace file"
+                      tooltip="Edit or replace file"
+                      tooltipOptions={{ appendTo: getBody, position: "top" }}
                       onClick={() => openEdit(row)}
                     />
                   )}
@@ -440,6 +460,8 @@ export default function EmployeeDocumentsData() {
                         text
                         rounded
                         aria-label="Verify"
+                        tooltip="Verify"
+                        tooltipOptions={{ appendTo: getBody, position: "top" }}
                         onClick={() => confirmVerify(row)}
                       />
                     )}
@@ -452,6 +474,8 @@ export default function EmployeeDocumentsData() {
                         rounded
                         severity="danger"
                         aria-label="Reject"
+                        tooltip="Reject"
+                        tooltipOptions={{ appendTo: getBody, position: "top" }}
                         onClick={() => setRejecting(row)}
                       />
                     )}
@@ -462,6 +486,8 @@ export default function EmployeeDocumentsData() {
                       rounded
                       severity={row.is_active ? "danger" : "success"}
                       aria-label={row.is_active ? "Deactivate" : "Activate"}
+                      tooltip={row.is_active ? "Deactivate" : "Activate"}
+                      tooltipOptions={{ appendTo: getBody, position: "top" }}
                       onClick={() => confirmActive(row, !row.is_active)}
                     />
                   )}
@@ -503,6 +529,7 @@ export default function EmployeeDocumentsData() {
               value={document.employee_id || null}
               options={employeeOptions}
               filter
+              disabled={employeeScoped}
               placeholder="Select employee"
               className="w-full"
               onChange={(event) =>
@@ -747,6 +774,8 @@ export default function EmployeeDocumentsData() {
                 rounded
                 severity="secondary"
                 aria-label="Download archived version"
+                tooltip="Download archived version"
+                tooltipOptions={{ appendTo: getBody, position: "top" }}
                 onClick={() =>
                   versionDocument &&
                   window.open(
