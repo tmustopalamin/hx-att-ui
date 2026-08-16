@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 import StoreProvider from "@/store/StoreProvider";
 import GlobalToast from "../_components/GlobalToast";
+import GuestRouteGuard from "./guest-route-guard";
 
 export const metadata: Metadata = {
   title: "Login | Attendance & Payroll System | PT. Hexing Technology",
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <StoreProvider>
       <GlobalToast />
-      {children}
+      <GuestRouteGuard>{children}</GuestRouteGuard>
     </StoreProvider>
   );
 }
