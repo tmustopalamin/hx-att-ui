@@ -128,6 +128,7 @@ export interface PayrollEmployeeResultDetail {
   take_home_pay: string;
   company_payroll_cost: string;
   proration_factor: string;
+  proration_details_json: Record<string, unknown>;
   error_code: string | null;
   error_message: string | null;
   calculated_at: string | null;
@@ -151,6 +152,7 @@ export interface PayrollPayslipSnapshotAmounts {
   take_home_pay: string | number;
   company_payroll_cost: string | number;
   proration_factor: string | number;
+  proration?: Record<string, unknown>;
 }
 
 export interface PayrollPayslipSnapshot {

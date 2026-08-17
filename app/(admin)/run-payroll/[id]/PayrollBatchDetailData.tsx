@@ -189,6 +189,13 @@ function EmployeeResultPanel({
   result: PayrollEmployeeResultDetail;
 }) {
   const attendance = result.attendance;
+  const proration = result.proration_details_json ?? {};
+  const prorationValue = (key: string) => {
+    const value = proration[key];
+    return typeof value === "string" || typeof value === "number"
+      ? String(value)
+      : "-";
+  };
   return (
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
@@ -241,6 +248,42 @@ function EmployeeResultPanel({
             </p>
           </div>
         </div>
+
+        {Object.keys(proration).length > 0 && (
+          <section>
+            <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
+              Proration Breakdown
+            </h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <Metric label="Method" value={prorationValue("method_code")} />
+              <Metric
+                label="Denominator"
+                value={prorationValue("denominator_days")}
+                suffix="days"
+              />
+              <Metric
+                label="Employment"
+                value={prorationValue("employment_days")}
+                suffix="days"
+              />
+              <Metric
+                label="Non-payable"
+                value={prorationValue("non_payable_days")}
+                suffix="days"
+              />
+              <Metric
+                label="Payable"
+                value={prorationValue("payable_days")}
+                suffix="days"
+              />
+              <Metric label="Scope" value={prorationValue("salary_scope")} />
+            </div>
+            <p className="m-0 mt-2 text-xs leading-5 text-slate-500">
+              The factor is frozen at validation and applies to basic salary
+              only. Paid leave remains payable.
+            </p>
+          </section>
+        )}
 
         {attendance && (
           <section>

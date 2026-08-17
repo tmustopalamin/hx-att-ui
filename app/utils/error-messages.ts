@@ -41,6 +41,20 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "Select at least one regulation package before creating the payroll batch.",
   PAYROLL_REGULATION_SNAPSHOT_DUPLICATE:
     "Remove duplicate regulation packages before creating the payroll batch.",
+  PAYROLL_PRORATION_METHOD_INVALID:
+    "Select an active proration method from Payroll Configuration > Proration Method.",
+  PAYROLL_PRORATION_METHOD_IN_USE:
+    "This proration method is used by an active payroll setting and cannot be retired.",
+  PAYROLL_PRORATION_METHOD_SYSTEM_MANAGED:
+    "System proration methods cannot be deleted.",
+  PAYROLL_PRORATION_METHOD_EXISTS:
+    "A fixed-divisor proration method with this divisor already exists.",
+  PAYROLL_PRORATION_SHIFT_RULE_REQUIRED:
+    "Scheduled Working Days proration requires an active, complete employee shift rule for the full payroll period.",
+  PAYROLL_PRORATION_SCHEDULE_REQUIRED:
+    "Scheduled Working Days proration could not determine the employee schedule for this payroll period.",
+  PAYROLL_PRORATION_PERIOD_INVALID:
+    "The payroll period is invalid for proration calculation.",
 };
 
 const FALLBACK_ERROR_MESSAGE =

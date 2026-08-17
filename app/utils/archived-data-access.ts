@@ -45,6 +45,7 @@ const HR_OPERATIONAL_RESOURCES = new Set<ArchivedResource>([
   "overtime-management",
   "shift-rule",
   "employee-shift-rule",
+  "payroll-config",
 ]);
 
 function hasRole(roles: string[], expected: string): boolean {

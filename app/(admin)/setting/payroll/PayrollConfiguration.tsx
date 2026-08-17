@@ -47,11 +47,13 @@ import { showToast } from "@/store/ToastSlice";
 import PayrollRegulationDetailDialog from "./PayrollRegulationDetailDialog";
 import PayrollComponentMappingPanel from "./PayrollComponentMappingPanel";
 import type { Frequency } from "@/app/types/frequency";
+import type { PayrollProrationMethod } from "@/app/types/payroll-proration-method";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 const SETTING_URL = "/api/payroll-settings";
 const REGULATION_URL = "/api/payroll-regulations";
+const PRORATION_METHOD_URL = "/api/payroll-proration-methods?is_active=true";
 
 const EMPTY_REGULATION: NewPayrollRegulationPackage = {
   code: "",
@@ -76,7 +78,7 @@ const emptyPayrollSetting = (): NewPayrollSetting => ({
   name: "",
   currency_code: "IDR",
   frequency_code: "MONTHLY",
-  default_proration_method: "WORKING_DAYS",
+  default_proration_method: "SCHEDULED_DAYS",
   attendance_cutoff_day: null,
   payment_day: null,
   rounding_mode: "HALF_UP",
@@ -118,6 +120,15 @@ const nextStatus = (
 
 const optional = (value: string): string | null => value.trim() || null;
 
+const prorationBasisLabel = (method: PayrollProrationMethod) => {
+  if (method.basis_code === "SCHEDULED_DAYS") return "Scheduled working days";
+  if (method.basis_code === "CALENDAR_DAYS") return "Calendar days";
+  if (method.basis_code === "FIXED_DIVISOR") {
+    return `Fixed divisor${method.fixed_divisor_days ? ` (${method.fixed_divisor_days} days)` : ""}`;
+  }
+  return "No proration";
+};
+
 export default function PayrollConfiguration() {
   const dispatch = useDispatch();
   const permissions = useSelector(
@@ -143,6 +154,11 @@ export default function PayrollConfiguration() {
     mutate: refreshRegulations,
   } = useSWR<PayrollRegulationPackage[]>(REGULATION_URL, fetcher);
   const { data: frequencies } = useSWR<Frequency[]>("/api/frequency", fetcher);
+  const {
+    data: prorationMethods,
+    error: prorationMethodError,
+    isLoading: prorationMethodLoading,
+  } = useSWR<PayrollProrationMethod[]>(PRORATION_METHOD_URL, fetcher);
   const {
     data: periodRules,
     error: periodRuleError,
@@ -210,6 +226,13 @@ export default function PayrollConfiguration() {
       })),
     [branchNames, settings],
   );
+  const selectedProrationMethod = useMemo(
+    () =>
+      (prorationMethods ?? []).find(
+        (method) => method.code === setting?.default_proration_method,
+      ),
+    [prorationMethods, setting?.default_proration_method],
+  );
 
   const toast = (
     severity: "success" | "error",
@@ -269,6 +292,18 @@ export default function PayrollConfiguration() {
 
   const saveSetting = async () => {
     if (!setting || !canManage) return;
+    if (
+      !prorationMethods?.some(
+        (method) => method.code === setting.default_proration_method,
+      )
+    ) {
+      toast(
+        "error",
+        "Validation",
+        "Select an active proration method from the Proration Method master.",
+      );
+      return;
+    }
     const payload: UpdatePayrollSetting = {
       name: setting.name,
       currency_code: setting.currency_code,
@@ -302,6 +337,18 @@ export default function PayrollConfiguration() {
   const createSetting = async () => {
     if (!newSetting.name.trim() || !canManage) {
       toast("error", "Validation", "Setting name is required.");
+      return;
+    }
+    if (
+      !prorationMethods?.some(
+        (method) => method.code === newSetting.default_proration_method,
+      )
+    ) {
+      toast(
+        "error",
+        "Validation",
+        "Select an active proration method from the Proration Method master.",
+      );
       return;
     }
     try {
@@ -587,22 +634,59 @@ export default function PayrollConfiguration() {
                     />
                   </Field>
                   <Field label="Proration Method">
-                    <Dropdown
-                      value={setting.default_proration_method}
-                      options={[
-                        "CALENDAR_DAYS",
-                        "WORKING_DAYS",
-                        "FIXED_30_DAYS",
-                      ]}
-                      disabled={!canManage}
-                      onChange={(event) =>
-                        changeSetting(
-                          "default_proration_method",
-                          String(event.value),
-                        )
-                      }
-                      className="w-full"
-                    />
+                    <div className="flex flex-col gap-2">
+                      <Dropdown
+                        value={setting.default_proration_method}
+                        options={prorationMethods ?? []}
+                        optionLabel="name"
+                        optionValue="code"
+                        itemTemplate={(method: PayrollProrationMethod) =>
+                          method ? (
+                            <div className="flex flex-col gap-1 py-1">
+                              <span className="font-medium text-slate-800">
+                                {method.name}
+                              </span>
+                              <span className="font-mono text-xs text-slate-500">
+                                {method.code} · {prorationBasisLabel(method)}
+                              </span>
+                              <span className="text-xs leading-5 text-slate-500">
+                                {method.description}
+                              </span>
+                            </div>
+                          ) : null
+                        }
+                        placeholder={
+                          prorationMethodLoading
+                            ? "Loading proration methods..."
+                            : "Select proration method"
+                        }
+                        disabled={
+                          !canManage ||
+                          prorationMethodLoading ||
+                          !!prorationMethodError
+                        }
+                        onChange={(event) =>
+                          changeSetting(
+                            "default_proration_method",
+                            String(event.value),
+                          )
+                        }
+                        className="w-full"
+                      />
+                      {selectedProrationMethod ? (
+                        <span className="text-xs leading-5 text-slate-500">
+                          {selectedProrationMethod.description}
+                        </span>
+                      ) : prorationMethodError ? (
+                        <span className="text-xs text-red-600">
+                          Unable to load proration method master data.
+                        </span>
+                      ) : (
+                        <span className="text-xs text-amber-700">
+                          Choose a method from the Proration Method master.
+                        </span>
+                      )}
+                    </div>
                   </Field>
                   <Field label="Attendance Cutoff">
                     <InputText
@@ -996,6 +1080,52 @@ export default function PayrollConfiguration() {
                 }))
               }
             />
+          </Field>
+          <Field label="Proration Method *">
+            <div className="flex flex-col gap-2">
+              <Dropdown
+                value={newSetting.default_proration_method}
+                options={prorationMethods ?? []}
+                optionLabel="name"
+                optionValue="code"
+                itemTemplate={(method: PayrollProrationMethod) =>
+                  method ? (
+                    <div className="flex flex-col gap-1 py-1">
+                      <span className="font-medium text-slate-800">
+                        {method.name}
+                      </span>
+                      <span className="font-mono text-xs text-slate-500">
+                        {method.code} · {prorationBasisLabel(method)}
+                      </span>
+                      <span className="text-xs leading-5 text-slate-500">
+                        {method.description}
+                      </span>
+                    </div>
+                  ) : null
+                }
+                placeholder="Select proration method"
+                disabled={prorationMethodLoading || !!prorationMethodError}
+                onChange={(event) =>
+                  setNewSetting((current) => ({
+                    ...current,
+                    default_proration_method: String(event.value),
+                  }))
+                }
+                className="w-full"
+              />
+              {prorationMethods?.find(
+                (method) => method.code === newSetting.default_proration_method,
+              )?.description && (
+                <span className="text-xs leading-5 text-slate-500">
+                  {
+                    prorationMethods.find(
+                      (method) =>
+                        method.code === newSetting.default_proration_method,
+                    )?.description
+                  }
+                </span>
+              )}
+            </div>
           </Field>
           <p className="m-0 text-xs leading-5 text-slate-500">
             The setting uses the standard monthly payroll defaults. You can

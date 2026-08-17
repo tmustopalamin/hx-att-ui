@@ -323,6 +323,12 @@ const settingSubMenus: SettingSubMenu[] = [
         permission: "payroll-config.read",
       },
       {
+        href: "/setting/proration-method",
+        label: "Proration Method",
+        icon: "pi-sliders-h",
+        permission: "payroll-config.read",
+      },
+      {
         href: "/setting/frequency",
         label: "Pay Frequency",
         icon: "pi-calendar",
