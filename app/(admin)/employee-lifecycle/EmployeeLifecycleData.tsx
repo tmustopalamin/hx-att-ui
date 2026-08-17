@@ -580,6 +580,7 @@ export default function EmployeeLifecycleData() {
                       rounded
                       severity="secondary"
                       aria-label="View detail"
+                      tooltip="View detail"
                       onClick={() => setSelected(row)}
                     />
                     {canCreate &&
@@ -590,6 +591,7 @@ export default function EmployeeLifecycleData() {
                           text
                           rounded
                           aria-label="Submit"
+                          tooltip="Submit"
                           disabled={saving}
                           onClick={() => confirmTransition(row, "submit")}
                         />
@@ -611,6 +613,7 @@ export default function EmployeeLifecycleData() {
                           rounded
                           severity="danger"
                           aria-label="Cancel"
+                          tooltip="Cancel"
                           disabled={saving}
                           onClick={() => confirmTransition(row, "cancel")}
                         />

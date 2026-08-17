@@ -381,6 +381,7 @@ export default function EmployeeLifecycleSettingsData() {
                       text
                       rounded
                       aria-label="New version"
+                      tooltip="New version"
                       onClick={() => openNewTemplate(row)}
                     />
                     <Button
@@ -389,6 +390,7 @@ export default function EmployeeLifecycleSettingsData() {
                       rounded
                       severity={row.is_active ? "warning" : "success"}
                       aria-label={row.is_active ? "Deactivate" : "Activate"}
+                      tooltip={row.is_active ? "Deactivate" : "Activate"}
                       disabled={saving}
                       onClick={() => void toggleTemplate(row)}
                     />
@@ -560,6 +562,7 @@ export default function EmployeeLifecycleSettingsData() {
                         text
                         rounded
                         aria-label="Edit task"
+                        tooltip="Edit task"
                         onClick={() => openEditItem(row, index)}
                       />
                       <Button
@@ -568,6 +571,7 @@ export default function EmployeeLifecycleSettingsData() {
                         rounded
                         severity="danger"
                         aria-label="Delete task"
+                        tooltip="Delete task"
                         onClick={() => removeItem(index)}
                       />
                     </div>

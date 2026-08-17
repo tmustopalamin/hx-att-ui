@@ -247,6 +247,7 @@ export default function PayrollComponentMappingPanel({
               <Button
                 icon="pi pi-pencil"
                 aria-label="Edit mapping"
+                tooltip="Edit mapping"
                 size="small"
                 outlined
                 onClick={() => openEdit(row)}
@@ -254,6 +255,7 @@ export default function PayrollComponentMappingPanel({
               <Button
                 icon="pi pi-trash"
                 aria-label="Delete mapping"
+                tooltip="Delete mapping"
                 size="small"
                 severity="danger"
                 outlined

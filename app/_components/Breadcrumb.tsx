@@ -33,6 +33,8 @@ const Breadcrumb = ({
         icon="pi pi-bars"
         rounded
         text
+        aria-label="Toggle sidebar"
+        tooltip="Toggle sidebar"
         onClick={() => onClickSidebar(!sidebarVisible)}
       />
       <ol className="flex gap-2">

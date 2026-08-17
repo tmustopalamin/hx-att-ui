@@ -35,6 +35,7 @@ const Notification = () => {
           rounded
           text
           aria-label="Notifications"
+          tooltip="Notifications"
           onClick={() => setOpen((prev) => !prev)}
           className="hover:bg-gray-100"
         />

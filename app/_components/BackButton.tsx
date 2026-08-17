@@ -5,7 +5,13 @@ import React from "react";
 const BackButton = ({ url }: { url: string }) => {
   return (
     <Link href={url}>
-      <Button icon="pi pi-arrow-left" rounded text aria-label="Filter" />
+      <Button
+        icon="pi pi-arrow-left"
+        rounded
+        text
+        aria-label="Back"
+        tooltip="Back"
+      />
     </Link>
   );
 };

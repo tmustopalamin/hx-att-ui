@@ -274,6 +274,7 @@ const EmployeeFamilyDataTable = () => {
         size="small"
         icon="pi pi-trash"
         severity="danger"
+        tooltip="Delete"
         onClick={() => onDelete(row)}
       />
     </div>

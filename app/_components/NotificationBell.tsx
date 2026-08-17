@@ -237,6 +237,7 @@ const NotificationBell = () => {
         onClick={openPanel}
         className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
         aria-label="Open notifications"
+        title="Open notifications"
       >
         <i className="pi pi-bell text-lg" />
 
@@ -374,6 +375,7 @@ const NotificationBell = () => {
                           }
                           className="shrink-0 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
                           aria-label="Archive notification"
+                          title="Archive notification"
                         >
                           <i className="pi pi-times text-xs" />
                         </button>

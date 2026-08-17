@@ -263,6 +263,7 @@ const IdentityTypeSettingPage = () => {
             label=""
             icon="pi pi-trash"
             size="small"
+            tooltip="Delete identity type"
             onClick={() => {
               onClickDelete(rowData.id);
             }}
@@ -272,6 +273,7 @@ const IdentityTypeSettingPage = () => {
             label=""
             icon="pi pi-pencil"
             size="small"
+            tooltip="Edit identity type"
             onClick={() => {
               onClickUpdate(rowData);
             }}

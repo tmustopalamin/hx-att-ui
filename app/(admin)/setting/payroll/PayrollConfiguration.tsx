@@ -121,12 +121,45 @@ const nextStatus = (
 const optional = (value: string): string | null => value.trim() || null;
 
 const prorationBasisLabel = (method: PayrollProrationMethod) => {
-  if (method.basis_code === "SCHEDULED_DAYS") return "Scheduled working days";
-  if (method.basis_code === "CALENDAR_DAYS") return "Calendar days";
+  if (method.basis_code === "SCHEDULED_DAYS") return "Hari kerja terjadwal";
+  if (method.basis_code === "CALENDAR_DAYS") return "Hari kalender";
   if (method.basis_code === "FIXED_DIVISOR") {
-    return `Fixed divisor${method.fixed_divisor_days ? ` (${method.fixed_divisor_days} days)` : ""}`;
+    return `Pembagi tetap${method.fixed_divisor_days ? ` (${method.fixed_divisor_days} hari)` : ""}`;
   }
-  return "No proration";
+  return "Tanpa prorata";
+};
+
+const prorationMethodLabel = (method: PayrollProrationMethod) => {
+  if (method.code === "SCHEDULED_DAYS" || method.code === "WORKING_DAYS") {
+    return "Berdasarkan Hari Kerja Terjadwal";
+  }
+  if (method.code === "CALENDAR_DAYS") return "Berdasarkan Hari Kalender";
+  if (method.code === "FIXED_30_DAYS" || method.code === "FIXED_DIVISOR") {
+    return `Pembagi Tetap${method.fixed_divisor_days ? ` ${method.fixed_divisor_days} Hari` : ""}`;
+  }
+  if (method.code === "NONE") return "Tanpa Prorata";
+  return "Metode Prorata Khusus";
+};
+
+const prorationMethodDescription = (method: PayrollProrationMethod) => {
+  if (method.code === "SCHEDULED_DAYS" || method.code === "WORKING_DAYS") {
+    return "Menghitung gaji pokok bulanan berdasarkan jadwal kerja karyawan dalam satu periode penggajian. Hari di luar masa kerja, ketidakhadiran, dan cuti tidak dibayar mengurangi hari yang dibayar; cuti dibayar tetap dihitung.";
+  }
+  if (method.code === "CALENDAR_DAYS") {
+    return "Menghitung gaji pokok berdasarkan seluruh hari kalender dalam periode penggajian. Hari di luar masa kerja, ketidakhadiran, dan cuti tidak dibayar mengurangi hari yang dibayar; cuti dibayar tetap dihitung.";
+  }
+  if (method.code === "FIXED_30_DAYS" || method.code === "FIXED_DIVISOR") {
+    return `Menggunakan pembagi tetap${method.fixed_divisor_days ? ` ${method.fixed_divisor_days} hari` : ""}. Setiap hari kalender yang tidak dibayar mengurangi gaji pokok secara proporsional.`;
+  }
+  if (method.code === "NONE") {
+    return "Membayar gaji pokok bulanan penuh tanpa penyesuaian berdasarkan tanggal masuk, tanggal keluar, ketidakhadiran, atau cuti tidak dibayar.";
+  }
+  return "Metode khusus yang telah dikonfigurasi pada master penggajian.";
+};
+
+type LocalizedPayrollProrationMethod = PayrollProrationMethod & {
+  localized_name: string;
+  localized_description: string;
 };
 
 export default function PayrollConfiguration() {
@@ -226,6 +259,15 @@ export default function PayrollConfiguration() {
       })),
     [branchNames, settings],
   );
+  const prorationMethodOptions = useMemo<LocalizedPayrollProrationMethod[]>(
+    () =>
+      (prorationMethods ?? []).map((method) => ({
+        ...method,
+        localized_name: prorationMethodLabel(method),
+        localized_description: prorationMethodDescription(method),
+      })),
+    [prorationMethods],
+  );
   const selectedProrationMethod = useMemo(
     () =>
       (prorationMethods ?? []).find(
@@ -300,7 +342,7 @@ export default function PayrollConfiguration() {
       toast(
         "error",
         "Validation",
-        "Select an active proration method from the Proration Method master.",
+        "Pilih metode prorata aktif dari master Metode Prorata.",
       );
       return;
     }
@@ -347,7 +389,7 @@ export default function PayrollConfiguration() {
       toast(
         "error",
         "Validation",
-        "Select an active proration method from the Proration Method master.",
+        "Pilih metode prorata aktif dari master Metode Prorata.",
       );
       return;
     }
@@ -573,7 +615,10 @@ export default function PayrollConfiguration() {
               <div className="flex flex-col gap-5 pt-3">
                 <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
                   <div className="w-full md:max-w-xl">
-                    <Field label="Payroll Setting">
+                    <Field
+                      label="Payroll Setting"
+                      hint="Pilih profil payroll yang ingin diatur. Profil Global berlaku untuk semua cabang; profil cabang hanya berlaku untuk cabang tersebut."
+                    >
                       <Dropdown
                         value={setting.id}
                         options={settingOptions}
@@ -599,7 +644,10 @@ export default function PayrollConfiguration() {
                   )}
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <Field label="Setting Name">
+                  <Field
+                    label="Setting Name"
+                    hint="Nama profil konfigurasi payroll agar mudah dibedakan."
+                  >
                     <InputText
                       value={setting.name}
                       disabled={!canManage}
@@ -609,14 +657,20 @@ export default function PayrollConfiguration() {
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Currency">
+                  <Field
+                    label="Currency"
+                    hint="Mata uang yang digunakan dalam perhitungan payroll. Saat ini menggunakan IDR."
+                  >
                     <InputText
                       value={setting.currency_code}
                       disabled
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Payroll Frequency">
+                  <Field
+                    label="Payroll Frequency"
+                    hint="Frekuensi proses payroll. Aturan cutoff otomatis hanya tersedia untuk payroll bulanan."
+                  >
                     <Dropdown
                       value={setting.frequency_code}
                       options={(frequencies ?? []).filter(
@@ -633,32 +687,37 @@ export default function PayrollConfiguration() {
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Proration Method">
+                  <Field
+                    label="Metode Prorata"
+                    hint="Cara menghitung gaji proporsional ketika karyawan bekerja tidak selama satu periode penuh."
+                  >
                     <div className="flex flex-col gap-2">
                       <Dropdown
                         value={setting.default_proration_method}
-                        options={prorationMethods ?? []}
-                        optionLabel="name"
+                        options={prorationMethodOptions}
+                        optionLabel="localized_name"
                         optionValue="code"
-                        itemTemplate={(method: PayrollProrationMethod) =>
+                        itemTemplate={(
+                          method: LocalizedPayrollProrationMethod,
+                        ) =>
                           method ? (
                             <div className="flex flex-col gap-1 py-1">
                               <span className="font-medium text-slate-800">
-                                {method.name}
+                                {method.localized_name}
                               </span>
                               <span className="font-mono text-xs text-slate-500">
-                                {method.code} · {prorationBasisLabel(method)}
+                                Dasar: {prorationBasisLabel(method)}
                               </span>
                               <span className="text-xs leading-5 text-slate-500">
-                                {method.description}
+                                {method.localized_description}
                               </span>
                             </div>
                           ) : null
                         }
                         placeholder={
                           prorationMethodLoading
-                            ? "Loading proration methods..."
-                            : "Select proration method"
+                            ? "Memuat metode prorata..."
+                            : "Pilih metode prorata"
                         }
                         disabled={
                           !canManage ||
@@ -675,20 +734,23 @@ export default function PayrollConfiguration() {
                       />
                       {selectedProrationMethod ? (
                         <span className="text-xs leading-5 text-slate-500">
-                          {selectedProrationMethod.description}
+                          {prorationMethodDescription(selectedProrationMethod)}
                         </span>
                       ) : prorationMethodError ? (
                         <span className="text-xs text-red-600">
-                          Unable to load proration method master data.
+                          Data master metode prorata tidak dapat dimuat.
                         </span>
                       ) : (
                         <span className="text-xs text-amber-700">
-                          Choose a method from the Proration Method master.
+                          Pilih metode dari master Metode Prorata.
                         </span>
                       )}
                     </div>
                   </Field>
-                  <Field label="Attendance Cutoff">
+                  <Field
+                    label="Attendance Cutoff"
+                    hint="Ditentukan oleh aturan efektif di bawah. Ubah melalui Payroll Period Rules."
+                  >
                     <InputText
                       value={
                         periodRules?.[0]
@@ -699,7 +761,10 @@ export default function PayrollConfiguration() {
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Payment Day">
+                  <Field
+                    label="Payment Day"
+                    hint="Hari target pembayaran dalam bulan (1-31). Saat membuat payroll batch, Payroll Date tetap diisi secara terpisah."
+                  >
                     <InputNumber
                       value={setting.payment_day}
                       min={1}
@@ -712,7 +777,10 @@ export default function PayrollConfiguration() {
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Rounding Mode">
+                  <Field
+                    label="Rounding Mode"
+                    hint="Aturan pembulatan nominal: HALF_UP normal, HALF_EVEN ke angka genap, DOWN menuju nol, dan UP menjauhi nol."
+                  >
                     <Dropdown
                       value={setting.rounding_mode}
                       options={["HALF_UP", "HALF_EVEN", "DOWN", "UP"]}
@@ -723,7 +791,10 @@ export default function PayrollConfiguration() {
                       className="w-full"
                     />
                   </Field>
-                  <Field label="Decimal Scale">
+                  <Field
+                    label="Decimal Scale"
+                    hint="Jumlah angka di belakang koma yang digunakan dalam kalkulasi payroll (0-4)."
+                  >
                     <InputNumber
                       value={setting.decimal_scale}
                       min={0}
@@ -740,6 +811,7 @@ export default function PayrollConfiguration() {
                 <div className="grid grid-cols-1 gap-3 border-t border-slate-200 pt-5 md:grid-cols-3">
                   <SwitchField
                     label="Require maker-checker"
+                    hint="Pembuat payroll tidak dapat menyetujui payrollnya sendiri; persetujuan harus dilakukan pengguna lain."
                     checked={setting.require_maker_checker}
                     disabled={!canManage}
                     onChange={(value) =>
@@ -748,6 +820,7 @@ export default function PayrollConfiguration() {
                   />
                   <SwitchField
                     label="Allow negative net pay"
+                    hint="Izinkan take-home pay negatif jika total potongan melebihi pendapatan."
                     checked={setting.allow_negative_net_pay}
                     disabled={!canManage}
                     onChange={(value) =>
@@ -756,6 +829,7 @@ export default function PayrollConfiguration() {
                   />
                   <SwitchField
                     label="Active"
+                    hint="Profil aktif tersedia untuk payroll baru; profil nonaktif tidak dapat dipilih saat membuat batch."
                     checked={setting.is_active}
                     disabled={!canManage}
                     onChange={(value) => changeSetting("is_active", value)}
@@ -779,9 +853,9 @@ export default function PayrollConfiguration() {
                         Payroll Period Rules
                       </h2>
                       <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                        Effective-dated rules define the inclusive period. A
-                        cutoff of 15 means the period runs from the 16th of the
-                        previous month through the 15th.
+                        Aturan efektif menentukan periode payroll. Cutoff
+                        tanggal 15 berarti periode berjalan dari tanggal 16
+                        bulan sebelumnya sampai tanggal 15 bulan berjalan.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -1052,7 +1126,10 @@ export default function PayrollConfiguration() {
         }
       >
         <div className="flex flex-col gap-4 pt-2">
-          <Field label="Setting Name *">
+          <Field
+            label="Setting Name *"
+            hint="Nama profil konfigurasi payroll agar mudah dibedakan."
+          >
             <InputText
               value={newSetting.name}
               autoFocus
@@ -1065,7 +1142,10 @@ export default function PayrollConfiguration() {
               }
             />
           </Field>
-          <Field label="Branch Scope">
+          <Field
+            label="Branch Scope"
+            hint="Kosongkan untuk berlaku di semua cabang, atau pilih satu cabang untuk membatasi cakupan profil."
+          >
             <Dropdown
               value={newSetting.branch_id}
               options={branchOptions}
@@ -1081,29 +1161,32 @@ export default function PayrollConfiguration() {
               }
             />
           </Field>
-          <Field label="Proration Method *">
+          <Field
+            label="Metode Prorata *"
+            hint="Cara menghitung gaji proporsional ketika karyawan bekerja tidak selama satu periode penuh."
+          >
             <div className="flex flex-col gap-2">
               <Dropdown
                 value={newSetting.default_proration_method}
-                options={prorationMethods ?? []}
-                optionLabel="name"
+                options={prorationMethodOptions}
+                optionLabel="localized_name"
                 optionValue="code"
-                itemTemplate={(method: PayrollProrationMethod) =>
+                itemTemplate={(method: LocalizedPayrollProrationMethod) =>
                   method ? (
                     <div className="flex flex-col gap-1 py-1">
                       <span className="font-medium text-slate-800">
-                        {method.name}
+                        {method.localized_name}
                       </span>
                       <span className="font-mono text-xs text-slate-500">
-                        {method.code} · {prorationBasisLabel(method)}
+                        Dasar: {prorationBasisLabel(method)}
                       </span>
                       <span className="text-xs leading-5 text-slate-500">
-                        {method.description}
+                        {method.localized_description}
                       </span>
                     </div>
                   ) : null
                 }
-                placeholder="Select proration method"
+                placeholder="Pilih metode prorata"
                 disabled={prorationMethodLoading || !!prorationMethodError}
                 onChange={(event) =>
                   setNewSetting((current) => ({
@@ -1117,19 +1200,19 @@ export default function PayrollConfiguration() {
                 (method) => method.code === newSetting.default_proration_method,
               )?.description && (
                 <span className="text-xs leading-5 text-slate-500">
-                  {
+                  {prorationMethodDescription(
                     prorationMethods.find(
                       (method) =>
                         method.code === newSetting.default_proration_method,
-                    )?.description
-                  }
+                    )!,
+                  )}
                 </span>
               )}
             </div>
           </Field>
           <p className="m-0 text-xs leading-5 text-slate-500">
-            The setting uses the standard monthly payroll defaults. You can
-            adjust the details after it is created.
+            Profil baru menggunakan default payroll bulanan. Detail lainnya
+            dapat disesuaikan setelah profil dibuat.
           </p>
         </div>
       </Dialog>
@@ -1165,7 +1248,10 @@ export default function PayrollConfiguration() {
         }
       >
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-          <Field label="Effective Month *">
+          <Field
+            label="Effective Month *"
+            hint="Bulan mulai berlakunya aturan cutoff ini. Gunakan bulan mendatang untuk perubahan periode berikutnya."
+          >
             <InputText
               type="month"
               value={periodRule.effective_month.slice(0, 7)}
@@ -1178,7 +1264,10 @@ export default function PayrollConfiguration() {
               }
             />
           </Field>
-          <Field label="Cutoff Day *">
+          <Field
+            label="Cutoff Day *"
+            hint="Hari terakhir periode payroll. Contoh: tanggal 15 berarti periode berjalan dari tanggal 16 bulan sebelumnya sampai tanggal 15."
+          >
             <InputNumber
               value={periodRule.cutoff_day}
               min={1}
@@ -1194,7 +1283,10 @@ export default function PayrollConfiguration() {
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Notes">
+            <Field
+              label="Notes"
+              hint="Catatan tambahan mengenai kebijakan, alasan, atau referensi aturan."
+            >
               <InputText
                 value={periodRule.notes ?? ""}
                 className="w-full"
@@ -1461,38 +1553,53 @@ function JsonValue({ value }: { value: unknown }) {
 
 function Field({
   label,
+  hint,
   children,
 }: {
   label: string;
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
     <label className="flex flex-col gap-2">
       <span className="text-sm font-medium text-slate-700">{label}</span>
       {children}
+      {hint && <span className="text-xs leading-5 text-slate-500">{hint}</span>}
     </label>
   );
 }
 
 function SwitchField({
   label,
+  hint,
   checked,
   disabled = false,
   onChange,
 }: {
   label: string;
+  hint?: string;
   checked: boolean;
   disabled?: boolean;
   onChange: (value: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <InputSwitch
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(Boolean(event.value))}
-      />
+    <div className="flex items-start justify-between gap-3 rounded-lg border border-slate-200 px-4 py-3">
+      <div className="min-w-0 flex-1">
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+        {hint && (
+          <span className="mt-1 block text-xs leading-5 text-slate-500">
+            {hint}
+          </span>
+        )}
+      </div>
+      <div className="shrink-0 pt-0.5">
+        <InputSwitch
+          checked={checked}
+          disabled={disabled}
+          className="shrink-0"
+          onChange={(event) => onChange(Boolean(event.value))}
+        />
+      </div>
     </div>
   );
 }

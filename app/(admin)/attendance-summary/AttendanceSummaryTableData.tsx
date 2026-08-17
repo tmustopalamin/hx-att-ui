@@ -1505,6 +1505,7 @@ const AttendanceSummaryTableData = () => {
                   severity="secondary"
                   size="small"
                   aria-label="Dismiss message"
+                  tooltip="Dismiss message"
                   onClick={clearActionMessage}
                 />
               </div>
