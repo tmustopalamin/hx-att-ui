@@ -247,6 +247,9 @@ const OvertimeRequestTableData = () => {
   const requestedStartTime = watch("requested_start_time");
   const requestedEndTime = watch("requested_end_time");
   const canCancel = profileState.permissions.includes("overtime.cancel");
+  const canManageCancel = profileState.permissions.includes(
+    "overtime-management.cancel",
+  );
 
   const previewStartAt = useMemo(() => {
     return combineDateAndTime(overtimeDate, requestedStartTime);
@@ -785,6 +788,11 @@ const OvertimeRequestTableData = () => {
 
   const actionColumnBody = (rowData: OvertimeRequest) => {
     const isDraft = isDraftRequest(rowData);
+    const status = rowData.status?.toUpperCase();
+    const canCancelRequest =
+      !rowData.deleted_at &&
+      ((status === "PENDING" && (canCancel || canManageCancel)) ||
+        (status === "APPROVED" && canManageCancel));
 
     return (
       <div className="flex flex-nowrap items-center gap-2">
@@ -834,24 +842,21 @@ const OvertimeRequestTableData = () => {
           />
         )}
 
-        {canCancel &&
-          !rowData.deleted_at &&
-          (rowData.status?.toUpperCase() === "PENDING" ||
-            rowData.status?.toUpperCase() === "APPROVED") && (
-            <Button
-              tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="cancel overtime"
-              rounded
-              severity="warning"
-              icon="pi pi-ban"
-              size="small"
-              onClick={() => {
-                setSelectedData(rowData);
-                setCancelReason("");
-                setCancelDialogVisible(true);
-              }}
-            />
-          )}
+        {canCancelRequest && (
+          <Button
+            tooltipOptions={{ appendTo: getBody, position: "top" }}
+            tooltip="cancel overtime"
+            rounded
+            severity="warning"
+            icon="pi pi-ban"
+            size="small"
+            onClick={() => {
+              setSelectedData(rowData);
+              setCancelReason("");
+              setCancelDialogVisible(true);
+            }}
+          />
+        )}
 
         {rowData.deleted_at && archivedAccess.canShowDeleted && (
           <>
