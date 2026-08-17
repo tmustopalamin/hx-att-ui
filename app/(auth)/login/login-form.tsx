@@ -8,9 +8,12 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
+import { mutate } from "swr";
 
 import { showToast } from "@/store/ToastSlice";
-import { FormDataLogin } from "@/app/types/form-data-login";
+import { updateDataProfile } from "@/store/me/ProfileSlice";
+import type { FormDataLogin } from "@/app/types/form-data-login";
+import type { Me } from "@/app/types/me";
 import { apiFetch } from "@/app/utils/api-client";
 import { getErrorMessage } from "@/app/utils/error-messages";
 
@@ -61,6 +64,11 @@ const LoginForm = () => {
           "Login succeeded, but the session could not be established. Please try again.",
         );
       }
+
+      const sessionData = (await sessionResponse.json()) as Me;
+
+      dispatch(updateDataProfile(sessionData));
+      await mutate("/api/auth/me", sessionData, { revalidate: false });
 
       dispatch(
         showToast({
