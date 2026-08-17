@@ -11,7 +11,10 @@ import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
 
 import { ForgotPassword, ResetPassword } from "@/app/types/forgot-password";
+import type { ResponseType } from "@/app/types/response-type";
 import { showToast } from "@/store/ToastSlice";
+import { apiFetch } from "@/app/utils/api-client";
+import { getErrorMessage } from "@/app/utils/error-messages";
 
 const ForgotPasswordPage = () => {
   const router = useRouter();
@@ -52,25 +55,18 @@ const ForgotPasswordPage = () => {
       setSubmitting(true);
       setFormError("");
 
-      const res = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const responseData = await apiFetch<ResponseType<string | null>>(
+        "/api/auth/forgot-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email.trim().toLowerCase(),
+          }),
         },
-        body: JSON.stringify({
-          email: formData.email.trim().toLowerCase(),
-        }),
-      });
-
-      const responseData = await res.json();
-
-      if (!res.ok) {
-        const errorMessage =
-          responseData?.message ||
-          "Failed to request reset password. Please try again.";
-
-        throw new Error(errorMessage);
-      }
+      );
 
       setStep("otp");
       setChallengeId(responseData?.data || "");
@@ -84,10 +80,7 @@ const ForgotPasswordPage = () => {
         }),
       );
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Unexpected error occurred. Please try again.";
+      const errorMessage = getErrorMessage(err);
 
       setFormError(errorMessage);
 
@@ -119,25 +112,19 @@ const ForgotPasswordPage = () => {
         throw new Error("Reset session expired. Please request a new OTP.");
       }
 
-      const res = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const responseData = await apiFetch<ResponseType<string | null>>(
+        "/api/auth/verify-otp",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            challenge_id: challengeId,
+            otp: otpValue,
+          }),
         },
-        body: JSON.stringify({
-          challenge_id: challengeId,
-          otp: otpValue,
-        }),
-      });
-
-      const responseData = await res.json();
-
-      if (!res.ok) {
-        const errorMessage =
-          responseData?.message || "Failed to verify OTP. Please try again.";
-
-        throw new Error(errorMessage);
-      }
+      );
 
       const verifiedResetToken = String(responseData?.data || "").trim();
       if (!verifiedResetToken) {
@@ -157,10 +144,7 @@ const ForgotPasswordPage = () => {
         }),
       );
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Unexpected error occurred. Please try again.";
+      const errorMessage = getErrorMessage(err);
 
       setFormError(errorMessage);
 
@@ -186,25 +170,20 @@ const ForgotPasswordPage = () => {
         throw new Error("Reset session expired. Please request a new OTP.");
       }
 
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const responseData = await apiFetch<ResponseType<unknown>>(
+        "/api/auth/reset-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            reset_token: resetToken,
+            password: formData.password,
+            confirm_password: formData.confirmPassword,
+          }),
         },
-        body: JSON.stringify({
-          reset_token: resetToken,
-          password: formData.password,
-          confirm_password: formData.confirmPassword,
-        }),
-      });
-      const responseData = await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          responseData?.message ||
-            "Failed to reset password. Please try again.",
-        );
-      }
+      );
 
       dispatch(
         showToast({
@@ -216,10 +195,7 @@ const ForgotPasswordPage = () => {
       );
       router.replace("/login");
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Unexpected error occurred. Please try again.";
+      const errorMessage = getErrorMessage(err);
       setFormError(errorMessage);
       dispatch(
         showToast({

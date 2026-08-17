@@ -1,6 +1,8 @@
 import type { ResponseTypeError } from "../types/response-type";
 
 export const ERROR_MESSAGES: Record<string, string> = {
+  API_UNAVAILABLE:
+    "The service is temporarily unavailable. Please try again later.",
   DatabaseError: "There is a problem with the database connection",
   DATABASE_ERROR:
     "A server error occurred. Try again; contact an administrator if it persists.",
@@ -47,6 +49,16 @@ const FALLBACK_ERROR_MESSAGE =
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
+const isTransportOrParseError = (err: unknown): boolean => {
+  if (err instanceof SyntaxError) {
+    return true;
+  }
+
+  return (
+    err instanceof TypeError && /fetch|network|load failed/i.test(err.message)
+  );
+};
+
 const getErrorDetails = (err: unknown): { code: string; message: string } => {
   if (err instanceof Error) {
     return { code: "", message: err.message };
@@ -64,6 +76,10 @@ export function getErrorMessage(
   err: unknown,
   source: "code" | "message" = "message",
 ): string {
+  if (isTransportOrParseError(err)) {
+    return ERROR_MESSAGES.API_UNAVAILABLE;
+  }
+
   const { code, message } = getErrorDetails(err);
   const mappedMessage = code ? ERROR_MESSAGES[code] : undefined;
 

@@ -3,6 +3,7 @@ import { getErrorMessage } from "./error-messages";
 
 const DEFAULT_ERROR_MESSAGE = "Request failed. Please try again.";
 const MAX_ERROR_MESSAGE_LENGTH = 500;
+const HTML_RESPONSE_PATTERN = /<\s*(?:!doctype\s+html|html|head|body)\b/i;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -22,9 +23,10 @@ export async function parseApiError(
   response: Response,
 ): Promise<ResponseTypeError> {
   let payload: unknown;
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
 
   try {
-    payload = response.headers.get("content-type")?.includes("application/json")
+    payload = contentType.includes("application/json")
       ? await response.json()
       : await response.text();
   } catch {
@@ -32,11 +34,17 @@ export async function parseApiError(
   }
 
   const data = isRecord(payload) ? payload : {};
-  const code =
-    typeof data.code === "string" && data.code.trim()
+  const isHtmlResponse =
+    contentType.includes("text/html") ||
+    (typeof payload === "string" && HTML_RESPONSE_PATTERN.test(payload));
+  const code = isHtmlResponse
+    ? "API_UNAVAILABLE"
+    : typeof data.code === "string" && data.code.trim()
       ? data.code
       : String(response.status);
-  const message = normalizeMessage(data.message ?? payload);
+  const message = isHtmlResponse
+    ? getErrorMessage({ code }, "code")
+    : normalizeMessage(data.message ?? payload);
 
   return {
     success: false,

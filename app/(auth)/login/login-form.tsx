@@ -11,6 +11,8 @@ import { Password } from "primereact/password";
 
 import { showToast } from "@/store/ToastSlice";
 import { FormDataLogin } from "@/app/types/form-data-login";
+import { apiFetch } from "@/app/utils/api-client";
+import { getErrorMessage } from "@/app/utils/error-messages";
 
 const LoginForm = () => {
   const router = useRouter();
@@ -32,7 +34,7 @@ const LoginForm = () => {
     setFormError("");
 
     try {
-      const res = await fetch("/api/auth/login", {
+      await apiFetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,15 +44,6 @@ const LoginForm = () => {
           password: formData.password,
         }),
       });
-
-      const responseData = await res.json();
-
-      if (!res.ok) {
-        const errorMessage =
-          responseData?.message || "Failed to login. Please try again.";
-
-        throw new Error(errorMessage);
-      }
 
       const sessionResponse = await fetch("/api/auth/me", {
         method: "GET",
@@ -80,10 +73,7 @@ const LoginForm = () => {
 
       router.replace("/dashboard");
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "Unexpected error occurred. Please try again.";
+      const errorMessage = getErrorMessage(err);
 
       setFormError(errorMessage);
       setSubmitting(false);
