@@ -2,8 +2,8 @@ import React from "react";
 import FrequencyDataTable from "./FrequencyDataTable";
 
 export const metadata = {
-  title: "Manage Frequency - PT. Hexing Technology",
-  description: "add, update, delete frequency data",
+  title: "Manage Wage Basis - PT. Hexing Technology",
+  description: "Add, update, delete, and restore wage basis data",
 };
 
 const FrequencyPage = () => {

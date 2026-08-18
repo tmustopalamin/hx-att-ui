@@ -3,7 +3,6 @@
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
@@ -773,14 +772,14 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
     const frequency = frequencyData?.find((item) => item.id === row.frequency);
     if (!frequency) {
-      return <span className="text-slate-500">Loading frequency...</span>;
+      return <span className="text-slate-500">Loading wage basis...</span>;
     }
 
     return (
       <div className="flex min-w-[9rem] flex-col">
         <span className="font-medium text-slate-800">{frequency.name}</span>
         <span className="text-xs text-slate-500">
-          {frequency.code} · {frequency.days_in_period} day(s)
+          {frequency.code} · rate period: {frequency.days_in_period} day(s)
         </span>
       </div>
     );
@@ -928,7 +927,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             />
             <Column
               field="frequency"
-              header="Frequency"
+              header="Wage Basis"
               sortable
               body={frequencyBody}
               style={{ minWidth: "11rem" }}
@@ -1139,12 +1138,12 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               htmlFor="frequency"
               className="text-sm font-medium text-slate-700"
             >
-              Frequency<span className="ml-1 text-red-500">*</span>
+              Wage Basis<span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="frequency"
               control={control}
-              rules={{ required: "*required" }}
+              rules={{ required: "Wage basis is required" }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1159,8 +1158,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     optionValue="id"
                     placeholder={
                       isLoadingFrequency
-                        ? "Loading frequencies..."
-                        : "Select a frequency"
+                        ? "Loading wage bases..."
+                        : "Select a wage basis"
                     }
                     className={
                       fieldState.invalid ? "p-invalid w-full" : "w-full"
@@ -1173,7 +1172,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   )}
                   {errorFrequency && (
                     <small className="p-error font-bold">
-                      We couldn’t load the list of frequency. Please try again
+                      We couldn’t load the list of wage bases. Please try again
                     </small>
                   )}
                 </>

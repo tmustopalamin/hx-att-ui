@@ -4,6 +4,7 @@ export interface PayrollSetting {
   code: string;
   name: string;
   currency_code: string;
+  /** Legacy storage/response field; payroll setting requests are monthly-only. */
   frequency_code: string;
   default_proration_method: string;
   attendance_cutoff_day: number | null;
@@ -19,7 +20,7 @@ export interface PayrollSetting {
 
 export type NewPayrollSetting = Omit<
   PayrollSetting,
-  "id" | "code" | "updated_at" | "row_version"
+  "id" | "code" | "frequency_code" | "updated_at" | "row_version"
 >;
 
 export interface PayrollPeriodRule {
@@ -57,7 +58,7 @@ export interface PayrollPeriodPreview {
 
 export type UpdatePayrollSetting = Omit<
   PayrollSetting,
-  "id" | "branch_id" | "code" | "updated_at" | "row_version"
+  "id" | "branch_id" | "code" | "frequency_code" | "updated_at" | "row_version"
 >;
 
 export type PayrollRegulationStatus =

@@ -116,7 +116,7 @@ export default function FrequencyDataTable() {
   const submit = async () => {
     const name = form.name.trim();
     if (!name || form.days_in_period < 1) {
-      notify("error", "Frequency name and days in period are required.");
+      notify("error", "Wage basis name and rate period days are required.");
       return;
     }
     try {
@@ -131,7 +131,7 @@ export default function FrequencyDataTable() {
       else await createFrequency(payload);
       await mutate();
       closeDialog();
-      notify("success", "Pay frequency saved successfully.");
+      notify("success", "Wage basis saved successfully.");
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -142,7 +142,7 @@ export default function FrequencyDataTable() {
     try {
       await deleteFrequency(row.id, row.row_version);
       await mutate();
-      notify("success", "Pay frequency deleted successfully.");
+      notify("success", "Wage basis deleted successfully.");
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -151,7 +151,7 @@ export default function FrequencyDataTable() {
     try {
       await restoreFrequency(row.id, row.row_version);
       await mutate();
-      notify("success", "Pay frequency restored successfully.");
+      notify("success", "Wage basis restored successfully.");
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -160,7 +160,7 @@ export default function FrequencyDataTable() {
     try {
       await purgeFrequency(row.id);
       await mutate();
-      notify("success", "Pay frequency permanently deleted.");
+      notify("success", "Wage basis permanently deleted.");
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -174,12 +174,12 @@ export default function FrequencyDataTable() {
           : "Delete Permanently";
     const message =
       action === "delete"
-        ? "This frequency can no longer be selected for payroll settings."
+        ? "This wage basis can no longer be selected for employee salary or payroll components."
         : action === "restore"
-          ? "This frequency will be available again."
+          ? "This wage basis will be available again."
           : "This action cannot be undone.";
     requestActionConfirmation({
-      header: `${label} Pay Frequency`,
+      header: `${label} Wage Basis`,
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">{message}</span>
@@ -303,11 +303,12 @@ export default function FrequencyDataTable() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Pay Frequency
+                  Wage Basis
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Define payroll periods used by payroll settings and payroll
-                  batch processing.
+                  Define compensation bases used by employee salary and payroll
+                  components. Payroll calendar is configured in General
+                  Settings.
                 </p>
               </div>
             </div>
@@ -326,7 +327,7 @@ export default function FrequencyDataTable() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Pay Frequency"
+                  label="New Wage Basis"
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -378,7 +379,7 @@ export default function FrequencyDataTable() {
               size="small"
               loading={isValidating}
               tableStyle={{ minWidth: "56rem" }}
-              emptyMessage="No pay frequency found."
+              emptyMessage="No wage basis found."
               currentPageReportTemplate="{first} to {last} of {totalRecords}"
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
@@ -390,7 +391,7 @@ export default function FrequencyDataTable() {
               />
               <Column
                 field="name"
-                header="Frequency Name"
+                header="Wage Basis Name"
                 sortable
                 body={(row: Frequency) => (
                   <span className="font-medium text-slate-800">{row.name}</span>
@@ -410,7 +411,7 @@ export default function FrequencyDataTable() {
               />
               <Column
                 field="days_in_period"
-                header="Days per Period"
+                header="Rate Period Days"
                 sortable
                 body={(row: Frequency) => (
                   <span className="font-mono text-sm text-slate-700">
@@ -444,7 +445,7 @@ export default function FrequencyDataTable() {
       </Card>
 
       <Dialog
-        header={selected ? "Edit Pay Frequency" : "New Pay Frequency"}
+        header={selected ? "Edit Wage Basis" : "New Wage Basis"}
         visible={dialogVisible}
         style={{ width: "95vw", maxWidth: "38rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -469,7 +470,7 @@ export default function FrequencyDataTable() {
             <Button
               type="submit"
               form="frequency-form"
-              label={selected ? "Save Changes" : "Create Pay Frequency"}
+              label={selected ? "Save Changes" : "Create Wage Basis"}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -486,7 +487,7 @@ export default function FrequencyDataTable() {
             void submit();
           }}
         >
-          <Field label="Frequency Name" required>
+          <Field label="Wage Basis Name" required>
             <InputText
               value={form.name}
               maxLength={50}
@@ -496,7 +497,7 @@ export default function FrequencyDataTable() {
               onChange={(event) => updateForm("name", event.target.value)}
             />
           </Field>
-          <Field label="Days per Period" required>
+          <Field label="Rate Period Days" required>
             <InputNumber
               value={form.days_in_period}
               useGrouping={false}
@@ -509,7 +510,8 @@ export default function FrequencyDataTable() {
               }
             />
             <small className="text-slate-500">
-              Used as the standard period length when a calculation needs it.
+              Used only to normalize non-monthly salary or component amounts.
+              This does not define payroll calendar dates or monthly proration.
             </small>
           </Field>
           <Field label="Description">

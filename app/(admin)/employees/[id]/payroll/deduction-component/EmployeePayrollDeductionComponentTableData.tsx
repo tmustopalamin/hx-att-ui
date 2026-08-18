@@ -3,7 +3,6 @@
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
-import { InputText } from "primereact/inputtext";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
@@ -693,14 +692,14 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
     const frequency = frequencyData?.find((item) => item.id === row.frequency);
     if (!frequency) {
-      return <span className="text-slate-500">Loading frequency...</span>;
+      return <span className="text-slate-500">Loading wage basis...</span>;
     }
 
     return (
       <div className="flex min-w-[9rem] flex-col">
         <span className="font-medium text-slate-800">{frequency.name}</span>
         <span className="text-xs text-slate-500">
-          {frequency.code} · {frequency.days_in_period} day(s)
+          {frequency.code} · rate period: {frequency.days_in_period} day(s)
         </span>
       </div>
     );
@@ -829,7 +828,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
             <Column
               field="frequency"
-              header="Frequency"
+              header="Wage Basis"
               sortable
               body={frequencyBody}
               style={{ minWidth: "11rem" }}
@@ -1034,12 +1033,12 @@ const EmployeePayrollDeductionComponentTableData = () => {
               htmlFor="frequency"
               className="text-sm font-medium text-slate-700"
             >
-              Frequency<span className="ml-1 text-red-500">*</span>
+              Wage Basis<span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="frequency"
               control={control}
-              rules={{ required: "Frequency is required" }}
+              rules={{ required: "Wage basis is required" }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1052,7 +1051,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     onChange={(event) => field.onChange(event.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select a frequency"
+                    placeholder="Select a wage basis"
                     className={
                       fieldState.invalid ? "p-invalid w-full" : "w-full"
                     }

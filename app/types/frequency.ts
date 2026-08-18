@@ -3,6 +3,7 @@ export interface Frequency {
   code: string;
   name: string;
   description: string | null;
+  /** API field retained for wage-basis normalization compatibility. */
   days_in_period: number;
   is_active: boolean;
   deleted_at: string | null;

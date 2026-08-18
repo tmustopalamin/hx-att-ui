@@ -330,7 +330,7 @@ const settingSubMenus: SettingSubMenu[] = [
       },
       {
         href: "/setting/frequency",
-        label: "Pay Frequency",
+        label: "Wage Basis",
         icon: "pi-calendar",
         permission: "payroll-config.read",
       },

@@ -453,12 +453,12 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             <Column field="currency_code" header="Currency" />
             <Column
               field="frequency_name"
-              header="Frequency"
+              header="Wage Basis"
               body={(row) => (
                 <div className="flex flex-col">
                   <span>{row.frequency_name}</span>
                   <small className="text-slate-500">
-                    {row.frequency_days_in_period} day(s) per period
+                    Rate period: {row.frequency_days_in_period} day(s)
                   </small>
                 </div>
               )}
@@ -900,13 +900,13 @@ function SalaryForm({
           }
         />
       </Field>
-      <Field label="Frequency *">
+      <Field label="Wage Basis *">
         <Dropdown
           value={value.frequency_id || null}
           options={activeFrequencies}
           optionLabel="name"
           optionValue="id"
-          placeholder="Select salary frequency"
+          placeholder="Select salary wage basis"
           className="w-full"
           onChange={(event) =>
             change((current) => ({
@@ -916,7 +916,9 @@ function SalaryForm({
           }
         />
         <small className="text-xs leading-5 text-slate-500">
-          Base salary is the amount for the selected frequency period.
+          Base salary is the amount for the selected wage basis. This basis
+          normalizes the amount; payroll calendar dates remain controlled by
+          Payroll Settings &gt; General Settings.
         </small>
       </Field>
       <Field label="Payroll Setting">

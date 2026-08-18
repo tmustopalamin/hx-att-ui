@@ -46,7 +46,6 @@ import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import PayrollRegulationDetailDialog from "./PayrollRegulationDetailDialog";
 import PayrollComponentMappingPanel from "./PayrollComponentMappingPanel";
-import type { Frequency } from "@/app/types/frequency";
 import type { PayrollProrationMethod } from "@/app/types/payroll-proration-method";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
@@ -78,7 +77,6 @@ const emptyPayrollSetting = (): NewPayrollSetting => ({
   branch_id: null,
   name: "",
   currency_code: "IDR",
-  frequency_code: "MONTHLY",
   default_proration_method: "SCHEDULED_DAYS",
   attendance_cutoff_day: null,
   payment_day: null,
@@ -176,6 +174,8 @@ export default function PayrollConfiguration() {
     isLoading: settingLoading,
     mutate: refreshSettings,
   } = useSWR<PayrollSetting[]>(SETTING_URL, fetcher);
+  const isLegacyNonMonthlySetting =
+    setting !== null && setting.frequency_code.toUpperCase() !== "MONTHLY";
   const { data: branches = [] } = useSWR(
     "payroll-configuration-branches",
     getBranchOptions,
@@ -187,7 +187,6 @@ export default function PayrollConfiguration() {
     isValidating: regulationValidating,
     mutate: refreshRegulations,
   } = useSWR<PayrollRegulationPackage[]>(REGULATION_URL, fetcher);
-  const { data: frequencies } = useSWR<Frequency[]>("/api/frequency", fetcher);
   const {
     data: prorationMethods,
     error: prorationMethodError,
@@ -200,7 +199,9 @@ export default function PayrollConfiguration() {
     isValidating: periodRuleValidating,
     mutate: refreshPeriodRules,
   } = useSWR<PayrollPeriodRule[]>(
-    setting ? `${SETTING_URL}/${setting.id}/period-rules` : null,
+    setting && !isLegacyNonMonthlySetting
+      ? `${SETTING_URL}/${setting.id}/period-rules`
+      : null,
     fetcher,
   );
 
@@ -276,7 +277,6 @@ export default function PayrollConfiguration() {
       ),
     [prorationMethods, setting?.default_proration_method],
   );
-
   const toast = (
     severity: "success" | "error",
     summary: string,
@@ -289,6 +289,10 @@ export default function PayrollConfiguration() {
 
   useEffect(() => {
     if (!setting) {
+      periodRuleNotificationKey.current = null;
+      return;
+    }
+    if (isLegacyNonMonthlySetting) {
       periodRuleNotificationKey.current = null;
       return;
     }
@@ -325,7 +329,14 @@ export default function PayrollConfiguration() {
       return;
     }
     periodRuleNotificationKey.current = null;
-  }, [dispatch, periodRuleError, periodRuleLoading, periodRules, setting]);
+  }, [
+    dispatch,
+    isLegacyNonMonthlySetting,
+    periodRuleError,
+    periodRuleLoading,
+    periodRules,
+    setting,
+  ]);
 
   const changeSetting = <K extends keyof PayrollSetting>(
     key: K,
@@ -350,7 +361,6 @@ export default function PayrollConfiguration() {
     const payload: UpdatePayrollSetting = {
       name: setting.name,
       currency_code: setting.currency_code,
-      frequency_code: setting.frequency_code,
       default_proration_method: setting.default_proration_method,
       attendance_cutoff_day: setting.attendance_cutoff_day,
       payment_day: setting.payment_day,
@@ -669,22 +679,20 @@ export default function PayrollConfiguration() {
                     />
                   </Field>
                   <Field
-                    label="Payroll Frequency"
-                    hint="Frekuensi proses payroll. Aturan cutoff otomatis hanya tersedia untuk payroll bulanan."
+                    label="Payroll Cycle"
+                    hint={
+                      isLegacyNonMonthlySetting
+                        ? "Setting lama ini belum dimigrasikan ke siklus Monthly dan tidak dapat diproses dengan Payroll Period Rules saat ini."
+                        : "Payroll batch saat ini berjalan bulanan. Rentang tanggal payroll diatur melalui Payroll Period Rules."
+                    }
                   >
-                    <Dropdown
-                      value={setting.frequency_code}
-                      options={(frequencies ?? []).filter(
-                        (frequency) =>
-                          frequency.is_active && !frequency.deleted_at,
-                      )}
-                      optionLabel="name"
-                      optionValue="code"
-                      placeholder="Select payroll frequency"
-                      disabled={!canManage}
-                      onChange={(event) =>
-                        changeSetting("frequency_code", String(event.value))
+                    <InputText
+                      value={
+                        isLegacyNonMonthlySetting
+                          ? "Legacy non-monthly (migration required)"
+                          : "Monthly"
                       }
+                      disabled
                       className="w-full"
                     />
                   </Field>
@@ -875,15 +883,20 @@ export default function PayrollConfiguration() {
                           icon="pi pi-plus"
                           size="small"
                           disabled={
-                            !setting.is_active ||
-                            setting.frequency_code.toUpperCase() !== "MONTHLY"
+                            !setting.is_active || isLegacyNonMonthlySetting
                           }
                           onClick={() => openPeriodRule()}
                         />
                       )}
                     </div>
                   </div>
-                  {periodRuleError ? (
+                  {isLegacyNonMonthlySetting ? (
+                    <p className="m-0 text-sm text-amber-700">
+                      This legacy payroll setting uses a non-monthly processing
+                      cycle and cannot use the current period rules. Review or
+                      migrate the setting before processing payroll.
+                    </p>
+                  ) : periodRuleError ? (
                     <p className="m-0 text-sm text-red-600">
                       Unable to load payroll period rules.
                     </p>
@@ -938,12 +951,6 @@ export default function PayrollConfiguration() {
                         />
                       )}
                     </DataTable>
-                  )}
-                  {setting.frequency_code.toUpperCase() !== "MONTHLY" && (
-                    <p className="m-0 text-xs text-amber-700">
-                      Automatic cutoff rules are available for monthly payroll
-                      settings only.
-                    </p>
                   )}
                 </div>
               </div>
@@ -1164,6 +1171,12 @@ export default function PayrollConfiguration() {
                 }))
               }
             />
+          </Field>
+          <Field
+            label="Payroll Cycle"
+            hint="Payroll batch saat ini berjalan bulanan. Tanggal periode ditentukan melalui Payroll Period Rules setelah setting dibuat."
+          >
+            <InputText value="Monthly" disabled className="w-full" />
           </Field>
           <Field
             label="Metode Prorata *"

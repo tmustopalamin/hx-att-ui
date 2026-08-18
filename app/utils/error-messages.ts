@@ -34,7 +34,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   PAYROLL_PERIOD_RULE_SETTING_MISMATCH:
     "The selected period rule does not belong to this payroll setting. Refresh and select the correct setting.",
   PAYROLL_PERIOD_RULE_UNSUPPORTED_FREQUENCY:
-    "Automatic payroll periods require a monthly payroll setting. Select or configure a monthly setting.",
+    "Payroll processing is currently monthly-only. The selected Payroll Setting must use the Monthly processing cycle.",
   PAYROLL_REGULATION_NOT_AVAILABLE:
     "Select a published regulation package that is effective on the payroll date.",
   PAYROLL_REGULATION_SNAPSHOT_REQUIRED:
