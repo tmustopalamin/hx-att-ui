@@ -15,6 +15,10 @@ import type {
 } from "@/app/types/employee-time";
 import { fetcher } from "@/app/utils/fetcher";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 type View = "attendance" | "overtime" | "leave";
 
@@ -30,13 +34,7 @@ const severity = (status: string) =>
       : ["PENDING", "INCOMPLETE"].includes(status)
         ? "warning"
         : "secondary";
-const dateTime = (value: string | null) =>
-  value
-    ? new Intl.DateTimeFormat("id-ID", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(value))
-    : "-";
+const dateTime = (value: string | null) => formatDisplayDateTime(value);
 
 export default function EmployeeTimeHistoryPanel({ view }: { view: View }) {
   const params = useParams<{ id: string }>();
@@ -114,7 +112,13 @@ function AttendanceHistory({
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No attendance summary is available."
       >
-        <Column field="summary_date" header="Date" />
+        <Column
+          field="summary_date"
+          header="Date"
+          body={(row: EmployeeAttendanceSummary) =>
+            formatDisplayDate(row.summary_date)
+          }
+        />
         <Column
           field="shift_name"
           header="Shift"
@@ -180,7 +184,13 @@ function OvertimeHistory({
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         emptyMessage="No overtime request is available."
       >
-        <Column field="overtime_date" header="Date" />
+        <Column
+          field="overtime_date"
+          header="Date"
+          body={(row: EmployeeOvertimeRequestHistory) =>
+            formatDisplayDate(row.overtime_date)
+          }
+        />
         <Column
           header="Requested Time"
           body={(row: EmployeeOvertimeRequestHistory) =>
@@ -243,8 +253,20 @@ function LeaveHistory({
         emptyMessage="No leave request is available."
       >
         <Column field="leave_type_name" header="Leave Type" />
-        <Column field="start_date" header="Start" />
-        <Column field="end_date" header="End" />
+        <Column
+          field="start_date"
+          header="Start"
+          body={(row: EmployeeLeaveRequestHistory) =>
+            formatDisplayDate(row.start_date)
+          }
+        />
+        <Column
+          field="end_date"
+          header="End"
+          body={(row: EmployeeLeaveRequestHistory) =>
+            formatDisplayDate(row.end_date)
+          }
+        />
         <Column field="total_days" header="Days" />
         <Column
           field="reason"

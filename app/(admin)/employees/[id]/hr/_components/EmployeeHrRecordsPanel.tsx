@@ -18,6 +18,7 @@ import type {
 } from "@/app/types/training";
 import { fetcher } from "@/app/utils/fetcher";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 type View = "documents" | "assets" | "lifecycle" | "performance" | "learning";
 const tagSeverity = (status: string) =>
@@ -130,7 +131,7 @@ function Documents({
         <Column
           field="expired_date"
           header="Expiry"
-          body={(row: EmployeeDocument) => row.expired_date ?? "-"}
+          body={(row: EmployeeDocument) => formatDisplayDate(row.expired_date)}
         />
         <Column
           header="Status"
@@ -177,11 +178,17 @@ function Assets({
       >
         <Column field="asset_tag" header="Asset Tag" />
         <Column field="asset_name" header="Asset" />
-        <Column field="assigned_at" header="Assigned" />
+        <Column
+          field="assigned_at"
+          header="Assigned"
+          body={(row: AssetAssignment) => formatDisplayDate(row.assigned_at)}
+        />
         <Column
           field="due_return_date"
           header="Due Return"
-          body={(row: AssetAssignment) => row.due_return_date ?? "-"}
+          body={(row: AssetAssignment) =>
+            formatDisplayDate(row.due_return_date)
+          }
         />
         <Column
           header="Status"
@@ -230,7 +237,13 @@ function Lifecycle({
         emptyMessage="No lifecycle case is available."
       >
         <Column field="lifecycle_type" header="Type" />
-        <Column field="effective_date" header="Effective Date" />
+        <Column
+          field="effective_date"
+          header="Effective Date"
+          body={(row: EmployeeLifecycleCase) =>
+            formatDisplayDate(row.effective_date)
+          }
+        />
         <Column
           field="reason"
           header="Reason"
@@ -343,7 +356,9 @@ function Learning({
         <Column
           field="completion_date"
           header="Completed"
-          body={(row: TrainingEnrollment) => row.completion_date ?? "-"}
+          body={(row: TrainingEnrollment) =>
+            formatDisplayDate(row.completion_date)
+          }
         />
         <Column
           field="score"
@@ -380,7 +395,9 @@ function Learning({
         <Column
           field="expiry_date"
           header="Expiry"
-          body={(row: EmployeeCertification) => row.expiry_date ?? "-"}
+          body={(row: EmployeeCertification) =>
+            formatDisplayDate(row.expiry_date)
+          }
         />
         <Column
           header="Status"

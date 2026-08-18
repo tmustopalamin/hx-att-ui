@@ -3,7 +3,7 @@
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR from "swr";
-import dayjs from "dayjs";
+import { formatDateTime as formatDisplayDateTime } from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
@@ -100,13 +100,7 @@ const formatLabel = (value?: string | null) => {
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const parsed = dayjs(value);
-
-  return parsed.isValid() ? parsed.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const getModuleSeverity = (moduleCode?: string | null): TagSeverity => {

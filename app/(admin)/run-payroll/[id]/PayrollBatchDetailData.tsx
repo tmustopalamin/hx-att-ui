@@ -18,6 +18,7 @@ import type {
 } from "@/app/types/payroll-batch";
 import PayrollAdjustmentPanel from "./PayrollAdjustmentPanel";
 import PerformanceEarningPanel from "./PerformanceEarningPanel";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 interface PayrollBatchDetailDataProps {
   batchId: number;
@@ -86,8 +87,9 @@ export default function PayrollBatchDetailData({
                 />
               </div>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Payroll period {data.batch.period_start} to{" "}
-                {data.batch.period_end} · Payment date {data.batch.payroll_date}
+                Payroll period {formatDisplayDate(data.batch.period_start)} to{" "}
+                {formatDisplayDate(data.batch.period_end)} · Payment date{" "}
+                {formatDisplayDate(data.batch.payroll_date)}
               </p>
             </div>
           </div>

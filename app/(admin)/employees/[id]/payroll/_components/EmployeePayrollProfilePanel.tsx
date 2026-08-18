@@ -35,6 +35,7 @@ import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 type Mode = "bpjs" | "tax" | "salary";
 const ENROLLMENT: NewStatutoryEnrollment = {
@@ -317,11 +318,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                 )}
               />
               <Column field="risk_class_code" header="Risk Class" />
-              <Column field="effective_from" header="Effective From" />
+              <Column
+                field="effective_from"
+                header="Effective From"
+                body={(row) => formatDisplayDate(row.effective_from)}
+              />
               <Column
                 field="effective_to"
                 header="Effective To"
-                body={(row) => row.effective_to ?? "Open ended"}
+                body={(row) =>
+                  formatDisplayDate(row.effective_to, "Open ended")
+                }
               />
             </DataTable>
             <h2 className="text-base font-semibold text-slate-800">
@@ -347,11 +354,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               <Column field="program_group" header="Group" />
               <Column field="wage_amount" header="Wage" />
               <Column field="source" header="Source" />
-              <Column field="effective_from" header="Effective From" />
+              <Column
+                field="effective_from"
+                header="Effective From"
+                body={(row) => formatDisplayDate(row.effective_from)}
+              />
               <Column
                 field="effective_to"
                 header="Effective To"
-                body={(row) => row.effective_to ?? "Open ended"}
+                body={(row) =>
+                  formatDisplayDate(row.effective_to, "Open ended")
+                }
               />
             </DataTable>
           </>
@@ -408,11 +421,15 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                 </div>
               )}
             />
-            <Column field="effective_from" header="Effective From" />
+            <Column
+              field="effective_from"
+              header="Effective From"
+              body={(row) => formatDisplayDate(row.effective_from)}
+            />
             <Column
               field="effective_to"
               header="Effective To"
-              body={(row) => row.effective_to ?? "Open ended"}
+              body={(row) => formatDisplayDate(row.effective_to, "Open ended")}
             />
           </DataTable>
         )}
@@ -457,11 +474,15 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                 />
               )}
             />
-            <Column field="effective_from" header="Effective From" />
+            <Column
+              field="effective_from"
+              header="Effective From"
+              body={(row) => formatDisplayDate(row.effective_from)}
+            />
             <Column
               field="effective_to"
               header="Effective To"
-              body={(row) => row.effective_to ?? "Open ended"}
+              body={(row) => formatDisplayDate(row.effective_to, "Open ended")}
             />
             <Column field="change_reason" header="Reason" />
           </DataTable>
@@ -777,7 +798,7 @@ function TaxForm({
             Tax Treatment
           </span>
           <p className="m-0 text-sm leading-6 text-slate-600">
-            The treatment is resolved from the employee's active Employment
+            The treatment is resolved from the employee&apos;s active Employment
             Status when this profile is saved. It is stored as a snapshot for
             payroll history.
           </p>

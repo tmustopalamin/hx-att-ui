@@ -8,6 +8,10 @@ import { DataTable } from "primereact/datatable";
 import { Tag } from "primereact/tag";
 import type { EmployeeOverview } from "@/app/types/employee-overview";
 import { fetcher } from "@/app/utils/fetcher";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 export default function EmployeeOverviewPage() {
@@ -84,8 +88,20 @@ export default function EmployeeOverviewPage() {
               emptyMessage="No leave balance is available."
             >
               <Column field="leave_type_name" header="Leave Type" />
-              <Column field="period_start" header="Period Start" />
-              <Column field="period_end" header="Period End" />
+              <Column
+                field="period_start"
+                header="Period Start"
+                body={(row: { period_start: string }) =>
+                  formatDisplayDate(row.period_start)
+                }
+              />
+              <Column
+                field="period_end"
+                header="Period End"
+                body={(row: { period_end: string }) =>
+                  formatDisplayDate(row.period_end)
+                }
+              />
               <Column field="closing_balance" header="Available" />
             </DataTable>
           )}
@@ -111,7 +127,13 @@ export default function EmployeeOverviewPage() {
               emptyMessage="No published payslip is available."
             >
               <Column field="payslip_no" header="Payslip No." />
-              <Column field="published_at" header="Published" />
+              <Column
+                field="published_at"
+                header="Published"
+                body={(row: { published_at: string | null }) =>
+                  formatDisplayDateTime(row.published_at)
+                }
+              />
               <Column
                 header="Status"
                 body={(row: { status: string }) => (

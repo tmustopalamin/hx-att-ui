@@ -4,6 +4,10 @@ import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTimeWithSeconds,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -400,7 +404,7 @@ const AttendanceSummaryTableData = () => {
             ? summaryDate.format("YYYY-MM-DD")
             : "unknown-date",
           group_date_label: dateIsValid
-            ? summaryDate.format("DD MMM YYYY")
+            ? formatDisplayDate(summaryDate.toDate())
             : "Unknown Date",
           employee_display_name: employeeDisplayName,
           employee_search_name: employeeDisplayName.toLowerCase(),
@@ -628,9 +632,9 @@ const AttendanceSummaryTableData = () => {
       return "All dates";
     }
 
-    return `${dayjs(appliedStartDate).format("DD MMM YYYY")} – ${dayjs(
+    return `${formatDisplayDate(appliedStartDate)} – ${formatDisplayDate(
       appliedEndDate,
-    ).format("DD MMM YYYY")}`;
+    )}`;
   }, [appliedStartDate, appliedEndDate]);
 
   const isActionRunning = isProcessing || isExporting;
@@ -917,7 +921,7 @@ const AttendanceSummaryTableData = () => {
 
     const parsed = dayjs(value);
 
-    return parsed.isValid() ? parsed.format("DD MMM YYYY HH:mm:ss") : "-";
+    return formatDateTimeWithSeconds(parsed.toDate());
   };
 
   const formatTimeOnly = (value?: string | null) => {
@@ -1643,7 +1647,7 @@ const AttendanceSummaryTableData = () => {
                       id="summary_start_date"
                       appendTo={getBody}
                       value={field.value}
-                      dateFormat="dd M yy"
+                      dateFormat="dd MM yy"
                       showIcon
                       placeholder="Start Date"
                       className="w-full"
@@ -1673,7 +1677,7 @@ const AttendanceSummaryTableData = () => {
                       id="summary_end_date"
                       appendTo={getBody}
                       value={field.value}
-                      dateFormat="dd M yy"
+                      dateFormat="dd MM yy"
                       showIcon
                       placeholder="End Date"
                       className="w-full"

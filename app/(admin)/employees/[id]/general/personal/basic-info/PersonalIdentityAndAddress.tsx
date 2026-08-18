@@ -21,6 +21,7 @@ import {
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -331,7 +332,7 @@ const PersonalIdentityAndAddress = () => {
       return "-";
     }
 
-    return dayjs(row.expire_date).format("DD MMM YYYY");
+    return formatDisplayDate(row.expire_date);
   };
 
   const actionBodyTemplate = (row: EmployeeIdentityRow) => {
@@ -619,7 +620,7 @@ const PersonalIdentityAndAddress = () => {
                   id="expire_date"
                   appendTo={getBody}
                   disabled={!!isPermanent}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}

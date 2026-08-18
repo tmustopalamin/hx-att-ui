@@ -1082,7 +1082,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 render={({ field, fieldState }) => (
                   <>
                     <Calendar
-                      dateFormat="dd-mm-yy"
+                      dateFormat="dd MM yy"
                       showIcon
                       appendTo={() => document.body}
                       {...field}
@@ -1118,7 +1118,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 render={({ field, fieldState }) => (
                   <>
                     <Calendar
-                      dateFormat="dd-mm-yy"
+                      dateFormat="dd MM yy"
                       showIcon
                       appendTo={() => document.body}
                       {...field}

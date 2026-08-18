@@ -16,6 +16,7 @@ import {
 } from "@/app/services/notification-service";
 import { getSafeInternalPath } from "@/app/utils/safe-navigation";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { formatDateTime as formatDisplayDateTime } from "@/app/utils/date-format";
 
 const moduleOptions = [
   { label: "All Modules", value: "" },
@@ -31,19 +32,7 @@ const readOptions = [
 ];
 
 const formatDateTime = (value: string) => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  return date.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatDisplayDateTime(value);
 };
 
 const getPriorityClass = (priority: string) => {

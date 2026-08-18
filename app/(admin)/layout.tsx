@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import { PrimeReactProvider, AppendToType } from "primereact/api";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import StoreProvider from "@/store/StoreProvider";
 import GlobalToast from "../_components/GlobalToast";
+import PrimeReactLocaleProvider from "../_components/PrimeReactLocaleProvider";
 import AppMain from "./AppMain";
 
 export const metadata: Metadata = {
   title: "PT. Hexing Technology HRIS",
   description: "HRIS admin panel",
-};
-
-const primeReactConfig = {
-  appendTo: "self" as AppendToType,
-  locale: "en",
 };
 
 export default async function AdminLayout({
@@ -30,10 +25,10 @@ export default async function AdminLayout({
 
   return (
     <StoreProvider>
-      <PrimeReactProvider value={primeReactConfig}>
+      <PrimeReactLocaleProvider>
         <GlobalToast />
         <AppMain>{children}</AppMain>
-      </PrimeReactProvider>
+      </PrimeReactLocaleProvider>
     </StoreProvider>
   );
 }

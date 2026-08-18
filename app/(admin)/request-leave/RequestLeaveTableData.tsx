@@ -4,6 +4,10 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR, { mutate } from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -294,19 +298,11 @@ const getStatusSeverity = (status?: string | null) => {
 };
 
 const formatDate = (value?: string | Date | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY");
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY HH:mm");
+  return formatDisplayDateTime(value);
 };
 
 const formatFileSize = (size: number) => {
@@ -1556,7 +1552,7 @@ const RequestLeaveTableData = () => {
                   <Calendar
                     value={field.value}
                     onChange={(e) => field.onChange(e.value)}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
@@ -1585,7 +1581,7 @@ const RequestLeaveTableData = () => {
                   <Calendar
                     value={field.value}
                     onChange={(e) => field.onChange(e.value)}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />

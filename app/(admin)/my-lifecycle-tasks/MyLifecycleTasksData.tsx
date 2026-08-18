@@ -9,6 +9,7 @@ import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tag } from "primereact/tag";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import {
   completeEmployeeLifecycleTask,
   getEmployeeLifecycleCase,
@@ -176,10 +177,18 @@ export default function MyLifecycleTasksData() {
                     : "Manual Assignment"
             }
           />
-          <Column field="effective_date" header="Effective Date" />
+          <Column
+            field="effective_date"
+            header="Effective Date"
+            body={(row: EmployeeLifecycleAssignedTask) =>
+              formatDisplayDate(row.effective_date)
+            }
+          />
           <Column
             header="Due Date"
-            body={(row: EmployeeLifecycleAssignedTask) => row.due_date ?? "-"}
+            body={(row: EmployeeLifecycleAssignedTask) =>
+              formatDisplayDate(row.due_date)
+            }
           />
           <Column
             header="Action"
@@ -238,7 +247,7 @@ export default function MyLifecycleTasksData() {
               <div>
                 <p className="m-0 text-slate-500">Effective Date</p>
                 <p className="mb-0 mt-1 font-medium text-slate-800">
-                  {lifecycleDetail.case.effective_date}
+                  {formatDisplayDate(lifecycleDetail.case.effective_date)}
                 </p>
               </div>
               <div>

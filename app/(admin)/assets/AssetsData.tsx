@@ -11,6 +11,10 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createAssetCategory,
@@ -394,7 +398,7 @@ export default function AssetsData() {
             <Column
               header="Assigned"
               body={(row: AssetAssignment) =>
-                new Date(row.assigned_at).toLocaleDateString()
+                formatDisplayDate(row.assigned_at)
               }
             />
             <Column
@@ -470,7 +474,7 @@ export default function AssetsData() {
           <Column
             header="Changed At"
             body={(row: CompanyAssetStatusHistory) =>
-              new Date(row.changed_at).toLocaleString()
+              formatDisplayDateTime(row.changed_at)
             }
           />
         </DataTable>

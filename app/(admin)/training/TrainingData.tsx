@@ -12,6 +12,10 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { TabPanel, TabView } from "primereact/tabview";
 import { Tag } from "primereact/tag";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import { useDispatch, useSelector } from "react-redux";
 import type { Employee } from "@/app/types/employee";
 import type {
@@ -430,9 +434,7 @@ export default function TrainingData() {
               <Column field="course_name" header="Course" />
               <Column
                 header="Start"
-                body={(r: TrainingSession) =>
-                  new Date(r.start_at).toLocaleString()
-                }
+                body={(r: TrainingSession) => formatDisplayDateTime(r.start_at)}
               />
               <Column
                 field="provider_name"
@@ -576,7 +578,7 @@ export default function TrainingData() {
               <Column
                 field="expiry_date"
                 header="Expiry"
-                body={(r) => r.expiry_date || "-"}
+                body={(r) => formatDisplayDate(r.expiry_date)}
               />
               <Column
                 header="Status"

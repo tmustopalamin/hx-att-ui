@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import useSWR from "swr";
 
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { FilterMatchMode } from "primereact/api";
 import { Avatar } from "primereact/avatar";
@@ -163,23 +167,11 @@ const getEmployeeFullName = (employee: EmployeeListRow) => {
 };
 
 const formatDate = (value?: string | Date | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY") : "-";
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | Date | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const EmployeesDataTable = () => {
@@ -1785,7 +1777,7 @@ const EmployeesDataTable = () => {
                           id="dob"
                           appendTo={getBody}
                           value={field.value}
-                          dateFormat="dd M yy"
+                          dateFormat="dd MM yy"
                           showIcon
                           maxDate={new Date()}
                           placeholder="Select birth date"

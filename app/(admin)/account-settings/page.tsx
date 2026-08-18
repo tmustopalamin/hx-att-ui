@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import useSWR from "swr";
-import dayjs from "dayjs";
+import { formatDateTime as formatDisplayDateTime } from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
@@ -35,9 +35,7 @@ const strongPassword =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,128}$/;
 
 const formatDateTime = (value: string | null | undefined) => {
-  if (!value) return "Not available";
-  const date = dayjs(value);
-  return date.isValid() ? date.format("DD MMM YYYY, HH:mm") : "Not available";
+  return formatDisplayDateTime(value, "Not available");
 };
 
 const InfoItem = ({

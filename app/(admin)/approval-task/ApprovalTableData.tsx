@@ -12,6 +12,10 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import { showToast } from "@/store/ToastSlice";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -269,7 +273,13 @@ const ApprovalTableData = () => {
             <Column field="requester_employee_name" header="Requester" />
             <Column field="status" header="Status" />
             <Column field="approved_by" header="Approved By" />
-            <Column field="approved_at" header="Approved At" />
+            <Column
+              field="acted_at"
+              header="Approved At"
+              body={(row: ApprovalRequestLine) =>
+                formatDisplayDateTime(row.acted_at)
+              }
+            />
             <Column
               headerClassName="bg-white"
               className="bg-white"
@@ -347,10 +357,10 @@ const ApprovalTableData = () => {
               <div>{dataDocDetail.leave_type_name}</div>
 
               <div className="font-semibold text-gray-600">Start Date</div>
-              <div>{dataDocDetail.start_date}</div>
+              <div>{formatDisplayDate(dataDocDetail.start_date)}</div>
 
               <div className="font-semibold text-gray-600">End Date</div>
-              <div>{dataDocDetail.end_date}</div>
+              <div>{formatDisplayDate(dataDocDetail.end_date)}</div>
 
               <div className="font-semibold text-gray-600">Total Days</div>
               <div>{dataDocDetail.total_days}</div>
@@ -367,7 +377,7 @@ const ApprovalTableData = () => {
               <div>{dataDocDetail.approved_by_name}</div>
 
               <div className="font-semibold text-gray-600">Approved At</div>
-              <div>{dataDocDetail.approved_at}</div>
+              <div>{formatDisplayDateTime(dataDocDetail.approved_at)}</div>
             </div>
           </>
         )}

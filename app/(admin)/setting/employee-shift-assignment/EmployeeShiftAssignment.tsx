@@ -4,6 +4,12 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import {
+  formatCompactDate,
+  formatDate as formatDisplayDate,
+  formatWeekday,
+  formatWeekdayDate,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -353,9 +359,7 @@ const EmployeeShiftAssignmentListPage = () => {
       return null;
     }
 
-    return `${dayjs(dateFrom).format("DD MMM YYYY")} – ${dayjs(dateTo).format(
-      "DD MMM YYYY",
-    )}`;
+    return `${formatDisplayDate(dateFrom)} – ${formatDisplayDate(dateTo)}`;
   }, [dateFrom, dateTo, hasInvalidDateRange]);
 
   const hasActiveFilter = useMemo(() => {
@@ -469,9 +473,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
           <span className="text-sm text-slate-500">
             {row.shift_name || "Unknown shift"} ·{" "}
-            {row.shift_date
-              ? dayjs(row.shift_date).format("DD MMM YYYY")
-              : "No date"}
+            {row.shift_date ? formatDisplayDate(row.shift_date) : "No date"}
           </span>
         </div>
       ),
@@ -519,9 +521,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
           <span className="text-sm text-slate-500">
             {row.shift_name || "Unknown shift"} ·{" "}
-            {row.shift_date
-              ? dayjs(row.shift_date).format("DD MMM YYYY")
-              : "No date"}
+            {row.shift_date ? formatDisplayDate(row.shift_date) : "No date"}
           </span>
         </div>
       ),
@@ -569,9 +569,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
           <span className="text-sm text-slate-500">
             {row.shift_name || "Unknown shift"} ·{" "}
-            {row.shift_date
-              ? dayjs(row.shift_date).format("DD MMM YYYY")
-              : "No date"}
+            {row.shift_date ? formatDisplayDate(row.shift_date) : "No date"}
           </span>
         </div>
       ),
@@ -825,7 +823,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   id="date_from"
                   appendTo={getBody}
                   value={dateFrom}
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   placeholder="Select start date"
                   className="w-full"
@@ -847,7 +845,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   id="date_to"
                   appendTo={getBody}
                   value={dateTo}
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   placeholder="Select end date"
                   className="w-full"
@@ -1003,7 +1001,7 @@ const EmployeeShiftAssignmentListPage = () => {
                             }`}
                           >
                             <div className="text-xs uppercase text-slate-500">
-                              {date.format("ddd")}
+                              {formatWeekday(date)}
                             </div>
 
                             <div
@@ -1011,7 +1009,7 @@ const EmployeeShiftAssignmentListPage = () => {
                                 isToday ? "text-blue-700" : "text-slate-800"
                               }`}
                             >
-                              {date.format("DD MMM")}
+                              {formatCompactDate(date)}
                             </div>
                           </th>
                         );
@@ -1131,7 +1129,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
                   <p className="m-0 mt-1 text-xs text-slate-500">
                     {selectedCell.employeeName || "Unknown employee"} ·{" "}
-                    {dayjs(selectedCell.dateKey).format("dddd, DD MMM YYYY")}
+                    {formatWeekdayDate(selectedCell.dateKey)}
                   </p>
                 </div>
 

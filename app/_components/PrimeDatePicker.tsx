@@ -24,7 +24,8 @@ export default function PrimeDatePicker({
   onValueChange,
   withTime = false,
   appendTo = getBody,
-  dateFormat = "dd-mm-yy",
+  dateFormat = "dd MM yy",
+  locale = "id",
   showIcon = true,
   ...props
 }: PrimeDatePickerProps) {
@@ -33,6 +34,7 @@ export default function PrimeDatePicker({
       {...props}
       appendTo={appendTo}
       dateFormat={dateFormat}
+      locale={locale}
       showIcon={showIcon}
       showTime={withTime}
       hourFormat={withTime ? "24" : undefined}

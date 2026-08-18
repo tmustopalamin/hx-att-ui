@@ -12,6 +12,10 @@ import type {
   EmployeePayrollResultHistory,
 } from "@/app/types/employee-payroll-history";
 import { fetcher } from "@/app/utils/fetcher";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
 const currency = (value: string) =>
@@ -54,7 +58,7 @@ export default function EmployeePayrollHistoryPage() {
           <Column
             header="Period"
             body={(row: EmployeePayrollResultHistory) =>
-              `${row.period_start} – ${row.period_end}`
+              `${formatDisplayDate(row.period_start)} – ${formatDisplayDate(row.period_end)}`
             }
           />
           <Column
@@ -108,7 +112,13 @@ export default function EmployeePayrollHistoryPage() {
           emptyMessage="No published payslip is available."
         >
           <Column field="payslip_no" header="Payslip No." />
-          <Column field="published_at" header="Published" />
+          <Column
+            field="published_at"
+            header="Published"
+            body={(row: { published_at: string | null }) =>
+              formatDisplayDateTime(row.published_at)
+            }
+          />
           <Column
             header="Status"
             body={(row: { status: string }) => (

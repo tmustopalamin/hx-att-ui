@@ -50,6 +50,7 @@ import type { Frequency } from "@/app/types/frequency";
 import type { PayrollProrationMethod } from "@/app/types/payroll-proration-method";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 const SETTING_URL = "/api/payroll-settings";
 const REGULATION_URL = "/api/payroll-regulations";
@@ -1015,6 +1016,9 @@ export default function PayrollConfiguration() {
                     field="effective_from"
                     header="Effective From"
                     sortable
+                    body={(row: PayrollRegulationPackage) =>
+                      formatDisplayDate(row.effective_from)
+                    }
                   />
                   <Column
                     field="status"

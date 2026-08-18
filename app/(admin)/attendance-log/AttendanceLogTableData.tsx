@@ -5,6 +5,10 @@ import useSWR from "swr";
 import dayjs from "dayjs";
 import * as XLSX from "@e965/xlsx";
 import { saveAs } from "file-saver";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTimeWithSeconds,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -278,9 +282,9 @@ const AttendanceLogTableData = () => {
       return "All dates";
     }
 
-    const startLabel = dateFrom ? dayjs(dateFrom).format("DD MMM YYYY") : "...";
+    const startLabel = dateFrom ? formatDisplayDate(dateFrom, "...") : "...";
 
-    const endLabel = dateTo ? dayjs(dateTo).format("DD MMM YYYY") : "...";
+    const endLabel = dateTo ? formatDisplayDate(dateTo, "...") : "...";
 
     return `${startLabel} – ${endLabel}`;
   }, [dateFrom, dateTo]);
@@ -569,7 +573,7 @@ const AttendanceLogTableData = () => {
       return "-";
     }
 
-    return displayDate.format("DD MMM YYYY HH:mm:ss");
+    return formatDateTimeWithSeconds(displayDate.toDate());
   };
 
   const formatUtcTime = (value?: string | null) => {
@@ -583,7 +587,7 @@ const AttendanceLogTableData = () => {
       return "-";
     }
 
-    return date.format("DD MMM YYYY HH:mm:ss");
+    return formatDateTimeWithSeconds(date.toDate());
   };
 
   const getEmployeeName = (item: AttendanceLogRow) => {
@@ -638,7 +642,7 @@ const AttendanceLogTableData = () => {
 
       await Promise.resolve();
 
-      const exportedAt = dayjs().format("DD MMM YYYY HH:mm:ss");
+      const exportedAt = formatDateTimeWithSeconds(new Date());
 
       const summarySheetRows = [
         {
@@ -1154,7 +1158,7 @@ const AttendanceLogTableData = () => {
               <Calendar
                 appendTo={getBody}
                 value={dateFrom}
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 showIcon
                 placeholder="Date From"
                 className="w-full"
@@ -1166,7 +1170,7 @@ const AttendanceLogTableData = () => {
               <Calendar
                 appendTo={getBody}
                 value={dateTo}
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 showIcon
                 placeholder="Date To"
                 className="w-full"

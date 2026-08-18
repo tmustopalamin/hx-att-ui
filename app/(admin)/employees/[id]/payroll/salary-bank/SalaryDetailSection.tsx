@@ -246,7 +246,7 @@ const SalaryDetailSection = () => {
                             appendTo={getBody}
                             {...field}
                             id="dob"
-                            dateFormat="dd-mm-yy"
+                            dateFormat="dd MM yy"
                             showIcon
                             value={
                               field.value

@@ -6,6 +6,7 @@ import { getSafeInternalPath } from "@/app/utils/safe-navigation";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { requestActionConfirmation } from "./ActionConfirmDialog";
+import { formatRelativeNotificationTime } from "@/app/utils/date-format";
 
 import {
   archiveNotification,
@@ -19,41 +20,7 @@ import {
 const MAX_BADGE_COUNT = 99;
 
 const formatNotificationTime = (value: string) => {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "-";
-  }
-
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / 60000);
-
-  if (diffMinutes < 1) {
-    return "Just now";
-  }
-
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-
-  const diffHours = Math.floor(diffMinutes / 60);
-
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays < 7) {
-    return `${diffDays}d ago`;
-  }
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatRelativeNotificationTime(value);
 };
 
 const getPriorityClass = (priority: string) => {

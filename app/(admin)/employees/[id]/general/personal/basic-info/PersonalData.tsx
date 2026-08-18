@@ -351,7 +351,7 @@ const PersonalData = () => {
                     id="dob"
                     appendTo={getBody}
                     disabled={!isPageEdit}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     value={field.value}
                     onChange={(e) => field.onChange(e.value)}

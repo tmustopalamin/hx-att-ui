@@ -114,7 +114,7 @@ const AttendanceSchedulerDataTable = () => {
               </label>
               <Calendar
                 view="month"
-                dateFormat="mm/yy"
+                dateFormat="MM yy"
                 placeholder="Select Month"
                 showIcon
                 className="w-40"

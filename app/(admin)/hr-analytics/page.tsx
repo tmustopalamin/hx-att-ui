@@ -10,6 +10,7 @@ import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { Tag } from "primereact/tag";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import {
   exportHrAnalyticsOverview,
   getHrAnalyticsAttention,
@@ -330,7 +331,9 @@ export default function HrAnalyticsPage() {
             <Column field="secondary_label" header="Details" />
             <Column
               header="Due Date"
-              body={(row: HrAnalyticsAttentionItem) => row.due_date ?? "-"}
+              body={(row: HrAnalyticsAttentionItem) =>
+                formatDisplayDate(row.due_date)
+              }
             />
             <Column
               header="Status"

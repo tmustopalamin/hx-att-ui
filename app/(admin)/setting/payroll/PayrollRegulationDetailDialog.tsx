@@ -25,6 +25,7 @@ import type {
   SavePayrollRegulationTestCase,
 } from "@/app/types/payroll-configuration";
 import { fetcher } from "@/app/utils/fetcher";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 interface Props {
   regulation: PayrollRegulationPackage | null;
@@ -244,9 +245,15 @@ export default function PayrollRegulationDetailDialog({
             <Column
               header="Value"
               body={(row) =>
-                row.numeric_value ??
-                row.text_value ??
-                String(row.boolean_value ?? row.date_value ?? "")
+                row.value_type === "DATE"
+                  ? formatDisplayDate(row.date_value)
+                  : String(
+                      row.numeric_value ??
+                        row.text_value ??
+                        row.boolean_value ??
+                        row.date_value ??
+                        "",
+                    )
               }
             />
             <Column field="unit" header="Unit" />

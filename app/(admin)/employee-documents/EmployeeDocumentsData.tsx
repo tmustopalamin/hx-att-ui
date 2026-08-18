@@ -13,6 +13,10 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -390,7 +394,9 @@ export default function EmployeeDocumentsData() {
             />
             <Column
               header="Expiry"
-              body={(row: EmployeeDocument) => row.expired_date || "-"}
+              body={(row: EmployeeDocument) =>
+                formatDisplayDate(row.expired_date)
+              }
             />
             <Column
               header="Status"
@@ -762,7 +768,7 @@ export default function EmployeeDocumentsData() {
           <Column
             header="Archived"
             body={(row: EmployeeDocumentFileVersion) =>
-              new Date(row.archived_at).toLocaleString()
+              formatDisplayDateTime(row.archived_at)
             }
           />
           <Column

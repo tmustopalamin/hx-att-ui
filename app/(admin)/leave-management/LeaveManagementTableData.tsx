@@ -3,6 +3,10 @@
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -71,23 +75,11 @@ const formatStatusLabel = (status?: string | null) => {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY") : "-";
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const LeaveManagementTableData = () => {
@@ -824,7 +816,7 @@ const LeaveManagementTableData = () => {
               <Calendar
                 appendTo={getBody}
                 value={dateFrom}
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 showIcon
                 placeholder="Leave From"
                 className="w-full"
@@ -836,7 +828,7 @@ const LeaveManagementTableData = () => {
               <Calendar
                 appendTo={getBody}
                 value={dateTo}
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 showIcon
                 placeholder="Leave To"
                 className="w-full"

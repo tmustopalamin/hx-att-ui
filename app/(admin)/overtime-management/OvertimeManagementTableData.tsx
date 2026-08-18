@@ -3,6 +3,10 @@
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -78,23 +82,11 @@ const formatStatusLabel = (status?: string | null) => {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY") : "-";
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const formatTime = (value?: string | null) => {
@@ -1008,7 +1000,7 @@ const OvertimeManagementTableData = () => {
               <Calendar
                 appendTo={getBody}
                 value={dateFrom}
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 showIcon
                 placeholder="Overtime From"
                 className="w-full"
@@ -1020,7 +1012,7 @@ const OvertimeManagementTableData = () => {
               <Calendar
                 appendTo={getBody}
                 value={dateTo}
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 showIcon
                 placeholder="Overtime To"
                 className="w-full"
@@ -1422,7 +1414,7 @@ const OvertimeManagementTableData = () => {
                   setMassDate((event.value as Date | null) ?? null)
                 }
                 showIcon
-                dateFormat="dd M yy"
+                dateFormat="dd MM yy"
                 appendTo={getBody}
                 className="w-full"
               />

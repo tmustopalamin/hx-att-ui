@@ -13,6 +13,7 @@ import {
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import { useParams } from "next/navigation";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 import { Button } from "primereact/button";
@@ -254,10 +255,8 @@ const InformalEducation = () => {
   };
 
   const periodBodyTemplate = (row: EmployeeEducationRow) => {
-    const start = row.start_date
-      ? dayjs(row.start_date).format("DD MMM YYYY")
-      : "-";
-    const end = row.end_date ? dayjs(row.end_date).format("DD MMM YYYY") : "-";
+    const start = row.start_date ? formatDisplayDate(row.start_date) : "-";
+    const end = row.end_date ? formatDisplayDate(row.end_date) : "-";
 
     return `${start} - ${end}`;
   };
@@ -522,7 +521,7 @@ const InformalEducation = () => {
                 <Calendar
                   id="informal_start_date"
                   appendTo={getBody}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}
@@ -546,7 +545,7 @@ const InformalEducation = () => {
                 <Calendar
                   id="informal_end_date"
                   appendTo={getBody}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}

@@ -2,7 +2,10 @@
 
 import React, { JSX, useMemo, useState } from "react";
 import useSWR from "swr";
-import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { Avatar } from "primereact/avatar";
 import { Card } from "primereact/card";
@@ -85,17 +88,11 @@ const getPhotoUrl = (photoUrl?: string | null) => {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) return "-";
-
-  const parsed = dayjs(value);
-  return parsed.isValid() ? parsed.format("DD MMM YYYY") : "-";
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) return "-";
-
-  const parsed = dayjs(value);
-  return parsed.isValid() ? parsed.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const boolText = (value?: boolean | null) => {

@@ -4,6 +4,7 @@ import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
@@ -219,9 +220,7 @@ const EmployeeShiftRuleTableData = () => {
 
     const [start, end] = activeDateRange;
 
-    return `${dayjs(start).format("DD MMM YYYY")} – ${dayjs(end).format(
-      "DD MMM YYYY",
-    )}`;
+    return `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
   }, [activeDateRange]);
 
   const isFilterActive =
@@ -499,7 +498,7 @@ const EmployeeShiftRuleTableData = () => {
 
     return (
       <span className="whitespace-nowrap text-sm text-slate-700">
-        {date.format("DD MMM YYYY")}
+        {formatDisplayDate(date)}
       </span>
     );
   };
@@ -524,7 +523,7 @@ const EmployeeShiftRuleTableData = () => {
 
     return (
       <span className="whitespace-nowrap text-sm text-slate-700">
-        {date.format("DD MMM YYYY")}
+        {formatDisplayDate(date)}
       </span>
     );
   };
@@ -545,15 +544,14 @@ const EmployeeShiftRuleTableData = () => {
     if (!effectiveTo || !effectiveTo.isValid()) {
       return (
         <span className="whitespace-nowrap text-sm text-slate-700">
-          {effectiveFrom.format("DD MMM YYYY")} onward
+          {formatDisplayDate(effectiveFrom)} onward
         </span>
       );
     }
 
     return (
       <span className="whitespace-nowrap text-sm text-slate-700">
-        {effectiveFrom.format("DD MMM YYYY")} –{" "}
-        {effectiveTo.format("DD MMM YYYY")}
+        {formatDisplayDate(effectiveFrom)} – {formatDisplayDate(effectiveTo)}
       </span>
     );
   };
@@ -748,7 +746,7 @@ const EmployeeShiftRuleTableData = () => {
                   readOnlyInput
                   hideOnRangeSelection
                   showIcon
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   placeholder="Select date range"
                   className="w-full"
                   onChange={(event) =>

@@ -4,6 +4,7 @@ import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -479,7 +480,7 @@ const HolidayTableData = () => {
         <i className="pi pi-calendar text-xs text-slate-400" />
 
         <span className="whitespace-nowrap text-sm font-medium text-slate-700">
-          {dayjs(rowData.holiday_date).format("DD MMM YYYY")}
+          {formatDisplayDate(rowData.holiday_date)}
         </span>
       </div>
     );
@@ -1052,7 +1053,7 @@ const HolidayTableData = () => {
                     id="holiday_date"
                     appendTo={getBody}
                     value={field.value ?? null}
-                    dateFormat="dd M yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     readOnlyInput
                     placeholder="Select holiday date"

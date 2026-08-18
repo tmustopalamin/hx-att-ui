@@ -49,6 +49,10 @@ import { fetcher } from "@/app/utils/fetcher";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 type DialogName =
@@ -786,7 +790,7 @@ export default function RecruitmentData() {
                 field="target_start_date"
                 header="Target Start"
                 body={(row: RecruitmentRequisition) =>
-                  row.target_start_date || "-"
+                  formatDisplayDate(row.target_start_date)
                 }
               />
               <Column
@@ -879,7 +883,7 @@ export default function RecruitmentData() {
               <Column
                 header="Applied"
                 body={(row: RecruitmentApplication) =>
-                  new Date(row.applied_at).toLocaleDateString()
+                  formatDisplayDate(row.applied_at)
                 }
               />
               <Column
@@ -921,7 +925,7 @@ export default function RecruitmentData() {
               <Column
                 header="Schedule"
                 body={(row: RecruitmentInterview) =>
-                  new Date(row.scheduled_at).toLocaleString()
+                  formatDisplayDateTime(row.scheduled_at)
                 }
               />
               <Column field="interviewer_name" header="Interviewer" />
@@ -1009,7 +1013,9 @@ export default function RecruitmentData() {
               <Column
                 field="proposed_start_date"
                 header="Start Date"
-                body={(row: RecruitmentOffer) => row.proposed_start_date || "-"}
+                body={(row: RecruitmentOffer) =>
+                  formatDisplayDate(row.proposed_start_date)
+                }
               />
               <Column
                 header="Status"
@@ -1432,7 +1438,9 @@ export default function RecruitmentData() {
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
             {selectedInterview
-              ? `${selectedInterview.candidate_name} — ${new Date(selectedInterview.scheduled_at).toLocaleString()}`
+              ? `${selectedInterview.candidate_name} — ${formatDisplayDateTime(
+                  selectedInterview.scheduled_at,
+                )}`
               : "Scheduled interview"}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -1656,7 +1664,7 @@ export default function RecruitmentData() {
           <Column
             header="Occurred At"
             body={(row: RecruitmentActivity) =>
-              new Date(row.occurred_at).toLocaleString()
+              formatDisplayDateTime(row.occurred_at)
             }
           />
         </DataTable>

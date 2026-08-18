@@ -28,6 +28,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import type {
   EmployeeLifecycleAssigneeOption,
   EmployeeLifecycleChecklistItemInput,
@@ -108,7 +109,7 @@ const cloneTemplate = (
   })),
 });
 
-const formatDate = (value: string | null) => value || "-";
+const formatDate = (value: string | null) => formatDisplayDate(value);
 
 export default function EmployeeLifecycleSettingsData() {
   const dispatch = useDispatch();

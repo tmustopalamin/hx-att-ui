@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
@@ -558,7 +559,13 @@ export default function EmployeeLifecycleData() {
             />
             <Column field="lifecycle_type" header="Type" />
             <Column field="requested_by_name" header="Lifecycle Owner" />
-            <Column field="effective_date" header="Effective Date" />
+            <Column
+              field="effective_date"
+              header="Effective Date"
+              body={(row: EmployeeLifecycleCase) =>
+                formatDisplayDate(row.effective_date)
+              }
+            />
             <Column
               header="Status"
               body={(row: EmployeeLifecycleCase) => (
@@ -729,7 +736,7 @@ export default function EmployeeLifecycleData() {
                       selectedEmployeeEmployment?.join_date,
                     )}
                     appendTo={getBody}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     disabled
                     className="w-full"
@@ -883,7 +890,7 @@ export default function EmployeeLifecycleData() {
                   <Calendar
                     value={toCalendarDate(employmentChange.end_date)}
                     appendTo={getBody}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     showButtonBar
                     minDate={toCalendarDate(form.effective_date) ?? undefined}
@@ -902,7 +909,7 @@ export default function EmployeeLifecycleData() {
                   <Calendar
                     value={toCalendarDate(employmentChange.probation_end_date)}
                     appendTo={getBody}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     showButtonBar
                     className="w-full"
@@ -923,7 +930,7 @@ export default function EmployeeLifecycleData() {
                   <Calendar
                     value={toCalendarDate(employmentChange.confirmation_date)}
                     appendTo={getBody}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     showButtonBar
                     className="w-full"
@@ -998,7 +1005,7 @@ export default function EmployeeLifecycleData() {
             <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
               Effective date:{" "}
               <span className="font-medium text-slate-800">
-                {detail.data.case.effective_date}
+                {formatDisplayDate(detail.data.case.effective_date)}
               </span>
               <span className="ml-4 text-slate-500">Lifecycle owner: </span>
               <span className="font-medium text-slate-800">
@@ -1043,7 +1050,7 @@ export default function EmployeeLifecycleData() {
               <Column
                 header="Due Date"
                 body={(row: EmployeeLifecycleDetail["tasks"][number]) =>
-                  row.due_date || "—"
+                  formatDisplayDate(row.due_date, "—")
                 }
               />
               <Column

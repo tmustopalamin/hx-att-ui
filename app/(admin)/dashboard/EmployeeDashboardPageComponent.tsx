@@ -3,6 +3,10 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatWeekdayDate,
+} from "@/app/utils/date-format";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { Card } from "primereact/card";
@@ -31,11 +35,7 @@ const formatTime = (value?: string | null) => {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY");
+  return formatDisplayDate(value);
 };
 
 const formatDuration = (seconds?: number | null) => {
@@ -184,7 +184,7 @@ const EmployeeDashboardPageComponent = () => {
             <div>
               <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/20">
                 <i className="pi pi-calendar text-xs" />
-                <span>{dayjs().format("dddd, DD MMMM YYYY")}</span>
+                <span>{formatWeekdayDate(new Date())}</span>
               </div>
 
               <h2 className="text-3xl font-bold tracking-tight">

@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useParams } from "next/navigation";
 import { useDispatch } from "react-redux";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 import { fetcher } from "@/app/utils/fetcher";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -450,10 +451,10 @@ const LeaveTableData = () => {
 
   const periodBodyTemplate = (rowData: EmployeeLeaveBalance) => {
     const start = rowData.period_start
-      ? dayjs(rowData.period_start).format("DD MMM YYYY")
+      ? formatDisplayDate(rowData.period_start)
       : "-";
     const end = rowData.period_end
-      ? dayjs(rowData.period_end).format("DD MMM YYYY")
+      ? formatDisplayDate(rowData.period_end)
       : "-";
 
     return `${start} - ${end}`;
@@ -783,7 +784,7 @@ const LeaveTableData = () => {
                   <Calendar
                     id="period_start"
                     appendTo={getBody}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     value={field.value}
                     onChange={(e) => field.onChange(e.value)}
@@ -814,7 +815,7 @@ const LeaveTableData = () => {
                   <Calendar
                     id="period_end"
                     appendTo={getBody}
-                    dateFormat="dd-mm-yy"
+                    dateFormat="dd MM yy"
                     showIcon
                     value={field.value}
                     onChange={(e) => field.onChange(e.value)}

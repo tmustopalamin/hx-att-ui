@@ -4,6 +4,10 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -172,23 +176,11 @@ const formatFileSize = (size?: number | null) => {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY") : "-";
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  const date = dayjs(value);
-
-  return date.isValid() ? date.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const formatTime = (value?: string | null) => {

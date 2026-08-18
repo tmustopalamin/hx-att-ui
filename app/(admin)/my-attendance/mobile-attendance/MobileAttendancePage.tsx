@@ -22,6 +22,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { formatDateTimeWithSeconds } from "@/app/utils/date-format";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
 type PermissionStateUi = "idle" | "granted" | "denied" | "loading" | "error";
@@ -30,7 +31,7 @@ type GeoState = {
   latitude: number | null;
   longitude: number | null;
   accuracy: number | null;
-  capturedAt: string | null;
+  capturedAt: Date | null;
 };
 
 type CurrentEmployeeProfile = {
@@ -43,7 +44,7 @@ type CurrentEmployeeProfile = {
   photo_url: string | null;
 };
 
-const DISPLAY_DATE_TIME_FORMAT = "DD-MM-YYYY HH:mm:ss";
+const LOCATION_CAPTURED_AT_FORMAT = "DD-MM-YYYY HH:mm:ss";
 
 const buildLocalTimestamp = () => dayjs().format("YYYY-MM-DDTHH:mm:ss");
 
@@ -255,10 +256,8 @@ const MobileAttendancePage = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSubmittedAt, setLastSubmittedAt] = useState<string | null>(null);
-  const [nowText, setNowText] = useState(
-    dayjs().format(DISPLAY_DATE_TIME_FORMAT),
-  );
+  const [lastSubmittedAt, setLastSubmittedAt] = useState<Date | null>(null);
+  const [now, setNow] = useState(() => new Date());
 
   // Ganti endpoint ini kalau endpoint current user di project kamu berbeda.
   const {
@@ -274,7 +273,7 @@ const MobileAttendancePage = () => {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setNowText(dayjs().format(DISPLAY_DATE_TIME_FORMAT));
+      setNow(new Date());
     }, 1000);
 
     return () => window.clearInterval(timer);
@@ -343,7 +342,7 @@ const MobileAttendancePage = () => {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           accuracy: position.coords.accuracy ?? null,
-          capturedAt: dayjs().format(DISPLAY_DATE_TIME_FORMAT),
+          capturedAt: new Date(),
         });
         setLocationPermission("granted");
       },
@@ -521,13 +520,15 @@ const MobileAttendancePage = () => {
         extra_data: {
           capture_method: "camera",
           geo_accuracy: geoData.accuracy,
-          location_captured_at: geoData.capturedAt,
+          location_captured_at: geoData.capturedAt
+            ? dayjs(geoData.capturedAt).format(LOCATION_CAPTURED_AT_FORMAT)
+            : null,
           user_agent:
             typeof navigator !== "undefined" ? navigator.userAgent : null,
         },
       });
 
-      setLastSubmittedAt(dayjs().format(DISPLAY_DATE_TIME_FORMAT));
+      setLastSubmittedAt(new Date());
       setCapturedPhoto(null);
 
       dispatch(
@@ -638,13 +639,15 @@ const MobileAttendancePage = () => {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-w-[320px]">
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <p className="text-xs text-slate-500">Current Time</p>
-              <p className="text-sm font-medium text-slate-900">{nowText}</p>
+              <p className="text-sm font-medium text-slate-900">
+                {formatDateTimeWithSeconds(now)}
+              </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
               <p className="text-xs text-slate-500">Last Submitted</p>
               <p className="text-sm font-medium text-slate-900">
-                {lastSubmittedAt ?? "-"}
+                {formatDateTimeWithSeconds(lastSubmittedAt)}
               </p>
             </div>
           </div>
@@ -849,7 +852,7 @@ const MobileAttendancePage = () => {
                   <div>
                     <p className="text-xs text-slate-500">Captured At</p>
                     <p className="text-sm font-medium text-slate-900">
-                      {geoData.capturedAt ?? "-"}
+                      {formatDateTimeWithSeconds(geoData.capturedAt)}
                     </p>
                   </div>
                 </div>
@@ -894,7 +897,7 @@ const MobileAttendancePage = () => {
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <p className="text-xs text-slate-500">Current Time</p>
                   <p className="text-sm font-medium text-slate-900">
-                    {nowText}
+                    {formatDateTimeWithSeconds(now)}
                   </p>
                 </div>
 

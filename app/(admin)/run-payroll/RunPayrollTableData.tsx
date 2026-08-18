@@ -38,6 +38,10 @@ import { showToast } from "@/store/ToastSlice";
 import PayrollPaymentDialog from "./PayrollPaymentDialog";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 const BATCH_URL = "/api/payroll-batches";
 const OPTIONS_URL = "/api/payroll-batches/options";
@@ -422,18 +426,32 @@ export default function RunPayrollTableData() {
           <Column
             header="Period"
             body={(row: PayrollBatch) =>
-              `${row.period_start} → ${row.period_end}`
+              `${formatDisplayDate(row.period_start)} → ${formatDisplayDate(row.period_end)}`
             }
           />
-          <Column field="attendance_cutoff_date" header="Attendance Cutoff" />
-          <Column field="payroll_date" header="Payroll Date" />
+          <Column
+            field="attendance_cutoff_date"
+            header="Attendance Cutoff"
+            body={(row: PayrollBatch) =>
+              formatDisplayDate(row.attendance_cutoff_date)
+            }
+          />
+          <Column
+            field="payroll_date"
+            header="Payroll Date"
+            body={(row: PayrollBatch) => formatDisplayDate(row.payroll_date)}
+          />
           <Column
             header="Status"
             body={(row: PayrollBatch) => (
               <Tag value={row.status} severity={statusSeverity(row.status)} />
             )}
           />
-          <Column field="created_at" header="Created At" />
+          <Column
+            field="created_at"
+            header="Created At"
+            body={(row: PayrollBatch) => formatDisplayDateTime(row.created_at)}
+          />
           <Column
             header="Action"
             frozen

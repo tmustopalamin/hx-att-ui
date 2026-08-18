@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { Card } from "primereact/card";
 import { Chart } from "primereact/chart";
 import { Button } from "primereact/button";
-import dayjs from "dayjs";
 import { useRouter } from "next/navigation";
 import { RootState } from "@/store/store";
 import { useSelector } from "react-redux";
@@ -13,6 +12,7 @@ import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import { getAdminDashboard } from "@/app/services/admin-dashboard-service";
 import { AdminDashboardResponse } from "@/app/types/admin-dashboard";
+import { formatWeekdayDate } from "@/app/utils/date-format";
 
 type DashboardCard = {
   label: string;
@@ -66,7 +66,7 @@ const getGreeting = (name: string) => {
 };
 
 const getTodayDate = () => {
-  return dayjs().format("dddd, DD MMMM YYYY");
+  return formatWeekdayDate(new Date());
 };
 
 const getProfilePermissions = (profileState: unknown): string[] => {

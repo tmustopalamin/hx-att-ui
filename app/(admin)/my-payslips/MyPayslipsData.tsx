@@ -11,6 +11,7 @@ import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import { getMyPayrollPayslips } from "@/app/services/payroll-batch-service";
 import type { PayrollPayslip } from "@/app/types/payroll-batch";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 const payslipUrl = "/api/payroll-payslips/me";
 
@@ -81,12 +82,15 @@ export default function MyPayslipsData() {
             <Column
               header="Period"
               body={(row: PayrollPayslip) =>
-                `${row.snapshot_json.batch.period_start} – ${row.snapshot_json.batch.period_end}`
+                `${formatDisplayDate(row.snapshot_json.batch.period_start)} – ${formatDisplayDate(row.snapshot_json.batch.period_end)}`
               }
             />
             <Column
               field="snapshot_json.batch.payroll_date"
               header="Payment Date"
+              body={(row: PayrollPayslip) =>
+                formatDisplayDate(row.snapshot_json.batch.payroll_date)
+              }
             />
             <Column
               header="Take Home Pay"
@@ -122,7 +126,8 @@ function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
               {payslip.payslip_no}
             </h2>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              {batch.period_start} to {batch.period_end}
+              {formatDisplayDate(batch.period_start)} to{" "}
+              {formatDisplayDate(batch.period_end)}
             </p>
           </div>
           <Tag value="PUBLISHED" severity="success" />

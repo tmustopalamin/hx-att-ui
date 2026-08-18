@@ -4,6 +4,7 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -68,11 +69,7 @@ const SHIFT_RULE_API_KEY = "/api/shift-rule";
 const getBody = () => document.body;
 
 const formatDate = (value: Date | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY");
+  return formatDisplayDate(value);
 };
 
 const getEmployeeName = (employee: EmployeeListRow) => {
@@ -1215,7 +1212,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   id="effective_from"
                   appendTo={getBody}
                   value={effectiveFrom}
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   maxDate={effectiveTo ?? undefined}
                   disabled={isAssigning}
@@ -1249,7 +1246,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   id="effective_to"
                   appendTo={getBody}
                   value={effectiveTo}
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   minDate={effectiveFrom ?? undefined}
                   disabled={isAssigning}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dayjs from "dayjs";
 import useSWR from "swr";
+import { formatDateTime as formatDisplayDateTime } from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
@@ -114,9 +114,7 @@ const EMPTY_TEMPLATE: EmailTemplateInput = {
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) return "-";
-  const parsed = dayjs(value);
-  return parsed.isValid() ? parsed.format("DD MMM YYYY HH:mm") : "-";
+  return formatDisplayDateTime(value);
 };
 
 const labelize = (value: string) =>

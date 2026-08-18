@@ -17,6 +17,7 @@ import {
 } from "@/app/utils/error-messages";
 import { showToast } from "@/store/ToastSlice";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import { useParams } from "next/navigation";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 import { Button } from "primereact/button";
@@ -326,7 +327,7 @@ const EmployeeFamilyDataTable = () => {
           <Column
             header="Birth Date"
             body={(row: EmployeeFamilyRow) =>
-              row.dob ? dayjs(row.dob).format("DD-MM-YYYY") : "-"
+              row.dob ? formatDisplayDate(row.dob) : "-"
             }
           />
           <Column field="gender_name" header="Gender" />
@@ -451,7 +452,7 @@ const EmployeeFamilyDataTable = () => {
                 <Calendar
                   id="family_dob"
                   appendTo={getBody}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}

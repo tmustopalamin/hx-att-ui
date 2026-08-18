@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { formatDate } from "@/app/utils/date-format";
 
 const currencyFormatter = new Intl.NumberFormat("id-ID", {
   style: "currency",
@@ -10,7 +10,7 @@ export const formatPayrollCurrency = (value: number) =>
   currencyFormatter.format(value);
 
 export const formatPayrollDate = (value: string | Date | null) =>
-  value ? dayjs(value).format("DD MMM YYYY") : "Open ended";
+  formatDate(value, "Open ended");
 
 export const formatPayrollPercentage = (value: number | null) =>
   value === null

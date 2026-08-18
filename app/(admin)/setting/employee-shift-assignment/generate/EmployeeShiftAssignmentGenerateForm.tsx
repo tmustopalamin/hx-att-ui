@@ -4,6 +4,7 @@ import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import dayjs from "dayjs";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -60,11 +61,7 @@ const EMPLOYEE_API_KEY = "/api/employees/list";
 const getBody = () => document.body;
 
 const formatDate = (value: Date | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY");
+  return formatDisplayDate(value);
 };
 
 const getEmployeeName = (employee: EmployeeListRow) => {
@@ -1160,7 +1157,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   id="period_from"
                   appendTo={getBody}
                   value={periodFrom}
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   maxDate={periodTo ?? undefined}
                   disabled={isGenerating}
@@ -1194,7 +1191,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   id="period_to"
                   appendTo={getBody}
                   value={periodTo}
-                  dateFormat="dd M yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   minDate={periodFrom ?? undefined}
                   disabled={isGenerating}

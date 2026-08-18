@@ -45,6 +45,7 @@ import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 type DialogName =
   | "cycle"
@@ -577,8 +578,20 @@ export default function PerformanceData() {
             >
               <Column field="code" header="Code" />
               <Column field="name" header="Cycle" />
-              <Column field="start_date" header="Start" />
-              <Column field="end_date" header="End" />
+              <Column
+                field="start_date"
+                header="Start"
+                body={(row: PerformanceCycle) =>
+                  formatDisplayDate(row.start_date)
+                }
+              />
+              <Column
+                field="end_date"
+                header="End"
+                body={(row: PerformanceCycle) =>
+                  formatDisplayDate(row.end_date)
+                }
+              />
               <Column
                 header="Earning"
                 body={(r: PerformanceCycle) =>

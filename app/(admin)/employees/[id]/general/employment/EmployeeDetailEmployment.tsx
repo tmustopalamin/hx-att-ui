@@ -644,7 +644,7 @@ const EmployeeDetailEmployment = () => {
                   id="join_date"
                   appendTo={getBody}
                   disabled={!isPageEdit}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}
@@ -669,7 +669,7 @@ const EmployeeDetailEmployment = () => {
                   id="end_date"
                   appendTo={getBody}
                   disabled={!isPageEdit}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}
@@ -691,7 +691,7 @@ const EmployeeDetailEmployment = () => {
                   id="probation_end_date"
                   appendTo={getBody}
                   disabled={!isPageEdit}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}
@@ -716,7 +716,7 @@ const EmployeeDetailEmployment = () => {
                   id="confirmation_date"
                   appendTo={getBody}
                   disabled={!isPageEdit}
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   showIcon
                   value={field.value}
                   onChange={(e) => field.onChange(e.value)}

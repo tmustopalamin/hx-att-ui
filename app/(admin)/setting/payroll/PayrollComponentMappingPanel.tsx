@@ -24,6 +24,7 @@ import type {
   SavePayrollComponentMapping,
 } from "@/app/types/payroll-configuration";
 import { fetcher } from "@/app/utils/fetcher";
+import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 
 interface Props {
@@ -230,12 +231,19 @@ export default function PayrollComponentMappingPanel({
             />
           )}
         />
-        <Column field="effective_from" header="Effective From" sortable />
+        <Column
+          field="effective_from"
+          header="Effective From"
+          sortable
+          body={(row: PayrollComponentMapping) =>
+            formatDisplayDate(row.effective_from)
+          }
+        />
         <Column
           field="effective_to"
           header="Effective To"
           body={(row: PayrollComponentMapping) =>
-            row.effective_to ?? "Open ended"
+            formatDisplayDate(row.effective_to, "Open ended")
           }
         />
         <Column

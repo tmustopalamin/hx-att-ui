@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR, { mutate } from "swr";
 import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+} from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
@@ -123,19 +127,11 @@ const combineDateAndTime = (
 };
 
 const formatDate = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY");
+  return formatDisplayDate(value);
 };
 
 const formatDateTime = (value?: string | null) => {
-  if (!value) {
-    return "-";
-  }
-
-  return dayjs(value).format("DD MMM YYYY HH:mm");
+  return formatDisplayDateTime(value);
 };
 
 const formatTime = (value?: string | null) => {
@@ -1066,7 +1062,7 @@ const OvertimeRequestTableData = () => {
                     <Calendar
                       value={field.value}
                       onChange={(e) => field.onChange(e.value)}
-                      dateFormat="dd-mm-yy"
+                      dateFormat="dd MM yy"
                       showIcon
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />

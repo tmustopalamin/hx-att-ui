@@ -15,13 +15,12 @@ import { AttendanceLog } from "@/app/types/attendance-log";
 import { getMyAttendanceHistory } from "@/app/services/my-attendance-history-service";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import { formatDateTimeWithSeconds } from "@/app/utils/date-format";
 
 type SourceOption = {
   label: string;
   value: string;
 };
-
-const DISPLAY_DATE_TIME_FORMAT = "DD-MM-YYYY HH:mm:ss";
 
 const SOURCE_OPTIONS: SourceOption[] = [
   { label: "All Sources", value: "ALL" },
@@ -39,7 +38,7 @@ const formatDateTime = (value?: string | null) => {
   const parsed = dayjs(value);
   if (!parsed.isValid()) return value;
 
-  return parsed.format(DISPLAY_DATE_TIME_FORMAT);
+  return formatDateTimeWithSeconds(value, value);
 };
 
 const buildPhotoUrl = (photoUrl?: string | null) => {
@@ -233,7 +232,7 @@ const AttendanceHistoryPageComponent = () => {
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.value ?? null)}
                   showIcon
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   className="w-full"
                 />
               </div>
@@ -246,7 +245,7 @@ const AttendanceHistoryPageComponent = () => {
                   value={dateTo}
                   onChange={(e) => setDateTo(e.value ?? null)}
                   showIcon
-                  dateFormat="dd-mm-yy"
+                  dateFormat="dd MM yy"
                   className="w-full"
                 />
               </div>
