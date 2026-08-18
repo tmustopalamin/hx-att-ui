@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import ActiveLink from "./ActiveLinkProps";
@@ -380,6 +380,20 @@ const settingSubMenus: SettingSubMenu[] = [
     ],
   },
   {
+    key: "communication",
+    label: "Communication",
+    icon: "pi-envelope",
+    items: [
+      {
+        href: "/setting/email",
+        label: "Email Configuration",
+        icon: "pi-envelope",
+        permission: "email_template.read",
+        superadminOnly: true,
+      },
+    ],
+  },
+  {
     key: "user-management",
     label: "User Management",
     icon: "pi-users",
@@ -471,30 +485,35 @@ export default function SidebarMenu() {
       ),
     [profileState.role],
   );
-  const hasPermission = (permission?: string, superadminOnly = false) => {
-    if (superadminOnly && !isSuperadmin) {
-      return false;
-    }
-    if (!permission) {
-      return true;
-    }
-    return permissionSet.has(normalizePermissionCode(permission));
-  };
-  const getVisibleItems = (items: MenuItem[]) => {
-    return items.filter((item) =>
-      hasPermission(item.permission, item.superadminOnly),
-    );
-  };
+  const hasPermission = useCallback(
+    (permission?: string, superadminOnly = false) => {
+      if (superadminOnly && !isSuperadmin) {
+        return false;
+      }
+      if (!permission) {
+        return true;
+      }
+      return permissionSet.has(normalizePermissionCode(permission));
+    },
+    [isSuperadmin, permissionSet],
+  );
+  const getVisibleItems = useCallback(
+    (items: MenuItem[]) =>
+      items.filter((item) =>
+        hasPermission(item.permission, item.superadminOnly),
+      ),
+    [hasPermission],
+  );
   const visibleTopMenuSections = useMemo(() => {
     return topMenuSections
       .map((section) => ({ ...section, items: getVisibleItems(section.items) }))
       .filter((section) => section.items.length > 0);
-  }, [permissionSet]);
+  }, [getVisibleItems]);
   const visibleSettingSubMenus = useMemo(() => {
     return settingSubMenus
       .map((submenu) => ({ ...submenu, items: getVisibleItems(submenu.items) }))
       .filter((submenu) => submenu.items.length > 0);
-  }, [permissionSet]);
+  }, [getVisibleItems]);
   const isPathActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
