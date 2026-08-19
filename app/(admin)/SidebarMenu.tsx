@@ -370,6 +370,12 @@ const settingSubMenus: SettingSubMenu[] = [
         icon: "pi-calendar-plus",
         permission: "payroll-config.read",
       },
+      {
+        href: "/setting/position-allowance",
+        label: "Position Allowance",
+        icon: "pi-briefcase",
+        permission: "payroll-config.read",
+      },
     ],
   },
   {
