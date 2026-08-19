@@ -14,6 +14,8 @@ import type {
   PayrollBatchValidationResult,
   PayrollPerformanceEarningPreview,
   PayrollPerformanceEarningGeneration,
+  PayrollHolidayPositionIncentivePreview,
+  PayrollHolidayPositionIncentiveGeneration,
 } from "@/app/types/payroll-batch";
 import { apiFetch, parseApiError } from "@/app/utils/api-client";
 
@@ -106,6 +108,18 @@ export const generatePayrollPerformanceEarnings = (
   batchId: number,
 ): Promise<PayrollPerformanceEarningGeneration> =>
   apiFetch(`${URL}/${batchId}/performance-earnings/generate`, {
+    method: "POST",
+  });
+
+export const previewPayrollHolidayPositionIncentives = (
+  batchId: number,
+): Promise<PayrollHolidayPositionIncentivePreview[]> =>
+  apiFetch(`${URL}/${batchId}/holiday-position-incentives/preview`);
+
+export const generatePayrollHolidayPositionIncentives = (
+  batchId: number,
+): Promise<PayrollHolidayPositionIncentiveGeneration> =>
+  apiFetch(`${URL}/${batchId}/holiday-position-incentives/generate`, {
     method: "POST",
   });
 

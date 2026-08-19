@@ -364,6 +364,12 @@ const settingSubMenus: SettingSubMenu[] = [
         icon: "pi-minus-circle",
         permission: "payroll-config.read",
       },
+      {
+        href: "/setting/holiday-position-incentive",
+        label: "Holiday Position Incentive",
+        icon: "pi-calendar-plus",
+        permission: "payroll-config.read",
+      },
     ],
   },
   {

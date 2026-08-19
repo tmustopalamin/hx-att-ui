@@ -18,6 +18,7 @@ import type {
 } from "@/app/types/payroll-batch";
 import PayrollAdjustmentPanel from "./PayrollAdjustmentPanel";
 import PerformanceEarningPanel from "./PerformanceEarningPanel";
+import HolidayPositionIncentivePanel from "./HolidayPositionIncentivePanel";
 import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 interface PayrollBatchDetailDataProps {
@@ -174,6 +175,10 @@ export default function PayrollBatchDetailData({
 
       {selectedResult && <EmployeeResultPanel result={selectedResult} />}
       <PerformanceEarningPanel
+        batchId={data.batch.id}
+        batchStatus={data.batch.status}
+      />
+      <HolidayPositionIncentivePanel
         batchId={data.batch.id}
         batchStatus={data.batch.status}
       />

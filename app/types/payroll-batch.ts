@@ -303,3 +303,26 @@ export interface PayrollPerformanceEarningGeneration {
   created: PayrollAdjustment[];
   skipped: PayrollPerformanceEarningPreview[];
 }
+
+export interface PayrollHolidayPositionIncentivePreview {
+  policy_id: number;
+  policy_code: string;
+  policy_name: string;
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  income_component_id: number;
+  income_component_code: string | null;
+  income_component_name: string;
+  daily_amount: string | number;
+  eligible_day_count: number;
+  eligible_dates: string[];
+  amount: string | number;
+  reason: string | null;
+  existing_adjustment_status: string | null;
+}
+
+export interface PayrollHolidayPositionIncentiveGeneration {
+  created: PayrollAdjustment[];
+  skipped: PayrollHolidayPositionIncentivePreview[];
+}
