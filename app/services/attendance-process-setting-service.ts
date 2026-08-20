@@ -61,6 +61,8 @@ export const updateAttendanceProcessSetting = async (
     | "mobile_attendance_geofence_latitude"
     | "mobile_attendance_geofence_longitude"
     | "mobile_attendance_geofence_radius_meters"
+    | "mobile_attendance_integrity_enabled"
+    | "mobile_attendance_allow_unlicensed"
   >,
 ): Promise<{
   success: boolean;
@@ -94,6 +96,10 @@ export const updateAttendanceProcessSetting = async (
         data.mobile_attendance_geofence_longitude,
       mobile_attendance_geofence_radius_meters:
         data.mobile_attendance_geofence_radius_meters,
+      mobile_attendance_integrity_enabled:
+        data.mobile_attendance_integrity_enabled,
+      mobile_attendance_allow_unlicensed:
+        data.mobile_attendance_allow_unlicensed,
     }),
   });
 

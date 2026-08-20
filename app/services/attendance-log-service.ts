@@ -3,6 +3,39 @@ import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/attendance-log";
 
+export const reviewMobileAttendanceSecurity = async (
+  id: number,
+  rowVersion: number,
+  decision: "APPROVE" | "REJECT",
+  note?: string,
+) => {
+  const res = await fetch(`${API_URL}/${id}/security-review`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "If-Match": String(rowVersion),
+    },
+    body: JSON.stringify({ decision, note: note?.trim() || null }),
+  });
+
+  if (!res.ok) {
+    const contentType = res.headers.get("Content-Type");
+    const errorDetail: ResponseTypeError = contentType?.includes(
+      "application/json",
+    )
+      ? ((await res.json()) as ResponseTypeError)
+      : {
+          success: false,
+          code: String(res.status),
+          message: await res.text(),
+        };
+    throw errorDetail;
+  }
+
+  return res.json();
+};
+
 export const remapEmployeeAttendanceLog = async () => {
   const res = await fetch(API_URL + "/remap-employee", {
     method: "POST",

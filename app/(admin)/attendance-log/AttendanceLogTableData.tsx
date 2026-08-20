@@ -21,16 +21,19 @@ import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
+import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
 import { useDispatch } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
+import Can from "@/app/_components/CanPermission";
 
 import {
   AttendanceLogSyncResult,
   remapEmployeeAttendanceLog,
+  reviewMobileAttendanceSecurity,
   syncAttendanceLog,
 } from "@/app/services/attendance-log-service";
 
@@ -95,6 +98,22 @@ const safeJsonStringify = (value: unknown) => {
   }
 };
 
+const getSecurityData = (row: AttendanceLogRow | null) => {
+  const extra = row?.extra_data;
+  const security =
+    extra && typeof extra.security === "object" && extra.security !== null
+      ? (extra.security as Record<string, unknown>)
+      : null;
+  const reasons = Array.isArray(security?.reasons)
+    ? security.reasons.map((reason) => String(reason))
+    : [];
+  const evidence =
+    security?.evidence && typeof security.evidence === "object"
+      ? security.evidence
+      : null;
+  return { reasons, evidence };
+};
+
 const AttendanceLogTableData = () => {
   const dispatch = useDispatch();
 
@@ -127,6 +146,13 @@ const AttendanceLogTableData = () => {
 
   const [selectedLog, setSelectedLog] = useState<AttendanceLogRow | null>(null);
 
+  const [reviewDialog, setReviewDialog] = useState(false);
+  const [reviewDecision, setReviewDecision] = useState<"APPROVE" | "REJECT">(
+    "APPROVE",
+  );
+  const [reviewNote, setReviewNote] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
+
   const [first, setFirst] = useState(0);
 
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -140,8 +166,10 @@ const AttendanceLogTableData = () => {
 
     params.set("page_size", String(rowsPerPage));
 
+    if (statusFilter) params.set("status", statusFilter);
+
     return `/api/attendance-log?${params.toString()}`;
-  }, [currentPage, rowsPerPage]);
+  }, [currentPage, rowsPerPage, statusFilter]);
 
   const {
     data: attendanceLogData,
@@ -163,7 +191,14 @@ const AttendanceLogTableData = () => {
   const statusOptions = useMemo(() => {
     const statuses = Array.from(
       new Set(
-        rows.map((item) => String(item.status ?? "").trim()).filter(Boolean),
+        [
+          "VALID",
+          "INVALID",
+          "PENDING_REVIEW",
+          "DUPLICATE",
+          "IGNORED",
+          ...rows.map((item) => String(item.status ?? "").trim()),
+        ].filter(Boolean),
       ),
     ).sort((first, second) => first.localeCompare(second));
 
@@ -772,6 +807,41 @@ const AttendanceLogTableData = () => {
     setSelectedLog(null);
   };
 
+  const openSecurityReview = (decision: "APPROVE" | "REJECT") => {
+    setReviewDecision(decision);
+    setReviewNote("");
+    setReviewDialog(true);
+  };
+
+  const submitSecurityReview = async () => {
+    if (!selectedLog) return;
+    if (reviewDecision === "REJECT" && !reviewNote.trim()) {
+      showError(new Error("A rejection note is required."));
+      return;
+    }
+    try {
+      setReviewLoading(true);
+      await reviewMobileAttendanceSecurity(
+        selectedLog.id,
+        selectedLog.row_version,
+        reviewDecision,
+        reviewNote,
+      );
+      setReviewDialog(false);
+      closeDetailDialog();
+      await refreshAttendanceLogData();
+      showSuccess(
+        reviewDecision === "APPROVE"
+          ? "Attendance approved and released for processing."
+          : "Attendance rejected as invalid.",
+      );
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
   const renderStatusTag = (status?: string | null) => {
     const normalized = status?.toUpperCase();
 
@@ -792,6 +862,17 @@ const AttendanceLogTableData = () => {
           value="Invalid"
           severity="danger"
           icon="pi pi-exclamation-circle"
+          rounded
+        />
+      );
+    }
+
+    if (normalized === "PENDING_REVIEW") {
+      return (
+        <Tag
+          value="Security Review"
+          severity="warning"
+          icon="pi pi-shield"
           rounded
         />
       );
@@ -914,6 +995,9 @@ const AttendanceLogTableData = () => {
   };
 
   const rowClassName = (rowData: AttendanceLogRow) => {
+    if (rowData.status?.toUpperCase() === "PENDING_REVIEW") {
+      return "bg-amber-100/50";
+    }
     if (rowData.status?.toUpperCase() === "INVALID") {
       return "bg-red-50/40";
     }
@@ -962,6 +1046,8 @@ const AttendanceLogTableData = () => {
       </div>
     );
   };
+
+  const selectedSecurity = getSecurityData(selectedLog);
 
   if (isLoading && !attendanceLogData) {
     return <LoadingDataTable />;
@@ -1244,7 +1330,7 @@ const AttendanceLogTableData = () => {
           </section>
 
           {/* Legend */}
-          <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-2 xl:grid-cols-5">
             <div className="flex items-start gap-3">
               {renderStatusTag("VALID")}
 
@@ -1258,6 +1344,15 @@ const AttendanceLogTableData = () => {
 
               <p className="m-0 text-xs leading-5 text-slate-600">
                 Employee mapping or source data is incomplete.
+              </p>
+            </div>
+
+            <div className="flex items-start gap-3">
+              {renderStatusTag("PENDING_REVIEW")}
+
+              <p className="m-0 text-xs leading-5 text-slate-600">
+                Quarantined and excluded from attendance summaries until an
+                admin reviews its security evidence.
               </p>
             </div>
 
@@ -1501,6 +1596,58 @@ const AttendanceLogTableData = () => {
               </div>
             </section>
 
+            {selectedLog.status?.toUpperCase() === "PENDING_REVIEW" && (
+              <section className="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <div>
+                  <h3 className="m-0 text-sm font-semibold text-amber-950">
+                    Android Security Review
+                  </h3>
+                  <p className="m-0 mt-1 text-xs leading-5 text-amber-800">
+                    This record is quarantined and is not included in the
+                    attendance summary.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {selectedSecurity.reasons.length ? (
+                    selectedSecurity.reasons.map((reason) => (
+                      <Tag key={reason} value={reason} severity="warning" />
+                    ))
+                  ) : (
+                    <span className="text-sm text-amber-800">
+                      No reason code was provided.
+                    </span>
+                  )}
+                </div>
+
+                {selectedSecurity.evidence && (
+                  <pre className="m-0 max-h-56 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-amber-950 p-3 text-xs text-amber-50">
+                    {safeJsonStringify(selectedSecurity.evidence)}
+                  </pre>
+                )}
+
+                <Can permission="attendance-log.update">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <Button
+                      type="button"
+                      label="Reject Attendance"
+                      icon="pi pi-times"
+                      severity="danger"
+                      outlined
+                      onClick={() => openSecurityReview("REJECT")}
+                    />
+                    <Button
+                      type="button"
+                      label="Approve Attendance"
+                      icon="pi pi-check"
+                      severity="success"
+                      onClick={() => openSecurityReview("APPROVE")}
+                    />
+                  </div>
+                </Can>
+              </section>
+            )}
+
             <section className="flex flex-col gap-4">
               <div className="border-b border-slate-200 pb-2">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
@@ -1606,6 +1753,61 @@ const AttendanceLogTableData = () => {
             </details>
           </div>
         )}
+      </Dialog>
+
+      <Dialog
+        header={
+          reviewDecision === "APPROVE"
+            ? "Approve Attendance"
+            : "Reject Attendance"
+        }
+        visible={reviewDialog}
+        style={{ width: "95vw", maxWidth: "34rem" }}
+        modal
+        draggable={false}
+        resizable={false}
+        closable={!reviewLoading}
+        onHide={() => !reviewLoading && setReviewDialog(false)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              label="Cancel"
+              severity="secondary"
+              text
+              disabled={reviewLoading}
+              onClick={() => setReviewDialog(false)}
+            />
+            <Button
+              type="button"
+              label={reviewDecision === "APPROVE" ? "Approve" : "Reject"}
+              severity={reviewDecision === "APPROVE" ? "success" : "danger"}
+              loading={reviewLoading}
+              disabled={reviewDecision === "REJECT" && !reviewNote.trim()}
+              onClick={() => void submitSecurityReview()}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <p className="m-0 text-sm leading-6 text-slate-600">
+            {reviewDecision === "APPROVE"
+              ? "Approval changes this log to VALID and allows attendance summary processing."
+              : "Rejection changes this log to INVALID. A reason is required for the audit trail."}
+          </p>
+          <label htmlFor="security-review-note" className="text-sm font-medium">
+            Review note {reviewDecision === "REJECT" ? "*" : "(optional)"}
+          </label>
+          <InputTextarea
+            id="security-review-note"
+            value={reviewNote}
+            rows={5}
+            maxLength={1000}
+            autoResize
+            disabled={reviewLoading}
+            onChange={(event) => setReviewNote(event.target.value)}
+          />
+        </div>
       </Dialog>
 
       {/* Sync Result */}

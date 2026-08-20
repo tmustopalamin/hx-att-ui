@@ -81,6 +81,8 @@ const AttendanceAutoProcessSettingPanel = () => {
     mobile_attendance_geofence_latitude: null as number | null,
     mobile_attendance_geofence_longitude: null as number | null,
     mobile_attendance_geofence_radius_meters: null as number | null,
+    mobile_attendance_integrity_enabled: false,
+    mobile_attendance_allow_unlicensed: true,
   });
 
   const { data, isLoading } = useSWR(swrKey, getAttendanceProcessSetting, {
@@ -114,6 +116,10 @@ const AttendanceAutoProcessSettingPanel = () => {
         setting.mobile_attendance_geofence_longitude,
       mobile_attendance_geofence_radius_meters:
         setting.mobile_attendance_geofence_radius_meters,
+      mobile_attendance_integrity_enabled:
+        setting.mobile_attendance_integrity_enabled,
+      mobile_attendance_allow_unlicensed:
+        setting.mobile_attendance_allow_unlicensed,
     });
   }, [setting]);
 
@@ -387,6 +393,55 @@ const AttendanceAutoProcessSettingPanel = () => {
                   setForm((prev) => ({
                     ...prev,
                     mobile_attendance_require_location: !!e.value,
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-semibold text-amber-950">
+                  Enforce Android Play Integrity
+                </div>
+                <div className="mt-1 text-xs leading-5 text-amber-800">
+                  Submissions with missing or failed integrity evidence are
+                  quarantined for admin review. Enable only after Android and
+                  API credentials are configured.
+                </div>
+              </div>
+              <InputSwitch
+                checked={form.mobile_attendance_integrity_enabled}
+                disabled={!form.mobile_attendance_enabled}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    mobile_attendance_integrity_enabled: !!e.value,
+                  }))
+                }
+              />
+            </div>
+            <div className="mt-4 flex items-center justify-between border-t border-amber-200 pt-4">
+              <div>
+                <div className="text-sm font-medium text-amber-950">
+                  Allow non-Play/internal APK installs
+                </div>
+                <div className="mt-1 text-xs text-amber-800">
+                  Accept an UNLICENSED verdict for company-distributed APKs;
+                  device and app integrity checks still apply.
+                </div>
+              </div>
+              <InputSwitch
+                checked={form.mobile_attendance_allow_unlicensed}
+                disabled={
+                  !form.mobile_attendance_enabled ||
+                  !form.mobile_attendance_integrity_enabled
+                }
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    mobile_attendance_allow_unlicensed: !!e.value,
                   }))
                 }
               />

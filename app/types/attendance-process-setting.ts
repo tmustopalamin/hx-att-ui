@@ -15,6 +15,8 @@ export interface AttendanceProcessSetting {
   mobile_attendance_geofence_latitude: number | null;
   mobile_attendance_geofence_longitude: number | null;
   mobile_attendance_geofence_radius_meters: number | null;
+  mobile_attendance_integrity_enabled: boolean;
+  mobile_attendance_allow_unlicensed: boolean;
 
   last_process_at: string | null;
   last_process_status: string | null;
