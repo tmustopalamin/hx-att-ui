@@ -49,6 +49,7 @@ export interface EmployeeLifecycleTask {
   row_version: number;
 }
 export interface EmployeeLifecycleEmploymentSnapshot {
+  join_date: string | null;
   code: string | null;
   agency_name: string | null;
   branch_name: string | null;
@@ -91,6 +92,7 @@ export interface EmployeeLifecycleAssignedTask {
   row_version: number;
 }
 export interface EmploymentChangeProposal {
+  join_date?: string | null;
   code?: string | null;
   agency_id?: number | null;
   branch_id?: number | null;

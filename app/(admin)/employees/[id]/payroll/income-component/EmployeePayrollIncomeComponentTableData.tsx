@@ -8,7 +8,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Controller, useForm } from "react-hook-form";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 import {
@@ -83,6 +83,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     formState: { isDirty, isSubmitting },
     reset,
     clearErrors,
+    setValue,
   } = useForm<EmployeeIncomeComponent>();
   const { confirmDiscard } = useDirtyFormGuard(
     visible && isDirty,
@@ -218,6 +219,24 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     : [];
   const activeFrequency = frequencyData?.filter((a) => a.is_active);
 
+  useEffect(() => {
+    if (
+      selectedIncomeComponent?.calculation_method_code?.toUpperCase() !==
+      "WORKING_PERIOD"
+    ) {
+      return;
+    }
+    const monthlyFrequency = frequencyData?.find(
+      (frequency) =>
+        frequency.is_active &&
+        !frequency.deleted_at &&
+        frequency.code.toUpperCase() === "MONTHLY",
+    );
+    if (monthlyFrequency) {
+      setValue("frequency", monthlyFrequency.id, { shouldDirty: false });
+    }
+  }, [frequencyData, selectedIncomeComponent, setValue]);
+
   if (isLoading) return <LoadingDataTable />;
   if (error) {
     return (
@@ -233,9 +252,26 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const handleSubmitNew = async (data: EmployeeIncomeComponent) => {
     try {
+      const dataToSave =
+        selectedIncomeComponent?.calculation_method_code?.toUpperCase() ===
+        "WORKING_PERIOD"
+          ? {
+              ...data,
+              amount: 0,
+              percentage: null,
+              based_on_component_id: null,
+              frequency:
+                activeFrequency?.find(
+                  (frequency) =>
+                    frequency.is_active &&
+                    !frequency.deleted_at &&
+                    frequency.code.toUpperCase() === "MONTHLY",
+                )?.id ?? data.frequency,
+            }
+          : data;
       const res: ResponseType<ResponseTypeCreateSuccess> =
         await createEmployeeIncomeComponent({
-          ...data,
+          ...dataToSave,
           employee_id: Number(id),
         });
       setVisible(false);
@@ -288,11 +324,28 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     }
 
     try {
+      const dataToSave =
+        selectedIncomeComponent?.calculation_method_code?.toUpperCase() ===
+        "WORKING_PERIOD"
+          ? {
+              ...data,
+              amount: 0,
+              percentage: null,
+              based_on_component_id: null,
+              frequency:
+                activeFrequency?.find(
+                  (frequency) =>
+                    frequency.is_active &&
+                    !frequency.deleted_at &&
+                    frequency.code.toUpperCase() === "MONTHLY",
+                )?.id ?? data.frequency,
+            }
+          : data;
       const res: ResponseType<ResponseTypeCreateSuccess> =
         await updateEmployeeIncomeComponent(
           selectedData.id,
           selectedData.row_version,
-          data,
+          dataToSave,
         );
 
       setVisible(false);
@@ -695,6 +748,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     calculationMethodCode === "FIXED_AMOUNT" ||
     calculationMethodCode === "FIXED";
   const isPercentage = calculationMethodCode === "PERCENTAGE";
+  const isWorkingPeriod = calculationMethodCode === "WORKING_PERIOD";
 
   const incomeComponentReferenceOptionTemplate = (option: IncomeComponent) => (
     <div className="flex min-w-0 items-center justify-between gap-3">
@@ -715,6 +769,17 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       master?.calculation_method_name ??
       master?.calculation_display ??
       methodCode;
+
+    if (methodCode === "WORKING_PERIOD") {
+      return (
+        <div className="flex min-w-[15rem] flex-col gap-1">
+          <Tag value={methodName ?? "Working period"} severity="info" />
+          <span className="text-xs text-slate-500">
+            Automatic percentage by completed service months.
+          </span>
+        </div>
+      );
+    }
 
     if (methodCode === "PERCENTAGE") {
       const reference = row.based_on_component_id
@@ -1152,7 +1217,9 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     value={field.value}
                     options={activeFrequency}
                     loading={isLoadingFrequency}
-                    disabled={isLoadingFrequency || !!errorFrequency}
+                    disabled={
+                      isWorkingPeriod || isLoadingFrequency || !!errorFrequency
+                    }
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
@@ -1165,6 +1232,12 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                       fieldState.invalid ? "p-invalid w-full" : "w-full"
                     }
                   />
+                  {isWorkingPeriod && (
+                    <small className="text-slate-500">
+                      Working-period components always use the active MONTHLY
+                      frequency.
+                    </small>
+                  )}
                   {fieldState.error && (
                     <small className="p-error">
                       {fieldState.error.message}

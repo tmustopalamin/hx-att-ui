@@ -63,6 +63,7 @@ const emptyForm = (): NewEmployeeLifecycleCase => ({
   payload_json: {},
 });
 const emptyEmploymentChange = (): EmploymentChangeProposal => ({
+  join_date: null,
   code: null,
   agency_id: null,
   branch_id: null,
@@ -251,6 +252,7 @@ export default function EmployeeLifecycleData() {
     if (requestedEmployment) {
       setEmploymentChange({
         ...emptyEmploymentChange(),
+        join_date: requestedEmployment.join_date ?? null,
         code: requestedEmployment.code ?? null,
         agency_id: requestedEmployment.agency_id ?? null,
         branch_id: requestedEmployment.branch_id ?? null,
@@ -277,6 +279,7 @@ export default function EmployeeLifecycleData() {
     }
     setEmploymentChange({
       ...emptyEmploymentChange(),
+      join_date: requestedEmployment.join_date ?? null,
       code: requestedEmployment.code ?? null,
       agency_id: requestedEmployment.agency_id ?? null,
       branch_id: requestedEmployment.branch_id ?? null,
@@ -306,6 +309,7 @@ export default function EmployeeLifecycleData() {
     if (selectedEmployeeEmployment) {
       setEmploymentChange({
         ...emptyEmploymentChange(),
+        join_date: selectedEmployeeEmployment.join_date ?? null,
         code: selectedEmployeeEmployment.code ?? null,
         agency_id: selectedEmployeeEmployment.agency_id ?? null,
         branch_id: selectedEmployeeEmployment.branch_id ?? null,
@@ -342,6 +346,24 @@ export default function EmployeeLifecycleData() {
         "error",
         "Validation",
         "Employee and effective date are required.",
+      );
+      return;
+    }
+    const proposedJoinDate = employmentChange.join_date?.trim() || null;
+    const currentJoinDate =
+      selectedEmployeeEmployment?.join_date ??
+      requestedEmployment?.join_date ??
+      null;
+    if (
+      form.lifecycle_type === "EMPLOYMENT_CHANGE" &&
+      proposedJoinDate !== null &&
+      proposedJoinDate !== currentJoinDate &&
+      !form.reason?.trim()
+    ) {
+      notify(
+        "error",
+        "Validation",
+        "Reason is required when the join date is changed.",
       );
       return;
     }
@@ -730,20 +752,25 @@ export default function EmployeeLifecycleData() {
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Join Date
+                  Join Date <span className="text-red-500">*</span>
                   <Calendar
-                    value={toCalendarDate(
-                      selectedEmployeeEmployment?.join_date,
-                    )}
+                    value={toCalendarDate(employmentChange.join_date)}
                     appendTo={getBody}
                     dateFormat="dd MM yy"
                     showIcon
-                    disabled
+                    showButtonBar
+                    maxDate={toCalendarDate(form.effective_date) ?? undefined}
                     className="w-full"
+                    onChange={(event) =>
+                      setEmploymentChange({
+                        ...employmentChange,
+                        join_date: toDateString(event.value),
+                      })
+                    }
                   />
                   <small className="font-normal text-slate-500">
-                    Inherited from the current employment record and not changed
-                    by Employment Change.
+                    The join date determines the employee&apos;s working period.
+                    Existing employees may correct it through approval.
                   </small>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -921,7 +948,8 @@ export default function EmployeeLifecycleData() {
                     }
                   />
                   <small className="font-normal text-slate-500">
-                    Backdating is allowed for historical probation records.
+                    Optional. Leave blank when the employee did not undergo
+                    probation. Backdating is allowed for historical records.
                   </small>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
@@ -942,7 +970,8 @@ export default function EmployeeLifecycleData() {
                     }
                   />
                   <small className="font-normal text-slate-500">
-                    Backdating is allowed for historical confirmation records.
+                    Optional. Leave blank when the employee has no confirmation
+                    date. Backdating is allowed for historical records.
                   </small>
                 </label>
               </div>
@@ -965,7 +994,9 @@ export default function EmployeeLifecycleData() {
           )}
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             Reason{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            <span className="font-normal text-slate-400">
+              (required when Join Date changes)
+            </span>
             <InputTextarea
               value={form.reason ?? ""}
               rows={3}

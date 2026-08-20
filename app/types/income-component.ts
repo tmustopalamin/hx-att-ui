@@ -1,3 +1,9 @@
+export interface WorkingPeriodTier {
+  minimum_months: number;
+  maximum_months: number | null;
+  percentage: number;
+}
+
 export interface IncomeComponent {
   id: number;
   code: string | null;
@@ -17,6 +23,7 @@ export interface IncomeComponent {
   is_fixed_allowance: boolean;
   include_in_bpjs_health: boolean;
   include_in_bpjs_employment: boolean;
+  working_period_tiers: WorkingPeriodTier[];
 }
 
 export type IncomeComponentPayload = Pick<
@@ -29,4 +36,6 @@ export type IncomeComponentPayload = Pick<
   | "category"
   | "calculation_display"
   | "is_active"
->;
+> & {
+  working_period_tiers: WorkingPeriodTier[];
+};

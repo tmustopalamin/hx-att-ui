@@ -73,6 +73,7 @@ const employmentChangeFields: Array<{
   key: keyof EmployeeLifecycleEmploymentSnapshot;
   label: string;
 }> = [
+  { key: "join_date", label: "Join Date" },
   { key: "code", label: "Employment Code" },
   { key: "agency_name", label: "Agency" },
   { key: "branch_name", label: "Branch" },

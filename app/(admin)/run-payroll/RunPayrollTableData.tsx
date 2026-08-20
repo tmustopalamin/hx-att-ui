@@ -256,9 +256,11 @@ export default function RunPayrollTableData() {
       const result = await validatePayrollBatch(row.id, row.row_version);
       await refreshBatches();
       toast(
-        "success",
-        "Payroll batch validated",
-        `${result.ready_count} employees ready, ${result.warning_count} need attendance review.`,
+        result.failed_count > 0 ? "error" : "success",
+        result.failed_count > 0
+          ? "Payroll validation needs review"
+          : "Payroll batch validated",
+        `${result.ready_count} employees ready, ${result.warning_count} need attendance review, ${result.failed_count} failed configuration checks.`,
       );
     } catch (error: unknown) {
       showError(error);

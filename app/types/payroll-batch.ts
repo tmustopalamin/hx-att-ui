@@ -71,6 +71,7 @@ export interface PayrollBatchValidationResult {
   employee_count: number;
   ready_count: number;
   warning_count: number;
+  failed_count: number;
 }
 
 export interface PayrollBatchCalculationResult {

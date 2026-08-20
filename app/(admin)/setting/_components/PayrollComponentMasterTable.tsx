@@ -14,6 +14,7 @@ import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
+import { InputNumber } from "primereact/inputnumber";
 import { InputSwitch } from "primereact/inputswitch";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
@@ -37,7 +38,10 @@ import {
 import type { CalculationMethod } from "@/app/types/calculation-method";
 import type { ComponentCategory } from "@/app/types/component-category";
 import type { DeductionComponent } from "@/app/types/deduction-component";
-import type { IncomeComponent } from "@/app/types/income-component";
+import type {
+  IncomeComponent,
+  WorkingPeriodTier,
+} from "@/app/types/income-component";
 import type { PayrollFormula } from "@/app/types/payroll-formula";
 import {
   getErrorMessage,
@@ -58,6 +62,7 @@ type ComponentForm = {
   calculation_method: number | null;
   formula_id: number | null;
   calculation_display: string;
+  working_period_tiers: WorkingPeriodTier[];
   is_taxable: boolean;
   is_active: boolean;
 };
@@ -69,6 +74,7 @@ const emptyForm = (): ComponentForm => ({
   calculation_method: null,
   formula_id: null,
   calculation_display: "",
+  working_period_tiers: [],
   is_taxable: true,
   is_active: true,
 });
@@ -143,12 +149,18 @@ export default function PayrollComponentMasterTable({
   const selectedMethod =
     activeMethods.find((item) => item.id === form.calculation_method) ?? null;
   const requiresFormula = Boolean(selectedMethod?.requires_formula);
+  const isWorkingPeriod =
+    kind === "income" &&
+    selectedMethod?.code?.toUpperCase() === "WORKING_PERIOD";
   const selectedCategory = availableCategories.find(
     (item) => item.id === form.category,
   );
+  const fixedAllowanceCategory = availableCategories.find(
+    (item) => item.code?.toUpperCase() === "FIXED_ALLOWANCE",
+  );
   const selectedCategoryIsFixed =
     selectedCategory?.code?.toUpperCase() === "FIXED_ALLOWANCE" &&
-    selectedCategory.category_type === "EARNING";
+    selectedCategory.category_type.toUpperCase() === "EARNING";
 
   const notify = (severity: "success" | "error", detail: string) => {
     dispatch(
@@ -193,6 +205,15 @@ export default function PayrollComponentMasterTable({
       calculation_method: row.calculation_method ?? null,
       formula_id: row.formula_id ?? null,
       calculation_display: row.calculation_display ?? "",
+      working_period_tiers:
+        kind === "income"
+          ? ((row as IncomeComponent).working_period_tiers ?? []).map(
+              (tier) => ({
+                ...tier,
+                percentage: Number(tier.percentage),
+              }),
+            )
+          : [],
       is_taxable: row.is_taxable,
       is_active: row.is_active,
     });
@@ -222,6 +243,48 @@ export default function PayrollComponentMasterTable({
       notify("error", "Select a formula for this calculation method.");
       return;
     }
+    const workingPeriodTiers = [...form.working_period_tiers].sort(
+      (left, right) => left.minimum_months - right.minimum_months,
+    );
+    if (isWorkingPeriod) {
+      if (!selectedCategoryIsFixed) {
+        notify(
+          "error",
+          "Working-period components must use the FIXED_ALLOWANCE earning category.",
+        );
+        return;
+      }
+      if (!workingPeriodTiers.length) {
+        notify("error", "Add at least one working-period tier.");
+        return;
+      }
+      for (let index = 0; index < workingPeriodTiers.length; index += 1) {
+        const tier = workingPeriodTiers[index];
+        if (
+          !Number.isInteger(tier.minimum_months) ||
+          tier.minimum_months < 0 ||
+          (tier.maximum_months !== null &&
+            (!Number.isInteger(tier.maximum_months) ||
+              tier.maximum_months < tier.minimum_months)) ||
+          tier.percentage < 0 ||
+          tier.percentage > 100 ||
+          (index === 0 && tier.minimum_months !== 0) ||
+          (index < workingPeriodTiers.length - 1 &&
+            tier.maximum_months === null) ||
+          (index === workingPeriodTiers.length - 1 &&
+            tier.maximum_months !== null) ||
+          (index > 0 &&
+            tier.minimum_months !==
+              (workingPeriodTiers[index - 1].maximum_months ?? -1) + 1)
+        ) {
+          notify(
+            "error",
+            "Working-period tiers must be contiguous from 0 months, with only the last tier open-ended.",
+          );
+          return;
+        }
+      }
+    }
     const payload = {
       code,
       name,
@@ -236,12 +299,15 @@ export default function PayrollComponentMasterTable({
       setSaving(true);
       if (kind === "income") {
         if (selected)
-          await updateIncomeComponent(
-            selected.id,
-            selected.row_version,
-            payload,
-          );
-        else await createIncomeComponent(payload);
+          await updateIncomeComponent(selected.id, selected.row_version, {
+            ...payload,
+            working_period_tiers: isWorkingPeriod ? workingPeriodTiers : [],
+          });
+        else
+          await createIncomeComponent({
+            ...payload,
+            working_period_tiers: isWorkingPeriod ? workingPeriodTiers : [],
+          });
       } else if (selected) {
         await updateDeductionComponent(
           selected.id,
@@ -629,6 +695,25 @@ export default function PayrollComponentMasterTable({
                   style={{ minWidth: "13rem" }}
                 />
               )}
+              {kind === "income" && (
+                <Column
+                  header="Working Period"
+                  body={(row: PayrollComponent) => {
+                    const income = row as IncomeComponent;
+                    const methodCode =
+                      income.calculation_method_code?.toUpperCase();
+                    return methodCode === "WORKING_PERIOD" ? (
+                      <Tag
+                        value={`${income.working_period_tiers?.length ?? 0} tier(s)`}
+                        severity="info"
+                      />
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    );
+                  }}
+                  style={{ minWidth: "10rem" }}
+                />
+              )}
               <Column
                 header="Assignment"
                 body={(row: PayrollComponent) =>
@@ -759,11 +844,33 @@ export default function PayrollComponentMasterTable({
                 placeholder="Select calculation method"
                 onChange={(event) => {
                   const methodId = event.value as number | null;
-                  updateForm("calculation_method", methodId);
                   const method = activeMethods.find(
                     (item) => item.id === methodId,
                   );
-                  if (!method?.requires_formula) updateForm("formula_id", null);
+                  const methodCode = method?.code?.toUpperCase();
+                  setForm((current) => ({
+                    ...current,
+                    calculation_method: methodId,
+                    formula_id: method?.requires_formula
+                      ? current.formula_id
+                      : null,
+                    category:
+                      methodCode === "WORKING_PERIOD"
+                        ? (fixedAllowanceCategory?.id ?? current.category)
+                        : current.category,
+                    working_period_tiers:
+                      methodCode === "WORKING_PERIOD"
+                        ? current.working_period_tiers.length
+                          ? current.working_period_tiers
+                          : [
+                              {
+                                minimum_months: 0,
+                                maximum_months: null,
+                                percentage: 0,
+                              },
+                            ]
+                        : [],
+                  }));
                 }}
               />
             </Field>
@@ -799,6 +906,164 @@ export default function PayrollComponentMasterTable({
                 }
               />
             </Field>
+            {isWorkingPeriod && (
+              <div className="flex flex-col gap-3 sm:col-span-2">
+                <div>
+                  <p className="m-0 text-sm font-semibold text-slate-800">
+                    Working-period tiers
+                  </p>
+                  <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
+                    Percentage of the employee&apos;s contractual basic salary,
+                    selected by completed calendar months as of payroll date.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {form.working_period_tiers.map((tier, index) => (
+                    <div
+                      key={`${index}-${tier.minimum_months}`}
+                      className="grid grid-cols-1 items-end gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
+                    >
+                      <Field label="Minimum months" required>
+                        <InputNumber
+                          value={tier.minimum_months}
+                          min={0}
+                          maxFractionDigits={0}
+                          useGrouping={false}
+                          className="w-full"
+                          onValueChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              working_period_tiers:
+                                current.working_period_tiers.map(
+                                  (currentTier, currentIndex) =>
+                                    currentIndex === index
+                                      ? {
+                                          ...currentTier,
+                                          minimum_months: event.value ?? 0,
+                                        }
+                                      : currentTier,
+                                ),
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Field
+                        label={
+                          index === form.working_period_tiers.length - 1
+                            ? "Maximum months (blank = open-ended)"
+                            : "Maximum months"
+                        }
+                        required={
+                          index !== form.working_period_tiers.length - 1
+                        }
+                      >
+                        <InputNumber
+                          value={tier.maximum_months}
+                          min={tier.minimum_months}
+                          maxFractionDigits={0}
+                          useGrouping={false}
+                          className="w-full"
+                          onValueChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              working_period_tiers:
+                                current.working_period_tiers.map(
+                                  (currentTier, currentIndex) =>
+                                    currentIndex === index
+                                      ? {
+                                          ...currentTier,
+                                          maximum_months: event.value ?? null,
+                                        }
+                                      : currentTier,
+                                ),
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Field label="Percentage" required>
+                        <InputNumber
+                          value={tier.percentage}
+                          min={0}
+                          max={100}
+                          minFractionDigits={2}
+                          maxFractionDigits={6}
+                          suffix=" %"
+                          className="w-full"
+                          onValueChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              working_period_tiers:
+                                current.working_period_tiers.map(
+                                  (currentTier, currentIndex) =>
+                                    currentIndex === index
+                                      ? {
+                                          ...currentTier,
+                                          percentage: event.value ?? 0,
+                                        }
+                                      : currentTier,
+                                ),
+                            }))
+                          }
+                        />
+                      </Field>
+                      <Button
+                        type="button"
+                        icon="pi pi-trash"
+                        severity="danger"
+                        outlined
+                        aria-label="Remove working-period tier"
+                        disabled={form.working_period_tiers.length === 1}
+                        onClick={() =>
+                          setForm((current) => ({
+                            ...current,
+                            working_period_tiers:
+                              current.working_period_tiers.filter(
+                                (_, currentIndex) => currentIndex !== index,
+                              ),
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  label="Add tier"
+                  icon="pi pi-plus"
+                  outlined
+                  className="w-full sm:w-fit"
+                  onClick={() =>
+                    setForm((current) => {
+                      const tiers = current.working_period_tiers.map(
+                        (tier) => ({
+                          ...tier,
+                        }),
+                      );
+                      const last = tiers[tiers.length - 1];
+                      const nextMinimum =
+                        last?.maximum_months !== null &&
+                        last?.maximum_months !== undefined
+                          ? last.maximum_months + 1
+                          : (last?.minimum_months ?? -1) + 1;
+                      if (last && last.maximum_months === null) {
+                        last.maximum_months = nextMinimum - 1;
+                      }
+                      return {
+                        ...current,
+                        working_period_tiers: [
+                          ...tiers,
+                          {
+                            minimum_months: nextMinimum,
+                            maximum_months: null,
+                            percentage: 0,
+                          },
+                        ],
+                      };
+                    })
+                  }
+                />
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
