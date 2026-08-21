@@ -862,9 +862,10 @@ export default function PayrollConfiguration() {
                         Payroll Period Rules
                       </h2>
                       <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                        Aturan efektif menentukan periode payroll. Cutoff
-                        tanggal 15 berarti periode berjalan dari tanggal 16
-                        bulan sebelumnya sampai tanggal 15 bulan berjalan.
+                        Aturan efektif menentukan hari berakhirnya periode
+                        payroll. Tanggal 15 berarti periode berjalan dari
+                        tanggal 16 bulan sebelumnya sampai tanggal 15 bulan
+                        berjalan.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -919,7 +920,10 @@ export default function PayrollConfiguration() {
                           row.effective_month.slice(0, 7)
                         }
                       />
-                      <Column field="cutoff_day" header="Cutoff Day" />
+                      <Column
+                        field="cutoff_day"
+                        header="Payroll Period End Day"
+                      />
                       <Column field="notes" header="Notes" />
                       {canManage && (
                         <Column
@@ -1267,7 +1271,7 @@ export default function PayrollConfiguration() {
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
           <Field
             label="Effective Month *"
-            hint="Bulan mulai berlakunya aturan cutoff ini. Gunakan bulan mendatang untuk perubahan periode berikutnya."
+            hint="Bulan mulai berlakunya aturan periode ini. Gunakan bulan mendatang untuk perubahan periode berikutnya."
           >
             <InputText
               type="month"
@@ -1282,8 +1286,8 @@ export default function PayrollConfiguration() {
             />
           </Field>
           <Field
-            label="Cutoff Day *"
-            hint="Hari terakhir periode payroll. Contoh: tanggal 15 berarti periode berjalan dari tanggal 16 bulan sebelumnya sampai tanggal 15."
+            label="Payroll Period End Day *"
+            hint="Tanggal terakhir yang termasuk dalam periode payroll. Contoh: tanggal 15 berarti periode berjalan dari tanggal 16 bulan sebelumnya sampai dan termasuk tanggal 15."
           >
             <InputNumber
               value={periodRule.cutoff_day}

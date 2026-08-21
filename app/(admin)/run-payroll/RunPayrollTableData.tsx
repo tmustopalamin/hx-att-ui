@@ -45,6 +45,28 @@ import {
 
 const BATCH_URL = "/api/payroll-batches";
 const OPTIONS_URL = "/api/payroll-batches/options";
+const getBody = () => document.body;
+
+const suggestBatchNumber = (
+  referenceMonth: string,
+  existingBatches: PayrollBatch[],
+) => {
+  const month = referenceMonth.slice(0, 7);
+  if (!/^\d{4}-\d{2}$/.test(month)) return "";
+
+  const generatedNumberPattern = new RegExp(`^PR-${month}-(\\d+)$`, "i");
+  let highestSequence = 0;
+
+  for (const existingBatch of existingBatches) {
+    const match = existingBatch.batch_no.trim().match(generatedNumberPattern);
+    const sequence = match ? Number.parseInt(match[1], 10) : NaN;
+    if (Number.isFinite(sequence)) {
+      highestSequence = Math.max(highestSequence, sequence);
+    }
+  }
+
+  return `PR-${month}-${String(highestSequence + 1).padStart(3, "0")}`;
+};
 
 const emptyBatch = (): NewPayrollBatch => ({
   payroll_setting_id: 0,
@@ -74,6 +96,7 @@ export default function RunPayrollTableData() {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [batchNoManuallyEdited, setBatchNoManuallyEdited] = useState(false);
   const [validatingId, setValidatingId] = useState<number | null>(null);
   const [calculatingId, setCalculatingId] = useState<number | null>(null);
   const [transitioningId, setTransitioningId] = useState<number | null>(null);
@@ -141,6 +164,7 @@ export default function RunPayrollTableData() {
   const openCreate = () => {
     setBatch(emptyBatch());
     setPeriodPreview(null);
+    setBatchNoManuallyEdited(false);
     setVisible(true);
   };
 
@@ -433,7 +457,7 @@ export default function RunPayrollTableData() {
           />
           <Column
             field="attendance_cutoff_date"
-            header="Attendance Cutoff"
+            header="Attendance Included Through"
             body={(row: PayrollBatch) =>
               formatDisplayDate(row.attendance_cutoff_date)
             }
@@ -574,55 +598,42 @@ export default function RunPayrollTableData() {
             <InputText
               value={batch.batch_no}
               className="w-full"
-              onChange={(event) =>
+              placeholder="Auto-generated after selecting Reference Month"
+              maxLength={50}
+              onChange={(event) => {
+                setBatchNoManuallyEdited(true);
                 setBatch((current) => ({
                   ...current,
                   batch_no: event.target.value,
-                }))
-              }
+                }));
+              }}
             />
+            <span className="text-xs leading-5 text-slate-500">
+              Nomor dibuat otomatis berdasarkan Reference Month, tetapi tetap
+              dapat diedit.
+            </span>
           </Field>
           <Field label="Reference Month *">
             <InputText
               type="month"
               value={batch.period_reference_month.slice(0, 7)}
               className="w-full"
-              onChange={(event) =>
+              onChange={(event) => {
+                const referenceMonth = event.target.value
+                  ? `${event.target.value}-01`
+                  : "";
                 setBatch((current) => ({
                   ...current,
-                  period_reference_month: event.target.value
-                    ? `${event.target.value}-01`
-                    : "",
+                  batch_no: batchNoManuallyEdited
+                    ? current.batch_no
+                    : suggestBatchNumber(referenceMonth, batches ?? []),
+                  period_reference_month: referenceMonth,
                   period_start: "",
                   period_end: "",
                   attendance_cutoff_date: "",
                   payroll_period_rule_id: null,
-                }))
-              }
-            />
-          </Field>
-          <Field label="Period Start *">
-            <PrimeDatePicker
-              value={batch.period_start}
-              disabled
-              className="w-full"
-              onValueChange={() => undefined}
-            />
-          </Field>
-          <Field label="Period End *">
-            <PrimeDatePicker
-              value={batch.period_end}
-              disabled
-              className="w-full"
-              onValueChange={() => undefined}
-            />
-          </Field>
-          <Field label="Attendance Cutoff *">
-            <PrimeDatePicker
-              value={batch.attendance_cutoff_date}
-              disabled
-              className="w-full"
-              onValueChange={() => undefined}
+                }));
+              }}
             />
           </Field>
           <Field label="Payroll Date *">
@@ -634,22 +645,90 @@ export default function RunPayrollTableData() {
               }
             />
           </Field>
-          <div className="sm:col-span-2">
-            <p className="m-0 text-xs leading-5 text-slate-500">
-              {periodPreviewLoading
-                ? "Calculating the configured payroll period…"
-                : periodPreview
-                  ? `Cutoff day ${periodPreview.cutoff_day}; dates are derived by the server and cannot be edited.`
-                  : "Select a payroll setting and reference month to preview the configured period."}
-            </p>
+          <div className="sm:col-span-2" aria-live="polite">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p className="m-0 text-sm font-semibold text-slate-800">
+                    Payroll Period Preview
+                  </p>
+                  <p className="mb-0 mt-1 text-xs leading-5 text-slate-500">
+                    Tanggal periode ditentukan otomatis oleh payroll period
+                    rule.
+                  </p>
+                </div>
+                {periodPreview && (
+                  <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700">
+                    Period end day {periodPreview.cutoff_day}
+                  </span>
+                )}
+              </div>
+
+              {periodPreviewLoading ? (
+                <p className="mb-0 mt-4 text-sm text-slate-500">
+                  Calculating the configured payroll period…
+                </p>
+              ) : periodPreview ? (
+                <>
+                  <div className="mt-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+                    <div>
+                      <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Period Start
+                      </p>
+                      <p className="mb-0 mt-1 text-sm font-semibold text-slate-900">
+                        {formatDisplayDate(batch.period_start)}
+                      </p>
+                    </div>
+                    <div className="flex items-center" aria-hidden="true">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
+                      <span className="h-0.5 flex-1 bg-blue-300" />
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600" />
+                    </div>
+                    <div className="text-right">
+                      <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Period End
+                      </p>
+                      <p className="mb-0 mt-1 text-sm font-semibold text-slate-900">
+                        {formatDisplayDate(batch.period_end)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm leading-5 text-emerald-800">
+                    <i
+                      className="pi pi-check-circle mt-0.5"
+                      aria-hidden="true"
+                    />
+                    <p className="m-0">
+                      Data kehadiran sampai dan termasuk{" "}
+                      <span className="font-semibold">
+                        {formatDisplayDate(batch.attendance_cutoff_date)}
+                      </span>{" "}
+                      masuk dalam periode ini. Data setelah tanggal tersebut
+                      masuk periode berikutnya.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="mb-0 mt-4 text-sm text-slate-500">
+                  Select a payroll setting and reference month to preview the
+                  configured period.
+                </p>
+              )}
+            </div>
           </div>
           <div className="sm:col-span-2">
             <Field label="Published Regulation Packages *">
               <MultiSelect
                 value={batch.regulation_package_ids}
                 options={regulationOptions}
+                appendTo={getBody}
                 display="chip"
                 filter
+                scrollHeight="10rem"
+                transitionOptions={{
+                  classNames: "payroll-regulation-dropdown",
+                  timeout: 0,
+                }}
                 placeholder="Select all regulations applicable to this payroll date"
                 className="w-full"
                 onChange={(event) =>
