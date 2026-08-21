@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import useSWR from "swr";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
@@ -13,6 +13,7 @@ import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { MultiSelect } from "primereact/multiselect";
 import { Tag } from "primereact/tag";
+import { Message } from "primereact/message";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -35,6 +36,7 @@ import type { PayrollPeriodPreview } from "@/app/types/payroll-configuration";
 import { getErrorMessage } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
+import type { RootState } from "@/store/store";
 import PayrollPaymentDialog from "./PayrollPaymentDialog";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
@@ -94,6 +96,17 @@ const statusSeverity = (
 export default function RunPayrollTableData() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canCreate = permissions.includes("payroll.create");
+  const canValidate = permissions.includes("payroll.validate");
+  const canCalculate = permissions.includes("payroll.calculate");
+  const canReview = permissions.includes("payroll.review");
+  const canApprove = permissions.includes("payroll.approve");
+  const canPost = permissions.includes("payroll.post");
+  const canPay = permissions.includes("payroll.pay");
+  const canExport = permissions.includes("payroll.export");
   const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [batchNoManuallyEdited, setBatchNoManuallyEdited] = useState(false);
@@ -116,12 +129,13 @@ export default function RunPayrollTableData() {
     data: options,
     error: optionsError,
     isLoading: optionsLoading,
+    mutate: refreshOptions,
   } = useSWR<PayrollBatchCreateOptions>(
-    OPTIONS_URL,
+    canCreate ? OPTIONS_URL : null,
     getPayrollBatchCreateOptions,
   );
   const { data: branches = [] } = useSWR(
-    "payroll-batch-branches",
+    canCreate ? "payroll-batch-branches" : null,
     getBranchOptions,
   );
   const branchNames = useMemo(
@@ -292,14 +306,18 @@ export default function RunPayrollTableData() {
       setValidatingId(null);
     }
   };
-  const confirmValidate = (row: PayrollBatch) => {
+  const confirmValidate = (row: PayrollBatch, revalidate = false) => {
     requestActionConfirmation({
-      action: "Validate payroll batch",
+      action: revalidate
+        ? "Revalidate payroll batch"
+        : "Validate payroll batch",
       target: row.batch_no,
       severity: "warning",
-      confirmLabel: "Validate",
+      confirmLabel: revalidate ? "Revalidate" : "Validate",
       confirmIcon: "pi pi-check-circle",
-      description: "Validate this payroll batch?",
+      description: revalidate
+        ? "Refresh employee, attendance, and payroll configuration snapshots for this batch?"
+        : "Validate this payroll batch?",
       onAccept: () => validate(row),
     });
   };
@@ -394,9 +412,8 @@ export default function RunPayrollTableData() {
     return values[status as keyof typeof values] ?? null;
   };
 
-  if (batchesLoading || optionsLoading) return <LoadingDataTable />;
-  if (batchError || optionsError)
-    return <ErrorNotConnectedToApi mutateKey={BATCH_URL} />;
+  if (batchesLoading) return <LoadingDataTable />;
+  if (batchError) return <ErrorNotConnectedToApi mutateKey={BATCH_URL} />;
 
   return (
     <Card className="border border-slate-200 shadow-sm">
@@ -426,12 +443,14 @@ export default function RunPayrollTableData() {
               loading={isValidating}
               onClick={() => void refreshBatches()}
             />
-            <Button
-              label="New Payroll Batch"
-              icon="pi pi-plus"
-              size="small"
-              onClick={openCreate}
-            />
+            {canCreate && (
+              <Button
+                label="New Payroll Batch"
+                icon="pi pi-plus"
+                size="small"
+                onClick={openCreate}
+              />
+            )}
           </div>
         </div>
 
@@ -496,29 +515,67 @@ export default function RunPayrollTableData() {
                   onClick={() => router.push(`/run-payroll/${row.id}`)}
                 />
               );
+              const canRevalidate =
+                canValidate &&
+                [
+                  "READY",
+                  "CALCULATED",
+                  "REVIEWED",
+                  "PENDING_APPROVAL",
+                  "APPROVED",
+                ].includes(row.status);
+              const revalidateButton = canRevalidate ? (
+                <Button
+                  label="Revalidate"
+                  icon="pi pi-refresh"
+                  size="small"
+                  severity="secondary"
+                  outlined
+                  loading={validatingId === row.id}
+                  disabled={
+                    validatingId !== null ||
+                    calculatingId !== null ||
+                    transitioningId !== null
+                  }
+                  onClick={() => confirmValidate(row, true)}
+                />
+              ) : null;
               const actionButton =
-                row.status === "READY" ? (
-                  <Button
-                    label="Calculate"
-                    icon="pi pi-calculator"
-                    size="small"
-                    loading={calculatingId === row.id}
-                    disabled={calculatingId !== null || validatingId !== null}
-                    onClick={() => confirmCalculate(row)}
-                  />
-                ) : next ? (
-                  <Button
-                    label={next.label}
-                    size="small"
-                    loading={transitioningId === row.id}
-                    disabled={
-                      transitioningId !== null ||
-                      calculatingId !== null ||
-                      validatingId !== null
-                    }
-                    onClick={() => confirmTransition(row, next.status)}
-                  />
-                ) : row.status === "DRAFT" || row.status === "FAILED" ? (
+                row.status === "READY" && canCalculate ? (
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <Button
+                      label="Calculate"
+                      icon="pi pi-calculator"
+                      size="small"
+                      loading={calculatingId === row.id}
+                      disabled={calculatingId !== null || validatingId !== null}
+                      onClick={() => confirmCalculate(row)}
+                    />
+                    {revalidateButton}
+                  </div>
+                ) : row.status === "READY" && canValidate ? (
+                  revalidateButton
+                ) : next &&
+                  ((next.status === "REVIEWED" && canReview) ||
+                    (next.status === "PENDING_APPROVAL" && canReview) ||
+                    (next.status === "APPROVED" && canApprove) ||
+                    (next.status === "POSTED" && canPost)) ? (
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <Button
+                      label={next.label}
+                      size="small"
+                      loading={transitioningId === row.id}
+                      disabled={
+                        transitioningId !== null ||
+                        calculatingId !== null ||
+                        validatingId !== null
+                      }
+                      onClick={() => confirmTransition(row, next.status)}
+                    />
+                    {revalidateButton}
+                  </div>
+                ) : (row.status === "DRAFT" || row.status === "FAILED") &&
+                  canValidate ? (
                   <Button
                     label="Validate"
                     icon="pi pi-check-circle"
@@ -529,7 +586,9 @@ export default function RunPayrollTableData() {
                     disabled={validatingId !== null || calculatingId !== null}
                     onClick={() => confirmValidate(row)}
                   />
-                ) : row.status === "POSTED" ? (
+                ) : revalidateButton ? (
+                  revalidateButton
+                ) : row.status === "POSTED" && (canPay || canExport) ? (
                   <Button
                     label="Payment"
                     icon="pi pi-wallet"
@@ -573,12 +632,54 @@ export default function RunPayrollTableData() {
               label="Create Draft"
               icon="pi pi-check"
               loading={saving}
-              disabled={saving || periodPreviewLoading || !periodPreview}
+              disabled={
+                saving ||
+                optionsLoading ||
+                Boolean(optionsError) ||
+                settingOptions.length === 0 ||
+                regulationOptions.length === 0 ||
+                periodPreviewLoading ||
+                !periodPreview
+              }
               onClick={() => void save()}
             />
+            {optionsError && (
+              <Button
+                label="Retry options"
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                disabled={saving || optionsLoading}
+                onClick={() => void refreshOptions()}
+              />
+            )}
           </div>
         }
       >
+        {optionsError && (
+          <Message
+            severity="error"
+            className="mb-3 w-full"
+            text="Payroll creation options could not be loaded. Retry to load the latest settings and published regulations."
+          />
+        )}
+        {optionsLoading && (
+          <Message
+            severity="info"
+            className="mb-3 w-full"
+            text="Loading the latest payroll settings and published regulations..."
+          />
+        )}
+        {!optionsLoading &&
+          !optionsError &&
+          canCreate &&
+          (settingOptions.length === 0 || regulationOptions.length === 0) && (
+            <Message
+              severity="warn"
+              className="mb-3 w-full"
+              text="Create Draft is unavailable until an active payroll setting and at least one published regulation are configured."
+            />
+          )}
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
           <Field label="Payroll Setting *">
             <Dropdown

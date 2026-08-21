@@ -72,6 +72,27 @@ export interface PayrollBatchValidationResult {
   ready_count: number;
   warning_count: number;
   failed_count: number;
+  validation_manifest_json?: Record<string, unknown>;
+}
+
+export interface PayrollBatchReadinessDomain {
+  domain: string;
+  status: "READY" | "WARNING" | "BLOCKED" | string;
+  blocking_count: number;
+  warning_count: number;
+  message: string;
+}
+
+export interface PayrollBatchSourceReadiness {
+  batch_id: number;
+  status: PayrollBatchStatus;
+  checked_at: string;
+  ready_for_validation: boolean;
+  ready_for_calculation: boolean;
+  ready_for_payment: boolean;
+  source_manifest_current: boolean;
+  validation_manifest_json: Record<string, unknown>;
+  domains: PayrollBatchReadinessDomain[];
 }
 
 export interface PayrollBatchCalculationResult {

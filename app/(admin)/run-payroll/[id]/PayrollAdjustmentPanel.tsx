@@ -19,7 +19,6 @@ import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog
 import type { RootState } from "@/store/store";
 import {
   approvePayrollAdjustment,
-  applyPayrollAdjustment,
   cancelPayrollAdjustment,
   createPayrollAdjustment,
   getPayrollAdjustmentOptions,
@@ -34,7 +33,7 @@ import type {
 } from "@/app/types/payroll-batch";
 import type { ResponseTypeError } from "@/app/types/response-type";
 
-type AdjustmentAction = "submit" | "approve" | "apply" | "cancel";
+type AdjustmentAction = "submit" | "approve" | "cancel";
 
 const getErrorMessage = (error: unknown): string => {
   if (typeof error === "object" && error !== null && "message" in error) {
@@ -61,7 +60,9 @@ export default function PayrollAdjustmentPanel({
     () => getPayrollAdjustments(batchId),
   );
   const { data: options } = useSWR<PayrollAdjustmentOptions>(
-    `/api/payroll-batches/${batchId}/adjustment-options`,
+    canAdjust || canApprove
+      ? `/api/payroll-batches/${batchId}/adjustment-options`
+      : null,
     () => getPayrollAdjustmentOptions(batchId),
   );
   const [employeeId, setEmployeeId] = useState<number | null>(null);
@@ -137,8 +138,6 @@ export default function PayrollAdjustmentPanel({
         await submitPayrollAdjustment(row.id, row.row_version);
       if (actionName === "approve")
         await approvePayrollAdjustment(row.id, row.row_version);
-      if (actionName === "apply")
-        await applyPayrollAdjustment(row.id, row.row_version);
       if (actionName === "cancel")
         await cancelPayrollAdjustment(row.id, row.row_version);
       await mutate();
@@ -156,7 +155,6 @@ export default function PayrollAdjustmentPanel({
     const labels: Record<AdjustmentAction, string> = {
       submit: "Submit",
       approve: "Approve",
-      apply: "Apply",
       cancel: "Cancel",
     };
     const isDanger = actionName === "cancel";
@@ -164,24 +162,13 @@ export default function PayrollAdjustmentPanel({
       action: labels[actionName],
       target:
         employeeLabels.get(row.employee_id) ?? `Employee #${row.employee_id}`,
-      severity: isDanger
-        ? "danger"
-        : actionName === "apply"
-          ? "warning"
-          : "info",
+      severity: isDanger ? "danger" : "info",
       confirmLabel: labels[actionName],
-      confirmIcon:
-        actionName === "cancel"
-          ? "pi pi-times"
-          : actionName === "apply"
-            ? "pi pi-check-circle"
-            : "pi pi-check",
+      confirmIcon: actionName === "cancel" ? "pi pi-times" : "pi pi-check",
       description:
-        actionName === "apply"
-          ? "Apply this payroll adjustment?"
-          : actionName === "cancel"
-            ? "Cancel this payroll adjustment?"
-            : `${labels[actionName]} this payroll adjustment?`,
+        actionName === "cancel"
+          ? "Cancel this payroll adjustment?"
+          : `${labels[actionName]} this payroll adjustment?`,
       onAccept: () => action(row, actionName),
     });
   };
@@ -217,12 +204,12 @@ export default function PayrollAdjustmentPanel({
             Payroll Adjustments
           </h2>
           <p className="m-0 mt-1 text-sm text-slate-500">
-            Requests can only be created and applied while the batch is
-            CALCULATED.
+            Requests are created while the batch is READY, approved by the
+            checker, and applied automatically during Calculate Payroll.
           </p>
         </div>
         {error && <Message severity="error" text={error} />}
-        {canAdjust && batchStatus === "CALCULATED" && (
+        {canAdjust && batchStatus === "READY" && (
           <div className="grid grid-cols-1 gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-6">
             <Dropdown
               value={employeeId}
@@ -237,7 +224,7 @@ export default function PayrollAdjustmentPanel({
             />
             <Dropdown
               value={type}
-              options={["EARNING", "DEDUCTION", "EMPLOYER_CONTRIBUTION", "TAX"]}
+              options={["EARNING", "DEDUCTION"]}
               className="w-full"
               onChange={(event) => {
                 setType(event.value as PayrollAdjustment["component_type"]);
@@ -348,14 +335,6 @@ export default function PayrollAdjustmentPanel({
                       }}
                     />
                   </>
-                )}
-                {canAdjust && row.status === "APPROVED" && (
-                  <Button
-                    size="small"
-                    label="Apply"
-                    loading={busyId === row.id}
-                    onClick={() => confirmAction(row, "apply")}
-                  />
                 )}
               </div>
             )}

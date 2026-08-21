@@ -8,6 +8,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
+import { Message } from "primereact/message";
 
 import {
   createPayrollPaymentBatch,
@@ -70,9 +71,12 @@ export default function PayrollPaymentDialog({
     visible && batchId
       ? `/api/payroll-batches/${batchId}/payment-batches`
       : null;
-  const { data: paymentBatches, mutate: refreshPaymentBatches } = useSWR(
-    paymentBatchesKey,
-    () => getPayrollPaymentBatches(batchId as number),
+  const {
+    data: paymentBatches,
+    mutate: refreshPaymentBatches,
+    isLoading: paymentBatchesLoading,
+  } = useSWR(paymentBatchesKey, () =>
+    getPayrollPaymentBatches(batchId as number),
   );
   const [selectedPaymentBatchId, setSelectedPaymentBatchId] = useState<
     number | null
@@ -287,7 +291,11 @@ export default function PayrollPaymentDialog({
         </div>
       }
     >
-      {!paymentBatches?.length && !selectedPaymentBatchId ? (
+      {paymentBatchesLoading ? (
+        <div className="py-8 text-center text-sm text-slate-500">
+          Loading payment batches...
+        </div>
+      ) : !paymentBatches?.length && !selectedPaymentBatchId && canPay ? (
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
           <Field label="Payment Batch Number *">
             <InputText
@@ -332,6 +340,11 @@ export default function PayrollPaymentDialog({
             snapshot. They are never shown in full on this screen.
           </p>
         </div>
+      ) : !paymentBatches?.length && !selectedPaymentBatchId && canExport ? (
+        <Message
+          severity="info"
+          text="No payment batch exists yet. Export-only access can inspect and export existing payment batches, but cannot create one."
+        />
       ) : !detail ? (
         <div className="py-8 text-center text-sm text-slate-500">
           Loading payment batch...

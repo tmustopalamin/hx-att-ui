@@ -7,14 +7,19 @@ import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Tag } from "primereact/tag";
+import { Message } from "primereact/message";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
-import { getPayrollBatchDetail } from "@/app/services/payroll-batch-service";
+import {
+  getPayrollBatchDetail,
+  getPayrollBatchSourceReadiness,
+} from "@/app/services/payroll-batch-service";
 import type {
   PayrollBatchDetail,
   PayrollComponentResult,
   PayrollEmployeeResultDetail,
+  PayrollBatchSourceReadiness,
 } from "@/app/types/payroll-batch";
 import PayrollAdjustmentPanel from "./PayrollAdjustmentPanel";
 import PerformanceEarningPanel from "./PerformanceEarningPanel";
@@ -57,6 +62,11 @@ export default function PayrollBatchDetailData({
   const { data, error, isLoading } = useSWR<PayrollBatchDetail>(detailUrl, () =>
     getPayrollBatchDetail(batchId),
   );
+  const readinessUrl = `/api/payroll-batches/${batchId}/source-readiness`;
+  const { data: readiness, error: readinessError } =
+    useSWR<PayrollBatchSourceReadiness>(readinessUrl, () =>
+      getPayrollBatchSourceReadiness(batchId),
+    );
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
   const selectedResult = useMemo(
     () =>
@@ -103,6 +113,15 @@ export default function PayrollBatchDetailData({
           </Link>
         </div>
       </Card>
+
+      {readinessError ? (
+        <Message
+          severity="warn"
+          text="Source readiness is unavailable. Refresh after the API migration is applied before calculating payroll."
+        />
+      ) : readiness ? (
+        <PayrollSourceReadinessPanel readiness={readiness} />
+      ) : null}
 
       <Card className="border border-slate-200 shadow-sm">
         <div className="p-3 sm:p-4 md:p-5">
@@ -187,6 +206,81 @@ export default function PayrollBatchDetailData({
         batchStatus={data.batch.status}
       />
     </div>
+  );
+}
+
+function PayrollSourceReadinessPanel({
+  readiness,
+}: {
+  readiness: PayrollBatchSourceReadiness;
+}) {
+  const statusSeverity = (status: string) => {
+    if (status === "READY") return "success" as const;
+    if (status === "WARNING") return "warning" as const;
+    return "danger" as const;
+  };
+  return (
+    <Card className="border border-slate-200 shadow-sm">
+      <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="m-0 text-base font-semibold text-slate-800">
+              Payroll Source Readiness
+            </h2>
+            <p className="m-0 mt-1 text-xs text-slate-500">
+              Master, employee detail, configuration, attendance, and business
+              rules are checked against the validation snapshot.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Tag
+              value={
+                readiness.source_manifest_current ? "Synchronized" : "Stale"
+              }
+              severity={
+                readiness.source_manifest_current ? "success" : "danger"
+              }
+            />
+            <Tag
+              value={
+                readiness.ready_for_calculation
+                  ? "Ready to calculate"
+                  : "Calculation blocked"
+              }
+              severity={readiness.ready_for_calculation ? "success" : "warning"}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+          {readiness.domains.map((domain) => (
+            <div
+              key={domain.domain}
+              className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {domain.domain.replaceAll("_", " ")}
+                </span>
+                <Tag
+                  value={domain.status}
+                  severity={statusSeverity(domain.status)}
+                />
+              </div>
+              <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                {domain.message}
+              </p>
+              {(domain.blocking_count > 0 || domain.warning_count > 0) && (
+                <p className="m-0 mt-1 text-xs font-medium text-amber-700">
+                  {domain.blocking_count > 0
+                    ? `${domain.blocking_count} blocking issue(s)`
+                    : `${domain.warning_count} warning(s)`}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
   );
 }
 

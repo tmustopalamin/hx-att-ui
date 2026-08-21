@@ -12,6 +12,7 @@ import type {
   PayrollAdjustment,
   PayrollAdjustmentOptions,
   PayrollBatchValidationResult,
+  PayrollBatchSourceReadiness,
   PayrollPerformanceEarningPreview,
   PayrollPerformanceEarningGeneration,
   PayrollHolidayPositionIncentivePreview,
@@ -27,6 +28,11 @@ export const getPayrollBatchCreateOptions =
 export const getPayrollBatchDetail = (
   id: number,
 ): Promise<PayrollBatchDetail> => apiFetch(`${URL}/${id}/detail`);
+
+export const getPayrollBatchSourceReadiness = (
+  id: number,
+): Promise<PayrollBatchSourceReadiness> =>
+  apiFetch(`${URL}/${id}/source-readiness`);
 
 export const getMyPayrollPayslips = (): Promise<PayrollPayslip[]> =>
   apiFetch("/api/payroll-payslips/me");
@@ -139,7 +145,7 @@ export const createPayrollAdjustment = (
 const adjustAction = (
   id: number,
   rowVersion: number,
-  action: "submit" | "approve" | "apply",
+  action: "submit" | "approve",
 ): Promise<PayrollAdjustment> =>
   apiFetch(`/api/payroll-adjustments/${id}/${action}`, {
     method: "POST",
@@ -150,8 +156,6 @@ export const submitPayrollAdjustment = (id: number, rowVersion: number) =>
   adjustAction(id, rowVersion, "submit");
 export const approvePayrollAdjustment = (id: number, rowVersion: number) =>
   adjustAction(id, rowVersion, "approve");
-export const applyPayrollAdjustment = (id: number, rowVersion: number) =>
-  adjustAction(id, rowVersion, "apply");
 export const rejectPayrollAdjustment = (
   id: number,
   rowVersion: number,

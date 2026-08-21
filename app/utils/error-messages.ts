@@ -15,6 +15,16 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "No eligible employee with active salary history was found. Configure active salary data before validating the batch.",
   PAYROLL_EMPLOYEE_NOT_READY:
     "Complete the required payroll data before calculating the batch.",
+  PAYROLL_ADJUSTMENT_BATCH_NOT_READY:
+    "Adjustments can only be created while the payroll batch is READY.",
+  PAYROLL_ADJUSTMENT_COMPONENT_TYPE_INVALID:
+    "Only Earning and Deduction adjustments are supported.",
+  PAYROLL_ADJUSTMENT_AMOUNT_REASON_REQUIRED:
+    "Adjustment amount and reason are required.",
+  PAYROLL_ADJUSTMENT_TARGET_NOT_READY:
+    "The selected employee is not ready in this payroll batch. Validate the batch again.",
+  PAYROLL_ADJUSTMENT_COMPONENT_MAPPING_INVALID:
+    "The selected adjustment component is no longer active or does not match its type.",
   PAYROLL_INPUT_CHANGED_REVALIDATION_REQUIRED:
     "Payroll inputs changed. Validate the batch again before calculating it.",
   PAYROLL_MAKER_CHECKER_REQUIRED:

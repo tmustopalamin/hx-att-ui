@@ -937,7 +937,7 @@ export default function PayrollConfiguration() {
                                 rounded
                                 text
                                 severity="secondary"
-                                tooltip="Edit future rule"
+                                tooltip="Edit unused rule"
                                 onClick={() => openPeriodRule(row)}
                               />
                               <Button
@@ -945,7 +945,7 @@ export default function PayrollConfiguration() {
                                 rounded
                                 text
                                 severity="danger"
-                                tooltip="Retire future rule"
+                                tooltip="Retire unused rule"
                                 loading={deletingPeriodRuleId === row.id}
                                 disabled={deletingPeriodRuleId !== null}
                                 onClick={() => confirmRemovePeriodRule(row)}
