@@ -43,8 +43,6 @@ import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
 
-import AttendanceAutoProcessSettingPanel from "./AttendanceAutoProcessSettingPanel";
-
 interface FilterForm {
   startDate: Date | null;
   endDate: Date | null;
@@ -343,9 +341,6 @@ const AttendanceSummaryTableData = () => {
     useState<DetailQuickFilter>("ALL");
 
   const [detailEmployeeSearch, setDetailEmployeeSearch] = useState("");
-
-  const [showAutoProcessSettingPanel, setShowAutoProcessSettingPanel] =
-    useState(false);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -1453,34 +1448,8 @@ const AttendanceSummaryTableData = () => {
                   void exportExcel();
                 }}
               />
-
-              <Button
-                type="button"
-                label={
-                  showAutoProcessSettingPanel
-                    ? "Hide Auto Process"
-                    : "Auto Process"
-                }
-                icon="pi pi-clock"
-                severity={showAutoProcessSettingPanel ? "warning" : "secondary"}
-                outlined={!showAutoProcessSettingPanel}
-                size="small"
-                disabled={isActionRunning}
-                className="w-full sm:w-auto"
-                onClick={() =>
-                  setShowAutoProcessSettingPanel(
-                    (currentValue) => !currentValue,
-                  )
-                }
-              />
             </div>
           </div>
-
-          {showAutoProcessSettingPanel && (
-            <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <AttendanceAutoProcessSettingPanel />
-            </section>
-          )}
 
           {(actionError || actionSuccess) && (
             <div

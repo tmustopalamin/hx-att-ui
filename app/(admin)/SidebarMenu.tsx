@@ -37,7 +37,7 @@ const selfServiceItems: MenuItem[] = [
   },
   {
     href: "/my-attendance/mobile-attendance",
-    label: "Mobile Attendance",
+    label: "Web Attendance",
     icon: "pi-map-marker",
     permission: "mobile-attendance.create",
   },
@@ -295,6 +295,12 @@ const settingSubMenus: SettingSubMenu[] = [
         label: "Shift Rule",
         icon: "pi-calendar",
         permission: "shift-rule.read",
+      },
+      {
+        href: "/setting/attendance",
+        label: "Attendance Settings",
+        icon: "pi-cog",
+        permission: "attendance-summary.read",
       },
     ],
   },

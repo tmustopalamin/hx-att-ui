@@ -104,7 +104,7 @@ const EmployeeDashboardPageComponent = () => {
   const quickAccessItems: QuickAccessItem[] = useMemo(() => {
     return [
       {
-        label: "Mobile Attendance",
+        label: "Web Attendance",
         icon: "pi-map-marker",
         href: "/my-attendance/mobile-attendance",
         permission: "mobile-attendance.create",

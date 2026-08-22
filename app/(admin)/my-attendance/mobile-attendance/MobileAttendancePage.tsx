@@ -664,7 +664,7 @@ const MobileAttendancePage = () => {
               <p className="truncate text-xs text-slate-500 md:text-sm">
                 {[currentProfile.branch_name, currentProfile.agency_name]
                   .filter(Boolean)
-                  .join(" • ") || "Mobile Attendance"}
+                  .join(" • ") || "Web Attendance"}
               </p>
 
               {currentProfileError && (
@@ -869,7 +869,7 @@ const MobileAttendancePage = () => {
               )}
 
               <div className="rounded-xl bg-slate-50 p-4">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                   <div>
                     <p className="text-xs text-slate-500">Latitude</p>
                     <p className="text-sm font-medium text-slate-900">
@@ -884,6 +884,15 @@ const MobileAttendancePage = () => {
                     <p className="text-sm font-medium text-slate-900">
                       {geoData.longitude !== null
                         ? geoData.longitude.toFixed(6)
+                        : "-"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-slate-500">GPS Accuracy</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {geoData.accuracy !== null
+                        ? `±${geoData.accuracy.toFixed(0)} m`
                         : "-"}
                     </p>
                   </div>
@@ -958,7 +967,7 @@ const MobileAttendancePage = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                Attendance will be submitted as a mobile attendance event and
+                Attendance will be submitted as a Web Attendance event and
                 processed automatically by the system.
               </div>
 
