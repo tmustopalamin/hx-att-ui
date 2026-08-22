@@ -11,7 +11,7 @@ const AppLogo = () => {
             src="/images/logo.png"
             alt="Logo"
             width={150}
-            height={150}
+            height={35}
             priority
             className="rounded-full mt-4"
           />

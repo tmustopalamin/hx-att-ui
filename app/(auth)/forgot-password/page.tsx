@@ -570,7 +570,7 @@ const ForgotPasswordPage = () => {
                   src="/images/logo.png"
                   alt="PT. Hexing Technology"
                   width={104}
-                  height={104}
+                  height={24}
                   priority
                   className="object-contain"
                 />

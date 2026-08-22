@@ -118,7 +118,7 @@ const LoginForm = () => {
                   src="/images/logo.png"
                   alt="PT. Hexing Technology"
                   width={475}
-                  height={105}
+                  height={110}
                   priority
                   sizes="(max-width: 640px) 210px, 225px"
                   className="h-auto w-full max-w-[225px] object-contain"
