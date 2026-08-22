@@ -7,29 +7,23 @@ import { clearProfile, updateDataProfile } from "@/store/me/ProfileSlice";
 import { RootState } from "@/store/store";
 import { Me } from "../types/me";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/app/utils/api-client";
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const dispatch = useDispatch();
   const router = useRouter();
   const profileData = useSelector((state: RootState) => state.profile);
 
-  const fetcher = async (url: string) => {
-    const res = await fetch(url, {
-      credentials: "include",
-    });
-
-    if (!res.ok) {
-      const error = new Error("Unauthorized") as Error & { status?: number };
-      error.status = res.status;
-      throw error;
-    }
-
-    return res.json();
-  };
+  const fetcher = (url: string) => apiFetch<Me>(url);
 
   const { data, error, isLoading } = useSWR<Me>("/api/auth/me", fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
+    // Keep the short-lived access cookie warm while the long-lived refresh
+    // cookie is still valid. The API performs the actual refresh/rotation.
+    refreshInterval: 60_000,
+    refreshWhenHidden: false,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    dedupingInterval: 5_000,
     shouldRetryOnError: false,
   });
 
@@ -38,7 +32,13 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       dispatch(updateDataProfile(data));
     }
 
-    if (error?.status === 401) {
+    const authError = error as
+      (Error & { code?: string; status?: number }) | undefined;
+    if (
+      authError?.status === 401 ||
+      authError?.code === "UNAUTHORIZED" ||
+      authError?.code === "SESSION_EXPIRED"
+    ) {
       dispatch(clearProfile());
       router.replace("/login");
     }

@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import {
   EmployeeEducationRow,
   EmployeeEmergencyContactRow,
@@ -44,7 +46,7 @@ const ensureOk = async (res: Response) => {
 
 export const getMyProfilePersonalData =
   async (): Promise<MyProfilePersonalData> => {
-    const res = await fetch(`${API_URL}/personal-data`, {
+    const res = await apiFetchResponse(`${API_URL}/personal-data`, {
       method: "GET",
       credentials: "include",
     });
@@ -56,7 +58,7 @@ export const getMyProfilePersonalData =
 export const getMyProfileIdentityAddressData = async (): Promise<
   EmployeeIdentityRow[]
 > => {
-  const res = await fetch(`${API_URL}/identity-address-data`, {
+  const res = await apiFetchResponse(`${API_URL}/identity-address-data`, {
     method: "GET",
     credentials: "include",
   });
@@ -68,7 +70,7 @@ export const getMyProfileIdentityAddressData = async (): Promise<
 export const getMyProfileFamilyData = async (): Promise<
   EmployeeFamilyRow[]
 > => {
-  const res = await fetch(`${API_URL}/family-data`, {
+  const res = await apiFetchResponse(`${API_URL}/family-data`, {
     method: "GET",
     credentials: "include",
   });
@@ -80,7 +82,7 @@ export const getMyProfileFamilyData = async (): Promise<
 export const getMyProfileEmergencyContactData = async (): Promise<
   EmployeeEmergencyContactRow[]
 > => {
-  const res = await fetch(`${API_URL}/emergency-contact-data`, {
+  const res = await apiFetchResponse(`${API_URL}/emergency-contact-data`, {
     method: "GET",
     credentials: "include",
   });
@@ -91,7 +93,7 @@ export const getMyProfileEmergencyContactData = async (): Promise<
 
 export const getMyProfileEmploymentData =
   async (): Promise<MyProfileEmploymentData | null> => {
-    const res = await fetch(`${API_URL}/employment-data`, {
+    const res = await apiFetchResponse(`${API_URL}/employment-data`, {
       method: "GET",
       credentials: "include",
     });
@@ -103,7 +105,7 @@ export const getMyProfileEmploymentData =
 export const getMyProfileFormalEducationData = async (): Promise<
   EmployeeEducationRow[]
 > => {
-  const res = await fetch(`${API_URL}/education-data/formal`, {
+  const res = await apiFetchResponse(`${API_URL}/education-data/formal`, {
     method: "GET",
     credentials: "include",
   });
@@ -115,7 +117,7 @@ export const getMyProfileFormalEducationData = async (): Promise<
 export const getMyProfileInformalEducationData = async (): Promise<
   EmployeeEducationRow[]
 > => {
-  const res = await fetch(`${API_URL}/education-data/informal`, {
+  const res = await apiFetchResponse(`${API_URL}/education-data/informal`, {
     method: "GET",
     credentials: "include",
   });
@@ -127,7 +129,7 @@ export const getMyProfileInformalEducationData = async (): Promise<
 export const getMyProfileWorkExperienceData = async (): Promise<
   EmployeeWorkExperienceRow[]
 > => {
-  const res = await fetch(`${API_URL}/work-experience-data`, {
+  const res = await apiFetchResponse(`${API_URL}/work-experience-data`, {
     method: "GET",
     credentials: "include",
   });
@@ -139,7 +141,7 @@ export const getMyProfileWorkExperienceData = async (): Promise<
 export const getMyProfileLeaveBalance = async (): Promise<
   EmployeeLeaveBalance[]
 > => {
-  const res = await fetch(`${API_URL}/leave-balance`, {
+  const res = await apiFetchResponse(`${API_URL}/leave-balance`, {
     method: "GET",
     credentials: "include",
   });

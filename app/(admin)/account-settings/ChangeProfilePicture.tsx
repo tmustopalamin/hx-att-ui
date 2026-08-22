@@ -2,6 +2,8 @@
 
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useSWR, { mutate } from "swr";
@@ -88,7 +90,7 @@ const getDisplayName = (employee?: Employee | null, me?: Me | null) => {
 };
 
 const fetchMe = async (): Promise<Me> => {
-  const res = await fetch("/api/auth/me", {
+  const res = await apiFetchResponse("/api/auth/me", {
     method: "GET",
     credentials: "include",
   });

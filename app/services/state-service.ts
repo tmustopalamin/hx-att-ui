@@ -1,10 +1,12 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { State } from "../types/state";
 
 const API_URL = "/api/state";
 
 export const createState = async (data: State) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -47,7 +49,7 @@ export const updateState = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -66,7 +68,7 @@ export const updateState = async (
 export const deleteState = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -82,7 +84,7 @@ export const deleteState = async (id: number, rowVersion: number) => {
 };
 
 export const purgeState = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -97,7 +99,7 @@ export const purgeState = async (id: number) => {
 };
 
 export const restoreState = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

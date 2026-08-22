@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { AttendanceLog } from "../types/attendance-log";
 
@@ -26,7 +28,7 @@ const parseError = async (res: Response): Promise<ResponseTypeError> => {
 };
 
 export const getMyAttendanceHistory = async (): Promise<AttendanceLog[]> => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "GET",
     credentials: "include",
     headers: {

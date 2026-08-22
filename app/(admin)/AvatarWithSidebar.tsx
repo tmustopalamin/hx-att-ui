@@ -1,4 +1,7 @@
 "use client";
+
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -40,7 +43,7 @@ const AvatarWithSidebar = () => {
   const onClickLogout = async () => {
     try {
       setLoggingOut(true);
-      const res = await fetch("/api/auth/logout", {
+      const res = await apiFetchResponse("/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });

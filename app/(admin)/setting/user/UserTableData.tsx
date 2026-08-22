@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR from "swr";
@@ -215,7 +217,7 @@ const formatRoleLabel = (role: string) => {
 };
 
 const createUserApi = async (data: UserForm) => {
-  const response = await fetch(USER_API_URL, {
+  const response = await apiFetchResponse(USER_API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -266,7 +268,7 @@ const updateUserApi = async (
     payload.password = password;
   }
 
-  const response = await fetch(`${USER_API_URL}/${id}`, {
+  const response = await apiFetchResponse(`${USER_API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -284,7 +286,7 @@ const updateUserApi = async (
 };
 
 const deleteUserApi = async (id: number, rowVersion: number) => {
-  const response = await fetch(`${USER_API_URL}/${id}`, {
+  const response = await apiFetchResponse(`${USER_API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -301,7 +303,7 @@ const deleteUserApi = async (id: number, rowVersion: number) => {
 };
 
 const restoreUserApi = async (id: number, rowVersion: number) => {
-  const response = await fetch(`${USER_API_URL}/${id}/restore`, {
+  const response = await apiFetchResponse(`${USER_API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -318,7 +320,7 @@ const restoreUserApi = async (id: number, rowVersion: number) => {
 };
 
 const purgeUserApi = async (id: number) => {
-  const response = await fetch(`${USER_API_URL}/${id}/purge`, {
+  const response = await apiFetchResponse(`${USER_API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {

@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { RequestLeaveAttachment } from "../types/request-leave-attachment";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -36,13 +38,16 @@ const validateRowVersion = (rowVersion: number) => {
 export const getRequestLeaveAttachments = async (
   requestLeaveId: number,
 ): Promise<RequestLeaveAttachment[]> => {
-  const res = await fetch(`${API_URL}/${requestLeaveId}/attachments`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `${API_URL}/${requestLeaveId}/attachments`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   if (!res.ok) {
     throw await parseErrorResponse(res);
@@ -58,11 +63,14 @@ export const uploadRequestLeaveAttachment = async (
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_URL}/${requestLeaveId}/attachments`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
+  const res = await apiFetchResponse(
+    `${API_URL}/${requestLeaveId}/attachments`,
+    {
+      method: "POST",
+      credentials: "include",
+      body: formData,
+    },
+  );
 
   if (!res.ok) {
     throw await parseErrorResponse(res);
@@ -78,7 +86,7 @@ export const deleteRequestLeaveAttachment = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${requestLeaveId}/attachments/${attachmentId}`,
     {
       method: "DELETE",

@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import {
   ApprovalActionPayload,
   ApprovalWorkflowSettingForm,
@@ -52,15 +54,18 @@ export const approveApprovalRequest = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${approvalRequestId}/approve`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "If-Match": String(rowVersion),
+  const res = await apiFetchResponse(
+    `${API_URL}/${approvalRequestId}/approve`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
+      },
+      body: JSON.stringify(normalizeNotePayload(note)),
     },
-    body: JSON.stringify(normalizeNotePayload(note)),
-  });
+  );
 
   if (!res.ok) {
     throw await parseErrorResponse(res);
@@ -76,7 +81,7 @@ export const rejectApprovalRequest = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${approvalRequestId}/reject`, {
+  const res = await apiFetchResponse(`${API_URL}/${approvalRequestId}/reject`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -96,7 +101,7 @@ export const rejectApprovalRequest = async (
 export const getPendingLifecycleApprovalDetail = async (
   approvalRequestId: number,
 ): Promise<LifecycleApprovalDetail> => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/pending/${approvalRequestId}/lifecycle-detail`,
     { credentials: "include" },
   );
@@ -122,7 +127,7 @@ export const updateApprovalWorkflowSetting = async (
     is_active: Boolean(data.is_active),
   };
 
-  const res = await fetch(`${API_URL}/workflow-settings/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/workflow-settings/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {

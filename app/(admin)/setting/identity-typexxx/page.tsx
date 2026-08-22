@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import CardTitle from "@/app/_components/CardTitle";
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -57,7 +59,7 @@ const IdentityTypeSettingPage = () => {
   const getData = () => {
     setTableLoading(true);
 
-    fetch("/api/identity-type", {
+    apiFetchResponse("/api/identity-type", {
       method: "GET",
       credentials: "include",
       headers: {
@@ -120,7 +122,7 @@ const IdentityTypeSettingPage = () => {
     is_active: boolean;
   }) => {
     try {
-      const res = await fetch("/api/identity-type", {
+      const res = await apiFetchResponse("/api/identity-type", {
         method: "POST",
         credentials: "include",
         headers: {
@@ -158,7 +160,7 @@ const IdentityTypeSettingPage = () => {
     is_active: boolean;
   }) => {
     try {
-      const res = await fetch("/api/identity-type", {
+      const res = await apiFetchResponse("/api/identity-type", {
         method: "PUT",
         credentials: "include",
         headers: {
@@ -194,7 +196,7 @@ const IdentityTypeSettingPage = () => {
     setSelectedId(id);
 
     try {
-      const res = await fetch("/api/identity-type", {
+      const res = await apiFetchResponse("/api/identity-type", {
         method: "DELETE",
         credentials: "include",
         headers: {

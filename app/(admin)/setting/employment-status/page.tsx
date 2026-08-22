@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR from "swr";
@@ -97,7 +99,7 @@ const parseApiResponse = async <T,>(response: Response): Promise<T> => {
 const employmentStatusFetcher = async (
   url: string,
 ): Promise<EmploymentStatus[]> => {
-  const response = await fetch(url, {
+  const response = await apiFetchResponse(url, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -112,7 +114,7 @@ const submitEmploymentStatusRequest = async (
   method: "POST" | "PUT" | "DELETE",
   body: object,
 ): Promise<ApiResponse> => {
-  const response = await fetch(API_URL, {
+  const response = await apiFetchResponse(API_URL, {
     method,
     credentials: "include",
     headers: {

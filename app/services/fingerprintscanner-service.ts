@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { FingerprintScanner } from "../types/fingerprint-scanner";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -48,7 +50,7 @@ export const createFingerprintScanner = async (data: FingerprintScanner) => {
     throw new Error("Communication key is required.");
   }
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -73,7 +75,7 @@ export const updateFingerprintScanner = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -101,7 +103,7 @@ export const deleteFingerprintScanner = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -118,7 +120,7 @@ export const deleteFingerprintScanner = async (
 };
 
 export const purgeFingerprintScanner = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -141,7 +143,7 @@ export const restoreFingerprintScanner = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -160,7 +162,7 @@ export const restoreFingerprintScanner = async (
 export const checkConnectionFingerprintScanner = async (
   data: FingerprintScanner,
 ) => {
-  const res = await fetch(`${API_URL}/check-connection/${data.id}`, {
+  const res = await apiFetchResponse(`${API_URL}/check-connection/${data.id}`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -228,7 +230,7 @@ export const syncFingerprintScannerAttendanceLog = async (
   data: AttendanceLogSyncResult;
   message: string;
 }> => {
-  const res = await fetch(`/api/attendance-log/sync/${scannerId}`, {
+  const res = await apiFetchResponse(`/api/attendance-log/sync/${scannerId}`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -263,7 +265,7 @@ export const getAllUserListFingerprintScanner = async (
   data: FingerprintScannerUserInfoRow[];
   message: string;
 }> => {
-  const res = await fetch(`${API_URL}/${scannerId}/users`, {
+  const res = await apiFetchResponse(`${API_URL}/${scannerId}/users`, {
     method: "GET",
     credentials: "include",
     headers: {

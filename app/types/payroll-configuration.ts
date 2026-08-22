@@ -67,6 +67,7 @@ export type PayrollRegulationStatus =
 export interface PayrollRegulationPackage {
   id: number;
   code: string;
+  supersedes_package_id?: number | null;
   name: string;
   regulator: string;
   regulation_number: string | null;
@@ -98,6 +99,17 @@ export interface NewPayrollRegulationPackage {
   effective_to: string | null;
   source_url: string | null;
   notes: string | null;
+}
+
+export interface NewPayrollRegulationVersion {
+  version: string;
+  effective_from: string;
+  effective_to: string | null;
+  name?: string | null;
+  regulator?: string | null;
+  regulation_number?: string | null;
+  source_url?: string | null;
+  notes?: string | null;
 }
 
 export type UpdatePayrollRegulationPackage = Omit<
@@ -191,6 +203,10 @@ export type SavePayrollRegulationRateBracket = Omit<
   PayrollRegulationRateBracket,
   "id" | "regulation_package_id" | "updated_at" | "row_version"
 >;
+
+export interface ReplacePayrollRegulationRateBrackets {
+  brackets: SavePayrollRegulationRateBracket[];
+}
 
 export type SavePayrollRegulationTestCase = Omit<
   PayrollRegulationTestCase,

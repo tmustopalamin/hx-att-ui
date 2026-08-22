@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { AdminDashboardResponse } from "../types/admin-dashboard";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -26,7 +28,7 @@ const parseError = async (res: Response): Promise<ResponseTypeError> => {
 };
 
 export const getAdminDashboard = async (): Promise<AdminDashboardResponse> => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "GET",
     credentials: "include",
     headers: {

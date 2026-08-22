@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/overtime-management";
@@ -65,7 +67,7 @@ export const approveOvertimeManagement = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/approve`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/approve`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -91,7 +93,7 @@ export const rejectOvertimeManagement = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/reject`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/reject`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -123,7 +125,7 @@ const parseJson = async (res: Response) => {
 };
 
 export const previewMassOvertime = async (payload: MassOvertimePayload) => {
-  const res = await fetch(`${API_URL}/mass/preview`, {
+  const res = await apiFetchResponse(`${API_URL}/mass/preview`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -135,7 +137,7 @@ export const previewMassOvertime = async (payload: MassOvertimePayload) => {
 };
 
 export const createMassOvertime = async (payload: MassOvertimePayload) => {
-  const res = await fetch(`${API_URL}/mass`, {
+  const res = await apiFetchResponse(`${API_URL}/mass`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },

@@ -14,7 +14,7 @@ import { showToast } from "@/store/ToastSlice";
 import { updateDataProfile } from "@/store/me/ProfileSlice";
 import type { FormDataLogin } from "@/app/types/form-data-login";
 import type { Me } from "@/app/types/me";
-import { apiFetch } from "@/app/utils/api-client";
+import { apiFetchResponse, apiFetch } from "@/app/utils/api-client";
 import { getErrorMessage } from "@/app/utils/error-messages";
 
 const LoginForm = () => {
@@ -48,14 +48,14 @@ const LoginForm = () => {
         }),
       });
 
-      const sessionResponse = await fetch("/api/auth/me", {
+      const sessionResponse = await apiFetchResponse("/api/auth/me", {
         method: "GET",
         credentials: "include",
         cache: "no-store",
       });
 
       if (!sessionResponse.ok) {
-        await fetch("/api/auth/logout", {
+        await apiFetchResponse("/api/auth/logout", {
           method: "POST",
           credentials: "include",
         }).catch(() => undefined);

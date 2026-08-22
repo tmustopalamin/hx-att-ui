@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import {
   EmployeeShiftRule,
   EmployeeShiftRuleAssignment,
@@ -9,7 +11,7 @@ const API_URL = "/api/shift-employee";
 export const createEmployeeShiftRule = async (
   data: EmployeeShiftRuleAssignment,
 ) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -52,7 +54,7 @@ export const updateEmployeeShiftRule = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -74,7 +76,7 @@ export const deleteEmployeeShiftRule = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -90,7 +92,7 @@ export const deleteEmployeeShiftRule = async (
 };
 
 export const purgeEmployeeShiftRule = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -108,7 +110,7 @@ export const restoreEmployeeShiftRule = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

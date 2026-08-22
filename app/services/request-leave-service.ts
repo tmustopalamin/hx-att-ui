@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 
 import { RequestLeaveForm, RequestLeaveOptions } from "../types/request-leave";
@@ -8,7 +10,7 @@ const API_URL = "/api/request-leave";
 
 export const getRequestLeaveOptions =
   async (): Promise<RequestLeaveOptions> => {
-    const res = await fetch(`${API_URL}/options`, {
+    const res = await apiFetchResponse(`${API_URL}/options`, {
       method: "GET",
       credentials: "include",
       headers: { Accept: "application/json" },
@@ -101,7 +103,7 @@ export const previewRequestLeaveDays = async (
     };
   }
 
-  const res = await fetch(`${API_URL}/preview-days`, {
+  const res = await apiFetchResponse(`${API_URL}/preview-days`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -133,7 +135,7 @@ export const getPreviewWorkingDays = async (
 export const createRequestLeave = async (data: RequestLeaveForm) => {
   const payload = buildPayload(data);
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -158,7 +160,7 @@ export const updateRequestLeave = async (
 
   const payload = buildPayload(data);
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -178,7 +180,7 @@ export const updateRequestLeave = async (
 export const submitRequestLeave = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/submit`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/submit`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -197,7 +199,7 @@ export const submitRequestLeave = async (id: number, rowVersion: number) => {
 export const deleteRequestLeave = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -214,7 +216,7 @@ export const deleteRequestLeave = async (id: number, rowVersion: number) => {
 };
 
 export const purgeRequestLeave = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -232,7 +234,7 @@ export const purgeRequestLeave = async (id: number) => {
 export const restoreRequestLeave = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -251,7 +253,7 @@ export const restoreRequestLeave = async (id: number, rowVersion: number) => {
 export const approveRequestLeave = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/approve`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/approve`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -270,7 +272,7 @@ export const approveRequestLeave = async (id: number, rowVersion: number) => {
 export const rejectRequestLeave = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/reject`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/reject`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -289,13 +291,16 @@ export const rejectRequestLeave = async (id: number, rowVersion: number) => {
 export const getRequestLeaveApprovalDetail = async (
   requestLeaveId: number,
 ): Promise<RequestLeaveApprovalDetail> => {
-  const res = await fetch(`${API_URL}/${requestLeaveId}/approval-detail`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `${API_URL}/${requestLeaveId}/approval-detail`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 
   if (!res.ok) {
     throw await parseErrorResponse(res);

@@ -3,6 +3,8 @@ import type { ResponseTypeError } from "../types/response-type";
 export const ERROR_MESSAGES: Record<string, string> = {
   API_UNAVAILABLE:
     "The service is temporarily unavailable. Please try again later.",
+  SESSION_REFRESH_RETRY:
+    "Your session is being refreshed. Please retry the request.",
   DatabaseError: "There is a problem with the database connection",
   DATABASE_ERROR:
     "A server error occurred. Try again; contact an administrator if it persists.",
@@ -51,6 +53,20 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "Select at least one regulation package before creating the payroll batch.",
   PAYROLL_REGULATION_SNAPSHOT_DUPLICATE:
     "Remove duplicate regulation packages before creating the payroll batch.",
+  REGULATION_VERSION_EXISTS:
+    "This regulation version already exists. Use a new version label.",
+  REGULATION_NOT_DRAFT:
+    "Only a draft regulation package can be changed. Refresh the package list.",
+  REGULATION_TEST_COVERAGE_REQUIRED:
+    "Add at least one parameter or rate table and one active test case before marking the package tested.",
+  REGULATION_TEST_EXECUTION_REQUIRED:
+    "Run the tests again after the regulation changed; all active tests must pass.",
+  INVALID_RATE_BRACKET:
+    "The rate bracket contains an invalid range, rate, or amount.",
+  INVALID_RATE_BRACKET_TABLE:
+    "The rate table must start at 0, use consecutive sequences, and have no gaps or overlaps.",
+  INVALID_STATE_OR_VERSION:
+    "The regulation changed while you were editing it. Refresh and try again.",
   PAYROLL_PRORATION_METHOD_INVALID:
     "Select an active proration method from Payroll Configuration > Proration Method.",
   PAYROLL_PRORATION_METHOD_IN_USE:

@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import {
   EmployeeEducationPayload,
@@ -48,43 +50,55 @@ const toDateString = (value?: Date | string | null) => {
 };
 
 export const getGenderOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/gender", { credentials: "include" });
+  const res = await apiFetchResponse("/api/gender", { credentials: "include" });
   await ensureOk(res);
   return res.json();
 };
 
 export const getReligionOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/religion", { credentials: "include" });
+  const res = await apiFetchResponse("/api/religion", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
 
 export const getMaritalOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/marital", { credentials: "include" });
+  const res = await apiFetchResponse("/api/marital", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
 
 export const getCountryOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/country", { credentials: "include" });
+  const res = await apiFetchResponse("/api/country", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
 
 export const getIdentityTypeOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/identity-type", { credentials: "include" });
+  const res = await apiFetchResponse("/api/identity-type", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
 
 export const getRelationshipOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/relationship", { credentials: "include" });
+  const res = await apiFetchResponse("/api/relationship", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
 
 export const getDepartmentOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/department", { credentials: "include" });
+  const res = await apiFetchResponse("/api/department", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
@@ -92,7 +106,9 @@ export const getDepartmentOptions = async (): Promise<OptionItem[]> => {
 export const getPositionOptions = async (): Promise<
   Array<OptionItem & { department_id?: number | null }>
 > => {
-  const res = await fetch("/api/position", { credentials: "include" });
+  const res = await apiFetchResponse("/api/position", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
@@ -104,13 +120,15 @@ export type EmploymentStatusOption = OptionItem & {
 export const getEmploymentStatusOptions = async (): Promise<
   EmploymentStatusOption[]
 > => {
-  const res = await fetch("/api/employment-status", { credentials: "include" });
+  const res = await apiFetchResponse("/api/employment-status", {
+    credentials: "include",
+  });
   await ensureOk(res);
   return res.json();
 };
 
 export const getAgencyOptions = async (): Promise<OptionItem[]> => {
-  const res = await fetch("/api/agency?show_all=false", {
+  const res = await apiFetchResponse("/api/agency?show_all=false", {
     credentials: "include",
   });
   await ensureOk(res);
@@ -133,7 +151,7 @@ export const getBranchOptions = async (): Promise<
     }
   >
 > => {
-  const res = await fetch("/api/branch?show_all=false", {
+  const res = await apiFetchResponse("/api/branch?show_all=false", {
     credentials: "include",
   });
   await ensureOk(res);
@@ -153,9 +171,12 @@ export const getBranchOptions = async (): Promise<
 export const getEmployeePersonalData = async (
   employeeId: number,
 ): Promise<EmployeePersonalData> => {
-  const res = await fetch(`/api/employees/${employeeId}/personal-data`, {
-    credentials: "include",
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/personal-data`,
+    {
+      credentials: "include",
+    },
+  );
   await ensureOk(res);
   return res.json();
 };
@@ -164,15 +185,18 @@ export const updateEmployeePersonalData = async (
   employeeId: number,
   payload: EmployeePersonalData,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/personal-data`, {
-    method: "PUT",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...payload,
-      dob: toDateString(payload.dob),
-    }),
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/personal-data`,
+    {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        dob: toDateString(payload.dob),
+      }),
+    },
+  );
 
   await ensureOk(res);
   return res.json();
@@ -181,9 +205,12 @@ export const updateEmployeePersonalData = async (
 export const getEmployeeEmploymentData = async (
   employeeId: number,
 ): Promise<EmployeeEmploymentData | null> => {
-  const res = await fetch(`/api/employees/${employeeId}/employment-data`, {
-    credentials: "include",
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/employment-data`,
+    {
+      credentials: "include",
+    },
+  );
   await ensureOk(res);
   return res.json();
 };
@@ -192,25 +219,28 @@ export const updateEmployeeEmploymentData = async (
   employeeId: number,
   payload: EmployeeEmploymentData,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/employment-data`, {
-    method: "PUT",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      code: payload.code ?? null,
-      employee_id: employeeId,
-      join_date: toDateString(payload.join_date),
-      end_date: toDateString(payload.end_date),
-      probation_end_date: toDateString(payload.probation_end_date),
-      confirmation_date: toDateString(payload.confirmation_date),
-      department_id: payload.department_id,
-      position_id: payload.position_id,
-      supervisor_employee_id: payload.supervisor_employee_id,
-      employment_status_id: payload.employment_status_id,
-      agency_id: payload.agency_id ?? null,
-      branch_id: payload.branch_id ?? null,
-    }),
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/employment-data`,
+    {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: payload.code ?? null,
+        employee_id: employeeId,
+        join_date: toDateString(payload.join_date),
+        end_date: toDateString(payload.end_date),
+        probation_end_date: toDateString(payload.probation_end_date),
+        confirmation_date: toDateString(payload.confirmation_date),
+        department_id: payload.department_id,
+        position_id: payload.position_id,
+        supervisor_employee_id: payload.supervisor_employee_id,
+        employment_status_id: payload.employment_status_id,
+        agency_id: payload.agency_id ?? null,
+        branch_id: payload.branch_id ?? null,
+      }),
+    },
+  );
 
   await ensureOk(res);
   return res.json();
@@ -219,7 +249,7 @@ export const updateEmployeeEmploymentData = async (
 export const getEmployeeIdentities = async (
   employeeId: number,
 ): Promise<EmployeeIdentityRow[]> => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/identity-address-data`,
     {
       credentials: "include",
@@ -233,7 +263,7 @@ export const createEmployeeIdentity = async (
   employeeId: number,
   payload: EmployeeIdentityPayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/identity-address-data`,
     {
       method: "POST",
@@ -256,7 +286,7 @@ export const updateEmployeeIdentity = async (
   rowVersion: number,
   payload: EmployeeIdentityPayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/identity-address-data/${id}`,
     {
       method: "PUT",
@@ -281,7 +311,7 @@ export const deleteEmployeeIdentity = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/identity-address-data/${id}`,
     {
       method: "DELETE",
@@ -301,7 +331,7 @@ export const restoreEmployeeIdentity = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/identity-address-data/${id}/restore`,
     {
       method: "POST",
@@ -317,7 +347,7 @@ export const restoreEmployeeIdentity = async (
 };
 
 export const purgeEmployeeIdentity = async (employeeId: number, id: number) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/identity-address-data/${id}/purge`,
     {
       method: "DELETE",
@@ -333,7 +363,7 @@ export const getEmployeeEducation = async (
   employeeId: number,
   type: "formal" | "informal",
 ): Promise<EmployeeEducationRow[]> => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/education-data/${type}`,
     {
       credentials: "include",
@@ -348,7 +378,7 @@ export const createEmployeeEducation = async (
   type: "formal" | "informal",
   payload: EmployeeEducationPayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/education-data/${type}`,
     {
       method: "POST",
@@ -372,7 +402,7 @@ export const updateEmployeeEducation = async (
   rowVersion: number,
   payload: EmployeeEducationPayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/education-data/${type}/${id}`,
     {
       method: "PUT",
@@ -398,7 +428,7 @@ export const deleteEmployeeEducation = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/education-data/${type}/${id}`,
     {
       method: "DELETE",
@@ -415,9 +445,12 @@ export const deleteEmployeeEducation = async (
 export const getEmployeeWorkExperiences = async (
   employeeId: number,
 ): Promise<EmployeeWorkExperienceRow[]> => {
-  const res = await fetch(`/api/employees/${employeeId}/work-experience-data`, {
-    credentials: "include",
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/work-experience-data`,
+    {
+      credentials: "include",
+    },
+  );
   await ensureOk(res);
   return res.json();
 };
@@ -426,16 +459,19 @@ export const createEmployeeWorkExperience = async (
   employeeId: number,
   payload: EmployeeWorkExperiencePayload,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/work-experience-data`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...payload,
-      start_date: toDateString(payload.start_date),
-      end_date: toDateString(payload.end_date),
-    }),
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/work-experience-data`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...payload,
+        start_date: toDateString(payload.start_date),
+        end_date: toDateString(payload.end_date),
+      }),
+    },
+  );
   await ensureOk(res);
   return res.json();
 };
@@ -446,7 +482,7 @@ export const updateEmployeeWorkExperience = async (
   rowVersion: number,
   payload: EmployeeWorkExperiencePayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/work-experience-data/${id}`,
     {
       method: "PUT",
@@ -471,7 +507,7 @@ export const deleteEmployeeWorkExperience = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/work-experience-data/${id}`,
     {
       method: "DELETE",
@@ -491,7 +527,7 @@ type EmployeeEmergencyContactPayload = {
 };
 
 export const getEmployeeEmergencyContacts = async (employeeId: number) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/emergency-contact-data`,
     {
       credentials: "include",
@@ -506,7 +542,7 @@ export const createEmployeeEmergencyContact = async (
   employeeId: number,
   payload: EmployeeEmergencyContactPayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/emergency-contact-data`,
     {
       method: "POST",
@@ -534,7 +570,7 @@ export const updateEmployeeEmergencyContact = async (
   rowVersion: number,
   payload: EmployeeEmergencyContactPayload,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/emergency-contact-data/${id}`,
     {
       method: "PUT",
@@ -562,7 +598,7 @@ export const deleteEmployeeEmergencyContact = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `/api/employees/${employeeId}/emergency-contact-data/${id}`,
     {
       method: "DELETE",
@@ -590,9 +626,12 @@ export type EmployeeFamilyPayload = {
 };
 
 export const getEmployeeFamilies = async (employeeId: number) => {
-  const res = await fetch(`/api/employees/${employeeId}/family-data`, {
-    credentials: "include",
-  });
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/family-data`,
+    {
+      credentials: "include",
+    },
+  );
 
   await ensureOk(res);
   return res.json();
@@ -602,25 +641,28 @@ export const createEmployeeFamily = async (
   employeeId: number,
   payload: EmployeeFamilyPayload,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/family-data`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/family-data`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        employee_id: employeeId,
+        name: payload.name.trim(),
+        relationship_id: Number(payload.relationship_id),
+        dob: payload.dob,
+        marital_status: payload.marital_status,
+        gender_id: Number(payload.gender_id),
+        job: payload.job?.trim() || null,
+        phone1: payload.phone1?.trim() || null,
+        phone2: payload.phone2?.trim() || null,
+        is_active: payload.is_active,
+      }),
     },
-    body: JSON.stringify({
-      employee_id: employeeId,
-      name: payload.name.trim(),
-      relationship_id: Number(payload.relationship_id),
-      dob: payload.dob,
-      marital_status: payload.marital_status,
-      gender_id: Number(payload.gender_id),
-      job: payload.job?.trim() || null,
-      phone1: payload.phone1?.trim() || null,
-      phone2: payload.phone2?.trim() || null,
-      is_active: payload.is_active,
-    }),
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -632,26 +674,29 @@ export const updateEmployeeFamily = async (
   rowVersion: number,
   payload: EmployeeFamilyPayload,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/family-data/${id}`, {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "If-Match": String(rowVersion),
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/family-data/${id}`,
+    {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
+      },
+      body: JSON.stringify({
+        employee_id: employeeId,
+        name: payload.name.trim(),
+        relationship_id: Number(payload.relationship_id),
+        dob: payload.dob,
+        is_active: payload.is_active,
+        marital_status: payload.marital_status,
+        gender_id: Number(payload.gender_id),
+        job: payload.job?.trim() || null,
+        phone1: payload.phone1?.trim() || null,
+        phone2: payload.phone2?.trim() || null,
+      }),
     },
-    body: JSON.stringify({
-      employee_id: employeeId,
-      name: payload.name.trim(),
-      relationship_id: Number(payload.relationship_id),
-      dob: payload.dob,
-      is_active: payload.is_active,
-      marital_status: payload.marital_status,
-      gender_id: Number(payload.gender_id),
-      job: payload.job?.trim() || null,
-      phone1: payload.phone1?.trim() || null,
-      phone2: payload.phone2?.trim() || null,
-    }),
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -662,20 +707,23 @@ export const deleteEmployeeFamily = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(`/api/employees/${employeeId}/family-data/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: {
-      "If-Match": String(rowVersion),
+  const res = await apiFetchResponse(
+    `/api/employees/${employeeId}/family-data/${id}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "If-Match": String(rowVersion),
+      },
     },
-  });
+  );
 
   await ensureOk(res);
   return res.json();
 };
 
 export const getEmployeeOptions = async () => {
-  const res = await fetch("/api/employees", {
+  const res = await apiFetchResponse("/api/employees", {
     method: "GET",
     credentials: "include",
     headers: {
@@ -729,7 +777,7 @@ export const getEmployeeOptions = async () => {
 export const getApprovalEmployeeOptions = async (): Promise<
   EmployeeApprovalOption[]
 > => {
-  const res = await fetch("/api/employees/approval-options", {
+  const res = await apiFetchResponse("/api/employees/approval-options", {
     credentials: "include",
   });
 

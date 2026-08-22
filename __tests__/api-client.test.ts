@@ -1,12 +1,16 @@
-import { apiFetch, parseApiError } from "@/app/utils/api-client";
+import {
+  apiFetch,
+  apiFetchResponse,
+  parseApiError,
+} from "@/app/utils/api-client";
 import { getErrorMessage } from "@/app/utils/error-messages";
 
 const createResponse = (
   body: unknown,
   status: number,
   contentType = "application/json",
-) =>
-  ({
+): Response => {
+  const response = {
     ok: status >= 200 && status < 300,
     status,
     headers: {
@@ -15,7 +19,12 @@ const createResponse = (
     },
     json: async () => body,
     text: async () => String(body),
-  }) as unknown as Response;
+  } as unknown as Response;
+  Object.defineProperty(response, "clone", {
+    value: () => createResponse(body, status, contentType),
+  });
+  return response;
+};
 
 describe("parseApiError", () => {
   it("returns a normalized JSON API error", async () => {
@@ -79,6 +88,10 @@ describe("parseApiError", () => {
 });
 
 describe("apiFetch", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("throws a friendly error when an API request receives HTML", async () => {
     const originalFetch = Object.getOwnPropertyDescriptor(globalThis, "fetch");
     const fetchMock = jest
@@ -98,6 +111,78 @@ describe("apiFetch", () => {
         message:
           "The service is temporarily unavailable. Please try again later.",
       });
+    } finally {
+      if (originalFetch) {
+        Object.defineProperty(globalThis, "fetch", originalFetch);
+      } else {
+        Reflect.deleteProperty(globalThis, "fetch");
+      }
+    }
+  });
+
+  it("retries legacy response callers during session rotation", async () => {
+    const firstResponse = createResponse(
+      {
+        success: false,
+        code: "SESSION_REFRESH_RETRY",
+        message: "Session refresh is already in progress.",
+      },
+      401,
+    );
+    const successResponse = createResponse({ ok: true }, 200);
+    const originalFetch = Object.getOwnPropertyDescriptor(globalThis, "fetch");
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(firstResponse)
+      .mockResolvedValueOnce(successResponse);
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      value: fetchMock,
+      writable: true,
+    });
+
+    try {
+      const response = await apiFetchResponse("/api/request-leave", {
+        method: "POST",
+      });
+
+      expect(response.ok).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      if (originalFetch) {
+        Object.defineProperty(globalThis, "fetch", originalFetch);
+      } else {
+        Reflect.deleteProperty(globalThis, "fetch");
+      }
+    }
+  });
+
+  it("retries once when another request is rotating the session", async () => {
+    const firstResponse = createResponse(
+      {
+        success: false,
+        code: "SESSION_REFRESH_RETRY",
+        message: "Session refresh is already in progress.",
+      },
+      401,
+    );
+    const successResponse = createResponse({ ok: true }, 200);
+    const originalFetch = Object.getOwnPropertyDescriptor(globalThis, "fetch");
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(firstResponse)
+      .mockResolvedValueOnce(successResponse);
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      value: fetchMock,
+      writable: true,
+    });
+
+    try {
+      await expect(
+        apiFetch<{ ok: boolean }>("/api/dashboard/admin"),
+      ).resolves.toEqual({ ok: true });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     } finally {
       if (originalFetch) {
         Object.defineProperty(globalThis, "fetch", originalFetch);

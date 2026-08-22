@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { User } from "../types/User";
 
@@ -94,7 +96,7 @@ const parseErrorResponse = async (
 export const createUser = async (data: User) => {
   const payload = buildCreateUserPayload(data);
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -125,7 +127,7 @@ export const updateUser = async (
 
   const payload = buildUpdateUserPayload(id, data);
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -151,7 +153,7 @@ export const deleteUser = async (id: number, rowVersion: number) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -168,7 +170,7 @@ export const deleteUser = async (id: number, rowVersion: number) => {
 };
 
 export const purgeUser = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -192,7 +194,7 @@ export const restoreUser = async (id: number, rowVersion: number) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -214,7 +216,7 @@ export type ChangePasswordPayload = {
 };
 
 export const changePassword = async (data: ChangePasswordPayload) => {
-  const res = await fetch(`${API_URL}/change-password`, {
+  const res = await apiFetchResponse(`${API_URL}/change-password`, {
     method: "POST",
     credentials: "include",
     headers: {

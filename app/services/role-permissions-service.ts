@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { RolePermissions } from "../types/role-permissions";
 
@@ -28,7 +30,7 @@ const parseErrorResponse = async (
 };
 
 export const getRolePermissions = async (roleCode: string) => {
-  const res = await fetch(`${API_URL}/${roleCode}/permissions`, {
+  const res = await apiFetchResponse(`${API_URL}/${roleCode}/permissions`, {
     method: "GET",
     credentials: "include",
   });
@@ -46,7 +48,7 @@ export const saveRolePermissions = async (data: RolePermissions) => {
     permissions: data.permissions ?? [],
   };
 
-  const res = await fetch(`${API_URL}/permissions`, {
+  const res = await apiFetchResponse(`${API_URL}/permissions`, {
     method: "PUT",
     credentials: "include",
     headers: {

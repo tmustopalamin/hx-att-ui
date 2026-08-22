@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import {
   QuickCreateEmployeePayload,
   QuickCreateEmployeeResult,
@@ -31,7 +33,7 @@ const parseError = async (res: Response): Promise<ResponseTypeError> => {
 export const quickCreateEmployee = async (
   payload: QuickCreateEmployeePayload,
 ): Promise<ResponseType<QuickCreateEmployeeResult>> => {
-  const res = await fetch(`${API_URL}/quick-create`, {
+  const res = await apiFetchResponse(`${API_URL}/quick-create`, {
     method: "POST",
     credentials: "include",
     headers: {

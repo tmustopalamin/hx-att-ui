@@ -45,6 +45,7 @@ import { getErrorMessage } from "@/app/utils/error-messages";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import PayrollRegulationDetailDialog from "./PayrollRegulationDetailDialog";
+import PayrollRegulationVersionWizard from "./PayrollRegulationVersionWizard";
 import PayrollComponentMappingPanel from "./PayrollComponentMappingPanel";
 import type { PayrollProrationMethod } from "@/app/types/payroll-proration-method";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
@@ -211,6 +212,7 @@ export default function PayrollConfiguration() {
   const [newSetting, setNewSetting] =
     useState<NewPayrollSetting>(emptyPayrollSetting);
   const [showRegulationDialog, setShowRegulationDialog] = useState(false);
+  const [showVersionWizard, setShowVersionWizard] = useState(false);
   const [savingRegulation, setSavingRegulation] = useState(false);
   const [transitioningId, setTransitioningId] = useState<number | null>(null);
   const [testingId, setTestingId] = useState<number | null>(null);
@@ -236,6 +238,16 @@ export default function PayrollConfiguration() {
       return settings.find((item) => item.id === current?.id) ?? settings[0];
     });
   }, [settings]);
+
+  useEffect(() => {
+    if (!selectedRegulation || !regulations) return;
+    const refreshed = regulations.find(
+      (item) => item.id === selectedRegulation.id,
+    );
+    if (refreshed && refreshed.row_version !== selectedRegulation.row_version) {
+      setSelectedRegulation(refreshed);
+    }
+  }, [regulations, selectedRegulation]);
 
   const branchNames = useMemo(
     () => new Map(branches.map((branch) => [Number(branch.id), branch.name])),
@@ -991,8 +1003,16 @@ export default function PayrollConfiguration() {
                     onClick={() => void refreshRegulations()}
                   />
                   <Button
-                    label="New Regulation"
-                    icon="pi pi-plus"
+                    label="Buat versi baru"
+                    icon="pi pi-copy"
+                    size="small"
+                    onClick={() => setShowVersionWizard(true)}
+                  />
+                  <Button
+                    label="Advanced"
+                    icon="pi pi-sliders-h"
+                    severity="secondary"
+                    outlined
                     size="small"
                     onClick={() => setShowRegulationDialog(true)}
                   />
@@ -1022,7 +1042,21 @@ export default function PayrollConfiguration() {
                   />
                   <Column field="name" header="Name" sortable />
                   <Column field="regulator" header="Regulator" sortable />
-                  <Column field="version" header="Version" sortable />
+                  <Column
+                    field="version"
+                    header="Version"
+                    sortable
+                    body={(row: PayrollRegulationPackage) => (
+                      <div className="flex flex-col">
+                        <span>{row.version}</span>
+                        {row.supersedes_package_id && (
+                          <span className="text-xs text-slate-400">
+                            Revision dari versi sebelumnya
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  />
                   <Column
                     field="effective_from"
                     header="Effective From"
@@ -1324,7 +1358,7 @@ export default function PayrollConfiguration() {
       </Dialog>
 
       <Dialog
-        header="New Regulatory Package"
+        header="Advanced: New Regulatory Package"
         visible={showRegulationDialog}
         modal
         draggable={false}
@@ -1448,6 +1482,20 @@ export default function PayrollConfiguration() {
           </Field>
         </div>
       </Dialog>
+      <PayrollRegulationVersionWizard
+        visible={showVersionWizard}
+        packages={regulations ?? []}
+        onHide={() => setShowVersionWizard(false)}
+        onCreated={async (created) => {
+          await refreshRegulations();
+          toast(
+            "success",
+            "Draft dibuat",
+            `${created.code} versi ${created.version} siap dikonfigurasi dan dites.`,
+          );
+        }}
+        onError={showError}
+      />
       <PayrollRegulationDetailDialog
         regulation={selectedRegulation}
         onHide={() => setSelectedRegulation(null)}

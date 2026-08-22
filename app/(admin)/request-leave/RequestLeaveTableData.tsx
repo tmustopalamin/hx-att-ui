@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import useSWR, { mutate } from "swr";
@@ -134,7 +136,7 @@ const createRequestLeaveApi = async (data: RequestLeaveForm) => {
     total_days: data.total_days,
   };
 
-  const res = await fetch(REQUEST_LEAVE_API_URL, {
+  const res = await apiFetchResponse(REQUEST_LEAVE_API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -164,7 +166,7 @@ const updateRequestLeaveApi = async (
     total_days: data.total_days,
   };
 
-  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${REQUEST_LEAVE_API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -182,7 +184,7 @@ const updateRequestLeaveApi = async (
 };
 
 const deleteRequestLeaveApi = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${REQUEST_LEAVE_API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -199,7 +201,7 @@ const deleteRequestLeaveApi = async (id: number, rowVersion: number) => {
 };
 
 const restoreRequestLeaveApi = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${REQUEST_LEAVE_API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -216,7 +218,7 @@ const restoreRequestLeaveApi = async (id: number, rowVersion: number) => {
 };
 
 const purgeRequestLeaveApi = async (id: number) => {
-  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${REQUEST_LEAVE_API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -232,7 +234,7 @@ const purgeRequestLeaveApi = async (id: number) => {
 };
 
 const submitRequestLeaveApi = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${REQUEST_LEAVE_API_URL}/${id}/submit`, {
+  const res = await apiFetchResponse(`${REQUEST_LEAVE_API_URL}/${id}/submit`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -255,7 +257,7 @@ const uploadRequestLeaveAttachmentApi = async (
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${REQUEST_LEAVE_API_URL}/${requestLeaveId}/attachments`,
     {
       method: "POST",

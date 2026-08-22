@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { Shift } from "../types/shift";
 import { ResponseTypeError } from "../types/response-type";
 import dayjs from "dayjs";
@@ -42,7 +44,7 @@ export const createShift = async (data: Shift) => {
     checkout_end,
   };
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -122,7 +124,7 @@ export const updateShift = async (
     checkout_end,
   };
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -141,7 +143,7 @@ export const updateShift = async (
 export const deleteShift = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -157,7 +159,7 @@ export const deleteShift = async (id: number, rowVersion: number) => {
 };
 
 export const purgeShift = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -172,7 +174,7 @@ export const purgeShift = async (id: number) => {
 };
 
 export const restoreShift = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

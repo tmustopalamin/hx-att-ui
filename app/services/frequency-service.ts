@@ -1,10 +1,12 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { FrequencyPayload } from "../types/frequency";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/frequency";
 
 export const createFrequency = async (data: FrequencyPayload) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -47,7 +49,7 @@ export const updateFrequency = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -66,7 +68,7 @@ export const updateFrequency = async (
 export const deleteFrequency = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -82,7 +84,7 @@ export const deleteFrequency = async (id: number, rowVersion: number) => {
 };
 
 export const purgeFrequency = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -97,7 +99,7 @@ export const purgeFrequency = async (id: number) => {
 };
 
 export const restoreFrequency = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

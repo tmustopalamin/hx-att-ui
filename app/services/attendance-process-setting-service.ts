@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { AttendanceProcessSetting } from "../types/attendance-process-setting";
 
@@ -30,7 +32,7 @@ export const getAttendanceProcessSetting = async (): Promise<{
   data: AttendanceProcessSetting;
   message: string;
 }> => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -69,7 +71,7 @@ export const updateAttendanceProcessSetting = async (
   data: AttendanceProcessSetting;
   message: string;
 }> => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "PUT",
     credentials: "include",
     headers: {

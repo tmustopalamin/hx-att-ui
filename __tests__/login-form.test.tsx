@@ -4,8 +4,6 @@ import LoginForm from "@/app/(auth)/login/login-form";
 import { updateDataProfile } from "@/store/me/ProfileSlice";
 import type { Me } from "@/app/types/me";
 
-const mockFetch = jest.fn();
-
 jest.mock("next/navigation", () => {
   const replace = jest.fn();
 
@@ -28,11 +26,14 @@ jest.mock("react-redux", () => {
 
 jest.mock("@/app/utils/api-client", () => {
   const apiFetch = jest.fn();
+  const apiFetchResponse = jest.fn();
 
   return {
     __esModule: true,
     __apiFetch: apiFetch,
     apiFetch,
+    __apiFetchResponse: apiFetchResponse,
+    apiFetchResponse,
   };
 });
 
@@ -52,6 +53,9 @@ const mockRouterReplace = jest.mocked(
 const mockDispatch = jest.mocked(jest.requireMock("react-redux").__dispatch);
 const mockApiFetch = jest.mocked(
   jest.requireMock("@/app/utils/api-client").__apiFetch,
+);
+const mockApiFetchResponse = jest.mocked(
+  jest.requireMock("@/app/utils/api-client").__apiFetchResponse,
 );
 const mockMutate = jest.mocked(jest.requireMock("swr").__mutate);
 
@@ -84,18 +88,13 @@ describe("LoginForm", () => {
     mockRouterReplace.mockReset();
     mockDispatch.mockReset();
     mockApiFetch.mockReset();
+    mockApiFetchResponse.mockReset();
     mockMutate.mockReset();
-    mockFetch.mockReset();
-    Object.defineProperty(globalThis, "fetch", {
-      configurable: true,
-      value: mockFetch,
-      writable: true,
-    });
   });
 
   it("primes the authenticated session before redirecting to the dashboard", async () => {
     mockApiFetch.mockResolvedValue({});
-    mockFetch.mockResolvedValue({
+    mockApiFetchResponse.mockResolvedValue({
       ok: true,
       json: async () => sessionData,
     });
@@ -117,7 +116,7 @@ describe("LoginForm", () => {
         }),
       }),
     );
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(mockApiFetchResponse).toHaveBeenCalledWith(
       "/api/auth/me",
       expect.objectContaining({
         method: "GET",
@@ -133,7 +132,7 @@ describe("LoginForm", () => {
 
   it("shows a session establishment error without redirecting", async () => {
     mockApiFetch.mockResolvedValue({});
-    mockFetch
+    mockApiFetchResponse
       .mockResolvedValueOnce({ ok: false, status: 503 })
       .mockResolvedValueOnce({ ok: true });
 

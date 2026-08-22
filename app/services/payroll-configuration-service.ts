@@ -2,6 +2,7 @@ import type {
   NewPayrollRegulationPackage,
   PayrollComponentMapping,
   PayrollRegulationPackage,
+  PayrollRegulationDetail,
   PayrollRegulationParameter,
   PayrollRegulationRateBracket,
   PayrollRegulationStatus,
@@ -15,9 +16,11 @@ import type {
   UpdatePayrollPeriodRule,
   SavePayrollRegulationParameter,
   SavePayrollRegulationRateBracket,
+  ReplacePayrollRegulationRateBrackets,
   SavePayrollRegulationTestCase,
   SavePayrollComponentMapping,
   UpdatePayrollRegulationPackage,
+  NewPayrollRegulationVersion,
   UpdatePayrollSetting,
 } from "@/app/types/payroll-configuration";
 import { apiFetch } from "@/app/utils/api-client";
@@ -106,6 +109,16 @@ export const updatePayrollRegulation = (
 ): Promise<PayrollRegulationPackage> =>
   apiFetch(`${REGULATION_URL}/${id}`, jsonRequest("PUT", data, rowVersion));
 
+export const createPayrollRegulationVersion = (
+  sourceId: number,
+  sourceRowVersion: number,
+  data: NewPayrollRegulationVersion,
+): Promise<PayrollRegulationPackage> =>
+  apiFetch(
+    `${REGULATION_URL}/${sourceId}/versions`,
+    jsonRequest("POST", data, sourceRowVersion),
+  );
+
 export const transitionPayrollRegulation = (
   id: number,
   rowVersion: number,
@@ -137,6 +150,16 @@ export const savePayrollRegulationRateBracket = (
   apiFetch(
     `${REGULATION_URL}/${packageId}/rate-brackets`,
     jsonRequest("POST", data),
+  );
+
+export const replacePayrollRegulationRateBrackets = (
+  packageId: number,
+  packageRowVersion: number,
+  data: ReplacePayrollRegulationRateBrackets,
+): Promise<PayrollRegulationDetail> =>
+  apiFetch(
+    `${REGULATION_URL}/${packageId}/rate-brackets/bulk`,
+    jsonRequest("PUT", data, packageRowVersion),
   );
 
 export const savePayrollRegulationTestCase = (

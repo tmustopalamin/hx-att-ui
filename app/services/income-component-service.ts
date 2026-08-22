@@ -1,10 +1,12 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { IncomeComponentPayload } from "../types/income-component";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/income-component";
 
 export const createIncomeComponent = async (data: IncomeComponentPayload) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -47,7 +49,7 @@ export const updateIncomeComponent = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -66,7 +68,7 @@ export const updateIncomeComponent = async (
 export const deleteIncomeComponent = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -82,7 +84,7 @@ export const deleteIncomeComponent = async (id: number, rowVersion: number) => {
 };
 
 export const purgeIncomeComponent = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -100,7 +102,7 @@ export const restoreIncomeComponent = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

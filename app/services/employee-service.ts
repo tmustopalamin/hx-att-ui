@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import { Employee } from "../types/employee";
 import { ResponseTypeError } from "../types/response-type";
@@ -32,7 +34,7 @@ export const createEmployee = async (data: Employee) => {
     dob: dayjs(data.dob).format("YYYY-MM-DD"),
   };
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -57,7 +59,7 @@ export const uploadEmployeePhoto = async (
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_URL}/${employeeId}/photo/upload`, {
+  const res = await apiFetchResponse(`${API_URL}/${employeeId}/photo/upload`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -75,7 +77,7 @@ export const deleteEmployee = async (id: number, rowVersion: number) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -92,7 +94,7 @@ export const deleteEmployee = async (id: number, rowVersion: number) => {
 };
 
 export const purgeEmployee = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -108,7 +110,7 @@ export const purgeEmployee = async (id: number) => {
 };
 
 export const restoreEmployee = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

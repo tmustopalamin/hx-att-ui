@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import { EmployeeIncomeComponent } from "../types/employee-income-component";
 import { ResponseTypeError } from "../types/response-type";
@@ -17,14 +19,17 @@ export const createEmployeeIncomeComponent = async (
       : null,
   };
 
-  const res = await fetch(`${API_URL}/${data.employee_id}/income-component`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `${API_URL}/${data.employee_id}/income-component`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newData),
     },
-    body: JSON.stringify(newData),
-  });
+  );
 
   const contentType = res.headers.get("Content-Type");
   if (!res.ok) {
@@ -70,7 +75,7 @@ export const updateEmployeeIncomeComponent = async (
       : null,
   };
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/income-component/${id}`,
     {
       method: "PUT",
@@ -95,7 +100,7 @@ export const deleteEmployeeIncomeComponent = async (
 ) => {
   if (data.row_version <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/income-component/${id}`,
     {
       method: "DELETE",
@@ -117,7 +122,7 @@ export const purgeEmployeeIncomeComponent = async (
   id: number,
   data: EmployeeIncomeComponent,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/income-component/${id}/purge`,
     {
       method: "DELETE",
@@ -138,7 +143,7 @@ export const restoreEmployeeIncomeComponent = async (
   id: number,
   data: EmployeeIncomeComponent,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/income-component/${id}/restore`,
     {
       method: "POST",

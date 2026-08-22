@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { MobileAttendancePayload } from "../types/mobile-attendance";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -26,7 +28,7 @@ const parseError = async (res: Response): Promise<ResponseTypeError> => {
 };
 
 export const submitMobileAttendance = async (data: MobileAttendancePayload) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {

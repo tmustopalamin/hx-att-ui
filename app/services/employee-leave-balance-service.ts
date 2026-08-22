@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import {
   EmployeeLeaveBalance,
@@ -50,14 +52,17 @@ const buildPayload = (data: EmployeeLeaveBalanceForm) => {
 export const createEmployeeLeaveBalance = async (
   data: EmployeeLeaveBalanceForm,
 ) => {
-  const res = await fetch(`${API_URL}/${data.employee_id}/leave-balance`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `${API_URL}/${data.employee_id}/leave-balance`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(buildPayload(data)),
     },
-    body: JSON.stringify(buildPayload(data)),
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -72,7 +77,7 @@ export const updateEmployeeLeaveBalance = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/leave-balance/${id}`,
     {
       method: "PUT",
@@ -97,7 +102,7 @@ export const deleteEmployeeLeaveBalance = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/leave-balance/${id}`,
     {
       method: "DELETE",
@@ -117,7 +122,7 @@ export const purgeEmployeeLeaveBalance = async (
   id: number,
   data: EmployeeLeaveBalance,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/leave-balance/${id}/purge`,
     {
       method: "DELETE",
@@ -136,7 +141,7 @@ export const restoreEmployeeLeaveBalance = async (
   id: number,
   data: EmployeeLeaveBalance,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/leave-balance/${id}/restore`,
     {
       method: "POST",

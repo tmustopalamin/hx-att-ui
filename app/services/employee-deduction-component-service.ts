@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import { ResponseTypeError } from "../types/response-type";
 import { EmployeeDeductionComponent } from "../types/employee-deduction-component";
@@ -17,7 +19,7 @@ export const createEmployeeDeductionComponent = async (
       : null,
   };
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/deduction-component`,
     {
       method: "POST",
@@ -73,7 +75,7 @@ export const updateEmployeeDeductionComponent = async (
       : null,
   };
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/deduction-component/${id}`,
     {
       method: "PUT",
@@ -98,7 +100,7 @@ export const deleteEmployeeDeductionComponent = async (
 ) => {
   if (data.row_version <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/deduction-component/${id}`,
     {
       method: "DELETE",
@@ -120,7 +122,7 @@ export const purgeEmployeeDeductionComponent = async (
   id: number,
   data: EmployeeDeductionComponent,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/deduction-component/${id}/purge`,
     {
       method: "DELETE",
@@ -141,7 +143,7 @@ export const restoreEmployeeDeductionComponent = async (
   id: number,
   data: EmployeeDeductionComponent,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/deduction-component/${id}/restore`,
     {
       method: "POST",

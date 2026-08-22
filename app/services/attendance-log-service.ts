@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { AttendanceLog } from "../types/attendance-log";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -9,7 +11,7 @@ export const reviewMobileAttendanceSecurity = async (
   decision: "APPROVE" | "REJECT",
   note?: string,
 ) => {
-  const res = await fetch(`${API_URL}/${id}/security-review`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/security-review`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -37,7 +39,7 @@ export const reviewMobileAttendanceSecurity = async (
 };
 
 export const remapEmployeeAttendanceLog = async () => {
-  const res = await fetch(API_URL + "/remap-employee", {
+  const res = await apiFetchResponse(API_URL + "/remap-employee", {
     method: "POST",
     credentials: "include",
     headers: {
@@ -74,7 +76,7 @@ export const remapEmployeeAttendanceLog = async () => {
 };
 
 export const createAttendanceLog = async (data: AttendanceLog) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -117,7 +119,7 @@ export const updateAttendanceLog = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -136,7 +138,7 @@ export const updateAttendanceLog = async (
 export const deleteAttendanceLog = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -152,7 +154,7 @@ export const deleteAttendanceLog = async (id: number, rowVersion: number) => {
 };
 
 export const purgeAttendanceLog = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -167,7 +169,7 @@ export const purgeAttendanceLog = async (id: number) => {
 };
 
 export const restoreAttendanceLog = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -250,7 +252,7 @@ export interface AttendanceLogSyncResult {
 }
 
 export const syncAttendanceLog = async () => {
-  const res = await fetch(`${API_URL}/sync`, {
+  const res = await apiFetchResponse(`${API_URL}/sync`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -288,7 +290,7 @@ export const syncAttendanceLog = async () => {
 };
 
 export const syncAttendanceLogByScanner = async (scannerId: number) => {
-  const res = await fetch(`${API_URL}/sync/${scannerId}`, {
+  const res = await apiFetchResponse(`${API_URL}/sync/${scannerId}`, {
     method: "POST",
     credentials: "include",
     headers: {

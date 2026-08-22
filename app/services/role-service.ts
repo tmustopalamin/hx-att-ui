@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { Role } from "../types/role";
 import { RolePermissions } from "../types/role-permissions";
@@ -5,7 +7,7 @@ import { RolePermissions } from "../types/role-permissions";
 const API_URL = "/api/roles";
 
 export const createRole = async (data: Role) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -42,7 +44,7 @@ export const createRole = async (data: Role) => {
 };
 
 export const saveRolePermissions = async (data: RolePermissions) => {
-  const res = await fetch(`${API_URL}/permissions`, {
+  const res = await apiFetchResponse(`${API_URL}/permissions`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -69,7 +71,7 @@ export const updateRole = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -86,7 +88,7 @@ export const updateRole = async (
 };
 
 export const getRolePermissions = async (roleCode: string) => {
-  const res = await fetch(`${API_URL}/${roleCode}/permissions`, {
+  const res = await apiFetchResponse(`${API_URL}/${roleCode}/permissions`, {
     method: "GET",
     credentials: "include",
   });
@@ -102,7 +104,7 @@ export const getRolePermissions = async (roleCode: string) => {
 export const deleteRole = async (id: number, rowVersion: number) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -118,7 +120,7 @@ export const deleteRole = async (id: number, rowVersion: number) => {
 };
 
 export const purgeRole = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -133,7 +135,7 @@ export const purgeRole = async (id: number) => {
 };
 
 export const restoreRole = async (id: number, rowVersion: number) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

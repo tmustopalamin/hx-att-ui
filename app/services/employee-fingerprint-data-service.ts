@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 import { EmployeeFingerprint } from "../types/employee-fingerprint";
 
@@ -57,25 +59,28 @@ export interface CheckFingerprintPin2Response {
 }
 
 export const createEmployeeFingerprint = async (data: EmployeeFingerprint) => {
-  const res = await fetch(`${API_URL}/${data.employee_id}/fingerprint`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `${API_URL}/${data.employee_id}/fingerprint`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        fp_device_id: data.fp_device_id,
+
+        // Sekarang ini berarti PIN2 / Fingerprint User ID.
+        fp_pin: data.fp_pin,
+
+        // true  = Link Existing User in Device
+        // false = Create New User in Device
+        pin_already_exist: data.pin_already_exist,
+
+        is_primary: data.is_primary,
+      }),
     },
-    body: JSON.stringify({
-      fp_device_id: data.fp_device_id,
-
-      // Sekarang ini berarti PIN2 / Fingerprint User ID.
-      fp_pin: data.fp_pin,
-
-      // true  = Link Existing User in Device
-      // false = Create New User in Device
-      pin_already_exist: data.pin_already_exist,
-
-      is_primary: data.is_primary,
-    }),
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -90,23 +95,26 @@ export const updateEmployeeFingerprint = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${data.employee_id}/fingerprint/${id}`, {
-    method: "PUT",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "If-Match": String(rowVersion),
+  const res = await apiFetchResponse(
+    `${API_URL}/${data.employee_id}/fingerprint/${id}`,
+    {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
+      },
+      body: JSON.stringify({
+        fp_device_id: data.fp_device_id,
+
+        // Sekarang ini berarti PIN2 / Fingerprint User ID.
+        fp_pin: data.fp_pin,
+
+        pin_already_exist: data.pin_already_exist,
+        is_primary: data.is_primary,
+      }),
     },
-    body: JSON.stringify({
-      fp_device_id: data.fp_device_id,
-
-      // Sekarang ini berarti PIN2 / Fingerprint User ID.
-      fp_pin: data.fp_pin,
-
-      pin_already_exist: data.pin_already_exist,
-      is_primary: data.is_primary,
-    }),
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -120,14 +128,17 @@ export const deleteEmployeeFingerprint = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${data.employee_id}/fingerprint/${id}`, {
-    method: "DELETE",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      "If-Match": String(data.row_version),
+  const res = await apiFetchResponse(
+    `${API_URL}/${data.employee_id}/fingerprint/${id}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(data.row_version),
+      },
     },
-  });
+  );
 
   await ensureOk(res);
   return res.json();
@@ -137,7 +148,7 @@ export const purgeEmployeeFingerprint = async (
   id: number,
   data: EmployeeFingerprint,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/fingerprint/${id}/purge`,
     {
       method: "DELETE",
@@ -156,7 +167,7 @@ export const restoreEmployeeFingerprint = async (
   id: number,
   data: EmployeeFingerprint,
 ) => {
-  const res = await fetch(
+  const res = await apiFetchResponse(
     `${API_URL}/${data.employee_id}/fingerprint/${id}/restore`,
     {
       method: "POST",
@@ -187,14 +198,17 @@ export const checkPinEmployeeFingerprint = async (
     pin2: fp_pin,
   };
 
-  const res = await fetch(`/api/fingerprint-scanner/check-user-pin2`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
+  const res = await apiFetchResponse(
+    `/api/fingerprint-scanner/check-user-pin2`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+  );
 
   await ensureOk(res);
   return res.json();

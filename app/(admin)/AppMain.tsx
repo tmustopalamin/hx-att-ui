@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SWRConfig } from "swr";
 import { Sidebar } from "primereact/sidebar";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +12,7 @@ import AvatarWithSidebar from "./AvatarWithSidebar";
 import SidebarMenu from "./SidebarMenu";
 import NotificationBell from "../_components/NotificationBell";
 import { GlobalActionConfirmDialog } from "../_components/ActionConfirmDialog";
+import { isUnauthorizedError, redirectToLogin } from "../utils/api-client";
 
 const AppMain = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
@@ -95,9 +97,19 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
 
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
             <div className="w-full">
-              <AuthProvider>
-                <BProgressProvider>{children}</BProgressProvider>
-              </AuthProvider>
+              <SWRConfig
+                value={{
+                  onError: (error: unknown) => {
+                    if (isUnauthorizedError(error)) {
+                      redirectToLogin();
+                    }
+                  },
+                }}
+              >
+                <AuthProvider>
+                  <BProgressProvider>{children}</BProgressProvider>
+                </AuthProvider>
+              </SWRConfig>
             </div>
           </div>
         </div>

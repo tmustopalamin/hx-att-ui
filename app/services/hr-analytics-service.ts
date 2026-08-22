@@ -1,4 +1,8 @@
-import { apiFetch, parseApiError } from "@/app/utils/api-client";
+import {
+  apiFetchResponse,
+  apiFetch,
+  parseApiError,
+} from "@/app/utils/api-client";
 import type {
   HrAnalyticsAttentionItem,
   HrAnalyticsAttentionKind,
@@ -40,7 +44,7 @@ export const getHrAnalyticsAttention = (
 export const exportHrAnalyticsOverview = async (
   filters: HrAnalyticsFilters,
 ): Promise<Blob> => {
-  const response = await fetch(
+  const response = await apiFetchResponse(
     `/api/hr-analytics/export${toQueryString(filters)}`,
     { credentials: "include" },
   );

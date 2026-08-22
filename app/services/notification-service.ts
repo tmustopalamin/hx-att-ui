@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 // app/services/notification-service.ts
 
 export interface NotificationItem {
@@ -76,7 +78,7 @@ const apiRequest = async <T>(
   fallback: T,
   init?: RequestInit,
 ): Promise<T> => {
-  const response = await fetch(url, {
+  const response = await apiFetchResponse(url, {
     ...init,
     credentials: "include",
     headers: {

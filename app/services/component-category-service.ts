@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ComponentCategoryPayload } from "../types/component-category";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -6,7 +8,7 @@ const API_URL = "/api/component-category";
 export const createComponentCategory = async (
   data: ComponentCategoryPayload,
 ) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -49,7 +51,7 @@ export const updateComponentCategory = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -71,7 +73,7 @@ export const deleteComponentCategory = async (
 ) => {
   if (rowVersion <= -1) throw new Error("rowVersion is required");
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -87,7 +89,7 @@ export const deleteComponentCategory = async (
 };
 
 export const purgeComponentCategory = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -105,7 +107,7 @@ export const restoreComponentCategory = async (
   id: number,
   rowVersion: number,
 ) => {
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

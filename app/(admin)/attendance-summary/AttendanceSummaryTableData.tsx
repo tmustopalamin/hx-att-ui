@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
@@ -184,7 +186,7 @@ const downloadAttendanceSummaryExcel = async (
     end_date: dayjs(endDate).format("YYYY-MM-DD"),
   });
 
-  const response = await fetch(
+  const response = await apiFetchResponse(
     `/api/attendance-summary/export-excel?${query.toString()}`,
     {
       method: "GET",
@@ -242,7 +244,7 @@ const processAttendanceSummary = async (
   startDate: Date,
   endDate: Date,
 ): Promise<ProcessResponse> => {
-  const response = await fetch("/api/attendance-summary/process", {
+  const response = await apiFetchResponse("/api/attendance-summary/process", {
     method: "POST",
     credentials: "include",
     headers: {

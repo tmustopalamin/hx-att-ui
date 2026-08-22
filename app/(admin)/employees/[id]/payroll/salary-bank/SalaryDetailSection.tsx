@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import { useParams } from "next/navigation";
 import { Button } from "primereact/button";
@@ -35,9 +37,12 @@ const SalaryDetailSection = () => {
   const getPersonalData = async () => {
     console.clear();
 
-    const response = await fetch(`/api/employees/${id}/personal-data`, {
-      credentials: "include",
-    });
+    const response = await apiFetchResponse(
+      `/api/employees/${id}/personal-data`,
+      {
+        credentials: "include",
+      },
+    );
     const data = await response.json();
 
     setValue("firstName", data.first_name);
@@ -60,7 +65,7 @@ const SalaryDetailSection = () => {
       marital_status_id: data.marital,
     };
 
-    await fetch(`/api/employees/${id}/personal-data`, {
+    await apiFetchResponse(`/api/employees/${id}/personal-data`, {
       method: "PUT",
       credentials: "include",
       headers: {

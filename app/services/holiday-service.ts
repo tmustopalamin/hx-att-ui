@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 import { Holiday, HolidayForm } from "../types/holiday";
 import { ResponseTypeError } from "../types/response-type";
@@ -46,7 +48,7 @@ const buildPayload = (data: HolidayForm) => {
 };
 
 export const createHoliday = async (data: HolidayForm) => {
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -68,7 +70,7 @@ export const updateHoliday = async (
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -87,7 +89,7 @@ export const deleteHoliday = async (id: number, data: Holiday) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -105,7 +107,7 @@ export const restoreHoliday = async (id: number, data: Holiday) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -119,7 +121,7 @@ export const restoreHoliday = async (id: number, data: Holiday) => {
 };
 
 export const purgeHoliday = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {

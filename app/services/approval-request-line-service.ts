@@ -1,10 +1,12 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ApprovalRequestLine } from "../types/approval-request-line";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/approval-request-line";
 
 export const approve = async (data: ApprovalRequestLine) => {
-  const res = await fetch(API_URL + "/approve", {
+  const res = await apiFetchResponse(API_URL + "/approve", {
     method: "POST",
     credentials: "include",
     headers: {

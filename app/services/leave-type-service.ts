@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { LeaveType } from "../types/leave-type";
 import { ResponseTypeError } from "../types/response-type";
 
@@ -75,7 +77,7 @@ const parseErrorResponse = async (
 export const createLeaveType = async (data: LeaveType) => {
   const payload = buildLeaveTypePayload(data);
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -102,7 +104,7 @@ export const updateLeaveType = async (
 
   const payload = buildLeaveTypePayload(data);
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -124,7 +126,7 @@ export const deleteLeaveType = async (id: number, rowVersion: number) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -141,7 +143,7 @@ export const deleteLeaveType = async (id: number, rowVersion: number) => {
 };
 
 export const purgeLeaveType = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -161,7 +163,7 @@ export const restoreLeaveType = async (id: number, rowVersion: number) => {
     throw new Error("rowVersion is required");
   }
 
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {

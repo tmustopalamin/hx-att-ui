@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/leave-management";
@@ -44,7 +46,7 @@ export const approveLeaveManagement = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/approve`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/approve`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -70,7 +72,7 @@ export const rejectLeaveManagement = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/reject`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/reject`, {
     method: "POST",
     credentials: "include",
     headers: {

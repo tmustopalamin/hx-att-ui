@@ -18,7 +18,11 @@ import type {
   PayrollHolidayPositionIncentivePreview,
   PayrollHolidayPositionIncentiveGeneration,
 } from "@/app/types/payroll-batch";
-import { apiFetch, parseApiError } from "@/app/utils/api-client";
+import {
+  apiFetchResponse,
+  apiFetch,
+  parseApiError,
+} from "@/app/utils/api-client";
 
 const URL = "/api/payroll-batches";
 
@@ -72,10 +76,13 @@ export const settlePayrollPaymentBatch = (
   });
 
 export const exportPayrollPaymentBatch = async (id: number): Promise<Blob> => {
-  const response = await fetch(`/api/payroll-payment-batches/${id}/export`, {
-    credentials: "include",
-    headers: { Accept: "text/csv" },
-  });
+  const response = await apiFetchResponse(
+    `/api/payroll-payment-batches/${id}/export`,
+    {
+      credentials: "include",
+      headers: { Accept: "text/csv" },
+    },
+  );
   if (!response.ok) throw new Error("Payment export failed.");
   return response.blob();
 };
@@ -85,16 +92,19 @@ export const reconcilePayrollPaymentBatch = async (
   rowVersion: number,
   file: File,
 ): Promise<PayrollPaymentBatch> => {
-  const response = await fetch(`/api/payroll-payment-batches/${id}/reconcile`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "text/csv",
-      "If-Match": String(rowVersion),
+  const response = await apiFetchResponse(
+    `/api/payroll-payment-batches/${id}/reconcile`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "text/csv",
+        "If-Match": String(rowVersion),
+      },
+      body: file,
     },
-    body: file,
-  });
+  );
   if (!response.ok) throw await parseApiError(response);
   return (await response.json()) as PayrollPaymentBatch;
 };

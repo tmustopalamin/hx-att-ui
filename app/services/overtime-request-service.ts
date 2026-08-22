@@ -1,3 +1,5 @@
+import { apiFetchResponse } from "@/app/utils/api-client";
+
 import dayjs from "dayjs";
 
 import { ResponseTypeError } from "../types/response-type";
@@ -106,7 +108,7 @@ const buildOvertimeRequestPayload = (
 export const createOvertimeRequest = async (data: OvertimeRequestForm) => {
   const payload = buildOvertimeRequestPayload(data);
 
-  const res = await fetch(API_URL, {
+  const res = await apiFetchResponse(API_URL, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -131,7 +133,7 @@ export const updateOvertimeRequest = async (
 
   const payload = buildOvertimeRequestPayload(data);
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: {
@@ -151,7 +153,7 @@ export const updateOvertimeRequest = async (
 export const submitOvertimeRequest = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/submit`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/submit`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -173,7 +175,7 @@ export const cancelOvertimeRequest = async (
   reason: string,
 ) => {
   validateRowVersion(rowVersion);
-  const res = await fetch(`${API_URL}/${id}/cancel`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/cancel`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -189,7 +191,7 @@ export const cancelOvertimeRequest = async (
 export const getOvertimeRequestApprovalDetail = async (
   id: number,
 ): Promise<OvertimeRequestApprovalDetail> => {
-  const res = await fetch(`${API_URL}/${id}/approval-detail`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/approval-detail`, {
     method: "GET",
     credentials: "include",
     headers: {
@@ -207,7 +209,7 @@ export const getOvertimeRequestApprovalDetail = async (
 export const deleteOvertimeRequest = async (id: number, rowVersion: number) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}`, {
     method: "DELETE",
     credentials: "include",
     headers: {
@@ -229,7 +231,7 @@ export const restoreOvertimeRequest = async (
 ) => {
   validateRowVersion(rowVersion);
 
-  const res = await fetch(`${API_URL}/${id}/restore`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/restore`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -246,7 +248,7 @@ export const restoreOvertimeRequest = async (
 };
 
 export const purgeOvertimeRequest = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/purge`, {
+  const res = await apiFetchResponse(`${API_URL}/${id}/purge`, {
     method: "DELETE",
     credentials: "include",
     headers: {
