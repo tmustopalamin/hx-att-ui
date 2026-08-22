@@ -148,24 +148,6 @@ const employeeItems: MenuItem[] = [
 ];
 const timeManagementItems: MenuItem[] = [
   {
-    href: "/setting/employee-shift-rule",
-    label: "Employee Shift Rule",
-    icon: "pi-list",
-    permission: "employee-shift-rule.read",
-  },
-  {
-    href: "/setting/employee-shift-assignment",
-    label: "Daily Schedule",
-    icon: "pi-calendar-plus",
-    permission: "employee-shift-assignment.read",
-  },
-  {
-    href: "/setting/fingerprint-scanner",
-    label: "Fingerprint Scanner",
-    icon: "pi-box",
-    permission: "master-data.read",
-  },
-  {
     href: "/attendance-log",
     label: "Attendance Log",
     icon: "pi-clock",
@@ -297,10 +279,28 @@ const settingSubMenus: SettingSubMenu[] = [
         permission: "shift-rule.read",
       },
       {
+        href: "/setting/employee-shift-rule",
+        label: "Employee Shift Rule",
+        icon: "pi-list",
+        permission: "employee-shift-rule.read",
+      },
+      {
+        href: "/setting/employee-shift-assignment",
+        label: "Daily Schedule",
+        icon: "pi-calendar-plus",
+        permission: "employee-shift-assignment.read",
+      },
+      {
         href: "/setting/attendance",
         label: "Attendance Settings",
         icon: "pi-cog",
         permission: "attendance-summary.read",
+      },
+      {
+        href: "/setting/fingerprint-scanner",
+        label: "Fingerprint Devices",
+        icon: "pi-box",
+        permission: "master-data.read",
       },
     ],
   },
@@ -386,7 +386,7 @@ const settingSubMenus: SettingSubMenu[] = [
   },
   {
     key: "employee-lifecycle-configuration",
-    label: "Employee Lifecycle",
+    label: "Employee Lifecycle Setup",
     icon: "pi-directions-alt",
     items: [
       {
