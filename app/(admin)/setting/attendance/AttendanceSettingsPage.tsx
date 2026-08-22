@@ -77,10 +77,12 @@ const defaultPolicy: UpdateAttendanceSubmissionPolicy = {
   },
   web: {
     enabled: true,
+    enforce_gps_accuracy: true,
     max_gps_accuracy_meters: 100,
   },
   android: {
     enabled: true,
+    enforce_gps_accuracy: true,
     max_gps_accuracy_meters: 100,
     integrity_enabled: false,
     allow_unlicensed: true,
@@ -141,9 +143,11 @@ const ToggleRow = ({
 
 const GpsPresetPicker = ({
   value,
+  disabled,
   onChange,
 }: {
   value: number;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }) => (
   <div className="flex flex-wrap gap-2">
@@ -155,6 +159,7 @@ const GpsPresetPicker = ({
         size="small"
         outlined={value !== preset.value}
         severity={value === preset.value ? "info" : "secondary"}
+        disabled={disabled}
         onClick={() => onChange(preset.value)}
       />
     ))}
@@ -516,11 +521,30 @@ const AttendanceSettingsPage = () => {
                       />
                     </div>
                     <div className="mt-5 space-y-3">
+                      <ToggleRow
+                        title="Enforce GPS accuracy"
+                        description="Reject submissions when the browser reports accuracy above the configured limit."
+                        checked={policyForm.web.enforce_gps_accuracy}
+                        disabled={!policyForm.web.enabled}
+                        onChange={(value) =>
+                          setPolicyForm((current) => ({
+                            ...current,
+                            web: {
+                              ...current.web,
+                              enforce_gps_accuracy: value,
+                            },
+                          }))
+                        }
+                      />
                       <label className="block text-sm font-medium text-slate-700">
                         GPS tolerance
                       </label>
                       <GpsPresetPicker
                         value={policyForm.web.max_gps_accuracy_meters}
+                        disabled={
+                          !policyForm.web.enabled ||
+                          !policyForm.web.enforce_gps_accuracy
+                        }
                         onChange={setWebGpsAccuracy}
                       />
                       <InputNumber
@@ -529,14 +553,18 @@ const AttendanceSettingsPage = () => {
                         min={5}
                         max={1000}
                         suffix=" m"
-                        disabled={!policyForm.web.enabled}
+                        disabled={
+                          !policyForm.web.enabled ||
+                          !policyForm.web.enforce_gps_accuracy
+                        }
                         onValueChange={(event) =>
                           setWebGpsAccuracy(event.value ?? 100)
                         }
                       />
                       <small className="block text-xs leading-5 text-slate-500">
-                        Submit ditolak jika browser melaporkan akurasi lebih
-                        besar dari nilai ini.
+                        {policyForm.web.enforce_gps_accuracy
+                          ? "Submit ditolak jika browser melaporkan akurasi lebih besar dari nilai ini."
+                          : "Batas akurasi tidak diberlakukan. Lokasi dan geofence tetap diproses."}
                       </small>
                     </div>
                   </Card>
@@ -565,11 +593,30 @@ const AttendanceSettingsPage = () => {
                       />
                     </div>
                     <div className="mt-5 space-y-3">
+                      <ToggleRow
+                        title="Enforce GPS accuracy"
+                        description="Reject submissions when the Android app reports accuracy above the configured limit."
+                        checked={policyForm.android.enforce_gps_accuracy}
+                        disabled={!policyForm.android.enabled}
+                        onChange={(value) =>
+                          setPolicyForm((current) => ({
+                            ...current,
+                            android: {
+                              ...current.android,
+                              enforce_gps_accuracy: value,
+                            },
+                          }))
+                        }
+                      />
                       <label className="block text-sm font-medium text-slate-700">
                         GPS tolerance
                       </label>
                       <GpsPresetPicker
                         value={policyForm.android.max_gps_accuracy_meters}
+                        disabled={
+                          !policyForm.android.enabled ||
+                          !policyForm.android.enforce_gps_accuracy
+                        }
                         onChange={setAndroidGpsAccuracy}
                       />
                       <InputNumber
@@ -578,14 +625,18 @@ const AttendanceSettingsPage = () => {
                         min={5}
                         max={1000}
                         suffix=" m"
-                        disabled={!policyForm.android.enabled}
+                        disabled={
+                          !policyForm.android.enabled ||
+                          !policyForm.android.enforce_gps_accuracy
+                        }
                         onValueChange={(event) =>
                           setAndroidGpsAccuracy(event.value ?? 100)
                         }
                       />
                       <small className="block text-xs leading-5 text-slate-500">
-                        Nilai aplikasi Android dibaca dari sensor lokasi
-                        perangkat.
+                        {policyForm.android.enforce_gps_accuracy
+                          ? "Nilai aplikasi Android dibaca dari sensor lokasi perangkat."
+                          : "Batas akurasi tidak diberlakukan. Lokasi, geofence, dan integrity tetap diproses."}
                       </small>
                     </div>
                   </Card>

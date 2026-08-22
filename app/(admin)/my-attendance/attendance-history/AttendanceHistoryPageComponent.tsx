@@ -24,7 +24,7 @@ type SourceOption = {
 
 const SOURCE_OPTIONS: SourceOption[] = [
   { label: "All Sources", value: "ALL" },
-  { label: "Mobile", value: "MOBILE" },
+  { label: "Mobile App", value: "MOBILE" },
   { label: "Machine", value: "MACHINE" },
   { label: "Web", value: "WEB" },
   { label: "API", value: "API" },
@@ -75,6 +75,28 @@ const getProcessedSeverity = (processed: boolean) => {
   return processed ? "success" : "warning";
 };
 
+const getSourceValue = (rowData: AttendanceLog) => {
+  const externalSystem = (rowData.external_system ?? "").toUpperCase();
+
+  if (externalSystem === "MOBILE_WEB") return "WEB";
+  if (externalSystem === "ANDROID_APP") return "MOBILE";
+
+  const clientPlatform = rowData.extra_data?.client_platform;
+  if (typeof clientPlatform === "string") {
+    const normalizedPlatform = clientPlatform.toUpperCase();
+    if (normalizedPlatform === "WEB") return "WEB";
+    if (normalizedPlatform === "ANDROID") return "MOBILE";
+  }
+
+  return (rowData.source_type ?? "").toUpperCase();
+};
+
+const getSourceLabel = (sourceValue: string) => {
+  if (sourceValue === "MOBILE") return "Mobile App";
+  if (sourceValue === "WEB") return "Web";
+  return sourceValue || "-";
+};
+
 const AttendanceHistoryPageComponent = () => {
   const [sourceFilter, setSourceFilter] = useState<string>("ALL");
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
@@ -97,7 +119,7 @@ const AttendanceHistoryPageComponent = () => {
     return rows.filter((item) => {
       const sourceMatch =
         sourceFilter === "ALL" ||
-        (item.source_type ?? "").toUpperCase() === sourceFilter.toUpperCase();
+        getSourceValue(item) === sourceFilter.toUpperCase();
 
       const eventDate = item.event_time ? dayjs(item.event_time) : null;
 
@@ -140,7 +162,9 @@ const AttendanceHistoryPageComponent = () => {
   };
 
   const sourceBodyTemplate = (rowData: AttendanceLog) => {
-    return <Tag value={rowData.source_type || "-"} severity="info" />;
+    return (
+      <Tag value={getSourceLabel(getSourceValue(rowData))} severity="info" />
+    );
   };
 
   const statusBodyTemplate = (rowData: AttendanceLog) => {

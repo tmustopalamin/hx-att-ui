@@ -24,11 +24,13 @@ export interface AttendanceSubmissionCommonPolicy {
 
 export interface AttendanceWebPolicy {
   enabled: boolean;
+  enforce_gps_accuracy: boolean;
   max_gps_accuracy_meters: number;
 }
 
 export interface AttendanceAndroidPolicy {
   enabled: boolean;
+  enforce_gps_accuracy: boolean;
   max_gps_accuracy_meters: number;
   integrity_enabled: boolean;
   allow_unlicensed: boolean;
