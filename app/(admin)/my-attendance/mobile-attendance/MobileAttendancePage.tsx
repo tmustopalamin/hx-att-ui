@@ -297,10 +297,25 @@ const MobileAttendancePage = () => {
     setCameraPermission("loading");
     setCameraError("");
 
+    if (!window.isSecureContext) {
+      setCameraPermission("error");
+      setCameraError("Camera access requires HTTPS or localhost.");
+      return false;
+    }
+
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.getUserMedia) {
+      setCameraPermission("error");
+      setCameraError(
+        "Camera is unavailable. Use a supported browser over HTTPS or localhost.",
+      );
+      return false;
+    }
+
     try {
       stopCameraStream();
 
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
           width: { ideal: 1280 },
@@ -319,57 +334,81 @@ const MobileAttendancePage = () => {
 
       await attachStreamToVideo(stream);
       setCameraPermission("granted");
-    } catch {
+      return true;
+    } catch (error: unknown) {
       setCameraPermission("denied");
-      setCameraError("Camera access was denied or unavailable.");
+      setCameraError(
+        error instanceof DOMException && error.name === "NotAllowedError"
+          ? "Camera access was denied. Allow camera permission in the browser site settings."
+          : "Camera access was denied or unavailable.",
+      );
       stopCameraStream();
+      return false;
     }
   }, [attachStreamToVideo, stopCameraStream]);
 
-  const initializeLocation = useCallback(async () => {
+  const initializeLocation = useCallback((): Promise<boolean> => {
     setLocationPermission("loading");
     setLocationError("");
+
+    if (!window.isSecureContext) {
+      setLocationPermission("error");
+      setLocationError("Location access requires HTTPS or localhost.");
+      return Promise.resolve(false);
+    }
 
     if (!navigator.geolocation) {
       setLocationPermission("error");
       setLocationError("Geolocation is not supported in this browser.");
-      return;
+      return Promise.resolve(false);
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setGeoData({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy ?? null,
-          capturedAt: new Date(),
-        });
-        setLocationPermission("granted");
-      },
-      (error) => {
-        setLocationPermission("denied");
+    return new Promise((resolve) => {
+      try {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setGeoData({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy ?? null,
+              capturedAt: new Date(),
+            });
+            setLocationPermission("granted");
+            resolve(true);
+          },
+          (error) => {
+            setLocationPermission("denied");
 
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError("Location access was denied.");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError("Location information is unavailable.");
-            break;
-          case error.TIMEOUT:
-            setLocationError("Location request timed out.");
-            break;
-          default:
-            setLocationError("Failed to get location.");
-            break;
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      },
-    );
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                setLocationError(
+                  "Location access was denied. Allow location permission in the browser site settings.",
+                );
+                break;
+              case error.POSITION_UNAVAILABLE:
+                setLocationError("Location information is unavailable.");
+                break;
+              case error.TIMEOUT:
+                setLocationError("Location request timed out.");
+                break;
+              default:
+                setLocationError("Failed to get location.");
+                break;
+            }
+            resolve(false);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
+          },
+        );
+      } catch {
+        setLocationPermission("error");
+        setLocationError("Location access is unavailable in this browser.");
+        resolve(false);
+      }
+    });
   }, []);
 
   useEffect(() => {
