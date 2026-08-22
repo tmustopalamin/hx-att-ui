@@ -415,6 +415,13 @@ export default function PayrollPaymentDialog({
             <Column field="employee_code" header="Employee ID" />
             <Column field="employee_name" header="Employee" />
             <Column
+              field="department_name"
+              header="Department"
+              body={(row: PayrollPaymentItemDetail) =>
+                row.department_name ?? "-"
+              }
+            />
+            <Column
               header="Destination Account"
               body={(row: PayrollPaymentItemDetail) =>
                 `${row.bank_code ?? "-"} · ${row.bank_account_masked}`

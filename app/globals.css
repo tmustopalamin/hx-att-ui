@@ -49,3 +49,30 @@ body {
 .p-dropdown .p-dropdown-clear-icon {
   right: 2rem !important; /* geser sedikit ke kiri */
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .payslip-print-root,
+  .payslip-print-root * {
+    visibility: visible !important;
+  }
+
+  .payslip-print-root {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .payslip-print-actions {
+    display: none !important;
+  }
+}

@@ -189,6 +189,8 @@ export interface PayrollPayslipSnapshot {
     id: number;
     employee_code: string;
     employee_name: string;
+    /** Added to new snapshots; absent on legacy payslips generated before this field existed. */
+    department_name?: string | null;
   };
   amounts: PayrollPayslipSnapshotAmounts;
   attendance: Record<string, string | number>;
@@ -251,6 +253,7 @@ export interface PayrollPaymentItemDetail {
   employee_id: number;
   employee_code: string;
   employee_name: string;
+  department_name: string | null;
   bank_code: string | null;
   bank_account_masked: string;
   bank_account_name: string;

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
+import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
@@ -116,9 +117,9 @@ export default function MyPayslipsData() {
 }
 
 function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
-  const { amounts, batch, components } = payslip.snapshot_json;
+  const { amounts, batch, components, employee } = payslip.snapshot_json;
   return (
-    <Card className="border border-slate-200 shadow-sm">
+    <Card className="payslip-print-root border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
         <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -130,7 +131,25 @@ function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
               {formatDisplayDate(batch.period_end)}
             </p>
           </div>
-          <Tag value="PUBLISHED" severity="success" />
+          <div className="payslip-print-actions flex items-center gap-2">
+            <Tag value="PUBLISHED" severity="success" />
+            <Button
+              label="Print / Save PDF"
+              icon="pi pi-print"
+              severity="secondary"
+              outlined
+              size="small"
+              onClick={() => window.print()}
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 border-b border-slate-200 pb-4 sm:grid-cols-3">
+          <PayslipDetail label="Employee" value={employee.employee_name} />
+          <PayslipDetail label="Employee ID" value={employee.employee_code} />
+          <PayslipDetail
+            label="Department"
+            value={employee.department_name ?? "-"}
+          />
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Amount label="Gross Income" value={amounts.gross_income} />
@@ -169,6 +188,15 @@ function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
         </section>
       </div>
     </Card>
+  );
+}
+
+function PayslipDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="m-0 text-xs font-medium text-slate-500">{label}</p>
+      <p className="m-0 mt-1 text-sm font-semibold text-slate-800">{value}</p>
+    </div>
   );
 }
 
