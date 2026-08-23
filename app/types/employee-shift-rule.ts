@@ -11,6 +11,7 @@ export interface EmployeeShiftRule {
 
   effective_from: string;
   effective_to: string | null;
+  rotation_anchor_date?: string | null;
 
   is_active: boolean;
   deleted_at: string | null;

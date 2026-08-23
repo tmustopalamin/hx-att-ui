@@ -24,14 +24,17 @@ import { useDispatch } from "react-redux";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 
-import { createEmployeeShiftRule } from "@/app/services/employee-shift-rule-service";
+import {
+  applyEmployeeScheduleChange,
+  previewEmployeeScheduleChange,
+} from "@/app/services/employee-schedule-change-service";
 
 import { Employee } from "@/app/types/employee";
-import {
-  ResponseType,
-  ResponseTypeCreateSuccess,
-} from "@/app/types/response-type";
 import { ShiftRule } from "@/app/types/shift-rule";
+import {
+  EmployeeScheduleChangePreviewResponse,
+  EmployeeScheduleChangeRequest,
+} from "@/app/types/employee-schedule-change";
 
 import {
   getErrorMessage,
@@ -40,6 +43,8 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
+
+type AssignmentMode = "smart_insert" | "overwrite";
 
 type EmployeeListRow = Employee & {
   deleted_at?: string | null;
@@ -59,8 +64,6 @@ type ShiftRuleListRow = ShiftRule & {
   deleted_at?: string | null;
   is_active?: boolean;
 };
-
-type AssignmentMode = "smart_insert" | "overwrite";
 
 const EMPLOYEE_API_KEY = "/api/employees/list";
 
@@ -86,6 +89,9 @@ const getEmployeeCode = (employee: EmployeeListRow) => {
   return employee.code || "-";
 };
 
+const isSchedulePreviewStaleError = (error: unknown) =>
+  isResponseTypeError(error) && error.code === "SCHEDULE_PREVIEW_STALE";
+
 const EmployeeShiftRuleAssignForm = () => {
   const router = useRouter();
   const dispatch = useDispatch();
@@ -102,9 +108,12 @@ const EmployeeShiftRuleAssignForm = () => {
 
   const [overwrite, setOverwrite] = useState(false);
 
-  const [showAssignmentModeInfo, setShowAssignmentModeInfo] = useState(false);
+  const [showAssignmentModeInfo] = useState(false);
 
   const [isAssigning, setIsAssigning] = useState(false);
+
+  const [preview, setPreview] =
+    useState<EmployeeScheduleChangePreviewResponse | null>(null);
 
   const {
     data: employeesData,
@@ -227,10 +236,6 @@ const EmployeeShiftRuleAssignForm = () => {
     return shiftRules.find((rule) => rule.id === shiftRule) ?? null;
   }, [shiftRule, shiftRules]);
 
-  const selectedEmployees = useMemo(() => {
-    return employees.filter((employee) => selectedIds.has(employee.id));
-  }, [employees, selectedIds]);
-
   const selectedDepartmentCount = useMemo(() => {
     return departments.filter((department) => {
       const employeeIds = departmentEmployeeMap.get(department) ?? [];
@@ -262,27 +267,25 @@ const EmployeeShiftRuleAssignForm = () => {
 
   const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected;
 
+  const assignmentMode: AssignmentMode = overwrite
+    ? "overwrite"
+    : "smart_insert";
+
   const hasInvalidDateRange = Boolean(
     effectiveFrom &&
     effectiveTo &&
     dayjs(effectiveFrom).isAfter(dayjs(effectiveTo), "day"),
   );
 
-  const assignmentMode: AssignmentMode = overwrite
-    ? "overwrite"
-    : "smart_insert";
-
   const assignmentSummary = useMemo(() => {
-    if (!selectedRule || !effectiveFrom) {
+    if (!selectedRule || !effectiveFrom || !effectiveTo) {
       return null;
     }
 
     return {
       ruleName: selectedRule.name || "-",
 
-      period: `${formatDate(effectiveFrom)} – ${
-        effectiveTo ? formatDate(effectiveTo) : "No end date"
-      }`,
+      period: `${formatDate(effectiveFrom)} – ${formatDate(effectiveTo)}`,
     };
   }, [selectedRule, effectiveFrom, effectiveTo]);
 
@@ -290,6 +293,7 @@ const EmployeeShiftRuleAssignForm = () => {
     selectedIds.size > 0 &&
     Boolean(shiftRule) &&
     Boolean(effectiveFrom) &&
+    Boolean(effectiveTo) &&
     !hasInvalidDateRange;
 
   const isRefreshing = employeesIsValidating || shiftRuleIsValidating;
@@ -366,6 +370,7 @@ const EmployeeShiftRuleAssignForm = () => {
       return;
     }
 
+    setPreview(null);
     setSelectedIds((currentIds) => {
       const nextIds = new Set(currentIds);
 
@@ -380,6 +385,7 @@ const EmployeeShiftRuleAssignForm = () => {
   };
 
   const selectVisibleEmployees = () => {
+    setPreview(null);
     setSelectedIds((currentIds) => {
       const nextIds = new Set(currentIds);
 
@@ -392,6 +398,7 @@ const EmployeeShiftRuleAssignForm = () => {
   };
 
   const clearVisibleEmployees = () => {
+    setPreview(null);
     setSelectedIds((currentIds) => {
       const nextIds = new Set(currentIds);
 
@@ -404,6 +411,7 @@ const EmployeeShiftRuleAssignForm = () => {
   };
 
   const clearAllEmployees = () => {
+    setPreview(null);
     setSelectedIds(new Set());
   };
 
@@ -418,6 +426,7 @@ const EmployeeShiftRuleAssignForm = () => {
       selectedIds.has(id),
     );
 
+    setPreview(null);
     setSelectedIds((currentIds) => {
       const nextIds = new Set(currentIds);
 
@@ -444,6 +453,7 @@ const EmployeeShiftRuleAssignForm = () => {
       selectedIds.has(id),
     );
 
+    setPreview(null);
     setSelectedIds((currentIds) => {
       const nextIds = new Set(currentIds);
 
@@ -468,8 +478,7 @@ const EmployeeShiftRuleAssignForm = () => {
     setEffectiveTo(null);
 
     setOverwrite(false);
-
-    setShowAssignmentModeInfo(false);
+    setPreview(null);
   };
 
   const validateAssignment = () => {
@@ -491,6 +500,12 @@ const EmployeeShiftRuleAssignForm = () => {
       return false;
     }
 
+    if (!effectiveTo) {
+      showWarning("Effective To is required for a schedule change.");
+
+      return false;
+    }
+
     if (hasInvalidDateRange) {
       showWarning("Effective From cannot be later than Effective To.");
 
@@ -500,39 +515,48 @@ const EmployeeShiftRuleAssignForm = () => {
     return true;
   };
 
-  const doAssign = async () => {
-    if (isAssigning || !validateAssignment() || !shiftRule || !effectiveFrom) {
+  const buildRequest = (
+    previewFingerprint?: string | null,
+  ): EmployeeScheduleChangeRequest | null => {
+    if (!shiftRule || !effectiveFrom || !effectiveTo) {
+      return null;
+    }
+
+    return {
+      employee_ids: Array.from(selectedIds).sort(
+        (first, second) => first - second,
+      ),
+      shift_rule_id: shiftRule,
+      effective_from: dayjs(effectiveFrom).format("YYYY-MM-DD"),
+      effective_to: dayjs(effectiveTo).format("YYYY-MM-DD"),
+      attendance_conflict_policy: overwrite
+        ? "OVERWRITE_AND_REPROCESS"
+        : "BLOCK",
+      generate_through: null,
+      preview_fingerprint: previewFingerprint ?? null,
+    };
+  };
+
+  const previewChanges = async () => {
+    if (isAssigning || !validateAssignment()) {
       return;
     }
 
-    const payload = {
-      employee_id: Array.from(selectedIds),
-
-      shift_rule_id: shiftRule,
-
-      effective_from: dayjs(effectiveFrom).format("YYYY-MM-DD"),
-
-      effective_to: effectiveTo
-        ? dayjs(effectiveTo).format("YYYY-MM-DD")
-        : null,
-
-      overwrite,
-
-      is_active: true,
-      row_version: 1,
-    };
+    const payload = buildRequest();
+    if (!payload) {
+      return;
+    }
 
     try {
       setIsAssigning(true);
+      const response = await previewEmployeeScheduleChange(payload);
+      setPreview(response.data);
 
-      const response: ResponseType<ResponseTypeCreateSuccess> =
-        await createEmployeeShiftRule(payload);
-
-      showSuccess(
-        response.message || "Employee shift rule assigned successfully.",
-      );
-
-      resetPage();
+      if (response.data.conflicts.length > 0) {
+        showWarning(
+          "Preview generated. Resolve the listed conflicts before applying.",
+        );
+      }
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -540,18 +564,60 @@ const EmployeeShiftRuleAssignForm = () => {
     }
   };
 
+  const doAssign = async () => {
+    if (isAssigning || !preview || !preview.can_apply) {
+      return;
+    }
+
+    const payload = buildRequest(preview.fingerprint);
+    if (!payload) {
+      return;
+    }
+
+    try {
+      setIsAssigning(true);
+      const response = await applyEmployeeScheduleChange(payload);
+      showSuccess(response.message || "Schedule change applied successfully.");
+      resetPage();
+      router.push("/setting/employee-shift-assignment");
+    } catch (err: unknown) {
+      if (isSchedulePreviewStaleError(err)) {
+        setPreview(null);
+        showWarning(
+          "The schedule changed after the preview. Generate a new preview before applying.",
+        );
+        return;
+      }
+
+      showError(err);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const handleAssign = () => {
-    if (!validateAssignment() || !effectiveFrom) {
+    if (!validateAssignment()) {
+      return;
+    }
+
+    if (!preview) {
+      void previewChanges();
+      return;
+    }
+
+    if (!preview.can_apply) {
+      showWarning("The preview contains blocking conflicts.");
       return;
     }
 
     requestActionConfirmation({
-      header: "Assign Shift Rule",
+      header: "Apply Schedule Change",
 
       message: (
         <div className="flex flex-col gap-3">
           <span className="text-slate-600">
-            Assign this shift rule configuration?
+            Apply the previewed Shift Rule and regenerate the affected Daily
+            Schedule rows?
           </span>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -571,20 +637,21 @@ const EmployeeShiftRuleAssignForm = () => {
               <span className="text-slate-500">Period</span>
 
               <span className="font-semibold text-slate-800">
-                {formatDate(effectiveFrom)} –{" "}
-                {effectiveTo ? formatDate(effectiveTo) : "No end date"}
+                {formatDate(effectiveFrom)} – {formatDate(effectiveTo)}
               </span>
 
-              <span className="text-slate-500">Mode</span>
+              <span className="text-slate-500">Daily Schedule updates</span>
 
-              <span
-                className={`font-semibold ${
-                  overwrite ? "text-amber-700" : "text-green-700"
-                }`}
-              >
-                {overwrite
-                  ? "Replace overlapping rules"
-                  : "Smart insert / fill gaps"}
+              <span className="font-semibold text-slate-800">
+                {preview.totals.assignments_to_insert +
+                  preview.totals.assignments_to_update +
+                  preview.totals.assignments_to_archive}
+              </span>
+
+              <span className="text-slate-500">Attendance policy</span>
+
+              <span className="font-semibold text-slate-800">
+                {overwrite ? "Overwrite and reprocess" : "Block final rows"}
               </span>
             </div>
           </div>
@@ -594,8 +661,8 @@ const EmployeeShiftRuleAssignForm = () => {
               <i className="pi pi-exclamation-triangle mt-0.5" />
 
               <span>
-                Existing employee shift rules that overlap this period will be
-                replaced.
+                Final attendance rows will be reprocessed in the same atomic
+                transaction.
               </span>
             </div>
           )}
@@ -625,7 +692,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
           <Button
             type="button"
-            label="Assign"
+            label="Apply"
             icon="pi pi-check"
             severity={overwrite ? "warning" : "success"}
             onClick={options.accept}
@@ -767,19 +834,19 @@ const EmployeeShiftRuleAssignForm = () => {
 
                 <div className="min-w-0">
                   <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                    Shift Rule Assignment
+                    Mass Schedule Change
                   </h1>
 
                   <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                    Assign employee shift rules for a specific effective period
-                    before generating daily shift assignments.
+                    Apply one Shift Rule to many employees and synchronize the
+                    Daily Schedule for the selected period.
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Tag value="Employee Shift Rule" severity="info" rounded />
 
                     <Tag
-                      value="No overlapping result"
+                      value="Preview before apply"
                       severity="success"
                       rounded
                     />
@@ -806,13 +873,14 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <div>
                 <p className="m-0 font-semibold">
-                  Employee Shift Rule, not daily schedule
+                  Atomic rule and Daily Schedule change
                 </p>
 
                 <p className="m-0 mt-1">
-                  This page defines which shift rule applies to each employee
-                  during a date range. Generate daily schedules afterward from
-                  Employee Shift Assignment.
+                  The system splits overlapping Employee Shift Rules, keeps the
+                  original rotation anchor after an exception, and updates only
+                  generated Daily Schedule rows. Manual or locked rows are
+                  reported as conflicts.
                 </p>
               </div>
             </div>
@@ -1155,19 +1223,19 @@ const EmployeeShiftRuleAssignForm = () => {
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Select the shift rule, effective period, and how overlapping
-                  rules should be handled.
+                  Select the existing Shift Rule and the exact exception period.
+                  The server will preview every rule and Daily Schedule change.
                 </p>
               </div>
 
               <Tag
-                value={overwrite ? "Replace Overlap" : "Smart Insert"}
-                severity={overwrite ? "warning" : "success"}
-                icon={
+                value={
                   overwrite
-                    ? "pi pi-exclamation-triangle"
-                    : "pi pi-check-circle"
+                    ? "Reprocess Final Attendance"
+                    : "Block Final Attendance"
                 }
+                severity={overwrite ? "warning" : "info"}
+                icon={overwrite ? "pi pi-exclamation-triangle" : "pi pi-shield"}
                 rounded
               />
             </div>
@@ -1195,7 +1263,10 @@ const EmployeeShiftRuleAssignForm = () => {
                   disabled={shiftRuleIsLoading || isAssigning}
                   placeholder="Select shift rule"
                   className="w-full"
-                  onChange={(event) => setShiftRule(event.value ?? null)}
+                  onChange={(event) => {
+                    setShiftRule(event.value ?? null);
+                    setPreview(null);
+                  }}
                 />
               </div>
 
@@ -1222,6 +1293,7 @@ const EmployeeShiftRuleAssignForm = () => {
                     const newDate = (event.value as Date | null) ?? null;
 
                     setEffectiveFrom(newDate);
+                    setPreview(null);
 
                     if (
                       newDate &&
@@ -1240,6 +1312,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   className="text-sm font-medium text-slate-700"
                 >
                   Effective To
+                  <span className="ml-1 text-red-500">*</span>
                 </label>
 
                 <Calendar
@@ -1250,11 +1323,12 @@ const EmployeeShiftRuleAssignForm = () => {
                   showIcon
                   minDate={effectiveFrom ?? undefined}
                   disabled={isAssigning}
-                  placeholder="No end date"
+                  placeholder="Select end date"
                   className="w-full"
-                  onChange={(event) =>
-                    setEffectiveTo((event.value as Date | null) ?? null)
-                  }
+                  onChange={(event) => {
+                    setEffectiveTo((event.value as Date | null) ?? null);
+                    setPreview(null);
+                  }}
                 />
               </div>
             </div>
@@ -1284,14 +1358,17 @@ const EmployeeShiftRuleAssignForm = () => {
               </div>
             )}
 
-            {/* Assignment Mode */}
+            {/* Attendance Conflict Policy */}
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex items-start gap-3">
                 <IndeterminateCheckbox
                   inputId="overwrite"
                   checked={overwrite}
                   disabled={isAssigning}
-                  onChange={(event) => setOverwrite(Boolean(event.checked))}
+                  onChange={(event) => {
+                    setOverwrite(Boolean(event.checked));
+                    setPreview(null);
+                  }}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -1299,12 +1376,12 @@ const EmployeeShiftRuleAssignForm = () => {
                     htmlFor="overwrite"
                     className="cursor-pointer text-sm font-semibold text-slate-800"
                   >
-                    Overwrite Existing Rule
+                    Overwrite Final Attendance and Reprocess
                   </label>
 
                   <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                    Enable this only when the new rule must replace existing
-                    rules during the selected period.
+                    Enable this only when HR explicitly wants final attendance
+                    rows in the selected period to be recalculated.
                   </p>
                 </div>
               </div>
@@ -1333,8 +1410,8 @@ const EmployeeShiftRuleAssignForm = () => {
                         }`}
                       >
                         {overwrite
-                          ? "Replace overlapping rules"
-                          : "Smart insert mode"}
+                          ? "Overwrite and reprocess"
+                          : "Block final attendance rows"}
                       </p>
 
                       <p
@@ -1343,32 +1420,15 @@ const EmployeeShiftRuleAssignForm = () => {
                         }`}
                       >
                         {overwrite
-                          ? "Existing rules overlapping the selected period will be replaced by the new rule."
-                          : "Existing rules remain intact. The new rule fills empty gaps or creates a specific exception."}
+                          ? "Final attendance rows are recalculated in the same atomic transaction as the schedule change."
+                          : "Final attendance rows block the whole apply until HR explicitly chooses overwrite and reprocess."}
                       </p>
                     </div>
                   </div>
-
-                  <Button
-                    type="button"
-                    label={showAssignmentModeInfo ? "Hide Info" : "More Info"}
-                    icon={
-                      showAssignmentModeInfo
-                        ? "pi pi-chevron-up"
-                        : "pi pi-chevron-down"
-                    }
-                    text
-                    severity="secondary"
-                    size="small"
-                    disabled={isAssigning}
-                    className="self-start"
-                    onClick={() =>
-                      setShowAssignmentModeInfo((currentValue) => !currentValue)
-                    }
-                  />
                 </div>
 
-                {showAssignmentModeInfo &&
+                {false &&
+                  showAssignmentModeInfo &&
                   assignmentMode === "smart_insert" && (
                     <div className="mt-4 grid gap-3 border-t border-green-200 pt-4 lg:grid-cols-2">
                       <div className="rounded-xl border border-green-100 bg-white p-4 text-xs leading-6 text-slate-700">
@@ -1421,34 +1481,137 @@ const EmployeeShiftRuleAssignForm = () => {
                     </div>
                   )}
 
-                {showAssignmentModeInfo && assignmentMode === "overwrite" && (
-                  <div className="mt-4 border-t border-amber-200 pt-4">
-                    <div className="rounded-xl border border-amber-100 bg-white p-4 text-xs leading-6 text-slate-700">
-                      <p className="m-0 font-semibold text-slate-900">
-                        What Overwrite Does
-                      </p>
+                {false &&
+                  showAssignmentModeInfo &&
+                  assignmentMode === "overwrite" && (
+                    <div className="mt-4 border-t border-amber-200 pt-4">
+                      <div className="rounded-xl border border-amber-100 bg-white p-4 text-xs leading-6 text-slate-700">
+                        <p className="m-0 font-semibold text-slate-900">
+                          What Overwrite Does
+                        </p>
 
-                      <p className="m-0 mt-2">
-                        Existing employee shift rules that overlap the selected
-                        period are soft-deleted.
-                      </p>
+                        <p className="m-0 mt-2">
+                          Existing employee shift rules that overlap the
+                          selected period are soft-deleted.
+                        </p>
 
-                      <p className="m-0">
-                        The new rule is then inserted for the full selected
-                        period.
-                      </p>
+                        <p className="m-0">
+                          The new rule is then inserted for the full selected
+                          period.
+                        </p>
 
-                      <p className="m-0 mt-2 font-medium text-amber-700">
-                        Use overwrite only when the existing rules must
-                        genuinely be replaced.
-                      </p>
+                        <p className="m-0 mt-2 font-medium text-amber-700">
+                          Use overwrite only when the existing rules must
+                          genuinely be replaced.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </section>
           </div>
         </Card>
+
+        {preview && (
+          <Card className="border border-indigo-200 shadow-sm">
+            <div className="flex flex-col gap-4 p-3 sm:p-4 md:p-5">
+              <div className="flex flex-col gap-3 border-b border-indigo-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="m-0 text-base font-semibold text-slate-800">
+                    Server Preview
+                  </h2>
+                  <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+                    This snapshot is required for apply. If data changes after
+                    preview, the server rejects the stale fingerprint.
+                  </p>
+                </div>
+                <Tag
+                  value={preview.can_apply ? "Ready to apply" : "Blocked"}
+                  severity={preview.can_apply ? "success" : "danger"}
+                  icon={preview.can_apply ? "pi pi-check" : "pi pi-ban"}
+                  rounded
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="m-0 text-xs text-slate-500">Employees</p>
+                  <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+                    {preview.totals.employees}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="m-0 text-xs text-slate-500">Rules created</p>
+                  <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+                    {preview.totals.rule_segments_to_create}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="m-0 text-xs text-slate-500">Rules archived</p>
+                  <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+                    {preview.totals.rule_segments_to_archive}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="m-0 text-xs text-slate-500">
+                    Schedules inserted
+                  </p>
+                  <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+                    {preview.totals.assignments_to_insert}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="m-0 text-xs text-slate-500">
+                    Schedules updated
+                  </p>
+                  <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+                    {preview.totals.assignments_to_update}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="m-0 text-xs text-slate-500">Attendance rows</p>
+                  <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+                    {preview.totals.attendance_rows_to_reprocess}
+                  </p>
+                </div>
+              </div>
+
+              {preview.conflicts.length > 0 && (
+                <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 p-4">
+                  <p className="m-0 text-sm font-semibold text-red-900">
+                    Conflicts ({preview.conflicts.length})
+                  </p>
+                  <div className="flex max-h-56 flex-col gap-2 overflow-y-auto">
+                    {preview.conflicts.map((conflict, index) => (
+                      <div
+                        key={`${conflict.code}-${conflict.employee_id ?? "all"}-${conflict.date ?? "all"}-${index}`}
+                        className="text-xs leading-5 text-red-800"
+                      >
+                        <span className="font-semibold">{conflict.code}</span>
+                        {conflict.employee_id
+                          ? ` - Employee #${conflict.employee_id}`
+                          : ""}
+                        {conflict.date
+                          ? ` - ${dayjs(conflict.date).format("DD MMM YYYY")}`
+                          : ""}
+                        {`: ${conflict.message}`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-xs leading-5 text-indigo-900">
+                <p className="m-0 font-semibold">Rotation phase is preserved</p>
+                <p className="m-0 mt-1">
+                  The post-exception segment keeps the original anchor. For a
+                  weekly morning-night rotation, a week-2 morning exception
+                  leaves week 3 morning and week 4 night as the original phase.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* Final Action */}
         <Card className="border border-slate-200 shadow-sm">
@@ -1482,15 +1645,15 @@ const EmployeeShiftRuleAssignForm = () => {
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Mode:{" "}
+                Attendance policy:{" "}
                 <span
                   className={`font-semibold ${
                     overwrite ? "text-amber-700" : "text-green-700"
                   }`}
                 >
                   {overwrite
-                    ? "Replace overlapping rules"
-                    : "Smart insert / fill gaps"}
+                    ? "Overwrite final rows and reprocess"
+                    : "Block final attendance rows"}
                 </span>
               </p>
             </div>
@@ -1509,8 +1672,8 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <Button
                 type="button"
-                label="Assign Shift Rule"
-                icon="pi pi-check"
+                label={preview ? "Apply Schedule Change" : "Preview Changes"}
+                icon={preview ? "pi pi-check" : "pi pi-eye"}
                 severity={overwrite ? "warning" : "success"}
                 loading={isAssigning}
                 disabled={!isFormValid || isAssigning}

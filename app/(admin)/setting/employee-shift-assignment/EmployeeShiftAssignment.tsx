@@ -14,6 +14,7 @@ import {
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
+import Can from "@/app/_components/CanPermission";
 import { Checkbox } from "primereact/checkbox";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { IconField } from "primereact/iconfield";
@@ -66,6 +67,15 @@ type EmployeeMatrixRow = {
 };
 
 type ProcessingAction = "delete" | "restore" | "purge" | null;
+
+const MASS_SCHEDULE_CHANGE_PERMISSIONS = [
+  "employee-shift-rule.read",
+  "employee-shift-rule.create",
+  "employee-shift-rule.update",
+  "employee-shift-assignment.read",
+  "employee-shift-assignment.generate",
+  "employee-shift-assignment.update",
+];
 
 const getBody = () => document.body;
 
@@ -753,6 +763,22 @@ const EmployeeShiftAssignmentListPage = () => {
                 className="w-full sm:w-auto"
                 onClick={handleRefresh}
               />
+
+              <Can allOf={MASS_SCHEDULE_CHANGE_PERMISSIONS}>
+                <Button
+                  type="button"
+                  label="Mass Schedule Change"
+                  icon="pi pi-sliders-h"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  disabled={isProcessing}
+                  className="w-full sm:w-auto"
+                  onClick={() =>
+                    router.push("/setting/employee-shift-rule/assign")
+                  }
+                />
+              </Can>
 
               <Button
                 type="button"
