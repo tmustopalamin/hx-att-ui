@@ -15,7 +15,6 @@ import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
-import { InputNumber } from "primereact/inputnumber";
 import { InputSwitch } from "primereact/inputswitch";
 import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
@@ -86,6 +85,21 @@ const SYNC_INTERVAL_OPTIONS = [
   {
     label: "Every 60 minutes",
     value: 60,
+  },
+];
+
+const TIMEZONE_OPTIONS = [
+  {
+    label: "WIB (UTC+07:00)",
+    value: 420,
+  },
+  {
+    label: "WITA (UTC+08:00)",
+    value: 480,
+  },
+  {
+    label: "WIT (UTC+09:00)",
+    value: 540,
   },
 ];
 
@@ -1777,33 +1791,27 @@ const FingerprintScannerTableData = () => {
                   control={control}
                   rules={{
                     required: "Timezone offset is required.",
-                    min: {
-                      value: -840,
-                      message: "Minimum timezone offset is -840 minutes.",
-                    },
-                    max: {
-                      value: 840,
-                      message: "Maximum timezone offset is 840 minutes.",
-                    },
+                    validate: (value) =>
+                      TIMEZONE_OPTIONS.some(
+                        (option) => option.value === Number(value),
+                      ) || "Select a valid Indonesian timezone.",
                   }}
                   render={({ field, fieldState }) => (
                     <>
-                      <InputNumber
+                      <Dropdown
                         id="timezone_offset_minutes"
-                        inputRef={field.ref}
+                        appendTo={getBody}
                         value={Number(field.value ?? 420)}
-                        min={-840}
-                        max={840}
-                        useGrouping={false}
-                        suffix=" minutes"
+                        options={TIMEZONE_OPTIONS}
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Select timezone"
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
                         }`}
                         onBlur={field.onBlur}
-                        onValueChange={(event) =>
-                          field.onChange(event.value ?? 420)
-                        }
+                        onChange={(event) => field.onChange(event.value)}
                       />
 
                       {fieldState.error ? (
@@ -1812,7 +1820,7 @@ const FingerprintScannerTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          WIB = 420, WITA = 480, WIT = 540.
+                          Pilih timezone sesuai lokasi mesin fingerprint.
                         </small>
                       )}
                     </>
