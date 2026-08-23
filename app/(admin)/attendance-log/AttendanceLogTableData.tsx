@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -46,6 +47,7 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 type AttendanceLogRow = AttendanceLog & {
   employee_name?: string | null;
@@ -68,15 +70,15 @@ type SyncDetail = AttendanceLogSyncResult["details"][number];
 
 const PROCESSED_OPTIONS = [
   {
-    label: "All Processing Status",
+    labelKey: "All Processing Status",
     value: "ALL",
   },
   {
-    label: "Processed",
+    labelKey: "Processed",
     value: "PROCESSED",
   },
   {
-    label: "Unprocessed",
+    labelKey: "Unprocessed",
     value: "UNPROCESSED",
   },
 ];
@@ -115,6 +117,7 @@ const getSecurityData = (row: AttendanceLogRow | null) => {
 };
 
 const AttendanceLogTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const [syncLoading, setSyncLoading] = useState(false);
@@ -203,10 +206,10 @@ const AttendanceLogTableData = () => {
     ).sort((first, second) => first.localeCompare(second));
 
     return statuses.map((status) => ({
-      label: status,
+      label: i18nT(formatStatusLabel(status)),
       value: status,
     }));
-  }, [rows]);
+  }, [i18nT, rows]);
 
   const hasInvalidDateRange = Boolean(
     dateFrom &&
@@ -338,7 +341,7 @@ const AttendanceLogTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -350,7 +353,7 @@ const AttendanceLogTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -363,8 +366,8 @@ const AttendanceLogTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: err.message,
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT(err.message),
         }),
       );
 
@@ -375,8 +378,8 @@ const AttendanceLogTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -459,9 +462,11 @@ const AttendanceLogTableData = () => {
           visible: true,
           severity: "info",
           summary: response.data.deduplicated
-            ? "Sync Already Queued"
-            : "Sync Queued",
-          detail: `${response.message || "Attendance log synchronization was queued."} For details, go to Settings → Background Jobs.`,
+            ? i18nT("static.12rl6qf")
+            : i18nT("static.iag0jr"),
+          detail: i18nT("static.11fc7sl", {
+            p0: response.message || i18nT("static.12wly34"),
+          }),
         }),
       );
     } catch (err: unknown) {
@@ -473,17 +478,13 @@ const AttendanceLogTableData = () => {
 
   const onClickSyncLog = () => {
     requestActionConfirmation({
-      header: "Sync Attendance Log",
+      header: i18nT("static.60htrz"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            Pull the latest attendance logs from all active fingerprint
-            scanners?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1d0kg1t")} </span>
 
           <span className="text-sm text-slate-500">
-            Existing duplicate logs should be skipped by the synchronization
-            process.
+            {i18nT("static.eos6df")}{" "}
           </span>
         </div>
       ),
@@ -497,7 +498,7 @@ const AttendanceLogTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -506,7 +507,7 @@ const AttendanceLogTableData = () => {
 
           <Button
             type="button"
-            label="Start Sync"
+            label={i18nT("static.1wcvyci")}
             icon="pi pi-sync"
             severity="success"
             onClick={options.accept}
@@ -532,7 +533,7 @@ const AttendanceLogTableData = () => {
         await refreshAttendanceLogData();
       }
 
-      showSuccess("Machine PIN mapping updated successfully.");
+      showSuccess(i18nT("static.1egza5t"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -546,15 +547,13 @@ const AttendanceLogTableData = () => {
 
   const onClickRemapEmployee = () => {
     requestActionConfirmation({
-      header: "Remap Employees",
+      header: i18nT("static.42np7r"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            Remap machine PIN values to employees for all attendance logs?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1mel9il")} </span>
 
           <span className="text-sm text-slate-500">
-            Use this after employee PIN mappings have been added or corrected.
+            {i18nT("static.2k78h2")}{" "}
           </span>
         </div>
       ),
@@ -568,7 +567,7 @@ const AttendanceLogTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -577,7 +576,7 @@ const AttendanceLogTableData = () => {
 
           <Button
             type="button"
-            label="Remap Employees"
+            label={i18nT("static.42np7r")}
             icon="pi pi-user-edit"
             severity="warning"
             onClick={options.accept}
@@ -618,12 +617,37 @@ const AttendanceLogTableData = () => {
   const getEmployeeName = (item: AttendanceLogRow) => {
     return (
       item.employee_name ??
-      (item.employee_id ? `Employee #${item.employee_id}` : "Unmapped")
+      (item.employee_id
+        ? i18nT("Employee #{p0}", { p0: item.employee_id })
+        : i18nT("Unmapped"))
     );
   };
 
   const getMachineName = (item: AttendanceLogRow) => {
-    return item.machine_name ?? "Unknown machine";
+    return item.machine_name ?? i18nT("Unknown machine");
+  };
+
+  const formatSourceLabel = (source?: string | null) => {
+    switch (
+      String(source ?? "")
+        .trim()
+        .toUpperCase()
+    ) {
+      case "MOBILE":
+        return "Mobile App";
+      case "MACHINE":
+        return "Machine";
+      case "WEB":
+        return "Web";
+      case "API":
+        return "API";
+      case "FACE":
+        return "Face";
+      case "GPS":
+        return "GPS";
+      default:
+        return source || "Unknown";
+    }
   };
 
   const autoFitColumns = (
@@ -654,8 +678,8 @@ const AttendanceLogTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "No attendance log data is available to export.",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.pwab41"),
         }),
       );
 
@@ -779,7 +803,7 @@ const AttendanceLogTableData = () => {
 
       saveAs(fileData, fileName);
 
-      showSuccess("Attendance log exported successfully.");
+      showSuccess(i18nT("static.1ddzxya"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -806,7 +830,7 @@ const AttendanceLogTableData = () => {
   const submitSecurityReview = async () => {
     if (!selectedLog) return;
     if (reviewDecision === "REJECT" && !reviewNote.trim()) {
-      showError(new Error("A rejection note is required."));
+      showError(new Error(i18nT("A rejection note is required.")));
       return;
     }
     try {
@@ -822,8 +846,8 @@ const AttendanceLogTableData = () => {
       await refreshAttendanceLogData();
       showSuccess(
         reviewDecision === "APPROVE"
-          ? "Attendance approved and released for processing."
-          : "Attendance rejected as invalid.",
+          ? i18nT("static.2hvv8f")
+          : i18nT("static.10y1dyr"),
       );
     } catch (err: unknown) {
       showError(err);
@@ -838,7 +862,7 @@ const AttendanceLogTableData = () => {
     if (normalized === "VALID") {
       return (
         <Tag
-          value="Valid"
+          value={i18nT("static.1mdm3gx")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -849,7 +873,7 @@ const AttendanceLogTableData = () => {
     if (normalized === "INVALID") {
       return (
         <Tag
-          value="Invalid"
+          value={i18nT("static.1y20ekw")}
           severity="danger"
           icon="pi pi-exclamation-circle"
           rounded
@@ -860,7 +884,7 @@ const AttendanceLogTableData = () => {
     if (normalized === "PENDING_REVIEW") {
       return (
         <Tag
-          value="Security Review"
+          value={i18nT("static.6zotr1")}
           severity="warning"
           icon="pi pi-shield"
           rounded
@@ -870,14 +894,19 @@ const AttendanceLogTableData = () => {
 
     if (normalized === "DUPLICATE") {
       return (
-        <Tag value="Duplicate" severity="warning" icon="pi pi-copy" rounded />
+        <Tag
+          value={i18nT("static.1xz5c1i")}
+          severity="warning"
+          icon="pi pi-copy"
+          rounded
+        />
       );
     }
 
     if (normalized === "IGNORED") {
       return (
         <Tag
-          value="Ignored"
+          value={i18nT("static.6ictfp")}
           severity="secondary"
           icon="pi pi-minus-circle"
           rounded
@@ -885,18 +914,30 @@ const AttendanceLogTableData = () => {
       );
     }
 
-    return <Tag value={status || "Unknown"} severity="info" rounded />;
+    return (
+      <Tag value={i18nT(formatStatusLabel(status))} severity="info" rounded />
+    );
   };
 
   const renderProcessedTag = (processed: boolean) => {
     if (processed) {
       return (
-        <Tag value="Processed" severity="success" icon="pi pi-check" rounded />
+        <Tag
+          value={i18nT("static.1k5drjf")}
+          severity="success"
+          icon="pi pi-check"
+          rounded
+        />
       );
     }
 
     return (
-      <Tag value="Unprocessed" severity="warning" icon="pi pi-clock" rounded />
+      <Tag
+        value={i18nT("static.14gnciu")}
+        severity="warning"
+        icon="pi pi-clock"
+        rounded
+      />
     );
   };
 
@@ -916,8 +957,8 @@ const AttendanceLogTableData = () => {
 
         <span className="font-mono text-xs text-slate-500">
           {isMapped
-            ? `ID: ${rowData.employee_id}`
-            : `PIN: ${rowData.machine_pin ?? "-"}`}
+            ? i18nT("static.1cvkmxe", { p0: rowData.employee_id })
+            : i18nT("static.1suvj2", { p0: rowData.machine_pin ?? "-" })}
         </span>
       </div>
     );
@@ -932,7 +973,7 @@ const AttendanceLogTableData = () => {
 
         {rowData.machine_id !== null && rowData.machine_id !== undefined && (
           <span className="font-mono text-xs text-slate-500">
-            ID: {rowData.machine_id}
+            {i18nT("static.bu6fn2")} {rowData.machine_id}
           </span>
         )}
       </div>
@@ -948,7 +989,7 @@ const AttendanceLogTableData = () => {
 
         {rowData.event_time && (
           <span className="whitespace-nowrap text-xs text-slate-500">
-            UTC: {formatUtcTime(rowData.event_time)}
+            {i18nT("static.emcnut")} {formatUtcTime(rowData.event_time)}
           </span>
         )}
       </div>
@@ -960,7 +1001,13 @@ const AttendanceLogTableData = () => {
       return <span className="text-sm text-slate-400">-</span>;
     }
 
-    return <Tag value={rowData.source_type} severity="info" rounded />;
+    return (
+      <Tag
+        value={i18nT(formatSourceLabel(rowData.source_type))}
+        severity="info"
+        rounded
+      />
+    );
   };
 
   const actionBody = (rowData: AttendanceLogRow) => {
@@ -973,7 +1020,7 @@ const AttendanceLogTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="View detail"
+          tooltip={i18nT("static.1dtxu7d")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -1003,23 +1050,31 @@ const AttendanceLogTableData = () => {
     const normalized = rowData.status?.toUpperCase();
 
     if (normalized === "SUCCESS") {
-      return <Tag value="Success" severity="success" rounded />;
+      return <Tag value={i18nT("static.udvru8")} severity="success" rounded />;
     }
 
     if (normalized === "PARTIAL") {
-      return <Tag value="Partial" severity="warning" rounded />;
+      return <Tag value={i18nT("static.xcezp6")} severity="warning" rounded />;
     }
 
     if (normalized === "FAILED") {
-      return <Tag value="Failed" severity="danger" rounded />;
+      return <Tag value={i18nT("static.npsixg")} severity="danger" rounded />;
     }
 
-    return <Tag value={rowData.status || "Unknown"} severity="info" rounded />;
+    return (
+      <Tag
+        value={i18nT(formatStatusLabel(rowData.status))}
+        severity="info"
+        rounded
+      />
+    );
   };
 
   const syncDetailMessageBody = (rowData: SyncDetail) => {
     if (!rowData.error_message) {
-      return <span className="text-sm text-green-700">Success</span>;
+      return (
+        <span className="text-sm text-green-700">{i18nT("static.udvru8")}</span>
+      );
     }
 
     return (
@@ -1060,12 +1115,11 @@ const AttendanceLogTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Attendance Log
+                  {i18nT("static.rjym30")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review raw attendance events, employee mappings, processing
-                  status, and fingerprint synchronization results.
+                  {i18nT("static.ymc7a2")}{" "}
                 </p>
               </div>
             </div>
@@ -1073,7 +1127,7 @@ const AttendanceLogTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1086,7 +1140,7 @@ const AttendanceLogTableData = () => {
 
               <Button
                 type="button"
-                label="Sync Logs"
+                label={i18nT("static.d3bk7p")}
                 icon="pi pi-sync"
                 severity="success"
                 size="small"
@@ -1098,7 +1152,7 @@ const AttendanceLogTableData = () => {
 
               <Button
                 type="button"
-                label="Remap Employees"
+                label={i18nT("static.42np7r")}
                 icon="pi pi-user-edit"
                 severity="warning"
                 outlined
@@ -1111,7 +1165,7 @@ const AttendanceLogTableData = () => {
 
               <Button
                 type="button"
-                label="Export Current Page"
+                label={i18nT("static.1cwzvbt")}
                 icon="pi pi-file-excel"
                 severity="success"
                 outlined
@@ -1129,20 +1183,26 @@ const AttendanceLogTableData = () => {
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-500">Filtered Logs</p>
+              <p className="m-0 text-xs text-slate-500">
+                {i18nT("static.7chzvl")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summaryStats.total}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-400">
-                Page {currentPage} of {totalPages || 1} •{" "}
-                {totalRecords.toLocaleString("id-ID")} total records
+                {i18nT("static.1sfsa6u")} {currentPage} {i18nT("static.t6uqnc")}{" "}
+                {totalPages || 1} {i18nT("static.syyan8")}{" "}
+                {totalRecords.toLocaleString("id-ID")}{" "}
+                {i18nT("static.tmqg87")}{" "}
               </p>
             </div>
 
             <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-              <p className="m-0 text-xs text-green-700">Processed</p>
+              <p className="m-0 text-xs text-green-700">
+                {i18nT("static.1k5drjf")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
                 {summaryStats.processed}
@@ -1150,7 +1210,9 @@ const AttendanceLogTableData = () => {
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="m-0 text-xs text-amber-700">Unprocessed</p>
+              <p className="m-0 text-xs text-amber-700">
+                {i18nT("static.14gnciu")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
                 {summaryStats.unprocessed}
@@ -1158,7 +1220,9 @@ const AttendanceLogTableData = () => {
             </div>
 
             <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="m-0 text-xs text-red-700">Invalid</p>
+              <p className="m-0 text-xs text-red-700">
+                {i18nT("static.1y20ekw")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
                 {summaryStats.invalid}
@@ -1166,7 +1230,9 @@ const AttendanceLogTableData = () => {
             </div>
 
             <div className="col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-4 md:col-span-1">
-              <p className="m-0 text-xs text-blue-700">Employees</p>
+              <p className="m-0 text-xs text-blue-700">
+                {i18nT("static.f4bo3a")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
                 {summaryStats.employees}
@@ -1178,19 +1244,18 @@ const AttendanceLogTableData = () => {
           <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Attendance Log Filter
+                {i18nT("static.y6kili")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Filter raw logs by date, employee, scanner, processing state, or
-                validation status.
+                {i18nT("static.11l6263")}{" "}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                label="Today"
+                label={i18nT("static.1sawk0u")}
                 size="small"
                 severity={quickRange === "today" ? "info" : "secondary"}
                 outlined={quickRange !== "today"}
@@ -1199,7 +1264,7 @@ const AttendanceLogTableData = () => {
 
               <Button
                 type="button"
-                label="This Week"
+                label={i18nT("static.he9t3n")}
                 size="small"
                 severity={quickRange === "this_week" ? "info" : "secondary"}
                 outlined={quickRange !== "this_week"}
@@ -1208,7 +1273,7 @@ const AttendanceLogTableData = () => {
 
               <Button
                 type="button"
-                label="This Month"
+                label={i18nT("static.usin9z")}
                 size="small"
                 severity={quickRange === "this_month" ? "info" : "secondary"}
                 outlined={quickRange !== "this_month"}
@@ -1222,7 +1287,7 @@ const AttendanceLogTableData = () => {
 
                 <InputText
                   value={keyword}
-                  placeholder="Search employee, scanner, PIN, source, or status"
+                  placeholder={i18nT("static.1mb238k")}
                   className="w-full"
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
                     setKeyword(event.target.value);
@@ -1236,7 +1301,7 @@ const AttendanceLogTableData = () => {
                 value={dateFrom}
                 dateFormat="dd MM yy"
                 showIcon
-                placeholder="Date From"
+                placeholder={i18nT("static.pkgk6v")}
                 className="w-full"
                 onChange={(event) =>
                   onDateFromChange((event.value as Date | null) ?? null)
@@ -1248,7 +1313,7 @@ const AttendanceLogTableData = () => {
                 value={dateTo}
                 dateFormat="dd MM yy"
                 showIcon
-                placeholder="Date To"
+                placeholder={i18nT("static.1iqht4m")}
                 className="w-full"
                 onChange={(event) =>
                   onDateToChange((event.value as Date | null) ?? null)
@@ -1259,7 +1324,7 @@ const AttendanceLogTableData = () => {
                 appendTo={getBody}
                 value={statusFilter}
                 options={statusOptions}
-                placeholder="All Statuses"
+                placeholder={i18nT("static.18zxnji")}
                 showClear
                 className="w-full"
                 onChange={(event) => {
@@ -1272,7 +1337,10 @@ const AttendanceLogTableData = () => {
               <Dropdown
                 appendTo={getBody}
                 value={processedFilter}
-                options={PROCESSED_OPTIONS}
+                options={PROCESSED_OPTIONS.map((option) => ({
+                  label: i18nT(option.labelKey),
+                  value: option.value,
+                }))}
                 className="w-full"
                 onChange={(event) => {
                   setProcessedFilter(event.value as ProcessedFilter);
@@ -1286,28 +1354,28 @@ const AttendanceLogTableData = () => {
               <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <i className="pi pi-exclamation-circle mt-0.5" />
 
-                <span>Date From cannot be later than Date To.</span>
+                <span>{i18nT("static.1k8q7ax")}</span>
               </div>
             )}
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex flex-wrap items-center gap-2">
                 <Tag
-                  value={dateRangeLabel}
+                  value={i18nT(dateRangeLabel)}
                   severity="info"
                   icon="pi pi-calendar"
                   rounded
                 />
 
                 <span className="text-xs text-slate-500">
-                  {filteredData.length} matching record
-                  {filteredData.length === 1 ? "" : "s"}
+                  {filteredData.length} {i18nT("static.9xnbwb")}{" "}
+                  {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}
                 </span>
               </div>
 
               <Button
                 type="button"
-                label="Reset Filters"
+                label={i18nT("static.1ljj5w3")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -1325,7 +1393,7 @@ const AttendanceLogTableData = () => {
               {renderStatusTag("VALID")}
 
               <p className="m-0 text-xs leading-5 text-slate-600">
-                Valid and ready for attendance summary processing.
+                {i18nT("static.8wxvlg")}{" "}
               </p>
             </div>
 
@@ -1333,7 +1401,7 @@ const AttendanceLogTableData = () => {
               {renderStatusTag("INVALID")}
 
               <p className="m-0 text-xs leading-5 text-slate-600">
-                Employee mapping or source data is incomplete.
+                {i18nT("static.nbxxab")}{" "}
               </p>
             </div>
 
@@ -1341,8 +1409,7 @@ const AttendanceLogTableData = () => {
               {renderStatusTag("PENDING_REVIEW")}
 
               <p className="m-0 text-xs leading-5 text-slate-600">
-                Quarantined and excluded from attendance summaries until an
-                admin reviews its security evidence.
+                {i18nT("static.19nfnsh")}{" "}
               </p>
             </div>
 
@@ -1350,7 +1417,7 @@ const AttendanceLogTableData = () => {
               {renderStatusTag("DUPLICATE")}
 
               <p className="m-0 text-xs leading-5 text-slate-600">
-                The same raw attendance event has already been recorded.
+                {i18nT("static.r5r7ed")}{" "}
               </p>
             </div>
 
@@ -1358,7 +1425,7 @@ const AttendanceLogTableData = () => {
               {renderProcessedTag(false)}
 
               <p className="m-0 text-xs leading-5 text-slate-600">
-                Not yet used to build an attendance summary.
+                {i18nT("static.ilugue")}{" "}
               </p>
             </div>
           </div>
@@ -1385,8 +1452,8 @@ const AttendanceLogTableData = () => {
               tableStyle={{
                 minWidth: "96rem",
               }}
-              emptyMessage="No attendance log data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.17n19d1")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
               onPage={(event) => {
                 setFirst(event.first);
@@ -1406,7 +1473,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="employee_name"
-                header="Employee"
+                header={i18nT("static.1fak8xt")}
                 sortable
                 body={employeeBody}
                 style={{
@@ -1416,7 +1483,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="machine_name"
-                header="Scanner"
+                header={i18nT("static.1bz37xh")}
                 sortable
                 body={machineBody}
                 style={{
@@ -1426,7 +1493,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="machine_pin"
-                header="Machine PIN"
+                header={i18nT("static.1bnsff5")}
                 sortable
                 style={{
                   minWidth: "11rem",
@@ -1440,7 +1507,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="event_time"
-                header="Event Time"
+                header={i18nT("static.lk414c")}
                 sortable
                 body={displayTimeBody}
                 style={{
@@ -1450,7 +1517,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="source_type"
-                header="Source"
+                header={i18nT("static.r5qyuw")}
                 sortable
                 body={sourceBody}
                 style={{
@@ -1460,7 +1527,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="status"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={(rowData: AttendanceLogRow) =>
                   renderStatusTag(rowData.status)
@@ -1472,7 +1539,7 @@ const AttendanceLogTableData = () => {
 
               <Column
                 field="processed"
-                header="Processing"
+                header={i18nT("static.emytwm")}
                 sortable
                 body={(rowData: AttendanceLogRow) =>
                   renderProcessedTag(rowData.processed)
@@ -1483,7 +1550,7 @@ const AttendanceLogTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionBody}
                 frozen
                 alignFrozen="right"
@@ -1506,7 +1573,7 @@ const AttendanceLogTableData = () => {
 
       {/* Attendance Log Detail */}
       <Dialog
-        header="Attendance Log Detail"
+        header={i18nT("static.1ab6ho5")}
         visible={detailDialog}
         style={{
           width: "95vw",
@@ -1530,7 +1597,7 @@ const AttendanceLogTableData = () => {
                 </h2>
 
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  {getMachineName(selectedLog)} · PIN{" "}
+                  {getMachineName(selectedLog)} {i18nT("static.1rqw07t")}{" "}
                   {selectedLog.machine_pin || "-"}
                 </p>
               </div>
@@ -1545,14 +1612,14 @@ const AttendanceLogTableData = () => {
             <section className="flex flex-col gap-4">
               <div className="border-b border-slate-200 pb-2">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
-                  Attendance Event
+                  {i18nT("static.1actnrm")}{" "}
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <p className="m-0 text-xs text-slate-500">
-                    Source Local Time
+                    {i18nT("static.yfuapc")}{" "}
                   </p>
 
                   <p className="m-0 mt-1 text-sm font-medium text-slate-800">
@@ -1563,7 +1630,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">UTC Time</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.1puqel2")}
+                  </p>
 
                   <p className="m-0 mt-1 text-sm font-medium text-slate-800">
                     {formatUtcTime(selectedLog.event_time)}
@@ -1571,7 +1640,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Processed At</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.gzverw")}
+                  </p>
 
                   <p className="m-0 mt-1 text-sm font-medium text-slate-800">
                     {formatUtcTime(selectedLog.processed_at)}
@@ -1579,7 +1650,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Source Type</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.147943k")}
+                  </p>
 
                   <div className="mt-1">{sourceBody(selectedLog)}</div>
                 </div>
@@ -1590,11 +1663,10 @@ const AttendanceLogTableData = () => {
               <section className="flex flex-col gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <div>
                   <h3 className="m-0 text-sm font-semibold text-amber-950">
-                    Android Security Review
+                    {i18nT("static.1ki30mm")}{" "}
                   </h3>
                   <p className="m-0 mt-1 text-xs leading-5 text-amber-800">
-                    This record is quarantined and is not included in the
-                    attendance summary.
+                    {i18nT("static.jsx1ev")}{" "}
                   </p>
                 </div>
 
@@ -1605,7 +1677,7 @@ const AttendanceLogTableData = () => {
                     ))
                   ) : (
                     <span className="text-sm text-amber-800">
-                      No reason code was provided.
+                      {i18nT("static.f1l6k5")}{" "}
                     </span>
                   )}
                 </div>
@@ -1620,7 +1692,7 @@ const AttendanceLogTableData = () => {
                   <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                     <Button
                       type="button"
-                      label="Reject Attendance"
+                      label={i18nT("static.rms9s1")}
                       icon="pi pi-times"
                       severity="danger"
                       outlined
@@ -1628,7 +1700,7 @@ const AttendanceLogTableData = () => {
                     />
                     <Button
                       type="button"
-                      label="Approve Attendance"
+                      label={i18nT("static.umqw1h")}
                       icon="pi pi-check"
                       severity="success"
                       onClick={() => openSecurityReview("APPROVE")}
@@ -1641,21 +1713,25 @@ const AttendanceLogTableData = () => {
             <section className="flex flex-col gap-4">
               <div className="border-b border-slate-200 pb-2">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
-                  Mapping and Source
+                  {i18nT("static.ivrgq5")}{" "}
                 </h3>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Employee ID</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.1lghzb2")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm text-slate-800">
-                    {selectedLog.employee_id ?? "Unmapped"}
+                    {selectedLog.employee_id ?? i18nT("static.axbf59")}
                   </p>
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Machine ID</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.1xyxdnr")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm text-slate-800">
                     {selectedLog.machine_id ?? "-"}
@@ -1663,7 +1739,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">External System</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.iyspz3")}
+                  </p>
 
                   <p className="m-0 mt-1 text-sm text-slate-800">
                     {selectedLog.external_system ?? "-"}
@@ -1672,7 +1750,7 @@ const AttendanceLogTableData = () => {
 
                 <div>
                   <p className="m-0 text-xs text-slate-500">
-                    External Reference
+                    {i18nT("static.wojojv")}{" "}
                   </p>
 
                   <p className="m-0 mt-1 break-all font-mono text-sm text-slate-800">
@@ -1681,7 +1759,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Latitude</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.udp36t")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm text-slate-800">
                     {selectedLog.latitude ?? "-"}
@@ -1689,7 +1769,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Longitude</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.sltujy")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm text-slate-800">
                     {selectedLog.longitude ?? "-"}
@@ -1697,7 +1779,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Face ID</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.1go0w2h")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm text-slate-800">
                     {selectedLog.face_id ?? "-"}
@@ -1705,7 +1789,9 @@ const AttendanceLogTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Log ID</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.txzz2m")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm text-slate-800">
                     {selectedLog.id}
@@ -1718,13 +1804,15 @@ const AttendanceLogTableData = () => {
               <section className="flex flex-col gap-3">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="m-0 text-sm font-semibold text-slate-800">
-                    Attendance Photo
+                    {i18nT("static.1tkcrji")}{" "}
                   </h3>
                 </div>
 
                 <img
                   src={getAttendancePhotoUrl(selectedLog.photo_url)}
-                  alt={`Attendance photo for ${getEmployeeName(selectedLog)}`}
+                  alt={i18nT("static.vu8n1j", {
+                    p0: getEmployeeName(selectedLog),
+                  })}
                   className="max-h-[28rem] w-full rounded-xl border border-slate-200 object-contain"
                 />
               </section>
@@ -1732,7 +1820,7 @@ const AttendanceLogTableData = () => {
 
             <details className="rounded-xl border border-slate-200 bg-slate-50">
               <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-700">
-                View Extra Data
+                {i18nT("static.jhk5ru")}{" "}
               </summary>
 
               <div className="border-t border-slate-200 p-4">
@@ -1748,8 +1836,8 @@ const AttendanceLogTableData = () => {
       <Dialog
         header={
           reviewDecision === "APPROVE"
-            ? "Approve Attendance"
-            : "Reject Attendance"
+            ? i18nT("static.umqw1h")
+            : i18nT("static.rms9s1")
         }
         visible={reviewDialog}
         style={{ width: "95vw", maxWidth: "34rem" }}
@@ -1762,7 +1850,7 @@ const AttendanceLogTableData = () => {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={reviewLoading}
@@ -1770,7 +1858,11 @@ const AttendanceLogTableData = () => {
             />
             <Button
               type="button"
-              label={reviewDecision === "APPROVE" ? "Approve" : "Reject"}
+              label={
+                reviewDecision === "APPROVE"
+                  ? i18nT("static.1s2ov2y")
+                  : i18nT("static.1kej36u")
+              }
               severity={reviewDecision === "APPROVE" ? "success" : "danger"}
               loading={reviewLoading}
               disabled={reviewDecision === "REJECT" && !reviewNote.trim()}
@@ -1782,15 +1874,17 @@ const AttendanceLogTableData = () => {
         <div className="flex flex-col gap-3">
           <p className="m-0 text-sm leading-6 text-slate-600">
             {reviewDecision === "APPROVE"
-              ? "Approval changes this log to VALID and allows attendance summary processing."
-              : "Rejection changes this log to INVALID. A reason is required for the audit trail."}
+              ? i18nT("static.x6870t")
+              : i18nT("static.7jxvzy")}
           </p>
           <label htmlFor="security-review-note" className="text-sm font-medium">
-            Review note {reviewDecision === "REJECT" ? "*" : "(optional)"}
+            {i18nT("static.1gvdiib")}{" "}
+            {reviewDecision === "REJECT" ? "*" : i18nT("static.6pi6gi")}
           </label>
           <InputTextarea
             id="security-review-note"
             value={reviewNote}
+            placeholder={i18nT("Enter review note")}
             rows={5}
             maxLength={1000}
             autoResize
@@ -1802,7 +1896,7 @@ const AttendanceLogTableData = () => {
 
       {/* Sync Result */}
       <Dialog
-        header="Attendance Log Sync Result"
+        header={i18nT("static.jcf2ys")}
         visible={syncResultDialog}
         style={{
           width: "96vw",
@@ -1823,7 +1917,7 @@ const AttendanceLogTableData = () => {
           <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <i className="pi pi-info-circle mt-0.5" />
 
-            <span>No synchronization result is available.</span>
+            <span>{i18nT("static.o3h7wg")}</span>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -1837,18 +1931,20 @@ const AttendanceLogTableData = () => {
               }`}
             >
               <h2 className="m-0 text-base font-semibold text-slate-800">
-                {syncResult.message ||
-                  "Attendance log synchronization completed."}
+                {syncResult.message || i18nT("static.1oapug5")}
               </h2>
 
               <p className="m-0 mt-1 text-sm text-slate-600">
-                Status: {syncResult.status}
+                {i18nT("static.1k6dje7")}{" "}
+                {i18nT(formatStatusLabel(syncResult.status))}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">Scanners</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.1j0p99e")}
+                </p>
 
                 <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                   {syncResult.scanner_success}/{syncResult.scanner_total}
@@ -1856,7 +1952,9 @@ const AttendanceLogTableData = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">Fetched</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.1k672yq")}
+                </p>
 
                 <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                   {syncResult.total_fetched.toLocaleString("id-ID")}
@@ -1864,7 +1962,9 @@ const AttendanceLogTableData = () => {
               </div>
 
               <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-                <p className="m-0 text-xs text-green-700">Inserted</p>
+                <p className="m-0 text-xs text-green-700">
+                  {i18nT("static.kx1wp5")}
+                </p>
 
                 <p className="m-0 mt-1 text-xl font-semibold text-green-800">
                   {syncResult.total_inserted.toLocaleString("id-ID")}
@@ -1872,7 +1972,9 @@ const AttendanceLogTableData = () => {
               </div>
 
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="m-0 text-xs text-amber-700">Duplicate</p>
+                <p className="m-0 text-xs text-amber-700">
+                  {i18nT("static.1xz5c1i")}
+                </p>
 
                 <p className="m-0 mt-1 text-xl font-semibold text-amber-800">
                   {syncResult.total_duplicate.toLocaleString("id-ID")}
@@ -1880,7 +1982,9 @@ const AttendanceLogTableData = () => {
               </div>
 
               <div className="col-span-2 rounded-xl border border-red-200 bg-red-50 p-4 md:col-span-1">
-                <p className="m-0 text-xs text-red-700">Invalid Mapping</p>
+                <p className="m-0 text-xs text-red-700">
+                  {i18nT("static.jg801q")}
+                </p>
 
                 <p className="m-0 mt-1 text-xl font-semibold text-red-800">
                   {syncResult.total_invalid_mapping.toLocaleString("id-ID")}
@@ -1902,11 +2006,11 @@ const AttendanceLogTableData = () => {
                 tableStyle={{
                   minWidth: "90rem",
                 }}
-                emptyMessage="No scanner synchronization details found."
+                emptyMessage={i18nT("static.1mgy3fc")}
               >
                 <Column
                   field="scanner_name"
-                  header="Scanner"
+                  header={i18nT("static.1bz37xh")}
                   style={{
                     minWidth: "16rem",
                   }}
@@ -1914,7 +2018,7 @@ const AttendanceLogTableData = () => {
 
                 <Column
                   field="scanner_ip"
-                  header="IP Address"
+                  header={i18nT("static.1vjcbqs")}
                   style={{
                     minWidth: "12rem",
                   }}
@@ -1922,7 +2026,7 @@ const AttendanceLogTableData = () => {
 
                 <Column
                   field="status"
-                  header="Status"
+                  header={i18nT("static.3pd73")}
                   body={syncDetailStatusBody}
                   style={{
                     minWidth: "10rem",
@@ -1931,7 +2035,7 @@ const AttendanceLogTableData = () => {
 
                 <Column
                   field="fetched"
-                  header="Fetched"
+                  header={i18nT("static.1k672yq")}
                   style={{
                     minWidth: "8rem",
                   }}
@@ -1939,7 +2043,7 @@ const AttendanceLogTableData = () => {
 
                 <Column
                   field="inserted"
-                  header="Inserted"
+                  header={i18nT("static.kx1wp5")}
                   style={{
                     minWidth: "8rem",
                   }}
@@ -1947,7 +2051,7 @@ const AttendanceLogTableData = () => {
 
                 <Column
                   field="duplicate"
-                  header="Duplicate"
+                  header={i18nT("static.1xz5c1i")}
                   style={{
                     minWidth: "9rem",
                   }}
@@ -1955,14 +2059,14 @@ const AttendanceLogTableData = () => {
 
                 <Column
                   field="invalid_mapping"
-                  header="Invalid"
+                  header={i18nT("static.1y20ekw")}
                   style={{
                     minWidth: "9rem",
                   }}
                 />
 
                 <Column
-                  header="Message"
+                  header={i18nT("static.1cam7ic")}
                   body={syncDetailMessageBody}
                   style={{
                     minWidth: "28rem",

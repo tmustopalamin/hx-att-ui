@@ -12,7 +12,20 @@ import {
 describe("date display formatters", () => {
   const date = "2026-08-18";
 
-  it("formats dates with Indonesian full month names", () => {
+  beforeEach(() => {
+    document.cookie = "ui_locale=; Max-Age=0; Path=/";
+  });
+
+  it("defaults to English date labels", () => {
+    expect(formatDate(date)).toBe("18 August 2026");
+    expect(formatWeekdayDate(date)).toBe("Tuesday, 18 August 2026");
+    expect(formatWeekday(date)).toBe("Tuesday");
+    expect(formatCompactDate(date)).toBe("18 Aug");
+    expect(formatMonth(date)).toBe("August 2026");
+  });
+
+  it("uses the selected Indonesian locale", () => {
+    document.cookie = "ui_locale=id; Path=/";
     expect(formatDate(date)).toBe("18 Agustus 2026");
     expect(formatWeekdayDate(date)).toBe("Selasa, 18 Agustus 2026");
     expect(formatWeekday(date)).toBe("Selasa");
@@ -23,8 +36,8 @@ describe("date display formatters", () => {
   it("formats date and datetime values without changing API input formats", () => {
     const value = "2026-08-18T14:30:45";
 
-    expect(formatDateTime(value)).toBe("18 Agustus 2026 14:30");
-    expect(formatDateTimeWithSeconds(value)).toBe("18 Agustus 2026 14:30:45");
+    expect(formatDateTime(value)).toBe("18 August 2026 14:30");
+    expect(formatDateTimeWithSeconds(value)).toBe("18 August 2026 14:30:45");
   });
 
   it("returns a safe fallback for invalid values", () => {
@@ -36,13 +49,13 @@ describe("date display formatters", () => {
     const now = "2026-08-18T14:35:00";
 
     expect(formatRelativeNotificationTime("2026-08-18T14:35:00", now)).toBe(
-      "Baru saja",
+      "Just now",
     );
     expect(formatRelativeNotificationTime("2026-08-18T14:30:00", now)).toBe(
-      "5 menit lalu",
+      "5 minutes ago",
     );
     expect(formatRelativeNotificationTime("2026-08-01T14:35:00", now)).toBe(
-      "01 Agustus 2026",
+      "01 August 2026",
     );
   });
 });

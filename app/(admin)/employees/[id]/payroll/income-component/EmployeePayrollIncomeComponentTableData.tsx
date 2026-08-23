@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
@@ -53,6 +54,7 @@ import {
 } from "@/app/(admin)/employees/[id]/payroll/_components/payroll-display-formatters";
 
 const EmployeePayrollEmployeeIncomeComponentTableData = () => {
+  const { t: i18nT } = useI18n();
   const params = useParams();
   const id = params.id;
 
@@ -144,7 +146,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -155,7 +157,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       <Button
         type="submit"
         form="employee-income-component-form"
-        label={isAddNew ? "Create Income Component" : "Save Changes"}
+        label={isAddNew ? i18nT("static.1qwrmmb") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSubmitting}
         disabled={isSubmitting}
@@ -283,7 +285,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -293,7 +295,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -302,7 +304,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -316,8 +318,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "error",
-          detail: "please select data",
+          summary: i18nT("static.9bb0pd"),
+          detail: i18nT("static.yiy5uj"),
         }),
       );
       return;
@@ -356,7 +358,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -367,7 +369,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -376,7 +378,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -398,7 +400,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -408,7 +410,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -417,7 +419,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -439,7 +441,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -449,7 +451,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -458,7 +460,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -480,7 +482,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -490,7 +492,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -499,7 +501,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -541,14 +543,14 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
   const activeColumnBody = (rowData: EmployeeIncomeComponent) => {
     return rowData.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -567,13 +569,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               rounded
               outlined
               severity="danger"
               icon="pi pi-trash"
               size="small"
-              aria-label="Delete income component permanently"
+              aria-label={i18nT("static.v2e1hf")}
               onClick={() => {
                 onClickPurge(rowData);
               }}
@@ -587,13 +589,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="restore"
+              tooltip={i18nT("static.1p9rz69")}
               rounded
               outlined
               severity="success"
               icon="pi pi-refresh"
               size="small"
-              aria-label="Restore income component"
+              aria-label={i18nT("static.r915sn")}
               onClick={() => {
                 onClickRestore(rowData);
               }}
@@ -607,13 +609,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="delete"
+              tooltip={i18nT("static.ssf22y")}
               rounded
               outlined
               severity="danger"
               icon="pi pi-trash"
               size="small"
-              aria-label="Delete income component"
+              aria-label={i18nT("static.12y5mne")}
               onClick={() => {
                 onClickDelete(rowData);
               }}
@@ -627,13 +629,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="update"
+              tooltip={i18nT("static.b45n5g")}
               rounded
               outlined
               severity="secondary"
               icon="pi pi-pencil"
               size="small"
-              aria-label="Edit income component"
+              aria-label={i18nT("static.5h4puf")}
               onClick={() => {
                 onClickUpdate(rowData);
               }}
@@ -646,8 +648,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const onClickDelete = (data: EmployeeIncomeComponent) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.bn1ao7"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -658,13 +660,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-danger"
@@ -676,8 +678,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const onClickRestore = (data: EmployeeIncomeComponent) => {
     requestActionConfirmation({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
+      message: i18nT("static.c06jc4"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -688,13 +690,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-success"
@@ -706,8 +708,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const onClickPurge = (data: EmployeeIncomeComponent) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1umz31y"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -717,13 +719,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-danger"
@@ -754,7 +756,11 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     <div className="flex min-w-0 items-center justify-between gap-3">
       <span className="truncate text-sm text-slate-800">{option.name}</span>
       <Tag
-        value={option.assignment_mode === "SYSTEM" ? "System" : "Employee"}
+        value={
+          option.assignment_mode === "SYSTEM"
+            ? i18nT("static.13qbhrw")
+            : i18nT("static.1fak8xt")
+        }
         severity={option.assignment_mode === "SYSTEM" ? "info" : "secondary"}
       />
     </div>
@@ -773,9 +779,9 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     if (methodCode === "WORKING_PERIOD") {
       return (
         <div className="flex min-w-[15rem] flex-col gap-1">
-          <Tag value={methodName ?? "Working period"} severity="info" />
+          <Tag value={methodName ?? i18nT("static.13jiiyh")} severity="info" />
           <span className="text-xs text-slate-500">
-            Automatic percentage by completed service months.
+            {i18nT("static.b8aegk")}{" "}
           </span>
         </div>
       );
@@ -794,13 +800,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       return (
         <div className="flex min-w-[15rem] flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Tag value={methodName ?? "Percentage"} severity="info" />
+            <Tag value={methodName ?? i18nT("static.wa149h")} severity="info" />
             <span className="font-semibold text-slate-800">
               {formatPayrollPercentage(row.percentage)}
             </span>
           </div>
           <span className="text-xs text-slate-500">
-            Base:{" "}
+            {i18nT("static.65yyxy")}{" "}
             <span className="font-medium text-slate-700">{referenceLabel}</span>
           </span>
         </div>
@@ -810,7 +816,10 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     if (methodCode === "FIXED_AMOUNT" || methodCode === "FIXED") {
       return (
         <div className="flex min-w-[12rem] flex-col gap-1">
-          <Tag value={methodName ?? "Fixed amount"} severity="success" />
+          <Tag
+            value={methodName ?? i18nT("static.7lgj73")}
+            severity="success"
+          />
           <span className="font-semibold text-slate-800">
             {formatPayrollCurrency(Number(row.amount ?? 0))}
           </span>
@@ -821,10 +830,11 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     return (
       <div className="flex min-w-[12rem] flex-col gap-1">
         <span className="font-medium text-slate-800">
-          {methodName ?? "Not configured"}
+          {methodName ?? i18nT("static.4tqh3i")}
         </span>
         <span className="text-xs text-slate-500">
-          Value: {formatPayrollCurrency(Number(row.amount ?? 0))}
+          {i18nT("static.1igt8mo")}{" "}
+          {formatPayrollCurrency(Number(row.amount ?? 0))}
         </span>
       </div>
     );
@@ -832,19 +842,20 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const frequencyBody = (row: EmployeeIncomeComponent) => {
     if (!row.frequency) {
-      return <span className="text-slate-500">Not set</span>;
+      return <span className="text-slate-500">{i18nT("static.1ntesau")}</span>;
     }
 
     const frequency = frequencyData?.find((item) => item.id === row.frequency);
     if (!frequency) {
-      return <span className="text-slate-500">Loading wage basis...</span>;
+      return <span className="text-slate-500">{i18nT("static.1enplif")}</span>;
     }
 
     return (
       <div className="flex min-w-[9rem] flex-col">
         <span className="font-medium text-slate-800">{frequency.name}</span>
         <span className="text-xs text-slate-500">
-          {frequency.code} · rate period: {frequency.days_in_period} day(s)
+          {frequency.code} {i18nT("static.1pteltd")} {frequency.days_in_period}{" "}
+          {i18nT("static.kjdug7")}{" "}
         </span>
       </div>
     );
@@ -856,7 +867,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
         {formatPayrollDate(row.start_date)}
       </span>
       <span className="text-xs text-slate-500">
-        Until {formatPayrollDate(row.end_date)}
+        {i18nT("static.rg2a5r")} {formatPayrollDate(row.end_date)}
       </span>
     </div>
   );
@@ -866,27 +877,27 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
           <EmployeeDetailTableHeader
-            title="Income Component"
-            description="Manage recurring and one-time income components for this employee."
+            title={i18nT("static.14pnb2x")}
+            description={i18nT("static.1wmt3v6")}
             showDeleted={
               archivedAccess.canShowDeleted
                 ? {
                     checked: isShowDeletedDataChecked,
                     onChange: onIngredientsChange,
-                    label: "Show deleted data",
+                    label: i18nT("static.1beum2j"),
                   }
                 : undefined
             }
             search={{
               value: globalFilterValue,
               onChange: onGlobalFilterChange,
-              placeholder: "Search income component",
+              placeholder: i18nT("static.1ftg9vz"),
             }}
             actions={
               <>
                 <Button
                   type="button"
-                  label="Refresh"
+                  label={i18nT("static.28r6qc")}
                   icon="pi pi-refresh"
                   severity="secondary"
                   outlined
@@ -903,7 +914,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 {canCreate && (
                   <Button
                     type="button"
-                    label="New Income Component"
+                    label={i18nT("static.x2sal3")}
                     icon="pi pi-plus"
                     size="small"
                     className="w-full sm:w-auto"
@@ -928,9 +939,9 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
             globalFilterFields={["income_component_name", "notes"]}
-            emptyMessage="No data found."
+            emptyMessage={i18nT("static.xtmeag")}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
           >
@@ -941,7 +952,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             />
             <Column
               field="income_component_name"
-              header="Component"
+              header={i18nT("static.bvqo3k")}
               sortable
               style={{ minWidth: "16rem" }}
               body={(row: EmployeeIncomeComponent) => {
@@ -952,7 +963,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 return (
                   <div className="flex min-w-[14rem] flex-col">
                     <span className="font-medium text-slate-800">
-                      {row.income_component_name ?? "Not configured"}
+                      {row.income_component_name ?? i18nT("static.4tqh3i")}
                     </span>
                     <span className="text-xs text-slate-500">
                       {master?.code ?? ""}
@@ -962,16 +973,18 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               }}
             />
             <Column
-              header="Calculation"
+              header={i18nT("static.1gig16e")}
               body={componentCalculationBody}
               style={{ minWidth: "17rem" }}
             />
             <Column
-              header="BPJS Wage Base"
+              header={i18nT("static.1rexqhx")}
               style={{ minWidth: "13rem" }}
               body={(row: EmployeeIncomeComponent) => {
                 if (!row.is_fixed_allowance) {
-                  return <Tag value="Variable" severity="secondary" />;
+                  return (
+                    <Tag value={i18nT("static.ye709x")} severity="secondary" />
+                  );
                 }
                 const programs = [
                   row.include_in_bpjs_health ? "Health" : null,
@@ -979,27 +992,31 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 ].filter(Boolean);
                 return (
                   <Tag
-                    value={programs.length ? programs.join(" + ") : "Excluded"}
+                    value={
+                      programs.length
+                        ? programs.join(" + ")
+                        : i18nT("static.tio6hj")
+                    }
                     severity={programs.length ? "success" : "secondary"}
                   />
                 );
               }}
             />
             <Column
-              header="Effective Period"
+              header={i18nT("static.1bwcvhr")}
               body={periodBody}
               style={{ minWidth: "14rem" }}
             />
             <Column
               field="frequency"
-              header="Wage Basis"
+              header={i18nT("static.1m95xl7")}
               sortable
               body={frequencyBody}
               style={{ minWidth: "11rem" }}
             />
             <Column
               field="notes"
-              header="Notes"
+              header={i18nT("static.4f76ga")}
               style={{ minWidth: "14rem" }}
               body={(row: EmployeeIncomeComponent) => (
                 <span
@@ -1012,7 +1029,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             />
             <Column
               field="is_active"
-              header="Status"
+              header={i18nT("static.3pd73")}
               sortable
               body={activeColumnBody}
               style={{ minWidth: "9rem" }}
@@ -1020,7 +1037,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             <Column
               headerClassName="bg-white"
               bodyClassName="bg-white"
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(rowData) => actionColumnBody(rowData)}
               frozen
               alignFrozen="right"
@@ -1061,12 +1078,12 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               htmlFor="employee_id"
               className="text-sm font-medium text-slate-700"
             >
-              Employee
+              {i18nT("static.1fak8xt")}{" "}
             </label>
             <Controller
               name="employee_id"
               control={control}
-              rules={{ required: "Employee is required" }}
+              rules={{ required: i18nT("static.2s9hk0") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1081,8 +1098,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     optionValue="id"
                     placeholder={
                       employeeIsLoading
-                        ? "Loading employees..."
-                        : "Select an employee"
+                        ? i18nT("static.151p210")
+                        : i18nT("static.atd8u4")
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -1092,9 +1109,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     </small>
                   )}
                   {employeeError && (
-                    <small className="p-error">
-                      We couldn’t load the list of employees. Please try again
-                    </small>
+                    <small className="p-error">{i18nT("static.r7jgxj")} </small>
                   )}
                 </>
               )}
@@ -1106,13 +1121,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               htmlFor="income_component_master_id"
               className="text-sm font-medium text-slate-700"
             >
-              Income Component
+              {i18nT("static.14pnb2x")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="income_component_master_id"
               control={control}
-              rules={{ required: "Income Component is required" }}
+              rules={{ required: i18nT("static.r200e0") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1132,8 +1147,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     optionValue="id"
                     placeholder={
                       incomeComponentIsLoading
-                        ? "Loading income components..."
-                        : "Select an income component"
+                        ? i18nT("static.vznp1o")
+                        : i18nT("static.lg7l5k")
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -1144,8 +1159,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   )}
                   {incomeComponentError && (
                     <small className="p-error font-bold">
-                      We couldn’t load the list of income components. Please try
-                      again
+                      {i18nT("static.10jyp93")}{" "}
                     </small>
                   )}
                 </>
@@ -1160,18 +1174,19 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   htmlFor="amount"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Amount<span className="ml-1 text-red-500">*</span>
+                  {i18nT("static.a2ky21")}
+                  <span className="ml-1 text-red-500">*</span>
                 </label>
                 <Controller
                   name="amount"
                   control={control}
                   defaultValue={0}
-                  rules={{ required: "*required" }}
+                  rules={{ required: i18nT("static.1lf34iw") }}
                   render={({ field, fieldState }) => (
                     <>
                       <InputNumber
                         id="amount"
-                        placeholder="Enter amount"
+                        placeholder={i18nT("static.119fv83")}
                         inputRef={field.ref}
                         mode="currency"
                         currency="IDR"
@@ -1203,12 +1218,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               htmlFor="frequency"
               className="text-sm font-medium text-slate-700"
             >
-              Wage Basis<span className="ml-1 text-red-500">*</span>
+              {i18nT("static.1m95xl7")}
+              <span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="frequency"
               control={control}
-              rules={{ required: "Wage basis is required" }}
+              rules={{ required: i18nT("static.hva68e") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1225,8 +1241,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     optionValue="id"
                     placeholder={
                       isLoadingFrequency
-                        ? "Loading wage bases..."
-                        : "Select a wage basis"
+                        ? i18nT("static.ah3k8b")
+                        : i18nT("static.veufz8")
                     }
                     className={
                       fieldState.invalid ? "p-invalid w-full" : "w-full"
@@ -1234,8 +1250,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   />
                   {isWorkingPeriod && (
                     <small className="text-slate-500">
-                      Working-period components always use the active MONTHLY
-                      frequency.
+                      {i18nT("static.1l84av2")}{" "}
                     </small>
                   )}
                   {fieldState.error && (
@@ -1245,7 +1260,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   )}
                   {errorFrequency && (
                     <small className="p-error font-bold">
-                      We couldn’t load the list of wage bases. Please try again
+                      {i18nT("static.mqysi6")}{" "}
                     </small>
                   )}
                 </>
@@ -1259,12 +1274,13 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 htmlFor="start_date"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Start Date<span className="ml-1 text-red-500">*</span>
+                {i18nT("static.7bl5hd")}
+                <span className="ml-1 text-red-500">*</span>
               </label>
               <Controller
                 name="start_date"
                 control={control}
-                rules={{ required: "*required" }}
+                rules={{ required: i18nT("static.1lf34iw") }}
                 render={({ field, fieldState }) => (
                   <>
                     <Calendar
@@ -1296,7 +1312,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 htmlFor="end_date"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
-                End Date
+                {i18nT("static.1j4m31m")}{" "}
               </label>
               <Controller
                 name="end_date"
@@ -1335,7 +1351,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   htmlFor="based_on_component_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Based On Income Component
+                  {i18nT("static.xgw1bf")}{" "}
                 </label>
                 <Controller
                   name="based_on_component_id"
@@ -1359,8 +1375,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                         showClear
                         placeholder={
                           incomeComponentIsLoading
-                            ? "Loading income components..."
-                            : "Select an income component"
+                            ? i18nT("static.vznp1o")
+                            : i18nT("static.lg7l5k")
                         }
                         className={
                           fieldState.invalid ? "p-invalid w-full" : "w-full"
@@ -1373,8 +1389,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                       )}
                       {incomeComponentError && (
                         <small className="p-error font-bold">
-                          We couldn’t load the list of income components. Please
-                          try again
+                          {i18nT("static.10jyp93")}{" "}
                         </small>
                       )}
                     </>
@@ -1391,18 +1406,19 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                   htmlFor="percentage"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Percentage<span className="ml-1 text-red-500">*</span>
+                  {i18nT("static.wa149h")}
+                  <span className="ml-1 text-red-500">*</span>
                 </label>
                 <Controller
                   name="percentage"
                   control={control}
                   defaultValue={0}
-                  rules={{ required: "*required" }}
+                  rules={{ required: i18nT("static.1lf34iw") }}
                   render={({ field, fieldState }) => (
                     <>
                       <InputNumber
                         id="percentage"
-                        placeholder="Enter percentage"
+                        placeholder={i18nT("static.1eyj90v")}
                         inputRef={field.ref}
                         suffix="%"
                         min={0}
@@ -1430,7 +1446,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
               htmlFor="notes"
               className="mb-2 block text-sm font-medium text-slate-700"
             >
-              Notes
+              {i18nT("static.4f76ga")}{" "}
             </label>
             <Controller
               name="notes"
@@ -1439,7 +1455,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                 <>
                   <InputTextarea
                     id="notes"
-                    placeholder="Optional notes"
+                    placeholder={i18nT("static.wu0ooo")}
                     {...field}
                     value={field.value ?? ""}
                     rows={3}
@@ -1469,11 +1485,10 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active component
+                      {i18nT("static.1uu2ztk")}{" "}
                     </label>
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive components are excluded from new payroll
-                      calculations.
+                      {i18nT("static.148ezbn")}{" "}
                     </p>
                   </div>
                   <InputSwitch

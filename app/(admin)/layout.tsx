@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 
 import StoreProvider from "@/store/StoreProvider";
 import GlobalToast from "../_components/GlobalToast";
-import PrimeReactLocaleProvider from "../_components/PrimeReactLocaleProvider";
 import AppMain from "./AppMain";
 
 export const metadata: Metadata = {
@@ -25,10 +24,8 @@ export default async function AdminLayout({
 
   return (
     <StoreProvider>
-      <PrimeReactLocaleProvider>
-        <GlobalToast />
-        <AppMain>{children}</AppMain>
-      </PrimeReactLocaleProvider>
+      <GlobalToast />
+      <AppMain>{children}</AppMain>
     </StoreProvider>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import Link from "next/link";
 import React, { useMemo } from "react";
@@ -20,6 +21,7 @@ type MenuSection = {
 };
 
 const VerticalTabview = () => {
+  const { t: i18nT } = useI18n();
   const params = useParams<{ id: string }>();
   const pathname = usePathname();
   const employeeId = params?.id ?? "";
@@ -36,26 +38,26 @@ const VerticalTabview = () => {
   const sections: MenuSection[] = [
     {
       key: "general",
-      label: "General",
+      label: i18nT("static.nov4ln"),
       icon: "pi pi-user",
       items: [
         {
-          label: "Overview",
+          label: i18nT("static.thnxru"),
           href: `/employees/${employeeId}/overview`,
           permission: "employee.read",
         },
         {
-          label: "Personal",
+          label: i18nT("static.umaizx"),
           href: `/employees/${employeeId}/general/personal`,
           permission: "employee.read",
         },
         {
-          label: "Employment",
+          label: i18nT("static.1eqehn7"),
           href: `/employees/${employeeId}/general/employment`,
           permission: "employee.read",
         },
         {
-          label: "Education & Experience",
+          label: i18nT("static.l8lmct"),
           href: `/employees/${employeeId}/general/education`,
           permission: "employee.read",
         },
@@ -63,21 +65,21 @@ const VerticalTabview = () => {
     },
     {
       key: "time",
-      label: "Time Management",
+      label: i18nT("static.1h5ak7"),
       icon: "pi pi-calendar-clock",
       items: [
         {
-          label: "Attendance",
+          label: i18nT("static.1eavko2"),
           href: `/employees/${employeeId}/time/attendance`,
           permission: "attendance-summary.read",
         },
         {
-          label: "Overtime",
+          label: i18nT("static.c4jx3y"),
           href: `/employees/${employeeId}/time/overtime`,
           permission: "overtime-management.read",
         },
         {
-          label: "Leave",
+          label: i18nT("static.1xf0sbk"),
           href: `/employees/${employeeId}/time/leave`,
           permission: "employee-leave-balance.read",
         },
@@ -85,41 +87,41 @@ const VerticalTabview = () => {
     },
     {
       key: "payroll",
-      label: "Payroll",
+      label: i18nT("static.ghd2d6"),
       icon: "pi pi-money-bill",
       items: [
         {
-          label: "Salary History",
+          label: i18nT("static.1cl2fsb"),
           href: `/employees/${employeeId}/payroll/salary-bank`,
           permission: "payroll.read",
         },
         {
-          label: "BPJS & Statutory",
+          label: i18nT("static.2l50pf"),
           href: `/employees/${employeeId}/payroll/bpjs`,
           permission: "payroll.read",
         },
         {
-          label: "Tax Profile",
+          label: i18nT("static.j2n637"),
           href: `/employees/${employeeId}/payroll/tax`,
           permission: "payroll.read",
         },
         {
-          label: "Bank Account",
+          label: i18nT("static.h9lsuk"),
           href: `/employees/${employeeId}/payroll/bank`,
           permission: "payroll.read",
         },
         {
-          label: "Payroll History & Payslips",
+          label: i18nT("static.1hknvql"),
           href: `/employees/${employeeId}/payroll/history`,
           permission: "payroll.read",
         },
         {
-          label: "Income Component",
+          label: i18nT("static.14pnb2x"),
           href: `/employees/${employeeId}/payroll/income-component`,
           permission: "payroll.read",
         },
         {
-          label: "Deduction Component",
+          label: i18nT("static.wfytj7"),
           href: `/employees/${employeeId}/payroll/deduction-component`,
           permission: "payroll.read",
         },
@@ -127,31 +129,31 @@ const VerticalTabview = () => {
     },
     {
       key: "hr",
-      label: "HR Records",
+      label: i18nT("static.1gyeted"),
       icon: "pi pi-briefcase",
       items: [
         {
-          label: "Documents",
+          label: i18nT("static.oz47lx"),
           href: `/employees/${employeeId}/hr/documents`,
           permission: "employee-document.read",
         },
         {
-          label: "Assets",
+          label: i18nT("static.1shidso"),
           href: `/employees/${employeeId}/hr/assets`,
           permission: "asset.read",
         },
         {
-          label: "Lifecycle",
+          label: i18nT("static.1nvorn3"),
           href: `/employees/${employeeId}/hr/lifecycle`,
           permission: "employee-lifecycle.read",
         },
         {
-          label: "Performance",
+          label: i18nT("static.13rkbwl"),
           href: `/employees/${employeeId}/hr/performance`,
           permission: "performance.manage",
         },
         {
-          label: "Learning & Certification",
+          label: i18nT("static.16f81rf"),
           href: `/employees/${employeeId}/hr/learning`,
           permission: "training.manage",
         },
@@ -162,7 +164,7 @@ const VerticalTabview = () => {
   return (
     <nav
       className="flex min-w-0 flex-col gap-3"
-      aria-label="Employee detail navigation"
+      aria-label={i18nT("static.30d57w")}
     >
       {sections.map((section) => {
         const visibleItems = section.items.filter((item) =>

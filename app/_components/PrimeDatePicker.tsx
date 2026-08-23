@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import dayjs from "dayjs";
 import { Calendar, type CalendarProps } from "primereact/calendar";
@@ -24,17 +25,27 @@ export default function PrimeDatePicker({
   onValueChange,
   withTime = false,
   appendTo = getBody,
-  dateFormat = "dd MM yy",
-  locale = "id",
+  dateFormat,
+  locale,
   showIcon = true,
   ...props
 }: PrimeDatePickerProps) {
+  const { locale: activeLocale } = useI18n();
+  const resolvedLocale = locale ?? activeLocale;
+  const resolvedDateFormat =
+    dateFormat ??
+    (resolvedLocale === "en"
+      ? "mm/dd/yy"
+      : resolvedLocale === "zh-CN"
+        ? "yy/mm/dd"
+        : "dd MM yy");
+
   return (
     <Calendar
       {...props}
       appendTo={appendTo}
-      dateFormat={dateFormat}
-      locale={locale}
+      dateFormat={resolvedDateFormat}
+      locale={resolvedLocale}
       showIcon={showIcon}
       showTime={withTime}
       hourFormat={withTime ? "24" : undefined}

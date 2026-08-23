@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { type ChangeEvent, useState } from "react";
 import useSWR from "swr";
@@ -52,6 +53,7 @@ const emptyPayload = (): PayrollFormulaPayload => ({
 const getBody = () => document.body;
 
 export default function PayrollFormulaDataTable() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll-config");
@@ -76,7 +78,10 @@ export default function PayrollFormulaDataTable() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -87,7 +92,7 @@ export default function PayrollFormulaDataTable() {
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   const closeDialog = () => {
     setDialogVisible(false);
@@ -115,11 +120,11 @@ export default function PayrollFormulaDataTable() {
     const name = form.name.trim();
     const expression = form.expression.trim();
     if (!code || !name || !expression) {
-      notify("error", "Code, name, and expression are required.");
+      notify("error", i18nT("static.xyb2l9"));
       return;
     }
     if (/\s/.test(code)) {
-      notify("error", "Formula code must not contain spaces.");
+      notify("error", i18nT("static.d2ke11"));
       return;
     }
     try {
@@ -136,7 +141,7 @@ export default function PayrollFormulaDataTable() {
       else await createPayrollFormula(payload);
       await mutate();
       closeDialog();
-      notify("success", "Payroll formula saved successfully.");
+      notify("success", i18nT("static.1693oyi"));
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -147,7 +152,7 @@ export default function PayrollFormulaDataTable() {
     try {
       await deletePayrollFormula(row.id, row.row_version);
       await mutate();
-      notify("success", "Payroll formula deleted successfully.");
+      notify("success", i18nT("static.h1ls0"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -156,7 +161,7 @@ export default function PayrollFormulaDataTable() {
     try {
       await restorePayrollFormula(row.id, row.row_version);
       await mutate();
-      notify("success", "Payroll formula restored successfully.");
+      notify("success", i18nT("static.km2nqv"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -165,7 +170,7 @@ export default function PayrollFormulaDataTable() {
     try {
       await purgePayrollFormula(row.id);
       await mutate();
-      notify("success", "Payroll formula permanently deleted.");
+      notify("success", i18nT("static.1xiyidm"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -184,7 +189,7 @@ export default function PayrollFormulaDataTable() {
           ? "This formula will be available again."
           : "This action cannot be undone.";
     requestActionConfirmation({
-      header: `${label} Payroll Formula`,
+      header: i18nT("static.1x6uy9u", { p0: label }),
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">{detail}</span>
@@ -205,7 +210,7 @@ export default function PayrollFormulaDataTable() {
         <div className="flex flex-wrap justify-end gap-2">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -225,12 +230,17 @@ export default function PayrollFormulaDataTable() {
   const status = (row: PayrollFormula) => {
     if (row.deleted_at)
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     if (!row.is_active)
       return (
         <Tag
-          value="Inactive"
+          value={i18nT("static.13zf5vc")}
           severity="warning"
           icon="pi pi-minus-circle"
           rounded
@@ -238,7 +248,7 @@ export default function PayrollFormulaDataTable() {
       );
     return (
       <Tag
-        value={row.status || "Active"}
+        value={row.status || i18nT("static.8qzyhb")}
         severity={row.status === "PUBLISHED" ? "success" : "info"}
         rounded
       />
@@ -246,7 +256,9 @@ export default function PayrollFormulaDataTable() {
   };
   const actions = (row: PayrollFormula) => {
     if (!canManage)
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     if (row.deleted_at)
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
@@ -258,7 +270,7 @@ export default function PayrollFormulaDataTable() {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "restore")}
             />
@@ -271,14 +283,14 @@ export default function PayrollFormulaDataTable() {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "purge")}
             />
           )}
         </div>
       ) : (
-        <span className="text-sm text-slate-400">No action</span>
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
       );
     return (
       <div className="flex justify-end gap-2">
@@ -289,7 +301,7 @@ export default function PayrollFormulaDataTable() {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => openEdit(row)}
         />
@@ -300,7 +312,7 @@ export default function PayrollFormulaDataTable() {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => ask(row, "delete")}
         />
@@ -326,18 +338,17 @@ export default function PayrollFormulaDataTable() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Payroll Formula
+                  {i18nT("static.niax0g")}{" "}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage reusable expressions used by formula-based payroll
-                  components.
+                  {i18nT("static.u01lmd")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -349,7 +360,7 @@ export default function PayrollFormulaDataTable() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Payroll Formula"
+                  label={i18nT("static.ofqpse")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={openNew}
@@ -370,7 +381,7 @@ export default function PayrollFormulaDataTable() {
                   htmlFor="formula-show-deleted"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -379,7 +390,7 @@ export default function PayrollFormulaDataTable() {
               <InputText
                 value={search}
                 onChange={onSearch}
-                placeholder="Search code, name, or expression"
+                placeholder={i18nT("static.1r2h5xe")}
                 className="w-full"
               />
             </IconField>
@@ -407,8 +418,8 @@ export default function PayrollFormulaDataTable() {
               size="small"
               loading={isValidating}
               tableStyle={{ minWidth: "68rem" }}
-              emptyMessage="No payroll formula found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.n02rwh")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -419,7 +430,7 @@ export default function PayrollFormulaDataTable() {
               />
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 body={(row: PayrollFormula) => (
                   <span className="font-mono text-sm font-semibold text-slate-700">
@@ -430,7 +441,7 @@ export default function PayrollFormulaDataTable() {
               />
               <Column
                 field="name"
-                header="Formula Name"
+                header={i18nT("static.jxx3no")}
                 sortable
                 body={(row: PayrollFormula) => (
                   <span className="font-medium text-slate-800">{row.name}</span>
@@ -439,7 +450,7 @@ export default function PayrollFormulaDataTable() {
               />
               <Column
                 field="expression"
-                header="Expression"
+                header={i18nT("static.1tcetjf")}
                 sortable
                 body={(row: PayrollFormula) => (
                   <code className="text-xs text-slate-700">
@@ -450,17 +461,17 @@ export default function PayrollFormulaDataTable() {
               />
               <Column
                 field="version"
-                header="Version"
+                header={i18nT("static.q0zd4n")}
                 sortable
                 style={{ minWidth: "7rem" }}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={status}
                 style={{ minWidth: "10rem" }}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actions}
                 frozen
                 alignFrozen="right"
@@ -478,7 +489,7 @@ export default function PayrollFormulaDataTable() {
         </div>
       </Card>
       <Dialog
-        header={selected ? "Edit Payroll Formula" : "New Payroll Formula"}
+        header={selected ? i18nT("static.1i8xzpq") : i18nT("static.ofqpse")}
         visible={dialogVisible}
         style={{ width: "95vw", maxWidth: "44rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -492,7 +503,7 @@ export default function PayrollFormulaDataTable() {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -503,7 +514,7 @@ export default function PayrollFormulaDataTable() {
             <Button
               type="submit"
               form="payroll-formula-form"
-              label={selected ? "Save Changes" : "Create Payroll Formula"}
+              label={selected ? i18nT("static.6gmm1l") : i18nT("static.30b61m")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -521,13 +532,13 @@ export default function PayrollFormulaDataTable() {
           }}
         >
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Field label="Code" required>
+            <Field label={i18nT("static.xoaiok")} required>
               <InputText
                 value={form.code ?? ""}
                 maxLength={50}
                 className="w-full"
                 autoComplete="off"
-                placeholder="e.g. OVERTIME_RATE"
+                placeholder={i18nT("static.1745oo5")}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -536,16 +547,16 @@ export default function PayrollFormulaDataTable() {
                 }
               />
               <small className="text-slate-500">
-                Use a unique code without spaces.
+                {i18nT("static.18donso")}{" "}
               </small>
             </Field>
-            <Field label="Name" required>
+            <Field label={i18nT("static.4el6o6")} required>
               <InputText
                 value={form.name}
                 maxLength={100}
                 className="w-full"
                 autoComplete="off"
-                placeholder="e.g. Overtime Rate"
+                placeholder={i18nT("static.1utgix8")}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -556,13 +567,13 @@ export default function PayrollFormulaDataTable() {
             </Field>
           </div>
 
-          <Field label="Expression" required>
+          <Field label={i18nT("static.1tcetjf")} required>
             <InputTextarea
               value={form.expression}
               rows={6}
               autoResize
               className="w-full font-mono"
-              placeholder="e.g. base_salary / 173"
+              placeholder={i18nT("static.1t03dcr")}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -571,19 +582,18 @@ export default function PayrollFormulaDataTable() {
               }
             />
             <small className="leading-5 text-slate-500">
-              Use the supported payroll formula expression syntax. Validate the
-              formula before using it in an active component.
+              {i18nT("static.1jmwe8x")}{" "}
             </small>
           </Field>
 
-          <Field label="Description">
+          <Field label={i18nT("static.sjj37t")}>
             <InputTextarea
               value={form.description ?? ""}
               rows={3}
               autoResize
               className="w-full"
               maxLength={500}
-              placeholder="Optional description"
+              placeholder={i18nT("static.154ro8v")}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -598,7 +608,7 @@ export default function PayrollFormulaDataTable() {
               htmlFor="formula-active"
               className="cursor-pointer text-sm font-medium text-slate-700"
             >
-              Active
+              {i18nT("static.8qzyhb")}{" "}
             </label>
             <InputSwitch
               inputId="formula-active"

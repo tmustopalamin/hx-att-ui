@@ -1,6 +1,7 @@
 // app/(admin)/account-settings/ChangeProfilePicture.tsx
 
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -109,6 +110,9 @@ const ChangeProfilePicture = ({
   showCurrentPhoto = true,
   showRefreshButton = true,
 }: ChangeProfilePictureProps) => {
+  const { t: i18nT, tText } = useI18n();
+  const localizedTitle = tText(title);
+  const localizedDescription = tText(description);
   const dispatch = useDispatch();
   const fileUploadRef = useRef<FileUpload | null>(null);
 
@@ -259,8 +263,8 @@ const ChangeProfilePicture = ({
         showToast({
           visible: true,
           severity: "error",
-          summary: "Failed",
-          detail: "Employee ID is not available.",
+          summary: i18nT("static.npsixg"),
+          detail: i18nT("static.1af5xzm"),
         }),
       );
       return;
@@ -271,8 +275,8 @@ const ChangeProfilePicture = ({
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "Please select a file first.",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.171q004"),
         }),
       );
       return;
@@ -291,8 +295,8 @@ const ChangeProfilePicture = ({
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: response.message || "Photo uploaded successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: response.message || i18nT("static.162q1bg"),
         }),
       );
     } catch (err: unknown) {
@@ -301,7 +305,7 @@ const ChangeProfilePicture = ({
           showToast({
             visible: true,
             severity: "error",
-            summary: "Failed",
+            summary: i18nT("static.npsixg"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -310,7 +314,7 @@ const ChangeProfilePicture = ({
           showToast({
             visible: true,
             severity: "error",
-            summary: "Failed",
+            summary: i18nT("static.npsixg"),
             detail: err.message,
           }),
         );
@@ -319,8 +323,8 @@ const ChangeProfilePicture = ({
           showToast({
             visible: true,
             severity: "error",
-            summary: "Failed",
-            detail: "Upload failed.",
+            summary: i18nT("static.npsixg"),
+            detail: i18nT("static.1p5fa6d"),
           }),
         );
       }
@@ -333,9 +337,9 @@ const ChangeProfilePicture = ({
     <div className="flex w-full flex-col gap-5">
       <div>
         <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          {title}
+          {localizedTitle}
         </h2>
-        <p className="mt-1 text-sm text-gray-500">{description}</p>
+        <p className="mt-1 text-sm text-gray-500">{localizedDescription}</p>
       </div>
 
       <div
@@ -364,21 +368,21 @@ const ChangeProfilePicture = ({
 
               <div className="text-center">
                 <div className="max-w-56 truncate text-sm font-semibold text-slate-900">
-                  {displayName}
+                  {displayName === "Employee" ? tText("Employee") : displayName}
                 </div>
 
                 {targetEmployeeId ? (
                   <div className="mt-1 text-xs text-slate-500">
-                    Employee ID: {targetEmployeeId}
+                    {i18nT("static.1i0c9sc")} {targetEmployeeId}
                   </div>
                 ) : (
-                  <Tag value="Employee not loaded" severity="danger" />
+                  <Tag value={i18nT("static.zp9cy9")} severity="danger" />
                 )}
               </div>
 
               {employeeError && (
                 <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-                  Failed to load current employee photo.
+                  {i18nT("static.p8ukxk")}{" "}
                 </div>
               )}
             </div>
@@ -396,17 +400,17 @@ const ChangeProfilePicture = ({
             uploadHandler={handleUpload}
             disabled={isUploading || !targetEmployeeId}
             previewWidth={220}
-            chooseLabel="Choose Image"
+            chooseLabel={i18nT("static.5idlz1")}
             uploadLabel={isUploading ? "Uploading..." : "Upload"}
-            cancelLabel="Cancel"
+            cancelLabel={i18nT("static.ew9em3")}
             emptyTemplate={
               <div className="flex flex-col items-center justify-center gap-2 py-6 text-center">
                 <i className="pi pi-image text-3xl text-slate-400" />
                 <p className="m-0 text-sm text-slate-500">
-                  Drag and drop an image here, or choose a file.
+                  {i18nT("static.1xuyiwk")}{" "}
                 </p>
                 <p className="m-0 text-xs text-slate-400">
-                  Accepted: JPG / PNG. Maximum size: 1 MB.
+                  {i18nT("static.1a9s728")}{" "}
                 </p>
               </div>
             }
@@ -415,10 +419,8 @@ const ChangeProfilePicture = ({
           <div className="mt-4 flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs text-blue-700">
             <i className="pi pi-info-circle mt-0.5" />
             <div>
-              The upload will update this employee profile photo.
-              {isOwnProfile
-                ? " Your account header/profile state will also be refreshed."
-                : ""}
+              {i18nT("static.4grqfl")}{" "}
+              {isOwnProfile ? i18nT("static.mg6idt") : ""}
             </div>
           </div>
         </div>
@@ -429,7 +431,7 @@ const ChangeProfilePicture = ({
           <Button
             type="button"
             icon="pi pi-refresh"
-            label="Refresh Photo"
+            label={i18nT("static.84cvjk")}
             className="p-button-secondary p-button-sm"
             disabled={!targetEmployeeId || isUploading}
             onClick={() => {

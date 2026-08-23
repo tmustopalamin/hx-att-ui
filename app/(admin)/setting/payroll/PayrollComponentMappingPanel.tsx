@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -57,6 +58,7 @@ export default function PayrollComponentMappingPanel({
   onSuccess,
   onError,
 }: Props) {
+  const { t: i18nT } = useI18n();
   const { data, isLoading, isValidating, mutate } = useSWR<
     PayrollComponentMapping[]
   >(API_URL, fetcher);
@@ -76,7 +78,7 @@ export default function PayrollComponentMappingPanel({
       (componentMaster ?? [])
         .filter((item) => item.component_type === form.component_type)
         .map((item) => ({
-          label: `${item.code} · ${item.name}`,
+          label: i18nT("static.1cx6cam", { p0: item.code, p1: item.name }),
           value: item.component_id,
         })),
     [componentMaster, form.component_type],
@@ -147,8 +149,11 @@ export default function PayrollComponentMappingPanel({
 
   const remove = (row: PayrollComponentMapping) => {
     requestActionConfirmation({
-      header: "Delete Mapping",
-      message: `Delete ${row.component_code} mapping for ${row.regulation_program}?`,
+      header: i18nT("static.1nabu1c"),
+      message: i18nT("static.mghlyp", {
+        p0: row.component_code,
+        p1: row.regulation_program,
+      }),
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -167,7 +172,7 @@ export default function PayrollComponentMappingPanel({
     <div className="flex flex-col gap-4 pt-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
         <Button
-          label="Refresh"
+          label={i18nT("static.28r6qc")}
           icon="pi pi-refresh"
           severity="secondary"
           outlined
@@ -176,7 +181,7 @@ export default function PayrollComponentMappingPanel({
           onClick={() => void mutate()}
         />
         <Button
-          label="New Mapping"
+          label={i18nT("static.q4o7lz")}
           icon="pi pi-plus"
           size="small"
           onClick={openNew}
@@ -193,11 +198,11 @@ export default function PayrollComponentMappingPanel({
         scrollable
         size="small"
         tableStyle={{ minWidth: "72rem" }}
-        emptyMessage="No component mapping found."
+        emptyMessage={i18nT("static.1okp55b")}
       >
         <Column
           field="component_type"
-          header="Type"
+          header={i18nT("static.1m2zofh")}
           sortable
           body={(row: PayrollComponentMapping) => (
             <Tag
@@ -208,7 +213,7 @@ export default function PayrollComponentMappingPanel({
         />
         <Column
           field="component_code"
-          header="Component"
+          header={i18nT("static.bvqo3k")}
           sortable
           body={(row: PayrollComponentMapping) => (
             <div>
@@ -219,21 +224,33 @@ export default function PayrollComponentMappingPanel({
             </div>
           )}
         />
-        <Column field="regulation_program" header="Program" sortable />
-        <Column field="treatment_code" header="Treatment" sortable />
+        <Column
+          field="regulation_program"
+          header={i18nT("static.1if8prf")}
+          sortable
+        />
+        <Column
+          field="treatment_code"
+          header={i18nT("static.q1t1gr")}
+          sortable
+        />
         <Column
           field="is_included"
-          header="Included"
+          header={i18nT("static.1f8pot5")}
           body={(row: PayrollComponentMapping) => (
             <Tag
-              value={row.is_included ? "Yes" : "No"}
+              value={
+                row.is_included
+                  ? i18nT("static.1dudzcg")
+                  : i18nT("static.r5wqai")
+              }
               severity={row.is_included ? "success" : "secondary"}
             />
           )}
         />
         <Column
           field="effective_from"
-          header="Effective From"
+          header={i18nT("static.ypbwia")}
           sortable
           body={(row: PayrollComponentMapping) =>
             formatDisplayDate(row.effective_from)
@@ -241,29 +258,29 @@ export default function PayrollComponentMappingPanel({
         />
         <Column
           field="effective_to"
-          header="Effective To"
+          header={i18nT("static.mtbgcr")}
           body={(row: PayrollComponentMapping) =>
             formatDisplayDate(row.effective_to, "Open ended")
           }
         />
         <Column
-          header="Action"
+          header={i18nT("static.2wk0tb")}
           frozen
           alignFrozen="right"
           body={(row: PayrollComponentMapping) => (
             <div className="flex justify-end gap-2">
               <Button
                 icon="pi pi-pencil"
-                aria-label="Edit mapping"
-                tooltip="Edit mapping"
+                aria-label={i18nT("static.k1m607")}
+                tooltip={i18nT("static.k1m607")}
                 size="small"
                 outlined
                 onClick={() => openEdit(row)}
               />
               <Button
                 icon="pi pi-trash"
-                aria-label="Delete mapping"
-                tooltip="Delete mapping"
+                aria-label={i18nT("static.1c66gz4")}
+                tooltip={i18nT("static.1c66gz4")}
                 size="small"
                 severity="danger"
                 outlined
@@ -275,7 +292,7 @@ export default function PayrollComponentMappingPanel({
       </DataTable>
 
       <Dialog
-        header={selected ? "Edit Component Mapping" : "New Component Mapping"}
+        header={selected ? i18nT("static.1ps0sv0") : i18nT("static.1w72e58")}
         visible={visible}
         onHide={close}
         modal
@@ -285,14 +302,16 @@ export default function PayrollComponentMappingPanel({
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={saving}
               onClick={close}
             />
             <Button
-              label={selected ? "Save Changes" : "Create Mapping"}
+              label={
+                selected ? i18nT("static.6gmm1l") : i18nT("static.1tpgk3v")
+              }
               icon="pi pi-check"
               loading={saving}
               onClick={() => void save()}
@@ -301,7 +320,7 @@ export default function PayrollComponentMappingPanel({
         }
       >
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-          <Field label="Component Type *">
+          <Field label={i18nT("static.1rq7vw6")}>
             <Dropdown
               value={form.component_type}
               options={["INCOME", "DEDUCTION"] satisfies PayrollComponentType[]}
@@ -315,7 +334,7 @@ export default function PayrollComponentMappingPanel({
               className="w-full"
             />
           </Field>
-          <Field label="Component *">
+          <Field label={i18nT("static.17wjri6")}>
             <Dropdown
               value={form.component_id || null}
               options={componentOptions}
@@ -327,10 +346,10 @@ export default function PayrollComponentMappingPanel({
                 }))
               }
               className="w-full"
-              placeholder="Select component"
+              placeholder={i18nT("static.yrs9f6")}
             />
           </Field>
-          <Field label="Regulation Program *">
+          <Field label={i18nT("static.v34ctb")}>
             <Dropdown
               value={form.regulation_program}
               options={PROGRAMS}
@@ -343,7 +362,7 @@ export default function PayrollComponentMappingPanel({
               className="w-full"
             />
           </Field>
-          <Field label="Treatment Code *">
+          <Field label={i18nT("static.iiladi")}>
             <Dropdown
               value={form.treatment_code}
               options={treatmentOptions}
@@ -356,7 +375,7 @@ export default function PayrollComponentMappingPanel({
               }
             />
           </Field>
-          <Field label="Effective From *">
+          <Field label={i18nT("static.8lx39w")}>
             <PrimeDatePicker
               value={form.effective_from}
               onValueChange={(value) =>
@@ -365,7 +384,7 @@ export default function PayrollComponentMappingPanel({
               className="w-full"
             />
           </Field>
-          <Field label="Effective To">
+          <Field label={i18nT("static.mtbgcr")}>
             <PrimeDatePicker
               value={form.effective_to}
               onValueChange={(value) =>
@@ -379,7 +398,7 @@ export default function PayrollComponentMappingPanel({
           </Field>
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">
-              Included in calculation base
+              {i18nT("static.57qvzy")}{" "}
             </span>
             <InputSwitch
               checked={form.is_included}

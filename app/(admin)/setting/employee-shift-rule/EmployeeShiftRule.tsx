@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -58,23 +59,23 @@ type DateRangeValue = (Date | null)[] | null;
 type ProcessingAction = "delete" | "restore" | null;
 
 const QUICK_FILTERS: {
-  label: string;
+  labelKey: string;
   value: Exclude<QuickFilter, null>;
 }[] = [
   {
-    label: "This Week",
+    labelKey: "This Week",
     value: "this_week",
   },
   {
-    label: "This Month",
+    labelKey: "This Month",
     value: "this_month",
   },
   {
-    label: "Last Month",
+    labelKey: "Last Month",
     value: "last_month",
   },
   {
-    label: "Next Month",
+    labelKey: "Next Month",
     value: "next_month",
   },
 ];
@@ -119,6 +120,7 @@ const getQuickFilterRange = (type: QuickFilter): [Date, Date] | null => {
 };
 
 const EmployeeShiftRuleTableData = () => {
+  const { t: i18nT } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -237,7 +239,7 @@ const EmployeeShiftRuleTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -249,7 +251,7 @@ const EmployeeShiftRuleTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -262,7 +264,7 @@ const EmployeeShiftRuleTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -274,8 +276,8 @@ const EmployeeShiftRuleTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -337,9 +339,7 @@ const EmployeeShiftRuleTableData = () => {
 
       await refreshEmployeeShiftRuleData();
 
-      showSuccess(
-        response.message || "Employee shift rule deleted successfully.",
-      );
+      showSuccess(response.message || i18nT("static.15zf11t"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -358,9 +358,7 @@ const EmployeeShiftRuleTableData = () => {
 
       await refreshEmployeeShiftRuleData();
 
-      showSuccess(
-        response.message || "Employee shift rule restored successfully.",
-      );
+      showSuccess(response.message || i18nT("static.u8on6k"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -371,12 +369,10 @@ const EmployeeShiftRuleTableData = () => {
 
   const onClickDelete = (rowData: EmployeeShiftRule) => {
     requestActionConfirmation({
-      header: "Delete Employee Shift Rule",
+      header: i18nT("static.7hz54s"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this employee shift assignment?
-          </span>
+          <span className="text-slate-600">{i18nT("static.8smc34")} </span>
 
           <span className="font-semibold text-slate-800">
             {rowData.employee_name}
@@ -397,7 +393,7 @@ const EmployeeShiftRuleTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -406,7 +402,7 @@ const EmployeeShiftRuleTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -418,12 +414,10 @@ const EmployeeShiftRuleTableData = () => {
 
   const onClickRestore = (rowData: EmployeeShiftRule) => {
     requestActionConfirmation({
-      header: "Restore Employee Shift Rule",
+      header: i18nT("static.fd10a7"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this employee shift assignment?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1vhl2jb")} </span>
 
           <span className="font-semibold text-slate-800">
             {rowData.employee_name}
@@ -444,7 +438,7 @@ const EmployeeShiftRuleTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -453,7 +447,7 @@ const EmployeeShiftRuleTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -465,7 +459,11 @@ const EmployeeShiftRuleTableData = () => {
 
   const employeeColumnBody = (rowData: EmployeeShiftRule) => {
     if (!rowData.employee_name) {
-      return <span className="text-sm text-slate-400">Unknown employee</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.1drwniz")}
+        </span>
+      );
     }
 
     return (
@@ -477,7 +475,11 @@ const EmployeeShiftRuleTableData = () => {
 
   const shiftRuleColumnBody = (rowData: EmployeeShiftRule) => {
     if (!rowData.shift_rule_name) {
-      return <span className="text-sm text-slate-400">Unknown shift rule</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.1ohua0l")}
+        </span>
+      );
     }
 
     return (
@@ -493,7 +495,11 @@ const EmployeeShiftRuleTableData = () => {
     const date = dayjs(rowData.effective_from);
 
     if (!date.isValid()) {
-      return <span className="text-sm text-slate-400">Invalid date</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.1c32dj8")}
+        </span>
+      );
     }
 
     return (
@@ -507,7 +513,7 @@ const EmployeeShiftRuleTableData = () => {
     if (!rowData.effective_to) {
       return (
         <Tag
-          value="No end date"
+          value={i18nT("static.uh2z1")}
           severity="info"
           icon="pi pi-infinity"
           rounded
@@ -518,7 +524,11 @@ const EmployeeShiftRuleTableData = () => {
     const date = dayjs(rowData.effective_to);
 
     if (!date.isValid()) {
-      return <span className="text-sm text-slate-400">Invalid date</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.1c32dj8")}
+        </span>
+      );
     }
 
     return (
@@ -544,14 +554,15 @@ const EmployeeShiftRuleTableData = () => {
     if (!effectiveTo || !effectiveTo.isValid()) {
       return (
         <span className="whitespace-nowrap text-sm text-slate-700">
-          {formatDisplayDate(effectiveFrom)} onward
+          {formatDisplayDate(effectiveFrom)} {i18nT("static.ax1ize")}{" "}
         </span>
       );
     }
 
     return (
       <span className="whitespace-nowrap text-sm text-slate-700">
-        {formatDisplayDate(effectiveFrom)} – {formatDisplayDate(effectiveTo)}
+        {formatDisplayDate(effectiveFrom)} {i18nT("static.hnl64v")}{" "}
+        {formatDisplayDate(effectiveTo)}
       </span>
     );
   };
@@ -559,14 +570,19 @@ const EmployeeShiftRuleTableData = () => {
   const statusColumnBody = (rowData: EmployeeShiftRule) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -576,7 +592,7 @@ const EmployeeShiftRuleTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -591,7 +607,11 @@ const EmployeeShiftRuleTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -604,7 +624,7 @@ const EmployeeShiftRuleTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -627,7 +647,7 @@ const EmployeeShiftRuleTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -661,11 +681,11 @@ const EmployeeShiftRuleTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Employee Shift Rule
+                  {i18nT("static.fywzdp")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage employee shift assignments and their effective periods.
+                  {i18nT("static.11bj3wg")}{" "}
                 </p>
               </div>
             </div>
@@ -673,7 +693,7 @@ const EmployeeShiftRuleTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -686,7 +706,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Button
                 type="button"
-                label="Assign Shift Rule"
+                label={i18nT("static.14il566")}
                 icon="pi pi-link"
                 size="small"
                 disabled={isProcessing}
@@ -702,12 +722,11 @@ const EmployeeShiftRuleTableData = () => {
           <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Effective Period Filter
+                {i18nT("static.1jziwxb")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Show assignments whose effective periods overlap the selected
-                date range.
+                {i18nT("static.1ccz5ib")}{" "}
               </p>
             </div>
 
@@ -719,7 +738,7 @@ const EmployeeShiftRuleTableData = () => {
                   <Button
                     key={quickFilter.value}
                     type="button"
-                    label={quickFilter.label}
+                    label={i18nT(quickFilter.labelKey)}
                     size="small"
                     severity={isActive ? undefined : "secondary"}
                     outlined={!isActive}
@@ -735,7 +754,7 @@ const EmployeeShiftRuleTableData = () => {
                   htmlFor="effective_period"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Custom Date Range
+                  {i18nT("static.h92mjb")}{" "}
                 </label>
 
                 <Calendar
@@ -747,7 +766,7 @@ const EmployeeShiftRuleTableData = () => {
                   hideOnRangeSelection
                   showIcon
                   dateFormat="dd MM yy"
-                  placeholder="Select date range"
+                  placeholder={i18nT("static.bx9hhy")}
                   className="w-full"
                   onChange={(event) =>
                     handleManualDateChange(
@@ -762,7 +781,7 @@ const EmployeeShiftRuleTableData = () => {
                   htmlFor="employee_shift_search"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Search
+                  {i18nT("static.1j0itop")}{" "}
                 </label>
 
                 <IconField iconPosition="left" className="w-full">
@@ -772,7 +791,7 @@ const EmployeeShiftRuleTableData = () => {
                     id="employee_shift_search"
                     value={globalFilterValue}
                     onChange={onGlobalFilterChange}
-                    placeholder="Search employee or shift rule"
+                    placeholder={i18nT("static.1dabne2")}
                     className="w-full"
                   />
                 </IconField>
@@ -780,7 +799,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Button
                 type="button"
-                label="Clear Filters"
+                label={i18nT("static.1bcvlux")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -805,7 +824,7 @@ const EmployeeShiftRuleTableData = () => {
                     htmlFor="showDeletedData"
                     className="cursor-pointer select-none text-sm text-slate-600"
                   >
-                    Show deleted records
+                    {i18nT("static.1kk3in7")}{" "}
                   </label>
                 </div>
               )}
@@ -820,8 +839,8 @@ const EmployeeShiftRuleTableData = () => {
                   />
 
                   <span className="text-xs text-slate-500">
-                    {filteredData.length} result
-                    {filteredData.length === 1 ? "" : "s"}
+                    {filteredData.length} {i18nT("static.2u1uec")}{" "}
+                    {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}
                   </span>
                 </div>
               )}
@@ -853,8 +872,8 @@ const EmployeeShiftRuleTableData = () => {
               tableStyle={{
                 minWidth: "74rem",
               }}
-              emptyMessage="No employee shift rule data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.tl9b1u")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -870,7 +889,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Column
                 field="employee_name"
-                header="Employee"
+                header={i18nT("static.1fak8xt")}
                 sortable
                 body={employeeColumnBody}
                 style={{
@@ -880,7 +899,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Column
                 field="shift_rule_name"
-                header="Shift Rule"
+                header={i18nT("static.qlsvoz")}
                 sortable
                 body={shiftRuleColumnBody}
                 style={{
@@ -890,7 +909,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Column
                 field="effective_from"
-                header="Effective From"
+                header={i18nT("static.ypbwia")}
                 sortable
                 body={effectiveFromColumnBody}
                 style={{
@@ -900,7 +919,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Column
                 field="effective_to"
-                header="Effective To"
+                header={i18nT("static.mtbgcr")}
                 sortable
                 body={effectiveToColumnBody}
                 style={{
@@ -909,7 +928,7 @@ const EmployeeShiftRuleTableData = () => {
               />
 
               <Column
-                header="Effective Period"
+                header={i18nT("static.1bwcvhr")}
                 body={periodColumnBody}
                 style={{
                   minWidth: "20rem",
@@ -918,7 +937,7 @@ const EmployeeShiftRuleTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -927,7 +946,7 @@ const EmployeeShiftRuleTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"

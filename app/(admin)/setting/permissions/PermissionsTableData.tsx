@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -77,6 +78,7 @@ const buildPermissionCode = (resourceValue: string, actionValue: string) => {
 };
 
 const PermissionsTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -139,7 +141,7 @@ const PermissionsTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -151,7 +153,7 @@ const PermissionsTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -164,7 +166,7 @@ const PermissionsTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -176,8 +178,8 @@ const PermissionsTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -284,7 +286,7 @@ const PermissionsTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message || "Permission created successfully.");
+      showSuccess(response.message || i18nT("static.1gaivqv"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -328,7 +330,7 @@ const PermissionsTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message || "Permission updated successfully.");
+      showSuccess(response.message || i18nT("static.1lntcrg"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -343,7 +345,7 @@ const PermissionsTableData = () => {
 
       await refreshPermissionsData();
 
-      showSuccess(response.message || "Permission deleted successfully.");
+      showSuccess(response.message || i18nT("static.86dyt2"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -356,7 +358,7 @@ const PermissionsTableData = () => {
 
       await refreshPermissionsData();
 
-      showSuccess(response.message || "Permission restored successfully.");
+      showSuccess(response.message || i18nT("static.ynndg1"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -369,7 +371,7 @@ const PermissionsTableData = () => {
 
       await refreshPermissionsData();
 
-      showSuccess(response.message || "Permission permanently deleted.");
+      showSuccess(response.message || i18nT("static.79o92w"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -390,12 +392,10 @@ const PermissionsTableData = () => {
 
   const onClickDelete = (data: Permissions) => {
     requestActionConfirmation({
-      header: "Delete Permission",
+      header: i18nT("static.1it7ga9"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this permission?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1u11tdu")} </span>
 
           <span className="font-semibold text-slate-800">{data.label}</span>
 
@@ -412,7 +412,7 @@ const PermissionsTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -421,7 +421,7 @@ const PermissionsTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -433,12 +433,10 @@ const PermissionsTableData = () => {
 
   const onClickRestore = (data: Permissions) => {
     requestActionConfirmation({
-      header: "Restore Permission",
+      header: i18nT("static.110c7r8"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this permission?
-          </span>
+          <span className="text-slate-600">{i18nT("static.16k87gf")} </span>
 
           <span className="font-semibold text-slate-800">{data.label}</span>
 
@@ -455,7 +453,7 @@ const PermissionsTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -464,7 +462,7 @@ const PermissionsTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -476,12 +474,10 @@ const PermissionsTableData = () => {
 
   const onClickPurge = (data: Permissions) => {
     requestActionConfirmation({
-      header: "Delete Permission Permanently",
+      header: i18nT("static.186m6ro"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.label}</span>
 
@@ -498,7 +494,7 @@ const PermissionsTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -507,7 +503,7 @@ const PermissionsTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -520,14 +516,19 @@ const PermissionsTableData = () => {
   const statusColumnBody = (rowData: Permissions) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -537,7 +538,7 @@ const PermissionsTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -567,7 +568,9 @@ const PermissionsTableData = () => {
 
   const groupColumnBody = (rowData: Permissions) => {
     if (!rowData.group_name) {
-      return <span className="text-sm text-slate-400">No group</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.auvr9d")}</span>
+      );
     }
 
     return <span className="text-sm text-slate-700">{rowData.group_name}</span>;
@@ -578,7 +581,11 @@ const PermissionsTableData = () => {
 
     if (isDeleted) {
       if (!canRestorePermission && !canPurgePermission) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -591,7 +598,7 @@ const PermissionsTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -608,7 +615,7 @@ const PermissionsTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -630,7 +637,7 @@ const PermissionsTableData = () => {
             outlined
             severity="secondary"
             size="small"
-            tooltip="Edit"
+            tooltip={i18nT("static.1i1lcq9")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -647,7 +654,7 @@ const PermissionsTableData = () => {
             outlined
             severity="danger"
             size="small"
-            tooltip="Delete"
+            tooltip={i18nT("static.oay2cq")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -663,7 +670,7 @@ const PermissionsTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -675,7 +682,7 @@ const PermissionsTableData = () => {
       <Button
         type="submit"
         form="permission-form"
-        label={isAddNew ? "Create Permission" : "Save Changes"}
+        label={isAddNew ? i18nT("static.w92jc") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -705,12 +712,11 @@ const PermissionsTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Permissions
+                  {i18nT("static.11gikqr")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage permission resources, actions, labels, and groups used
-                  by Casbin authorization policies.
+                  {i18nT("static.igwjro")}{" "}
                 </p>
               </div>
             </div>
@@ -718,7 +724,7 @@ const PermissionsTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -732,7 +738,7 @@ const PermissionsTableData = () => {
               {canCreatePermission && (
                 <Button
                   type="button"
-                  label="New Permission"
+                  label={i18nT("static.agq3us")}
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -759,7 +765,7 @@ const PermissionsTableData = () => {
                     htmlFor="showDeletedData"
                     className="cursor-pointer select-none text-sm text-slate-600"
                   >
-                    Show deleted records
+                    {i18nT("static.1kk3in7")}{" "}
                   </label>
                 </>
               )}
@@ -771,7 +777,7 @@ const PermissionsTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search permission, resource, or group"
+                placeholder={i18nT("static.3syr3q")}
                 className="w-full"
               />
             </IconField>
@@ -803,8 +809,8 @@ const PermissionsTableData = () => {
               tableStyle={{
                 minWidth: "82rem",
               }}
-              emptyMessage="No permission data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1f5k667")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -820,7 +826,7 @@ const PermissionsTableData = () => {
 
               <Column
                 field="code"
-                header="Permission Code"
+                header={i18nT("static.1mz5iu3")}
                 sortable
                 body={codeColumnBody}
                 style={{
@@ -830,7 +836,7 @@ const PermissionsTableData = () => {
 
               <Column
                 field="label"
-                header="Label"
+                header={i18nT("static.1827q8t")}
                 sortable
                 body={labelColumnBody}
                 style={{
@@ -840,7 +846,7 @@ const PermissionsTableData = () => {
 
               <Column
                 field="resource"
-                header="Resource"
+                header={i18nT("static.9wi711")}
                 sortable
                 body={resourceColumnBody}
                 style={{
@@ -850,7 +856,7 @@ const PermissionsTableData = () => {
 
               <Column
                 field="action"
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 sortable
                 body={actionPermissionColumnBody}
                 style={{
@@ -860,7 +866,7 @@ const PermissionsTableData = () => {
 
               <Column
                 field="group_name"
-                header="Permission Group"
+                header={i18nT("static.1d59hw9")}
                 sortable
                 body={groupColumnBody}
                 style={{
@@ -870,7 +876,7 @@ const PermissionsTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -879,7 +885,7 @@ const PermissionsTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -939,12 +945,11 @@ const PermissionsTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Permission Identity
+                {i18nT("static.13o8ih0")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Define the resource and action. The permission code is generated
-                automatically.
+                {i18nT("static.nxrtjr")}{" "}
               </p>
             </div>
 
@@ -954,7 +959,7 @@ const PermissionsTableData = () => {
                   htmlFor="resource"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Resource
+                  {i18nT("static.9wi711")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -962,7 +967,7 @@ const PermissionsTableData = () => {
                   name="resource"
                   control={control}
                   rules={{
-                    required: "Resource is required.",
+                    required: i18nT("static.1f7dnvy"),
                     validate: {
                       noSpaces: (value) =>
                         !/\s/.test(value.trim()) ||
@@ -970,7 +975,7 @@ const PermissionsTableData = () => {
                     },
                     maxLength: {
                       value: 100,
-                      message: "Resource cannot exceed 100 characters.",
+                      message: i18nT("static.152nq6x"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -980,7 +985,7 @@ const PermissionsTableData = () => {
                         value={field.value ?? ""}
                         id="resource"
                         autoComplete="off"
-                        placeholder="Example: user"
+                        placeholder={i18nT("static.1wpr7sg")}
                         disabled={isSaving || !isAddNew}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1002,13 +1007,11 @@ const PermissionsTableData = () => {
                         </small>
                       ) : !isAddNew ? (
                         <small className="text-slate-500">
-                          Resource is locked because it is used by Casbin
-                          policies.
+                          {i18nT("static.129yaw")}{" "}
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Name of the protected resource, such as user,
-                          employee, or attendance.
+                          {i18nT("static.1vu21tg")}{" "}
                         </small>
                       )}
                     </>
@@ -1021,7 +1024,7 @@ const PermissionsTableData = () => {
                   htmlFor="action"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Action
+                  {i18nT("static.2wk0tb")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1029,7 +1032,7 @@ const PermissionsTableData = () => {
                   name="action"
                   control={control}
                   rules={{
-                    required: "Action is required.",
+                    required: i18nT("static.obzx2s"),
                     validate: {
                       noSpaces: (value) =>
                         !/\s/.test(value.trim()) ||
@@ -1037,7 +1040,7 @@ const PermissionsTableData = () => {
                     },
                     maxLength: {
                       value: 100,
-                      message: "Action cannot exceed 100 characters.",
+                      message: i18nT("static.sm7drj"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1047,7 +1050,7 @@ const PermissionsTableData = () => {
                         value={field.value ?? ""}
                         id="action"
                         autoComplete="off"
-                        placeholder="Example: read"
+                        placeholder={i18nT("static.1h8o5ev")}
                         disabled={isSaving || !isAddNew}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1069,13 +1072,11 @@ const PermissionsTableData = () => {
                         </small>
                       ) : !isAddNew ? (
                         <small className="text-slate-500">
-                          Action is locked because it is used by Casbin
-                          policies.
+                          {i18nT("static.11oldri")}{" "}
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Operation permitted on the resource, such as read,
-                          create, update, or delete.
+                          {i18nT("static.151unp4")}{" "}
                         </small>
                       )}
                     </>
@@ -1088,17 +1089,17 @@ const PermissionsTableData = () => {
                   htmlFor="code"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Permission Code
+                  {i18nT("static.1mz5iu3")}{" "}
                 </label>
 
                 <Controller
                   name="code"
                   control={control}
                   rules={{
-                    required: "Permission code is required.",
+                    required: i18nT("static.1djr3sg"),
                     maxLength: {
                       value: 201,
-                      message: "Permission code is too long.",
+                      message: i18nT("static.1uzp0ff"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1111,7 +1112,7 @@ const PermissionsTableData = () => {
                           value={field.value ?? ""}
                           id="code"
                           readOnly
-                          placeholder="Generated from resource.action"
+                          placeholder={i18nT("static.1a1q4ga")}
                           className={`w-full bg-slate-50 font-mono ${
                             fieldState.invalid ? "p-invalid" : ""
                           }`}
@@ -1124,7 +1125,7 @@ const PermissionsTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Generated format: resource.action. Example: user.read.
+                          {i18nT("static.1ad5y06")}{" "}
                         </small>
                       )}
                     </>
@@ -1138,12 +1139,11 @@ const PermissionsTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Display Information
+                {i18nT("static.1mabq03")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Define the human-readable label and grouping used in permission
-                management.
+                {i18nT("static.13loruz")}{" "}
               </p>
             </div>
 
@@ -1153,7 +1153,7 @@ const PermissionsTableData = () => {
                   htmlFor="label"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Permission Label
+                  {i18nT("static.x45kzw")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1161,10 +1161,10 @@ const PermissionsTableData = () => {
                   name="label"
                   control={control}
                   rules={{
-                    required: "Permission label is required.",
+                    required: i18nT("static.15xiu61"),
                     maxLength: {
                       value: 150,
-                      message: "Permission label cannot exceed 150 characters.",
+                      message: i18nT("static.8ik31d"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1174,7 +1174,7 @@ const PermissionsTableData = () => {
                         value={field.value ?? ""}
                         id="label"
                         autoComplete="off"
-                        placeholder="Example: View Users"
+                        placeholder={i18nT("static.5tkkaq")}
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1196,7 +1196,7 @@ const PermissionsTableData = () => {
                   htmlFor="group_name"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Permission Group
+                  {i18nT("static.1d59hw9")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1204,10 +1204,10 @@ const PermissionsTableData = () => {
                   name="group_name"
                   control={control}
                   rules={{
-                    required: "Permission group is required.",
+                    required: i18nT("static.1xey29u"),
                     maxLength: {
                       value: 150,
-                      message: "Permission group cannot exceed 150 characters.",
+                      message: i18nT("static.8v5fio"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1217,7 +1217,7 @@ const PermissionsTableData = () => {
                         value={field.value ?? ""}
                         id="group_name"
                         autoComplete="off"
-                        placeholder="Example: User Management"
+                        placeholder={i18nT("static.17ljcwb")}
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1230,8 +1230,7 @@ const PermissionsTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Groups related permissions together in the
-                          role-permission interface.
+                          {i18nT("static.bhjbzf")}{" "}
                         </small>
                       )}
                     </>
@@ -1254,12 +1253,11 @@ const PermissionsTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive permissions remain stored but should not be
-                      assigned to roles or used for new access policies.
+                      {i18nT("static.hqveza")}{" "}
                     </p>
                   </div>
 

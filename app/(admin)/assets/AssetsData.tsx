@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "primereact/button";
@@ -47,6 +48,7 @@ const emptyAsset = {
 };
 
 export default function AssetsData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -92,7 +94,9 @@ export default function AssetsData() {
   const employeeOptions = useMemo(
     () =>
       employees.map((item) => ({
-        label: item.full_name || `${item.first_name} ${item.last_name}`,
+        label:
+          item.full_name ||
+          i18nT("static.y7k7q", { p0: item.first_name, p1: item.last_name }),
         value: item.id,
       })),
     [employees],
@@ -111,7 +115,7 @@ export default function AssetsData() {
   };
   const createCategory = async () => {
     if (!category.code.trim() || !category.name.trim()) {
-      toast("error", "Validation", "Code and name are required.");
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.u9zubr"));
       return;
     }
     setSaving(true);
@@ -120,9 +124,9 @@ export default function AssetsData() {
       setCategoryVisible(false);
       setCategory({ code: "", name: "", description: "" });
       await reloadCategories();
-      toast("success", "Saved", "Asset category created.");
+      toast("success", i18nT("static.12ek4is"), i18nT("static.1dfrmnh"));
     } catch {
-      toast("error", "Unable to save", "Asset category could not be created.");
+      toast("error", i18nT("static.rulhkg"), i18nT("static.5z3mo0"));
     } finally {
       setSaving(false);
     }
@@ -133,11 +137,7 @@ export default function AssetsData() {
       !asset.asset_tag.trim() ||
       !asset.name.trim()
     ) {
-      toast(
-        "error",
-        "Validation",
-        "Category, asset tag, and name are required.",
-      );
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.pyqp5g"));
       return;
     }
     setSaving(true);
@@ -151,20 +151,16 @@ export default function AssetsData() {
       setAssetVisible(false);
       setAsset(emptyAsset);
       await reloadAssets();
-      toast("success", "Saved", "Company asset created.");
+      toast("success", i18nT("static.12ek4is"), i18nT("static.1goqi12"));
     } catch {
-      toast(
-        "error",
-        "Unable to save",
-        "Asset tag may already exist or category is invalid.",
-      );
+      toast("error", i18nT("static.rulhkg"), i18nT("static.1ka90ht"));
     } finally {
       setSaving(false);
     }
   };
   const assign = async () => {
     if (!assigning || !employeeId) {
-      toast("error", "Validation", "Select an employee.");
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.d3wvx2"));
       return;
     }
     setSaving(true);
@@ -179,13 +175,9 @@ export default function AssetsData() {
       setDueDate("");
       setNote("");
       await refresh();
-      toast("success", "Assigned", "Asset assignment created.");
+      toast("success", i18nT("static.c1fxel"), i18nT("static.17ogd92"));
     } catch {
-      toast(
-        "error",
-        "Unable to assign",
-        "Asset may no longer be available. Refresh and try again.",
-      );
+      toast("error", i18nT("static.o0zxlg"), i18nT("static.bnzo41"));
     } finally {
       setSaving(false);
     }
@@ -195,25 +187,21 @@ export default function AssetsData() {
     try {
       await returnCompanyAsset(row.id, row.row_version);
       await refresh();
-      toast("success", "Returned", "Asset is available again.");
+      toast("success", i18nT("static.o3gxi6"), i18nT("static.q2ukp4"));
     } catch {
-      toast(
-        "error",
-        "Unable to return",
-        "Assignment changed or has already been returned.",
-      );
+      toast("error", i18nT("static.5ibdzr"), i18nT("static.9mkdq"));
     } finally {
       setSaving(false);
     }
   };
   const confirmReturnAsset = (row: AssetAssignment) => {
     requestActionConfirmation({
-      action: "Return asset",
+      action: i18nT("static.10cwp77"),
       target: `${row.asset_tag} · ${row.employee_name}`,
       severity: "warning",
-      confirmLabel: "Return Asset",
+      confirmLabel: i18nT("static.1pekgdv"),
       confirmIcon: "pi pi-undo",
-      description: "Close this assignment and return the asset?",
+      description: i18nT("static.18gqw5p"),
       onAccept: () => returnAsset(row),
     });
   };
@@ -225,13 +213,13 @@ export default function AssetsData() {
     try {
       await updateCompanyAssetStatus(row.id, row.row_version, status);
       await reloadAssets();
-      toast("success", "Updated", `Asset is now ${status.toLowerCase()}.`);
-    } catch {
       toast(
-        "error",
-        "Unable to update",
-        "Asset changed, is assigned, or cannot use that status.",
+        "success",
+        i18nT("static.miz9ao"),
+        i18nT("static.f9mqsv", { p0: status.toLowerCase() }),
       );
+    } catch {
+      toast("error", i18nT("static.1yhx6qk"), i18nT("static.1hscwqt"));
     } finally {
       setSaving(false);
     }
@@ -242,25 +230,29 @@ export default function AssetsData() {
   ) => {
     const makingAvailable = status === "AVAILABLE";
     requestActionConfirmation({
-      action: makingAvailable ? "Mark asset available" : "Send asset to repair",
+      action: makingAvailable
+        ? i18nT("static.1rn578b")
+        : i18nT("static.1tfd4jh"),
       target: `${row.asset_tag} · ${row.name}`,
       severity: makingAvailable ? "warning" : "danger",
-      confirmLabel: makingAvailable ? "Available" : "Repair",
+      confirmLabel: makingAvailable
+        ? i18nT("static.vp7tiw")
+        : i18nT("static.nvzxsk"),
       confirmIcon: makingAvailable ? "pi pi-check" : "pi pi-wrench",
       description: makingAvailable
-        ? "Make this asset available for assignment?"
-        : "Send this asset to repair?",
+        ? i18nT("static.9zlajj")
+        : i18nT("static.qh3tcc"),
       onAccept: () => changeAssetStatus(row, status),
     });
   };
   const retireAsset = (row: CompanyAsset) =>
     requestActionConfirmation({
-      action: "Retire asset",
+      action: i18nT("static.xhtag6"),
       target: `${row.asset_tag} · ${row.name}`,
       severity: "danger",
-      confirmLabel: "Retire",
+      confirmLabel: i18nT("static.rgquxi"),
       confirmIcon: "pi pi-ban",
-      description: "Retire this asset? It cannot be assigned again.",
+      description: i18nT("static.1m214x2"),
       onAccept: () => changeAssetStatus(row, "RETIRED"),
     });
   return (
@@ -270,16 +262,15 @@ export default function AssetsData() {
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-                Company Assets
+                {i18nT("static.5q1akd")}{" "}
               </h1>
               <p className="m-0 mt-1 text-sm text-slate-500">
-                Register, assign, and clear company assets during the employee
-                lifecycle.
+                {i18nT("static.o1kv1b")}{" "}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 outlined
                 severity="secondary"
@@ -289,7 +280,7 @@ export default function AssetsData() {
               />
               {canManage && (
                 <Button
-                  label="New Category"
+                  label={i18nT("static.766xs7")}
                   icon="pi pi-tags"
                   outlined
                   size="small"
@@ -298,7 +289,7 @@ export default function AssetsData() {
               )}{" "}
               {canManage && (
                 <Button
-                  label="New Asset"
+                  label={i18nT("static.xjax05")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => setAssetVisible(true)}
@@ -314,14 +305,14 @@ export default function AssetsData() {
             stripedRows
             rowHover
             size="small"
-            emptyMessage="No company asset found."
+            emptyMessage={i18nT("static.p4aknd")}
           >
-            <Column field="asset_tag" header="Asset Tag" />
-            <Column field="name" header="Asset" />
-            <Column field="category_name" header="Category" />
-            <Column field="serial_number" header="Serial Number" />
+            <Column field="asset_tag" header={i18nT("static.1h07jp3")} />
+            <Column field="name" header={i18nT("static.108qnnf")} />
+            <Column field="category_name" header={i18nT("static.1cr1mz5")} />
+            <Column field="serial_number" header={i18nT("static.wq722")} />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: CompanyAsset) => (
                 <Tag
                   value={row.status}
@@ -330,11 +321,11 @@ export default function AssetsData() {
               )}
             />
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(row: CompanyAsset) => (
                 <div className="flex flex-wrap gap-1">
                   <Button
-                    label="History"
+                    label={i18nT("static.yugfpb")}
                     icon="pi pi-history"
                     text
                     severity="secondary"
@@ -343,7 +334,7 @@ export default function AssetsData() {
                   />
                   {canAssign && row.status === "AVAILABLE" ? (
                     <Button
-                      label="Assign"
+                      label={i18nT("static.1f128rw")}
                       icon="pi pi-user-plus"
                       text
                       size="small"
@@ -352,7 +343,7 @@ export default function AssetsData() {
                   ) : null}
                   {canManage && row.status === "AVAILABLE" ? (
                     <Button
-                      label="Repair"
+                      label={i18nT("static.nvzxsk")}
                       text
                       size="small"
                       onClick={() => confirmAssetStatus(row, "REPAIR")}
@@ -360,7 +351,7 @@ export default function AssetsData() {
                   ) : null}
                   {canManage && row.status === "REPAIR" ? (
                     <Button
-                      label="Available"
+                      label={i18nT("static.vp7tiw")}
                       text
                       size="small"
                       onClick={() => confirmAssetStatus(row, "AVAILABLE")}
@@ -368,7 +359,7 @@ export default function AssetsData() {
                   ) : null}
                   {canManage && ["AVAILABLE", "REPAIR"].includes(row.status) ? (
                     <Button
-                      label="Retire"
+                      label={i18nT("static.rgquxi")}
                       text
                       severity="danger"
                       size="small"
@@ -380,7 +371,7 @@ export default function AssetsData() {
             />
           </DataTable>
           <h2 className="mb-0 mt-5 text-base font-semibold text-slate-800">
-            Assignment History
+            {i18nT("static.1qhibpk")}{" "}
           </h2>
           <DataTable
             value={assignments}
@@ -390,19 +381,19 @@ export default function AssetsData() {
             stripedRows
             rowHover
             size="small"
-            emptyMessage="No asset assignment found."
+            emptyMessage={i18nT("static.1plqyr3")}
           >
-            <Column field="asset_tag" header="Asset Tag" />
-            <Column field="asset_name" header="Asset" />
-            <Column field="employee_name" header="Employee" />
+            <Column field="asset_tag" header={i18nT("static.1h07jp3")} />
+            <Column field="asset_name" header={i18nT("static.108qnnf")} />
+            <Column field="employee_name" header={i18nT("static.1fak8xt")} />
             <Column
-              header="Assigned"
+              header={i18nT("static.c1fxel")}
               body={(row: AssetAssignment) =>
                 formatDisplayDate(row.assigned_at)
               }
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: AssetAssignment) => (
                 <Tag
                   value={row.status}
@@ -412,11 +403,11 @@ export default function AssetsData() {
             />
             {canAssign && (
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={(row: AssetAssignment) =>
                   row.status === "ASSIGNED" ? (
                     <Button
-                      label="Return"
+                      label={i18nT("static.1klrjrz")}
                       icon="pi pi-replay"
                       text
                       severity="secondary"
@@ -434,8 +425,8 @@ export default function AssetsData() {
       <Dialog
         header={
           historyAsset
-            ? `Status History — ${historyAsset.asset_tag}`
-            : "Asset Status History"
+            ? i18nT("static.1luzjnj", { p0: historyAsset.asset_tag })
+            : i18nT("static.1am9nmz")
         }
         visible={historyAsset !== null}
         modal
@@ -446,7 +437,7 @@ export default function AssetsData() {
         footer={
           <div className="flex justify-end">
             <Button
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               text
               severity="secondary"
               onClick={() => setHistoryAsset(null)}
@@ -461,18 +452,18 @@ export default function AssetsData() {
           size="small"
           stripedRows
           rowHover
-          emptyMessage="No asset status history found."
+          emptyMessage={i18nT("static.37wpjq")}
         >
-          <Column field="previous_status" header="Previous Status" />
-          <Column field="new_status" header="New Status" />
-          <Column field="changed_by_name" header="Changed By" />
+          <Column field="previous_status" header={i18nT("static.ql6ue2")} />
+          <Column field="new_status" header={i18nT("static.14zuqhh")} />
+          <Column field="changed_by_name" header={i18nT("static.1sebngg")} />
           <Column
             field="change_reason"
-            header="Reason"
+            header={i18nT("static.i36sl5")}
             body={(row: CompanyAssetStatusHistory) => row.change_reason || "—"}
           />
           <Column
-            header="Changed At"
+            header={i18nT("static.1r046ho")}
             body={(row: CompanyAssetStatusHistory) =>
               formatDisplayDateTime(row.changed_at)
             }
@@ -480,7 +471,7 @@ export default function AssetsData() {
         </DataTable>
       </Dialog>
       <Dialog
-        header="New Asset Category"
+        header={i18nT("static.ecq0eb")}
         visible={categoryVisible}
         modal
         draggable={false}
@@ -490,13 +481,13 @@ export default function AssetsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setCategoryVisible(false)}
             />
             <Button
-              label="Save"
+              label={i18nT("static.lewgh4")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void createCategory()}
@@ -506,7 +497,7 @@ export default function AssetsData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Code
+            {i18nT("static.xoaiok")}{" "}
             <InputText
               value={category.code}
               onChange={(event) =>
@@ -515,7 +506,7 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Name
+            {i18nT("static.4el6o6")}{" "}
             <InputText
               value={category.name}
               onChange={(event) =>
@@ -524,8 +515,10 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Description{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.sjj37t")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               value={category.description}
               rows={3}
@@ -538,7 +531,7 @@ export default function AssetsData() {
         </div>
       </Dialog>
       <Dialog
-        header="New Company Asset"
+        header={i18nT("static.hg20cq")}
         visible={assetVisible}
         modal
         draggable={false}
@@ -548,13 +541,13 @@ export default function AssetsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setAssetVisible(false)}
             />
             <Button
-              label="Save"
+              label={i18nT("static.lewgh4")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void createAsset()}
@@ -564,13 +557,13 @@ export default function AssetsData() {
       >
         <div className="grid gap-4 py-2 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Category
+            {i18nT("static.1cr1mz5")}{" "}
             <Dropdown
               value={asset.asset_category_id || null}
               options={categories.filter((item) => item.is_active)}
               optionLabel="name"
               optionValue="id"
-              placeholder="Select category"
+              placeholder={i18nT("static.1fq1nm3")}
               className="w-full"
               onChange={(event) =>
                 setAsset({ ...asset, asset_category_id: event.value as number })
@@ -578,7 +571,7 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Asset Tag
+            {i18nT("static.1h07jp3")}{" "}
             <InputText
               value={asset.asset_tag}
               onChange={(event) =>
@@ -587,7 +580,7 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Asset Name
+            {i18nT("static.zp6dy2")}{" "}
             <InputText
               value={asset.name}
               onChange={(event) =>
@@ -596,8 +589,10 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Serial Number{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.wq722")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               value={asset.serial_number}
               onChange={(event) =>
@@ -606,8 +601,10 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Acquired Date{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.1t63ewb")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={asset.acquired_date}
               onValueChange={(value) =>
@@ -616,7 +613,10 @@ export default function AssetsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Notes <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.4f76ga")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               value={asset.notes}
               rows={2}
@@ -629,7 +629,11 @@ export default function AssetsData() {
         </div>
       </Dialog>
       <Dialog
-        header={assigning ? `Assign ${assigning.asset_tag}` : "Assign Asset"}
+        header={
+          assigning
+            ? i18nT("static.16byc54", { p0: assigning.asset_tag })
+            : i18nT("static.ipfv7w")
+        }
         visible={assigning !== null}
         modal
         draggable={false}
@@ -639,13 +643,13 @@ export default function AssetsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setAssigning(null)}
             />
             <Button
-              label="Assign"
+              label={i18nT("static.1f128rw")}
               icon="pi pi-user-plus"
               loading={saving}
               onClick={() => {
@@ -654,12 +658,12 @@ export default function AssetsData() {
                   return;
                 }
                 requestActionConfirmation({
-                  action: "Assign asset",
+                  action: i18nT("static.1xy7i3w"),
                   target: `${assigning.asset_tag} · ${employeeOptions.find((item) => item.value === employeeId)?.label ?? "selected employee"}`,
                   severity: "warning",
-                  confirmLabel: "Assign Asset",
+                  confirmLabel: i18nT("static.ipfv7w"),
                   confirmIcon: "pi pi-user-plus",
-                  description: "Assign this asset to the selected employee?",
+                  description: i18nT("static.db9x32"),
                   onAccept: () => assign(),
                 });
               }}
@@ -669,24 +673,28 @@ export default function AssetsData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee
+            {i18nT("static.1fak8xt")}{" "}
             <Dropdown
               value={employeeId}
               options={employeeOptions}
               filter
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               className="w-full"
               onChange={(event) => setEmployeeId(event.value as number)}
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Due Return Date{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.ve1zo3")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker value={dueDate} onValueChange={setDueDate} />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Assignment Note{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.1cyijd8")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               value={note}
               rows={3}

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useState } from "react";
 import useSWR from "swr";
@@ -31,7 +32,7 @@ import { showToast } from "@/store/ToastSlice";
 import { useDispatch } from "react-redux";
 
 type AnalyticsCard = {
-  label: string;
+  labelKey: string;
   key: keyof HrAnalyticsOverview;
   icon: string;
   drillDown?: HrAnalyticsAttentionKind;
@@ -39,58 +40,58 @@ type AnalyticsCard = {
 
 const cards: AnalyticsCard[] = [
   {
-    label: "Active Employees",
+    labelKey: "Active Employees",
     key: "active_employees",
     icon: "pi-users",
     drillDown: "active_employees",
   },
   {
-    label: "Open Requisitions",
+    labelKey: "Open Requisitions",
     key: "open_requisitions",
     icon: "pi-briefcase",
   },
   {
-    label: "Active Candidates",
+    labelKey: "Active Candidates",
     key: "active_candidates",
     icon: "pi-user-plus",
   },
   {
-    label: "Pending Lifecycle Tasks",
+    labelKey: "Pending Lifecycle Tasks",
     key: "pending_lifecycle_tasks",
     icon: "pi-list-check",
     drillDown: "pending_lifecycle_tasks",
   },
   {
-    label: "Documents Expiring (30 days)",
+    labelKey: "Documents Expiring (30 days)",
     key: "expiring_documents",
     icon: "pi-file-excel",
     drillDown: "expiring_documents",
   },
   {
-    label: "Certifications Expiring (30 days)",
+    labelKey: "Certifications Expiring (30 days)",
     key: "expiring_certifications",
     icon: "pi-verified",
     drillDown: "expiring_certifications",
   },
   {
-    label: "Assigned Assets",
+    labelKey: "Assigned Assets",
     key: "assigned_assets",
     icon: "pi-box",
     drillDown: "assigned_assets",
   },
   {
-    label: "Open Training Sessions",
+    labelKey: "Open Training Sessions",
     key: "open_training_sessions",
     icon: "pi-book",
   },
   {
-    label: "Pending Training",
+    labelKey: "Pending Training",
     key: "pending_training_enrollments",
     icon: "pi-calendar-clock",
     drillDown: "pending_training_enrollments",
   },
   {
-    label: "Open Payroll Batches",
+    labelKey: "Open Payroll Batches",
     key: "current_payroll_batches",
     icon: "pi-calculator",
   },
@@ -102,6 +103,7 @@ const emptyFilters: HrAnalyticsFilters = {
 };
 
 export default function HrAnalyticsPage() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const [filters, setFilters] = useState<HrAnalyticsFilters>(emptyFilters);
   const [selectedCard, setSelectedCard] = useState<AnalyticsCard | null>(null);
@@ -147,17 +149,9 @@ export default function HrAnalyticsPage() {
       anchor.download = "hr-analytics-overview.csv";
       anchor.click();
       URL.revokeObjectURL(url);
-      notify(
-        "success",
-        "Export ready",
-        "HR analytics CSV has been downloaded.",
-      );
+      notify("success", i18nT("static.1shxh3k"), i18nT("static.checu6"));
     } catch {
-      notify(
-        "error",
-        "Export failed",
-        "Unable to export the current analytics view.",
-      );
+      notify("error", i18nT("static.1ebj6tk"), i18nT("static.12qx7ok"));
     } finally {
       setExporting(false);
     }
@@ -170,16 +164,15 @@ export default function HrAnalyticsPage() {
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-                HR Analytics
+                {i18nT("static.at8m4j")}{" "}
               </h1>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Read-only workforce, compliance, lifecycle, learning, and
-                payroll operational indicators.
+                {i18nT("static.1m0ttmz")}{" "}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
-                label="Export CSV"
+                label={i18nT("static.8p4e4z")}
                 icon="pi pi-download"
                 severity="secondary"
                 outlined
@@ -188,7 +181,7 @@ export default function HrAnalyticsPage() {
                 onClick={() => void downloadExport()}
               />
               <Button
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -201,7 +194,7 @@ export default function HrAnalyticsPage() {
 
           <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Department
+              {i18nT("static.1430r53")}{" "}
               <Dropdown
                 value={filters.departmentId}
                 options={departments}
@@ -209,7 +202,7 @@ export default function HrAnalyticsPage() {
                 optionValue="id"
                 filter
                 showClear
-                placeholder="All departments"
+                placeholder={i18nT("static.11cffbv")}
                 className="w-full"
                 onChange={(event) =>
                   setFilters({ ...filters, departmentId: event.value ?? null })
@@ -217,7 +210,7 @@ export default function HrAnalyticsPage() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Branch
+              {i18nT("static.19gzx45")}{" "}
               <Dropdown
                 value={filters.branchId}
                 options={branches}
@@ -225,7 +218,7 @@ export default function HrAnalyticsPage() {
                 optionValue="id"
                 filter
                 showClear
-                placeholder="All branches"
+                placeholder={i18nT("static.1yu8vtc")}
                 className="w-full"
                 onChange={(event) =>
                   setFilters({ ...filters, branchId: event.value ?? null })
@@ -233,7 +226,7 @@ export default function HrAnalyticsPage() {
               />
             </label>
             <Button
-              label="Clear"
+              label={i18nT("static.1aeugy")}
               text
               severity="secondary"
               size="small"
@@ -242,9 +235,7 @@ export default function HrAnalyticsPage() {
             />
           </div>
           <p className="m-0 text-xs leading-5 text-slate-500">
-            Department and branch filters apply to employee-related indicators.
-            Company-wide recruitment, training-session, and payroll counts
-            remain organization-wide.
+            {i18nT("static.5uvg0d")}{" "}
           </p>
 
           {overview.isLoading ? (
@@ -253,8 +244,7 @@ export default function HrAnalyticsPage() {
             </div>
           ) : overview.error || !overviewData ? (
             <p className="m-0 rounded-md bg-red-50 p-4 text-sm text-red-700">
-              Unable to load analytics. Check your permission and API
-              connection.
+              {i18nT("static.vxu3bk")}{" "}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -271,7 +261,9 @@ export default function HrAnalyticsPage() {
                   onClick={() => card.drillDown && setSelectedCard(card)}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <p className="m-0 text-sm text-slate-500">{card.label}</p>
+                    <p className="m-0 text-sm text-slate-500">
+                      {i18nT(card.labelKey)}
+                    </p>
                     <i className={`pi ${card.icon} text-slate-400`} />
                   </div>
                   <p className="m-0 mt-3 text-2xl font-semibold text-slate-800">
@@ -279,7 +271,7 @@ export default function HrAnalyticsPage() {
                   </p>
                   {card.drillDown && (
                     <span className="mt-2 block text-xs font-medium text-blue-600">
-                      View details
+                      {i18nT("static.5dxh2m")}{" "}
                     </span>
                   )}
                 </button>
@@ -290,7 +282,11 @@ export default function HrAnalyticsPage() {
       </Card>
 
       <Dialog
-        header={selectedCard?.label ?? "Analytics details"}
+        header={
+          selectedCard
+            ? i18nT(selectedCard.labelKey)
+            : i18nT("Analytics details")
+        }
         visible={selectedCard !== null}
         modal
         draggable={false}
@@ -300,7 +296,7 @@ export default function HrAnalyticsPage() {
         footer={
           <div className="flex justify-end">
             <Button
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               text
               severity="secondary"
               onClick={() => setSelectedCard(null)}
@@ -314,7 +310,7 @@ export default function HrAnalyticsPage() {
           </div>
         ) : attention.error ? (
           <p className="m-0 rounded-md bg-red-50 p-4 text-sm text-red-700">
-            Unable to load detail rows for this indicator.
+            {i18nT("static.1vu93fp")}{" "}
           </p>
         ) : (
           <DataTable
@@ -325,18 +321,18 @@ export default function HrAnalyticsPage() {
             stripedRows
             rowHover
             size="small"
-            emptyMessage="No record requires attention."
+            emptyMessage={i18nT("static.ex03ub")}
           >
-            <Column field="primary_label" header="Item" />
-            <Column field="secondary_label" header="Details" />
+            <Column field="primary_label" header={i18nT("static.8pkkxy")} />
+            <Column field="secondary_label" header={i18nT("static.43f6md")} />
             <Column
-              header="Due Date"
+              header={i18nT("static.vtfgln")}
               body={(row: HrAnalyticsAttentionItem) =>
                 formatDisplayDate(row.due_date)
               }
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: HrAnalyticsAttentionItem) => (
                 <Tag
                   value={row.status}

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import React, { JSX, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -43,33 +44,33 @@ type TabKey = "overview" | "personal" | "career" | "leave";
 
 const tabs: Array<{
   key: TabKey;
-  label: string;
+  labelKey: string;
   icon: string;
-  description: string;
+  descriptionKey: string;
 }> = [
   {
     key: "overview",
-    label: "Overview",
+    labelKey: "Overview",
     icon: "pi pi-id-card",
-    description: "Profile summary, personal data, and employment snapshot.",
+    descriptionKey: "Profile summary, personal data, and employment snapshot.",
   },
   {
     key: "personal",
-    label: "Personal",
+    labelKey: "Personal",
     icon: "pi pi-user",
-    description: "Identity, address, family, and emergency contact.",
+    descriptionKey: "Identity, address, family, and emergency contact.",
   },
   {
     key: "career",
-    label: "Career",
+    labelKey: "Career",
     icon: "pi pi-briefcase",
-    description: "Employment, education, training, and work experience.",
+    descriptionKey: "Employment, education, training, and work experience.",
   },
   {
     key: "leave",
-    label: "Leave Balance",
+    labelKey: "Leave Balance",
     icon: "pi pi-calendar",
-    description: "Available leave balance by period and leave type.",
+    descriptionKey: "Available leave balance by period and leave type.",
   },
 ];
 
@@ -95,19 +96,25 @@ const formatDateTime = (value?: string | null) => {
   return formatDisplayDateTime(value);
 };
 
-const boolText = (value?: boolean | null) => {
-  if (value === true) return "Yes";
-  if (value === false) return "No";
+const boolText = (
+  value: boolean | null | undefined,
+  translate: (key: string) => string,
+) => {
+  if (value === true) return translate("Yes");
+  if (value === false) return translate("No");
   return "-";
 };
 
-const activeTag = (value?: boolean | null) => {
+const activeTag = (
+  value: boolean | null | undefined,
+  translate: (key: string) => string,
+) => {
   if (value === true) {
-    return <Tag value="Active" severity="success" />;
+    return <Tag value={translate("static.8qzyhb")} severity="success" />;
   }
 
   if (value === false) {
-    return <Tag value="Inactive" severity="secondary" />;
+    return <Tag value={translate("static.13zf5vc")} severity="secondary" />;
   }
 
   return <span className="text-slate-400">-</span>;
@@ -163,14 +170,16 @@ const SectionCard = ({
 };
 
 const TableEmptyMessage = ({ label }: { label: string }) => {
+  const { t: i18nT } = useI18n();
   return (
     <div className="py-6 text-center text-sm text-slate-500">
-      No {label} found.
+      {i18nT("static.r5wqai")} {label} {i18nT("static.1clvyxv")}{" "}
     </div>
   );
 };
 
 const MyProfilePage = () => {
+  const { t: i18nT, tText } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
 
   const {
@@ -266,8 +275,7 @@ const MyProfilePage = () => {
 
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        Failed to load My Profile data. Please refresh the page or contact
-        administrator.
+        {i18nT("static.l397t7")}{" "}
       </div>
     );
   };
@@ -293,7 +301,9 @@ const MyProfilePage = () => {
           </div>
 
           <div className="min-w-0 flex-1 text-center md:text-left">
-            <div className="text-sm font-medium text-slate-500">My Profile</div>
+            <div className="text-sm font-medium text-slate-500">
+              {i18nT("static.1g5mem2")}
+            </div>
             <h1
               className="mt-1 text-2xl font-semibold leading-snug text-slate-900"
               style={{ overflowWrap: "anywhere" }}
@@ -304,7 +314,10 @@ const MyProfilePage = () => {
 
             <div className="mt-2 flex flex-wrap justify-center gap-2 md:justify-start">
               {employmentData?.code && (
-                <Tag value={`Code: ${employmentData.code}`} severity="info" />
+                <Tag
+                  value={i18nT("static.1blnt6m", { p0: employmentData.code })}
+                  severity="info"
+                />
               )}
               {employmentData?.position_name && (
                 <Tag value={employmentData.position_name} severity="success" />
@@ -317,14 +330,18 @@ const MyProfilePage = () => {
 
           <div className="grid grid-cols-2 gap-3 md:w-[22rem]">
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
-              <div className="text-xs text-blue-700">Leave Balance</div>
+              <div className="text-xs text-blue-700">
+                {i18nT("static.1es4nt0")}
+              </div>
               <div className="mt-1 text-xl font-semibold text-blue-900">
                 {totalLeaveClosingBalance}
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <div className="text-xs text-slate-500">Join Date</div>
+              <div className="text-xs text-slate-500">
+                {i18nT("static.136fqhb")}
+              </div>
               <div className="mt-1 text-sm font-semibold text-slate-900">
                 {formatDate(employmentData?.join_date)}
               </div>
@@ -340,38 +357,50 @@ const MyProfilePage = () => {
 
     return (
       <SectionCard
-        title="Personal Data"
-        description="Basic employee personal information."
+        title={i18nT("static.16u7g4f")}
+        description={i18nT("static.1wknqwv")}
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <InfoItem label="First Name" value={data?.first_name} />
-          <InfoItem label="Middle Name" value={data?.middle_name} />
-          <InfoItem label="Last Name" value={data?.last_name} />
-          <InfoItem label="Preferred Name" value={data?.preferred_name} />
-          <InfoItem label="Birth Place" value={data?.birth_place} />
-          <InfoItem label="Date of Birth" value={formatDate(data?.dob)} />
+          <InfoItem label={i18nT("static.6yjm7s")} value={data?.first_name} />
+          <InfoItem label={i18nT("static.1i6ktxn")} value={data?.middle_name} />
+          <InfoItem label={i18nT("static.16p3u1s")} value={data?.last_name} />
+          <InfoItem
+            label={i18nT("static.f7e5k1")}
+            value={data?.preferred_name}
+          />
+          <InfoItem label={i18nT("static.vqo7c5")} value={data?.birth_place} />
+          <InfoItem
+            label={i18nT("static.1ierxyf")}
+            value={formatDate(data?.dob)}
+          />
 
           <InfoItem
-            label="Gender"
+            label={i18nT("static.1adu274")}
             value={data?.gender_name ?? data?.gender_id}
           />
 
           <InfoItem
-            label="Religion"
+            label={i18nT("static.1y626di")}
             value={data?.religion_name ?? data?.religion_id}
           />
 
           <InfoItem
-            label="Marital Status"
+            label={i18nT("static.s7ogwz")}
             value={data?.marital_status_name ?? data?.marital_status_id}
           />
 
-          <InfoItem label="Phone Number" value={data?.phone_number} />
-          <InfoItem label="Personal Email" value={data?.personal_email} />
-          <InfoItem label="Work Email" value={data?.work_email} />
+          <InfoItem
+            label={i18nT("static.1v8ev2w")}
+            value={data?.phone_number}
+          />
+          <InfoItem
+            label={i18nT("static.1kdz0sl")}
+            value={data?.personal_email}
+          />
+          <InfoItem label={i18nT("static.3ewaq0")} value={data?.work_email} />
 
           <InfoItem
-            label="Nationality"
+            label={i18nT("static.jvv0p5")}
             value={
               data?.nationality_country_name ?? data?.nationality_country_id
             }
@@ -386,49 +415,55 @@ const MyProfilePage = () => {
 
     return (
       <SectionCard
-        title="Employment Data"
-        description="Current employment assignment and organization data."
+        title={i18nT("static.mirjw9")}
+        description={i18nT("static.18lfm5x")}
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <InfoItem label="Employee Code" value={data?.code} />
-          <InfoItem label="Join Date" value={formatDate(data?.join_date)} />
-          <InfoItem label="End Date" value={formatDate(data?.end_date)} />
+          <InfoItem label={i18nT("static.ncb762")} value={data?.code} />
           <InfoItem
-            label="Probation End Date"
+            label={i18nT("static.136fqhb")}
+            value={formatDate(data?.join_date)}
+          />
+          <InfoItem
+            label={i18nT("static.1j4m31m")}
+            value={formatDate(data?.end_date)}
+          />
+          <InfoItem
+            label={i18nT("static.1ignfpe")}
             value={formatDate(data?.probation_end_date)}
           />
           <InfoItem
-            label="Confirmation Date"
+            label={i18nT("static.404n94")}
             value={formatDate(data?.confirmation_date)}
           />
 
           <InfoItem
-            label="Agency"
+            label={i18nT("static.1v3zejm")}
             value={data?.agency_name ?? data?.agency_id}
           />
 
           <InfoItem
-            label="Branch"
+            label={i18nT("static.19gzx45")}
             value={data?.branch_name ?? data?.branch_id}
           />
 
           <InfoItem
-            label="Department"
+            label={i18nT("static.1430r53")}
             value={data?.department_name ?? data?.department_id}
           />
 
           <InfoItem
-            label="Position"
+            label={i18nT("static.1quewx6")}
             value={data?.position_name ?? data?.position_id}
           />
 
           <InfoItem
-            label="Employment Status"
+            label={i18nT("static.p2ngjv")}
             value={data?.employment_status_name ?? data?.employment_status_id}
           />
 
           <InfoItem
-            label="Supervisor"
+            label={i18nT("static.q02xcn")}
             value={
               data?.supervisor_employee_name ?? data?.supervisor_employee_id
             }
@@ -441,18 +476,18 @@ const MyProfilePage = () => {
   const renderIdentityAddress = () => {
     return (
       <SectionCard
-        title="Identity & Address"
-        description="Identity documents and registered address information."
+        title={i18nT("static.s7msxp")}
+        description={i18nT("static.6ryhkc")}
       >
         <DataTable
           value={identityRows}
           dataKey="id"
           stripedRows
           scrollable
-          emptyMessage={<TableEmptyMessage label="identity data" />}
+          emptyMessage={<TableEmptyMessage label={i18nT("static.oa1cep")} />}
         >
           <Column
-            header="Identity Type"
+            header={i18nT("static.4mj4o9")}
             body={(row: EmployeeIdentityRow) =>
               row.identity_type_name || row.identity_type_id
             }
@@ -460,32 +495,34 @@ const MyProfilePage = () => {
           />
           <Column
             field="number"
-            header="Number"
+            header={i18nT("static.r616tc")}
             style={{ minWidth: "12rem" }}
           />
           <Column
-            header="Expire Date"
+            header={i18nT("static.u2ldwy")}
             body={(row: EmployeeIdentityRow) => formatDate(row.expire_date)}
             style={{ minWidth: "10rem" }}
           />
           <Column
             field="citizen_address"
-            header="Citizen Address"
+            header={i18nT("static.1r1dn73")}
             style={{ minWidth: "16rem" }}
           />
           <Column
             field="residential_address"
-            header="Residential Address"
+            header={i18nT("static.12qzyx9")}
             style={{ minWidth: "16rem" }}
           />
           <Column
-            header="Permanent"
-            body={(row: EmployeeIdentityRow) => boolText(row.is_permanent)}
+            header={i18nT("static.2cd61x")}
+            body={(row: EmployeeIdentityRow) =>
+              boolText(row.is_permanent, i18nT)
+            }
             style={{ minWidth: "9rem" }}
           />
           <Column
-            header="Status"
-            body={(row: EmployeeIdentityRow) => activeTag(row.is_active)}
+            header={i18nT("static.3pd73")}
+            body={(row: EmployeeIdentityRow) => activeTag(row.is_active, i18nT)}
             style={{ minWidth: "9rem" }}
           />
         </DataTable>
@@ -496,55 +533,63 @@ const MyProfilePage = () => {
   const renderFamily = () => {
     return (
       <SectionCard
-        title="Family"
-        description="Family member data registered in employee profile."
+        title={i18nT("static.1ii54cp")}
+        description={i18nT("static.nayytp")}
       >
         <DataTable
           value={familyRows}
           dataKey="id"
           stripedRows
           scrollable
-          emptyMessage={<TableEmptyMessage label="family data" />}
+          emptyMessage={<TableEmptyMessage label={i18nT("static.oiroz")} />}
         >
-          <Column field="name" header="Name" style={{ minWidth: "12rem" }} />
           <Column
-            header="Relationship"
+            field="name"
+            header={i18nT("static.4el6o6")}
+            style={{ minWidth: "12rem" }}
+          />
+          <Column
+            header={i18nT("static.7fp6jf")}
             body={(row: EmployeeFamilyRow) =>
               row.relationship_name || row.relationship_id
             }
             style={{ minWidth: "12rem" }}
           />
           <Column
-            header="Date of Birth"
+            header={i18nT("static.1ierxyf")}
             body={(row: EmployeeFamilyRow) => formatDate(row.dob)}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="Gender"
+            header={i18nT("static.1adu274")}
             body={(row: EmployeeFamilyRow) => row.gender_name || row.gender_id}
             style={{ minWidth: "9rem" }}
           />
           <Column
-            header="Marital"
+            header={i18nT("static.llzjaz")}
             body={(row: EmployeeFamilyRow) =>
               row.marital_name || row.marital_status
             }
             style={{ minWidth: "10rem" }}
           />
-          <Column field="job" header="Job" style={{ minWidth: "10rem" }} />
+          <Column
+            field="job"
+            header={i18nT("static.ijqa2k")}
+            style={{ minWidth: "10rem" }}
+          />
           <Column
             field="phone1"
-            header="Phone 1"
+            header={i18nT("static.17pijxg")}
             style={{ minWidth: "10rem" }}
           />
           <Column
             field="phone2"
-            header="Phone 2"
+            header={i18nT("static.18jhd0d")}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="Status"
-            body={(row: EmployeeFamilyRow) => activeTag(row.is_active)}
+            header={i18nT("static.3pd73")}
+            body={(row: EmployeeFamilyRow) => activeTag(row.is_active, i18nT)}
             style={{ minWidth: "9rem" }}
           />
         </DataTable>
@@ -555,29 +600,37 @@ const MyProfilePage = () => {
   const renderEmergencyContact = () => {
     return (
       <SectionCard
-        title="Emergency Contact"
-        description="Emergency contact information."
+        title={i18nT("static.682t3a")}
+        description={i18nT("static.fi8q8u")}
       >
         <DataTable
           value={emergencyRows}
           dataKey="id"
           stripedRows
           scrollable
-          emptyMessage={<TableEmptyMessage label="emergency contact data" />}
+          emptyMessage={<TableEmptyMessage label={i18nT("static.1an64zm")} />}
         >
-          <Column field="name" header="Name" style={{ minWidth: "12rem" }} />
           <Column
-            header="Relationship"
+            field="name"
+            header={i18nT("static.4el6o6")}
+            style={{ minWidth: "12rem" }}
+          />
+          <Column
+            header={i18nT("static.7fp6jf")}
             body={(row: EmployeeEmergencyContactRow) =>
               row.relationship_name || row.relationship_id
             }
             style={{ minWidth: "12rem" }}
           />
-          <Column field="phone" header="Phone" style={{ minWidth: "10rem" }} />
           <Column
-            header="Status"
+            field="phone"
+            header={i18nT("static.kb2lhr")}
+            style={{ minWidth: "10rem" }}
+          />
+          <Column
+            header={i18nT("static.3pd73")}
             body={(row: EmployeeEmergencyContactRow) =>
-              activeTag(row.is_active)
+              activeTag(row.is_active, i18nT)
             }
             style={{ minWidth: "9rem" }}
           />
@@ -591,51 +644,71 @@ const MyProfilePage = () => {
     description: string,
     rows: EmployeeEducationRow[],
   ) => {
+    const localizedTitle = tText(title);
+
     return (
-      <SectionCard title={title} description={description}>
+      <SectionCard title={localizedTitle} description={tText(description)}>
         <DataTable
           value={rows}
           dataKey="id"
           stripedRows
           scrollable
-          emptyMessage={<TableEmptyMessage label={title.toLowerCase()} />}
+          emptyMessage={
+            <TableEmptyMessage label={localizedTitle.toLowerCase()} />
+          }
         >
-          <Column field="name" header="Name" style={{ minWidth: "12rem" }} />
+          <Column
+            field="name"
+            header={i18nT("static.4el6o6")}
+            style={{ minWidth: "12rem" }}
+          />
           <Column
             field="institution_name"
-            header="Institution"
+            header={i18nT("static.1a523l1")}
             style={{ minWidth: "14rem" }}
           />
-          <Column field="major" header="Major" style={{ minWidth: "12rem" }} />
+          <Column
+            field="major"
+            header={i18nT("static.6zybgi")}
+            style={{ minWidth: "12rem" }}
+          />
           <Column
             field="degree"
-            header="Degree"
+            header={i18nT("static.118dsp5")}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="Start Date"
+            header={i18nT("static.7bl5hd")}
             body={(row: EmployeeEducationRow) => formatDate(row.start_date)}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="End Date"
+            header={i18nT("static.1j4m31m")}
             body={(row: EmployeeEducationRow) => formatDate(row.end_date)}
             style={{ minWidth: "10rem" }}
           />
-          <Column field="score" header="Score" style={{ minWidth: "8rem" }} />
+          <Column
+            field="score"
+            header={i18nT("static.x9tsfp")}
+            style={{ minWidth: "8rem" }}
+          />
           <Column
             field="held_by"
-            header="Held By"
+            header={i18nT("static.1h4t9b7")}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="Certificate"
-            body={(row: EmployeeEducationRow) => boolText(row.is_certificate)}
+            header={i18nT("static.l17574")}
+            body={(row: EmployeeEducationRow) =>
+              boolText(row.is_certificate, i18nT)
+            }
             style={{ minWidth: "9rem" }}
           />
           <Column
-            header="Status"
-            body={(row: EmployeeEducationRow) => activeTag(row.is_active)}
+            header={i18nT("static.3pd73")}
+            body={(row: EmployeeEducationRow) =>
+              activeTag(row.is_active, i18nT)
+            }
             style={{ minWidth: "9rem" }}
           />
         </DataTable>
@@ -646,41 +719,43 @@ const MyProfilePage = () => {
   const renderWorkExperience = () => {
     return (
       <SectionCard
-        title="Work Experience"
-        description="Previous company and professional experience records."
+        title={i18nT("static.3ytfto")}
+        description={i18nT("static.26jgwh")}
       >
         <DataTable
           value={workExperienceRows}
           dataKey="id"
           stripedRows
           scrollable
-          emptyMessage={<TableEmptyMessage label="work experience data" />}
+          emptyMessage={<TableEmptyMessage label={i18nT("static.8ylt0c")} />}
         >
           <Column
             field="company"
-            header="Company"
+            header={i18nT("static.1hra0d8")}
             style={{ minWidth: "14rem" }}
           />
           <Column
             field="position"
-            header="Position"
+            header={i18nT("static.1quewx6")}
             style={{ minWidth: "14rem" }}
           />
           <Column
-            header="Start Date"
+            header={i18nT("static.7bl5hd")}
             body={(row: EmployeeWorkExperienceRow) =>
               formatDate(row.start_date)
             }
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="End Date"
+            header={i18nT("static.1j4m31m")}
             body={(row: EmployeeWorkExperienceRow) => formatDate(row.end_date)}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="Status"
-            body={(row: EmployeeWorkExperienceRow) => activeTag(row.is_active)}
+            header={i18nT("static.3pd73")}
+            body={(row: EmployeeWorkExperienceRow) =>
+              activeTag(row.is_active, i18nT)
+            }
             style={{ minWidth: "9rem" }}
           />
         </DataTable>
@@ -691,61 +766,65 @@ const MyProfilePage = () => {
   const renderLeaveBalance = () => {
     return (
       <SectionCard
-        title="Leave Balance"
-        description="Leave balance by leave type and active period."
+        title={i18nT("static.1es4nt0")}
+        description={i18nT("static.hbt392")}
       >
         <DataTable
           value={leaveBalanceRows}
           dataKey="id"
           stripedRows
           scrollable
-          emptyMessage={<TableEmptyMessage label="leave balance data" />}
+          emptyMessage={<TableEmptyMessage label={i18nT("static.15wjxh0")} />}
         >
           <Column
-            header="Leave Type"
+            header={i18nT("static.se3juw")}
             body={(row: EmployeeLeaveBalance) =>
               row.leave_type_name || row.leave_type_id
             }
             style={{ minWidth: "14rem" }}
           />
           <Column
-            header="Period Start"
+            header={i18nT("static.rctpc")}
             body={(row: EmployeeLeaveBalance) => formatDate(row.period_start)}
             style={{ minWidth: "10rem" }}
           />
           <Column
-            header="Period End"
+            header={i18nT("static.1aquwpt")}
             body={(row: EmployeeLeaveBalance) => formatDate(row.period_end)}
             style={{ minWidth: "10rem" }}
           />
           <Column
             field="opening_balance"
-            header="Opening"
+            header={i18nT("static.dfet3")}
             style={{ minWidth: "8rem" }}
           />
           <Column
             field="entitlement"
-            header="Entitlement"
+            header={i18nT("static.ija3a8")}
             style={{ minWidth: "8rem" }}
           />
-          <Column field="taken" header="Taken" style={{ minWidth: "8rem" }} />
+          <Column
+            field="taken"
+            header={i18nT("static.1neeuvc")}
+            style={{ minWidth: "8rem" }}
+          />
           <Column
             field="adjustment"
-            header="Adjustment"
+            header={i18nT("static.1ncp8v2")}
             style={{ minWidth: "8rem" }}
           />
           <Column
             field="expired_balance"
-            header="Expired"
+            header={i18nT("static.1gcie36")}
             style={{ minWidth: "8rem" }}
           />
           <Column
             field="closing_balance"
-            header="Closing"
+            header={i18nT("static.sd6odg")}
             style={{ minWidth: "8rem" }}
           />
           <Column
-            header="Updated At"
+            header={i18nT("static.1wy0gb9")}
             body={(row: EmployeeLeaveBalance) => formatDateTime(row.updated_at)}
             style={{ minWidth: "12rem" }}
           />
@@ -812,11 +891,10 @@ const MyProfilePage = () => {
         <div className="flex flex-col gap-5">
           <div>
             <h2 className="text-xl font-semibold text-slate-900">
-              Employee Data
+              {i18nT("static.1dze6zf")}{" "}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              This page is read-only and shows your employee profile based on
-              the logged-in account.
+              {i18nT("static.hqxwq6")}{" "}
             </p>
           </div>
 
@@ -839,7 +917,9 @@ const MyProfilePage = () => {
                     >
                       <div className="flex items-center gap-3">
                         <span className={`${tab.icon} text-sm`} />
-                        <span className="font-semibold">{tab.label}</span>
+                        <span className="font-semibold">
+                          {tText(tab.labelKey)}
+                        </span>
                       </div>
                     </button>
                   );
@@ -853,10 +933,10 @@ const MyProfilePage = () => {
                   />
                   <div>
                     <p className="text-sm font-semibold text-slate-900">
-                      {activeTabMeta.label}
+                      {tText(activeTabMeta.labelKey)}
                     </p>
                     <p className="mt-1 text-sm text-slate-500">
-                      {activeTabMeta.description}
+                      {tText(activeTabMeta.descriptionKey)}
                     </p>
                   </div>
                 </div>

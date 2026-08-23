@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo } from "react";
 import useSWR from "swr";
@@ -55,13 +56,38 @@ const formatDuration = (seconds?: number | null) => {
   return `${minutes}m`;
 };
 
-const getGreeting = (name: string) => {
+const getGreeting = (
+  name: string,
+  translate: (
+    source: string,
+    params?: Record<string, string | number | null | undefined>,
+  ) => string,
+) => {
   const hour = new Date().getHours();
 
-  if (hour < 12) return `Good morning, ${name}`;
-  if (hour < 18) return `Good afternoon, ${name}`;
-  if (hour < 21) return `Good evening, ${name}`;
-  return `Good night, ${name}`;
+  if (hour < 12) return translate("Good morning, {name}", { name });
+  if (hour < 18) return translate("Good afternoon, {name}", { name });
+  if (hour < 21) return translate("Good evening, {name}", { name });
+  return translate("Good night, {name}", { name });
+};
+
+const formatStatusLabel = (
+  status: string,
+  translate: (source: string) => string,
+) => {
+  const normalized = status.trim().toUpperCase();
+  const labels: Record<string, string> = {
+    PRESENT: "Present",
+    APPROVED: "Approved",
+    PENDING: "Pending",
+    INCOMPLETE: "Incomplete",
+    NOT_PROCESSED: "Not Processed",
+    ABSENT: "Absent",
+    REJECTED: "Rejected",
+    LEAVE: "Leave",
+  };
+
+  return translate(labels[normalized] ?? normalized.replaceAll("_", " "));
 };
 
 const getStatusSeverity = (status: string) => {
@@ -91,6 +117,7 @@ const getStatusSeverity = (status: string) => {
 };
 
 const EmployeeDashboardPageComponent = () => {
+  const { t: i18nT, tText } = useI18n();
   const router = useRouter();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -104,30 +131,30 @@ const EmployeeDashboardPageComponent = () => {
   const quickAccessItems: QuickAccessItem[] = useMemo(() => {
     return [
       {
-        label: "Web Attendance",
+        label: i18nT("static.1sb2mmk"),
         icon: "pi-map-marker",
         href: "/my-attendance/mobile-attendance",
         permission: "mobile-attendance.create",
       },
       {
-        label: "Attendance History",
+        label: i18nT("static.16ukhgu"),
         icon: "pi-history",
         href: "/my-attendance/attendance-history",
       },
       {
-        label: "Request Leave",
+        label: i18nT("static.y4pt85"),
         icon: "pi-calendar",
         href: "/request-leave",
         permission: "request-leave.read",
       },
       {
-        label: "Overtime Request",
+        label: i18nT("static.x7kedz"),
         icon: "pi-clock",
         href: "/overtime/request",
         permission: "overtime.read",
       },
     ];
-  }, []);
+  }, [i18nT]);
 
   const permittedQuickAccessItems = useMemo(
     () =>
@@ -145,7 +172,7 @@ const EmployeeDashboardPageComponent = () => {
     return [
       ...permittedQuickAccessItems,
       {
-        label: "Approval Inbox",
+        label: i18nT("static.utf80q"),
         icon: "pi-inbox",
         href: "/approval",
         permission: "approval.read",
@@ -153,7 +180,7 @@ const EmployeeDashboardPageComponent = () => {
     ].filter(
       (item) => !item.permission || permissions.includes(item.permission),
     );
-  }, [data, permittedQuickAccessItems, permissions]);
+  }, [data, i18nT, permittedQuickAccessItems, permissions]);
 
   if (isLoading) {
     return <LoadingDataTable />;
@@ -188,18 +215,17 @@ const EmployeeDashboardPageComponent = () => {
               </div>
 
               <h2 className="text-3xl font-bold tracking-tight">
-                {getGreeting(data.profile.name || "Employee")}!
+                {getGreeting(data.profile.name || tText("Employee"), tText)}!
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">
-                Here is your attendance, leave, overtime, and approval summary
-                for today.
+                {i18nT("static.1wgmz3r")}{" "}
               </p>
             </div>
 
             <div>
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">
-                Quick Access
+                {i18nT("static.bj0pda")}{" "}
               </p>
 
               <div className="flex flex-wrap gap-3">
@@ -232,15 +258,15 @@ const EmployeeDashboardPageComponent = () => {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h3 className="text-2xl font-bold text-slate-800">
-                    Today Attendance
+                    {i18nT("static.459bih")}{" "}
                   </h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Your current attendance result for today.
+                    {i18nT("static.15gfs6t")}{" "}
                   </p>
                 </div>
 
                 <Tag
-                  value={attendance.status.replaceAll("_", " ")}
+                  value={formatStatusLabel(attendance.status, tText)}
                   severity={getStatusSeverity(attendance.status)}
                   className="w-fit"
                 />
@@ -248,28 +274,36 @@ const EmployeeDashboardPageComponent = () => {
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">Check In</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.2m3vb2")}
+                  </p>
                   <p className="mt-1 text-xl font-bold text-slate-800">
                     {formatTime(attendance.check_in_time)}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">Check Out</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.efitfj")}
+                  </p>
                   <p className="mt-1 text-xl font-bold text-slate-800">
                     {formatTime(attendance.check_out_time)}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">Late</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.u9ge9")}
+                  </p>
                   <p className="mt-1 text-xl font-bold text-amber-600">
                     {formatDuration(attendance.late_seconds)}
                   </p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">Work Time</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.q52jcp")}
+                  </p>
                   <p className="mt-1 text-xl font-bold text-blue-600">
                     {formatDuration(attendance.work_seconds)}
                   </p>
@@ -281,8 +315,7 @@ const EmployeeDashboardPageComponent = () => {
                   <div className="flex items-start gap-3">
                     <i className="pi pi-info-circle mt-0.5 text-amber-600" />
                     <p className="text-sm leading-5 text-amber-700">
-                      Your attendance summary for today has not been processed
-                      yet.
+                      {i18nT("static.ac53uc")}{" "}
                     </p>
                   </div>
                 </div>
@@ -296,21 +329,23 @@ const EmployeeDashboardPageComponent = () => {
             <div className="flex flex-col gap-5">
               <div>
                 <h3 className="text-2xl font-bold text-slate-800">
-                  Today Shift
+                  {i18nT("static.11jeroi")}{" "}
                 </h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Your schedule assignment for today.
+                  {i18nT("static.2j8evw")}{" "}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm text-slate-500">Shift</p>
+                    <p className="text-sm text-slate-500">
+                      {i18nT("static.1xakelj")}
+                    </p>
                     <p className="mt-1 text-2xl font-bold text-slate-800">
                       {shift.has_shift
-                        ? shift.shift_name || "Shift"
-                        : "No Shift"}
+                        ? shift.shift_name || i18nT("static.1xakelj")
+                        : i18nT("static.1svu7v2")}
                     </p>
                     <p className="mt-2 text-sm text-slate-500">
                       {formatDate(shift.shift_date)}
@@ -323,15 +358,17 @@ const EmployeeDashboardPageComponent = () => {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {shift.is_day_off && <Tag value="Day Off" severity="info" />}
+                  {shift.is_day_off && (
+                    <Tag value={i18nT("static.776hx0")} severity="info" />
+                  )}
                   {shift.is_holiday && (
-                    <Tag value="Holiday" severity="warning" />
+                    <Tag value={i18nT("static.ih7a2j")} severity="warning" />
                   )}
                   {shift.is_locked && (
-                    <Tag value="Locked" severity="secondary" />
+                    <Tag value={i18nT("static.hvffeb")} severity="secondary" />
                   )}
                   {!shift.has_shift && (
-                    <Tag value="Not Assigned" severity="danger" />
+                    <Tag value={i18nT("static.1054npi")} severity="danger" />
                   )}
                 </div>
               </div>
@@ -345,30 +382,36 @@ const EmployeeDashboardPageComponent = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="text-xl font-bold text-slate-800">
-                Leave Request
+                {i18nT("static.a3cyqp")}{" "}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Your leave request summary.
+                {i18nT("static.eenjze")}{" "}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="rounded-2xl bg-amber-50 p-3">
-                <p className="text-xs text-amber-700">Pending</p>
+                <p className="text-xs text-amber-700">
+                  {i18nT("static.e8nfto")}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-amber-700">
                   {data.leave_summary.pending}
                 </p>
               </div>
 
               <div className="rounded-2xl bg-emerald-50 p-3">
-                <p className="text-xs text-emerald-700">Approved</p>
+                <p className="text-xs text-emerald-700">
+                  {i18nT("static.1j3qly2")}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-emerald-700">
                   {data.leave_summary.approved_this_month}
                 </p>
               </div>
 
               <div className="rounded-2xl bg-red-50 p-3">
-                <p className="text-xs text-red-700">Rejected</p>
+                <p className="text-xs text-red-700">
+                  {i18nT("static.1uofzaf")}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-red-700">
                   {data.leave_summary.rejected_this_month}
                 </p>
@@ -376,7 +419,7 @@ const EmployeeDashboardPageComponent = () => {
             </div>
 
             <Button
-              label="Open Request Leave"
+              label={i18nT("static.11w0geb")}
               icon="pi pi-arrow-right"
               text
               className="w-fit px-0"
@@ -389,30 +432,36 @@ const EmployeeDashboardPageComponent = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="text-xl font-bold text-slate-800">
-                Overtime Request
+                {i18nT("static.x7kedz")}{" "}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Your overtime request summary.
+                {i18nT("static.1digu8y")}{" "}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="rounded-2xl bg-amber-50 p-3">
-                <p className="text-xs text-amber-700">Pending</p>
+                <p className="text-xs text-amber-700">
+                  {i18nT("static.e8nfto")}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-amber-700">
                   {data.overtime_summary.pending}
                 </p>
               </div>
 
               <div className="rounded-2xl bg-emerald-50 p-3">
-                <p className="text-xs text-emerald-700">Approved</p>
+                <p className="text-xs text-emerald-700">
+                  {i18nT("static.1j3qly2")}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-emerald-700">
                   {data.overtime_summary.approved_this_month}
                 </p>
               </div>
 
               <div className="rounded-2xl bg-red-50 p-3">
-                <p className="text-xs text-red-700">Rejected</p>
+                <p className="text-xs text-red-700">
+                  {i18nT("static.1uofzaf")}
+                </p>
                 <p className="mt-1 text-2xl font-bold text-red-700">
                   {data.overtime_summary.rejected_this_month}
                 </p>
@@ -420,7 +469,7 @@ const EmployeeDashboardPageComponent = () => {
             </div>
 
             <Button
-              label="Open Overtime Request"
+              label={i18nT("static.v86pgx")}
               icon="pi pi-arrow-right"
               text
               className="w-fit px-0"
@@ -433,26 +482,32 @@ const EmployeeDashboardPageComponent = () => {
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="text-xl font-bold text-slate-800">
-                Approval Inbox
+                {i18nT("static.utf80q")}{" "}
               </h3>
               <p className="mt-1 text-sm text-slate-500">
-                Only appears useful when you are assigned as approver.
+                {i18nT("static.tqgfxf")}{" "}
               </p>
             </div>
 
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-              <p className="text-sm text-slate-500">Pending Approval</p>
+              <p className="text-sm text-slate-500">
+                {i18nT("static.1a9z3n3")}
+              </p>
               <p className="mt-1 text-3xl font-bold text-slate-800">
                 {data.approval_summary.pending_approval_count}
               </p>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Tag
-                  value={`Leave ${data.approval_summary.pending_leave_count}`}
+                  value={i18nT("static.impan0", {
+                    p0: data.approval_summary.pending_leave_count,
+                  })}
                   severity="info"
                 />
                 <Tag
-                  value={`Overtime ${data.approval_summary.pending_overtime_count}`}
+                  value={i18nT("static.1dao1nm", {
+                    p0: data.approval_summary.pending_overtime_count,
+                  })}
                   severity="warning"
                 />
               </div>
@@ -460,7 +515,7 @@ const EmployeeDashboardPageComponent = () => {
 
             {data.approval_summary.is_approver && (
               <Button
-                label="Open Approval Inbox"
+                label={i18nT("static.4hoauo")}
                 icon="pi pi-arrow-right"
                 text
                 className="w-fit px-0"
@@ -474,16 +529,18 @@ const EmployeeDashboardPageComponent = () => {
       <Card className="shadow-sm">
         <div className="flex flex-col gap-4">
           <div>
-            <h3 className="text-xl font-bold text-slate-800">Leave Balance</h3>
+            <h3 className="text-xl font-bold text-slate-800">
+              {i18nT("static.1es4nt0")}
+            </h3>
             <p className="mt-1 text-sm text-slate-500">
-              Your latest active leave balance periods.
+              {i18nT("static.1t0cl6i")}{" "}
             </p>
           </div>
 
           {data.leave_balances.length === 0 ? (
             <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-6 text-center">
               <p className="text-sm text-slate-500">
-                No leave balance data found.
+                {i18nT("static.nsbk43")}{" "}
               </p>
             </div>
           ) : (
@@ -505,7 +562,9 @@ const EmployeeDashboardPageComponent = () => {
                     </div>
 
                     <Tag
-                      value={`${item.closing_balance} left`}
+                      value={i18nT("static.ahc2x2", {
+                        p0: item.closing_balance,
+                      })}
                       severity={
                         item.closing_balance > 0 ? "success" : "secondary"
                       }
@@ -514,17 +573,23 @@ const EmployeeDashboardPageComponent = () => {
 
                   <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <p className="text-xs text-slate-500">Entitlement</p>
+                      <p className="text-xs text-slate-500">
+                        {i18nT("static.ija3a8")}
+                      </p>
                       <p className="font-bold text-slate-800">
                         {item.entitlement}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">Taken</p>
+                      <p className="text-xs text-slate-500">
+                        {i18nT("static.1neeuvc")}
+                      </p>
                       <p className="font-bold text-slate-800">{item.taken}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">Remaining</p>
+                      <p className="text-xs text-slate-500">
+                        {i18nT("static.gvvrj7")}
+                      </p>
                       <p className="font-bold text-emerald-600">
                         {item.closing_balance}
                       </p>

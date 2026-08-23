@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -62,6 +63,7 @@ const EMPTY_STATE: State = {
 const getBody = () => document.body;
 
 const StateTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -124,7 +126,7 @@ const StateTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -136,7 +138,7 @@ const StateTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -149,7 +151,7 @@ const StateTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -161,8 +163,8 @@ const StateTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -311,12 +313,10 @@ const StateTableData = () => {
 
   const onClickDelete = (data: State) => {
     requestActionConfirmation({
-      header: "Delete Province / State",
+      header: i18nT("static.coky3e"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this province / state?
-          </span>
+          <span className="text-slate-600">{i18nT("static.fvjfzb")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -329,7 +329,7 @@ const StateTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -338,7 +338,7 @@ const StateTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -350,12 +350,10 @@ const StateTableData = () => {
 
   const onClickRestore = (data: State) => {
     requestActionConfirmation({
-      header: "Restore Province / State",
+      header: i18nT("static.lafnu7"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this province / state?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1ymchsm")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -368,7 +366,7 @@ const StateTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -377,7 +375,7 @@ const StateTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -389,12 +387,10 @@ const StateTableData = () => {
 
   const onClickPurge = (data: State) => {
     requestActionConfirmation({
-      header: "Delete Province / State Permanently",
+      header: i18nT("static.1snq58z"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -407,7 +403,7 @@ const StateTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -416,7 +412,7 @@ const StateTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -429,14 +425,19 @@ const StateTableData = () => {
   const statusColumnBody = (rowData: State) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -446,7 +447,7 @@ const StateTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -461,7 +462,11 @@ const StateTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -474,7 +479,7 @@ const StateTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -491,7 +496,7 @@ const StateTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -512,7 +517,7 @@ const StateTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -527,7 +532,7 @@ const StateTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -542,7 +547,7 @@ const StateTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -554,7 +559,7 @@ const StateTableData = () => {
       <Button
         type="submit"
         form="state-form"
-        label={isAddNew ? "Create Province / State" : "Save Changes"}
+        label={isAddNew ? i18nT("static.ul12df") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving || countryIsLoading || Boolean(countryError)}
@@ -584,11 +589,11 @@ const StateTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Province / State
+                  {i18nT("static.1pevyth")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage province and state data for each country.
+                  {i18nT("static.1ucrmdq")}{" "}
                 </p>
               </div>
             </div>
@@ -596,7 +601,7 @@ const StateTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -609,7 +614,7 @@ const StateTableData = () => {
 
               <Button
                 type="button"
-                label="New Province / State"
+                label={i18nT("static.kktmen")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -634,7 +639,7 @@ const StateTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -645,7 +650,7 @@ const StateTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code, province, or country"
+                placeholder={i18nT("static.1v5mqkl")}
                 className="w-full"
               />
             </IconField>
@@ -671,8 +676,8 @@ const StateTableData = () => {
               tableStyle={{
                 minWidth: "60rem",
               }}
-              emptyMessage="No province / state data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.197bxm0")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -688,7 +693,7 @@ const StateTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -702,7 +707,7 @@ const StateTableData = () => {
 
               <Column
                 field="name"
-                header="Province / State Name"
+                header={i18nT("static.11ixna4")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -716,7 +721,7 @@ const StateTableData = () => {
 
               <Column
                 field="country_name"
-                header="Country"
+                header={i18nT("static.1diicx")}
                 sortable
                 style={{
                   minWidth: "16rem",
@@ -730,7 +735,7 @@ const StateTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -739,7 +744,7 @@ const StateTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -794,7 +799,7 @@ const StateTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Province / State Code
+              {i18nT("static.whfrfy")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -802,7 +807,7 @@ const StateTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Province / state code is required.",
+                required: i18nT("static.rel6k7"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) ||
@@ -810,7 +815,7 @@ const StateTableData = () => {
                 },
                 maxLength: {
                   value: 50,
-                  message: "Province / state code cannot exceed 50 characters.",
+                  message: i18nT("static.xcw8dq"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -819,7 +824,7 @@ const StateTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: JABAR"
+                    placeholder={i18nT("static.6i1i5z")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -831,7 +836,7 @@ const StateTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique province or state code.
+                      {i18nT("static.gnsk5y")}{" "}
                     </small>
                   )}
                 </>
@@ -844,7 +849,7 @@ const StateTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Province / State Name
+              {i18nT("static.11ixna4")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -852,10 +857,10 @@ const StateTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Province / state name is required.",
+                required: i18nT("static.18yd49"),
                 maxLength: {
                   value: 50,
-                  message: "Province / state name cannot exceed 50 characters.",
+                  message: i18nT("static.1en09r8"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -864,7 +869,7 @@ const StateTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: West Java"
+                    placeholder={i18nT("static.b4wwl0")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -885,7 +890,7 @@ const StateTableData = () => {
               htmlFor="country_id"
               className="text-sm font-medium text-slate-700"
             >
-              Country
+              {i18nT("static.1diicx")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -893,7 +898,7 @@ const StateTableData = () => {
               name="country_id"
               control={control}
               rules={{
-                required: "Country is required.",
+                required: i18nT("static.13ka8u2"),
                 validate: (value) =>
                   Number(value) > 0 || "Country is required.",
               }}
@@ -912,8 +917,8 @@ const StateTableData = () => {
                     disabled={countryIsLoading || Boolean(countryError)}
                     placeholder={
                       countryIsLoading
-                        ? "Loading countries..."
-                        : "Select a country"
+                        ? i18nT("static.1txtsa9")
+                        : i18nT("static.1a1czas")
                     }
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
@@ -929,15 +934,12 @@ const StateTableData = () => {
 
                   {!fieldState.error && !countryError && (
                     <small className="text-slate-500">
-                      Select the country that owns this province or state.
+                      {i18nT("static.6d1ous")}{" "}
                     </small>
                   )}
 
                   {countryError && (
-                    <small className="p-error">
-                      Countries could not be loaded. Refresh the page and try
-                      again.
-                    </small>
+                    <small className="p-error">{i18nT("static.xmxj1k")} </small>
                   )}
                 </>
               )}
@@ -956,12 +958,11 @@ const StateTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive provinces or states remain stored but should not
-                      be available for new records.
+                      {i18nT("static.byi06f")}{" "}
                     </p>
                   </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 import { useCallback, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -492,6 +493,89 @@ const topMenuSections: MenuSection[] = [
     items: payrollItems,
   },
 ];
+const menuTranslationKeys: Record<string, string> = {
+  "My Profile": "nav.myProfile",
+  "Web Attendance": "nav.webAttendance",
+  "Attendance History": "nav.attendanceHistory",
+  "Request Leave": "nav.requestLeave",
+  "Overtime Request": "nav.overtimeRequest",
+  "My Payslips": "nav.myPayslips",
+  "My Lifecycle Tasks": "nav.myLifecycleTasks",
+  "Approval Inbox": "nav.approvalInbox",
+  "Approval Settings": "nav.approvalSettings",
+  "Manage Employee": "nav.manageEmployee",
+  Recruitment: "nav.recruitment",
+  Attendance: "nav.attendance",
+  Leave: "nav.leave",
+  Overtime: "nav.overtime",
+  Performance: "nav.performance",
+  "Training & Certification": "nav.trainingCertification",
+  "HR Analytics": "nav.hrAnalytics",
+  "Leave Management": "nav.leaveManagement",
+  "Overtime Management": "nav.overtimeManagement",
+  "Employee Lifecycle": "nav.employeeLifecycle",
+  "Company Assets": "nav.companyAssets",
+  "Employee Documents": "nav.employeeDocuments",
+  "Attendance Log": "nav.attendanceLog",
+  "Attendance Summary": "nav.attendanceSummary",
+  "Run Payroll": "nav.runPayroll",
+  "Self Service": "nav.selfService",
+  Approval: "nav.approval",
+  "Employee Management": "nav.employeeManagement",
+  "Time & Attendance": "nav.timeAttendance",
+  Payroll: "nav.payroll",
+  Settings: "nav.settings",
+  Summary: "nav.summary",
+  "Main Menu": "nav.mainMenu",
+  Configuration: "nav.configuration",
+  Dashboard: "nav.dashboard",
+  Organization: "nav.organization",
+  "Master Data": "nav.masterData",
+  "Attendance Setup": "nav.attendanceSetup",
+  "System Operations": "nav.systemOperations",
+  "Leave Setup": "nav.leaveSetup",
+  "Payroll Configuration": "nav.payrollConfiguration",
+  "Employee Lifecycle Setup": "nav.employeeLifecycleSetup",
+  Communication: "nav.communication",
+  "User Management": "nav.userManagement",
+  Agency: "nav.agency",
+  Branch: "nav.branch",
+  Department: "nav.department",
+  Position: "nav.position",
+  Country: "nav.country",
+  Province: "nav.province",
+  City: "nav.city",
+  Bank: "nav.bank",
+  "Document Type": "nav.documentType",
+  "Employment Status": "nav.employmentStatus",
+  "Identity Type": "nav.identityType",
+  Relationship: "nav.relationship",
+  Holiday: "nav.holiday",
+  Shift: "nav.shift",
+  "Shift Rule": "nav.shiftRule",
+  "Employee Shift Rule": "nav.employeeShiftRule",
+  "Daily Schedule": "nav.dailySchedule",
+  "Attendance Settings": "nav.attendanceSettings",
+  "Fingerprint Devices": "nav.fingerprintDevices",
+  "Background Jobs": "nav.backgroundJobs",
+  "Leave Type": "nav.leaveType",
+  "General Settings": "nav.generalSettings",
+  "Proration Method": "nav.prorationMethod",
+  "Wage Basis": "nav.wageBasis",
+  "Component Category": "nav.componentCategory",
+  "Calculation Method": "nav.calculationMethod",
+  "Payroll Formula": "nav.payrollFormula",
+  "Income Component": "nav.incomeComponent",
+  "Deduction Component": "nav.deductionComponent",
+  "Holiday Position Incentive": "nav.holidayPositionIncentive",
+  "Position Allowance": "nav.positionAllowance",
+  "Lifecycle Configuration": "nav.lifecycleConfiguration",
+  "Email Configuration": "nav.emailConfiguration",
+  Users: "nav.users",
+  Roles: "nav.roles",
+  Permissions: "nav.permissions",
+  "Role Permissions": "nav.rolePermissions",
+};
 const getProfilePermissions = (profileState: unknown): string[] => {
   const profile = profileState as { permissions?: unknown };
   if (!Array.isArray(profile.permissions)) {
@@ -502,10 +586,13 @@ const getProfilePermissions = (profileState: unknown): string[] => {
   );
 };
 export default function SidebarMenu() {
+  const { t } = useI18n();
   const pathname = usePathname();
   const profileState = useSelector((state: RootState) => state.profile);
   const [openMenuKey, setOpenMenuKey] = useState<string | null>(null);
   const [openSubMenuKey, setOpenSubMenuKey] = useState<string | null>(null);
+  const translateMenuLabel = (label: string) =>
+    t(menuTranslationKeys[label] ?? label);
   const permissionSet = useMemo(() => {
     return toPermissionSet(getProfilePermissions(profileState));
   }, [profileState]);
@@ -590,7 +677,9 @@ export default function SidebarMenu() {
         >
           {" "}
           <i className={`pi ${item.icon} text-sm`} />{" "}
-          <span className="truncate">{item.label}</span>{" "}
+          <span className="truncate">
+            {translateMenuLabel(item.label)}
+          </span>{" "}
         </ActiveLink>{" "}
       </li>
     );
@@ -612,7 +701,7 @@ export default function SidebarMenu() {
           <span className="flex items-center gap-3">
             {" "}
             <i className={`pi ${section.icon} text-sm`} />{" "}
-            <span>{section.label}</span>{" "}
+            <span>{translateMenuLabel(section.label)}</span>{" "}
           </span>{" "}
           <i
             className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"} text-xs text-slate-400`}
@@ -645,7 +734,8 @@ export default function SidebarMenu() {
         {" "}
         <span className="flex items-center gap-3">
           {" "}
-          <i className="pi pi-cog text-sm" /> <span>Settings</span>{" "}
+          <i className="pi pi-cog text-sm" />{" "}
+          <span>{translateMenuLabel("Settings")}</span>{" "}
         </span>{" "}
         <i
           className={`pi ${isSettingOpen ? "pi-chevron-down" : "pi-chevron-right"} text-xs text-slate-400`}
@@ -671,7 +761,7 @@ export default function SidebarMenu() {
                   <span className="flex items-center gap-3">
                     {" "}
                     <i className={`pi ${submenu.icon} text-sm`} />{" "}
-                    <span>{submenu.label}</span>{" "}
+                    <span>{translateMenuLabel(submenu.label)}</span>{" "}
                   </span>{" "}
                   <i
                     className={`pi ${isOpen ? "pi-chevron-down" : "pi-chevron-right"} text-xs text-slate-400`}
@@ -709,7 +799,7 @@ export default function SidebarMenu() {
               {" "}
               <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                 {" "}
-                Summary{" "}
+                {translateMenuLabel("Summary")}{" "}
               </p>{" "}
               <ActiveLink
                 href="/dashboard"
@@ -718,7 +808,8 @@ export default function SidebarMenu() {
                 exact={false}
               >
                 {" "}
-                <i className="pi pi-home text-sm" /> <span>Dashboard</span>{" "}
+                <i className="pi pi-home text-sm" />{" "}
+                <span>{translateMenuLabel("Dashboard")}</span>{" "}
               </ActiveLink>{" "}
             </li>
           )}{" "}
@@ -729,7 +820,7 @@ export default function SidebarMenu() {
                 {" "}
                 <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   {" "}
-                  Main Menu{" "}
+                  {translateMenuLabel("Main Menu")}{" "}
                 </p>{" "}
               </li>{" "}
               {visibleTopMenuSections.map((section) =>
@@ -744,7 +835,7 @@ export default function SidebarMenu() {
                 {" "}
                 <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   {" "}
-                  Configuration{" "}
+                  {translateMenuLabel("Configuration")}{" "}
                 </p>{" "}
               </li>{" "}
               {settingContent}{" "}

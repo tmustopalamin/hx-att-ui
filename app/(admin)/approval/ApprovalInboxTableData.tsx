@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -71,42 +72,42 @@ const MAX_NOTE_LENGTH = 1000;
 
 const employmentChangeFields: Array<{
   key: keyof EmployeeLifecycleEmploymentSnapshot;
-  label: string;
+  labelKey: string;
 }> = [
-  { key: "join_date", label: "Join Date" },
-  { key: "code", label: "Employment Code" },
-  { key: "agency_name", label: "Agency" },
-  { key: "branch_name", label: "Branch" },
-  { key: "department_name", label: "Department" },
-  { key: "position_name", label: "Position" },
-  { key: "employment_status_name", label: "Employment Status" },
-  { key: "supervisor_name", label: "Direct Supervisor" },
-  { key: "end_date", label: "End Date" },
-  { key: "probation_end_date", label: "Probation End Date" },
-  { key: "confirmation_date", label: "Confirmation Date" },
-  { key: "notes", label: "Notes" },
+  { key: "join_date", labelKey: "Join Date" },
+  { key: "code", labelKey: "Employment Code" },
+  { key: "agency_name", labelKey: "Agency" },
+  { key: "branch_name", labelKey: "Branch" },
+  { key: "department_name", labelKey: "Department" },
+  { key: "position_name", labelKey: "Position" },
+  { key: "employment_status_name", labelKey: "Employment Status" },
+  { key: "supervisor_name", labelKey: "Direct Supervisor" },
+  { key: "end_date", labelKey: "End Date" },
+  { key: "probation_end_date", labelKey: "Probation End Date" },
+  { key: "confirmation_date", labelKey: "Confirmation Date" },
+  { key: "notes", labelKey: "Notes" },
 ];
 
 const displayLifecycleValue = (value: string | null) => value || "-";
 
 const MODULE_FILTER_OPTIONS: {
-  label: string;
+  labelKey: string;
   value: ModuleFilter;
 }[] = [
   {
-    label: "All Request Types",
+    labelKey: "All Request Types",
     value: "ALL",
   },
   {
-    label: "Leave",
+    labelKey: "Leave",
     value: "LEAVE",
   },
   {
-    label: "Overtime",
+    labelKey: "Overtime",
     value: "OVERTIME",
   },
   {
-    label: "Employee Lifecycle",
+    labelKey: "Employee Lifecycle",
     value: "EMPLOYEE_LIFECYCLE",
   },
 ];
@@ -294,47 +295,81 @@ const getStatusSeverity = (status?: string | null): TagSeverity => {
   return "info";
 };
 
-const getRequestTitle = (rowData: ApprovalPendingItem) => {
+type TextTranslator = (
+  key: string,
+  params?: Record<string, string | number | null | undefined>,
+) => string;
+
+const getRequestTitle = (
+  rowData: ApprovalPendingItem,
+  translate?: TextTranslator,
+) => {
   if (normalizeModuleCode(rowData.module_code) === "LEAVE") {
-    const leaveType = rowData.request_type_name || "Leave";
+    const leaveType =
+      rowData.request_type_name || (translate ? translate("Leave") : "Leave");
     const startDate = formatDate(rowData.request_date);
     const endDate = formatDate(
       rowData.request_end_date || rowData.request_date,
     );
 
-    return `${leaveType}: ${startDate} – ${endDate}`;
+    return translate
+      ? translate("{p0}: {p1} – {p2}", {
+          p0: leaveType,
+          p1: startDate,
+          p2: endDate,
+        })
+      : `${leaveType}: ${startDate} – ${endDate}`;
   }
 
   if (normalizeModuleCode(rowData.module_code) === "EMPLOYEE_LIFECYCLE") {
-    return `Effective: ${formatDate(rowData.request_date)}`;
+    const effectiveDate = formatDate(rowData.request_date);
+    return translate
+      ? translate("Effective: {p0}", { p0: effectiveDate })
+      : `Effective: ${effectiveDate}`;
   }
 
   return formatDate(rowData.request_date);
 };
 
-const getRequestSubtitle = (rowData: ApprovalPendingItem) => {
+const getRequestSubtitle = (
+  rowData: ApprovalPendingItem,
+  translate?: TextTranslator,
+) => {
   const moduleCode = normalizeModuleCode(rowData.module_code);
 
   if (moduleCode === "LEAVE") {
     const totalDays = rowData.request_seconds;
 
-    return `Total days: ${totalDays ?? "-"}`;
+    return translate
+      ? translate("Total days: {p0}", { p0: totalDays ?? "-" })
+      : `Total days: ${totalDays ?? "-"}`;
   }
 
   if (moduleCode === "OVERTIME") {
-    return `${formatTime(rowData.request_start_at)} – ${formatTime(
-      rowData.request_end_at,
-    )} • ${formatDuration(rowData.request_seconds)}`;
+    const start = formatTime(rowData.request_start_at);
+    const end = formatTime(rowData.request_end_at);
+    const duration = formatDuration(rowData.request_seconds);
+    return translate
+      ? translate("{p0} – {p1} • {p2}", {
+          p0: start,
+          p1: end,
+          p2: duration,
+        })
+      : `${start} – ${end} • ${duration}`;
   }
 
   if (moduleCode === "EMPLOYEE_LIFECYCLE") {
-    return `Current status: ${formatStatusLabel(rowData.request_status)}`;
+    const status = formatStatusLabel(rowData.request_status);
+    return translate
+      ? translate("Current status: {p0}", { p0: status })
+      : `Current status: ${status}`;
   }
 
   return "-";
 };
 
 const ApprovalInboxTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const isMobile = useIsMobile();
   const permissions = useSelector(
@@ -428,8 +463,8 @@ const ApprovalInboxTableData = () => {
         item.request_reason,
         item.request_status,
         item.status,
-        getRequestTitle(item),
-        getRequestSubtitle(item),
+        getRequestTitle(item, i18nT),
+        getRequestSubtitle(item, i18nT),
       ];
 
       return searchableValues.some((value) =>
@@ -438,7 +473,7 @@ const ApprovalInboxTableData = () => {
           .includes(keyword),
       );
     });
-  }, [moduleFilteredRows, globalFilterValue]);
+  }, [moduleFilteredRows, globalFilterValue, i18nT]);
 
   const summary = useMemo(() => {
     return {
@@ -462,7 +497,7 @@ const ApprovalInboxTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -473,7 +508,7 @@ const ApprovalInboxTableData = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Validation",
+        summary: i18nT("static.gy1qqi"),
         detail: message,
       }),
     );
@@ -485,7 +520,7 @@ const ApprovalInboxTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -498,7 +533,7 @@ const ApprovalInboxTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -510,8 +545,8 @@ const ApprovalInboxTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -693,13 +728,15 @@ const ApprovalInboxTableData = () => {
     const cleanNote = formData.note.trim();
 
     if (actionType === "reject" && !cleanNote) {
-      showWarning("Rejection reason is required.");
+      showWarning(i18nT("Rejection reason is required."));
 
       return;
     }
 
     if (cleanNote.length > MAX_NOTE_LENGTH) {
-      showWarning(`Note cannot exceed ${MAX_NOTE_LENGTH} characters.`);
+      showWarning(
+        i18nT("Note cannot exceed {p0} characters.", { p0: MAX_NOTE_LENGTH }),
+      );
 
       return;
     }
@@ -727,8 +764,8 @@ const ApprovalInboxTableData = () => {
 
       showSuccess(
         currentAction === "approve"
-          ? "Approval request approved successfully."
-          : "Approval request rejected successfully.",
+          ? i18nT("Approval request approved successfully.")
+          : i18nT("Approval request rejected successfully."),
       );
 
       /*
@@ -753,7 +790,7 @@ const ApprovalInboxTableData = () => {
     const cleanNote = formData.note.trim();
 
     if (actionType === "reject" && !cleanNote) {
-      showWarning("Rejection reason is required.");
+      showWarning(i18nT("Rejection reason is required."));
 
       return;
     }
@@ -761,32 +798,32 @@ const ApprovalInboxTableData = () => {
     const isApprove = actionType === "approve";
 
     requestActionConfirmation({
-      header: isApprove ? "Approve Request" : "Reject Request",
+      header: isApprove ? i18nT("static.3mp8f7") : i18nT("static.1khp33z"),
 
       message: (
         <div className="flex flex-col gap-2">
           <span className="text-slate-600">
-            {isApprove ? "Approve this request?" : "Reject this request?"}
+            {isApprove ? i18nT("static.tuuzn4") : i18nT("static.194ofjw")}
           </span>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-sm font-semibold text-slate-800">
-              {selectedData.requester_name || "Unknown requester"}
+              {selectedData.requester_name || i18nT("static.toncj")}
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              {getModuleLabel(selectedData.module_code)} ·{" "}
-              {getRequestTitle(selectedData)}
+              {i18nT(getModuleLabel(selectedData.module_code))}{" "}
+              {i18nT("static.19xoda3")} {getRequestTitle(selectedData, i18nT)}
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              {getRequestSubtitle(selectedData)}
+              {getRequestSubtitle(selectedData, i18nT)}
             </p>
           </div>
 
           {!isApprove && (
             <span className="text-xs text-red-600">
-              The rejection reason will be stored and shown to the requester.
+              {i18nT("static.1oqgb7t")}{" "}
             </span>
           )}
         </div>
@@ -806,7 +843,7 @@ const ApprovalInboxTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -816,7 +853,9 @@ const ApprovalInboxTableData = () => {
 
           <Button
             type="button"
-            label={isApprove ? "Approve" : "Reject"}
+            label={
+              isApprove ? i18nT("static.1s2ov2y") : i18nT("static.1kej36u")
+            }
             icon={isApprove ? "pi pi-check" : "pi pi-times"}
             severity={isApprove ? "success" : "danger"}
             disabled={isSaving}
@@ -830,7 +869,7 @@ const ApprovalInboxTableData = () => {
   const moduleBody = (rowData: ApprovalPendingItem) => {
     return (
       <Tag
-        value={getModuleLabel(rowData.module_code)}
+        value={i18nT(getModuleLabel(rowData.module_code))}
         severity={getModuleSeverity(rowData.module_code)}
         rounded
       />
@@ -840,10 +879,14 @@ const ApprovalInboxTableData = () => {
   const approvalStepBody = (rowData: ApprovalPendingItem) => {
     return (
       <div className="flex flex-wrap items-center gap-2">
-        <Tag value={`Step ${rowData.step_no}`} severity="info" rounded />
+        <Tag
+          value={i18nT("static.gvtlm5", { p0: rowData.step_no })}
+          severity="info"
+          rounded
+        />
 
         <Tag
-          value={formatStatusLabel(rowData.status)}
+          value={i18nT(formatStatusLabel(rowData.status))}
           severity={getStatusSeverity(rowData.status)}
           rounded
         />
@@ -855,11 +898,11 @@ const ApprovalInboxTableData = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="text-sm font-medium text-slate-800">
-          {getRequestTitle(rowData)}
+          {getRequestTitle(rowData, i18nT)}
         </span>
 
         <span className="whitespace-normal text-xs leading-5 text-slate-500">
-          {getRequestSubtitle(rowData)}
+          {getRequestSubtitle(rowData, i18nT)}
         </span>
       </div>
     );
@@ -869,11 +912,11 @@ const ApprovalInboxTableData = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="truncate text-sm font-medium text-slate-800">
-          {rowData.requester_name || "Unknown requester"}
+          {rowData.requester_name || i18nT("static.toncj")}
         </span>
 
         <span className="whitespace-nowrap text-xs text-slate-500">
-          Submitted {formatDateTime(rowData.submitted_at)}
+          {i18nT("static.12at4de")} {formatDateTime(rowData.submitted_at)}
         </span>
       </div>
     );
@@ -901,7 +944,7 @@ const ApprovalInboxTableData = () => {
           severity="secondary"
           size="small"
           disabled={isSaving}
-          tooltip="View detail"
+          tooltip={i18nT("static.1dtxu7d")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -918,7 +961,7 @@ const ApprovalInboxTableData = () => {
             severity="success"
             size="small"
             disabled={isSaving}
-            tooltip="Approve"
+            tooltip={i18nT("static.1s2ov2y")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -936,7 +979,7 @@ const ApprovalInboxTableData = () => {
             severity="danger"
             size="small"
             disabled={isSaving}
-            tooltip="Reject"
+            tooltip={i18nT("static.1kej36u")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -975,8 +1018,8 @@ const ApprovalInboxTableData = () => {
           tableStyle={{
             minWidth: "82rem",
           }}
-          emptyMessage="No pending approval data found."
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          emptyMessage={i18nT("static.8q9lcu")}
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -992,7 +1035,7 @@ const ApprovalInboxTableData = () => {
 
           <Column
             field="module_code"
-            header="Type"
+            header={i18nT("static.1m2zofh")}
             sortable
             body={moduleBody}
             style={{
@@ -1002,7 +1045,7 @@ const ApprovalInboxTableData = () => {
 
           <Column
             field="requester_name"
-            header="Requester"
+            header={i18nT("static.uhx31h")}
             sortable
             body={requesterBody}
             style={{
@@ -1012,7 +1055,7 @@ const ApprovalInboxTableData = () => {
 
           <Column
             field="request_date"
-            header="Request"
+            header={i18nT("static.1058hua")}
             sortable
             body={requestInfoBody}
             style={{
@@ -1022,7 +1065,7 @@ const ApprovalInboxTableData = () => {
 
           <Column
             field="request_reason"
-            header="Reason"
+            header={i18nT("static.i36sl5")}
             body={reasonBody}
             style={{
               minWidth: "24rem",
@@ -1031,7 +1074,7 @@ const ApprovalInboxTableData = () => {
 
           <Column
             field="step_no"
-            header="Approval Step"
+            header={i18nT("static.uc6ocw")}
             sortable
             body={approvalStepBody}
             style={{
@@ -1040,7 +1083,7 @@ const ApprovalInboxTableData = () => {
           />
 
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBody}
             frozen
             alignFrozen="right"
@@ -1068,11 +1111,11 @@ const ApprovalInboxTableData = () => {
           <i className="pi pi-inbox mb-3 text-3xl text-slate-400" />
 
           <p className="m-0 text-sm font-semibold text-slate-700">
-            No pending approval found
+            {i18nT("static.ijauoc")}{" "}
           </p>
 
           <p className="m-0 mt-1 text-xs text-slate-500">
-            Change the request type or search keyword.
+            {i18nT("static.8fjxul")}{" "}
           </p>
         </div>
       );
@@ -1091,23 +1134,24 @@ const ApprovalInboxTableData = () => {
                   {moduleBody(rowData)}
 
                   <Tag
-                    value={`Step ${rowData.step_no}`}
+                    value={i18nT("static.gvtlm5", { p0: rowData.step_no })}
                     severity="info"
                     rounded
                   />
                 </div>
 
                 <p className="m-0 mt-3 truncate text-base font-semibold text-slate-800">
-                  {rowData.requester_name || "Unknown requester"}
+                  {rowData.requester_name || i18nT("static.toncj")}
                 </p>
 
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  Submitted {formatDateTime(rowData.submitted_at)}
+                  {i18nT("static.12at4de")}{" "}
+                  {formatDateTime(rowData.submitted_at)}
                 </p>
               </div>
 
               <Tag
-                value={formatStatusLabel(rowData.status)}
+                value={i18nT(formatStatusLabel(rowData.status))}
                 severity={getStatusSeverity(rowData.status)}
                 rounded
               />
@@ -1115,17 +1159,17 @@ const ApprovalInboxTableData = () => {
 
             <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <p className="m-0 text-sm font-semibold text-slate-800">
-                {getRequestTitle(rowData)}
+                {getRequestTitle(rowData, i18nT)}
               </p>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                {getRequestSubtitle(rowData)}
+                {getRequestSubtitle(rowData, i18nT)}
               </p>
             </div>
 
             <div className="mt-4">
               <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Reason
+                {i18nT("static.i36sl5")}{" "}
               </p>
 
               <p className="m-0 mt-1 text-sm leading-6 text-slate-700">
@@ -1136,7 +1180,7 @@ const ApprovalInboxTableData = () => {
             <div className="mt-4 grid grid-cols-3 gap-2">
               <Button
                 type="button"
-                label="Detail"
+                label={i18nT("static.ei31dg")}
                 icon="pi pi-eye"
                 severity="secondary"
                 outlined
@@ -1148,7 +1192,7 @@ const ApprovalInboxTableData = () => {
               {canApprove && (
                 <Button
                   type="button"
-                  label="Approve"
+                  label={i18nT("static.1s2ov2y")}
                   icon="pi pi-check"
                   severity="success"
                   outlined
@@ -1161,7 +1205,7 @@ const ApprovalInboxTableData = () => {
               {canReject && (
                 <Button
                   type="button"
-                  label="Reject"
+                  label={i18nT("static.1kej36u")}
                   icon="pi pi-times"
                   severity="danger"
                   outlined
@@ -1179,16 +1223,16 @@ const ApprovalInboxTableData = () => {
 
   const actionDialogTitle =
     actionType === "approve"
-      ? "Approve Request"
+      ? i18nT("Approve Request")
       : actionType === "reject"
-        ? "Reject Request"
-        : "Approval Action";
+        ? i18nT("Reject Request")
+        : i18nT("Approval Action");
 
   const actionDialogFooter = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -1202,8 +1246,8 @@ const ApprovalInboxTableData = () => {
         form="approval-action-form"
         label={
           actionType === "approve"
-            ? "Continue to Approve"
-            : "Continue to Reject"
+            ? i18nT("static.uqx6hw")
+            : i18nT("static.vld9uk")
         }
         icon={actionType === "approve" ? "pi pi-check" : "pi pi-times"}
         severity={actionType === "approve" ? "success" : "danger"}
@@ -1230,7 +1274,9 @@ const ApprovalInboxTableData = () => {
           <Card className="border border-slate-200 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="m-0 text-xs text-slate-500">Pending Approval</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.1a9z3n3")}
+                </p>
 
                 <p className="m-0 mt-2 text-2xl font-semibold text-slate-800">
                   {summary.total}
@@ -1246,7 +1292,9 @@ const ApprovalInboxTableData = () => {
           <Card className="border border-blue-200 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="m-0 text-xs text-blue-700">Overtime Requests</p>
+                <p className="m-0 text-xs text-blue-700">
+                  {i18nT("static.4d7nzg")}
+                </p>
 
                 <p className="m-0 mt-2 text-2xl font-semibold text-blue-800">
                   {summary.overtime}
@@ -1262,7 +1310,9 @@ const ApprovalInboxTableData = () => {
           <Card className="border border-green-200 shadow-sm">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="m-0 text-xs text-green-700">Leave Requests</p>
+                <p className="m-0 text-xs text-green-700">
+                  {i18nT("static.1nd1tjq")}
+                </p>
 
                 <p className="m-0 mt-2 text-2xl font-semibold text-green-800">
                   {summary.leave}
@@ -1287,19 +1337,18 @@ const ApprovalInboxTableData = () => {
 
                 <div className="min-w-0">
                   <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                    Approval Inbox
+                    {i18nT("static.utf80q")}{" "}
                   </h1>
 
                   <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                    Review leave and overtime requests waiting for your
-                    approval.
+                    {i18nT("static.1oskxe4")}{" "}
                   </p>
                 </div>
               </div>
 
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1316,7 +1365,10 @@ const ApprovalInboxTableData = () => {
                 <Dropdown
                   appendTo={getBody}
                   value={moduleFilter}
-                  options={MODULE_FILTER_OPTIONS}
+                  options={MODULE_FILTER_OPTIONS.map((option) => ({
+                    label: i18nT(option.labelKey),
+                    value: option.value,
+                  }))}
                   optionLabel="label"
                   optionValue="value"
                   className="w-full"
@@ -1331,14 +1383,14 @@ const ApprovalInboxTableData = () => {
                   <InputText
                     value={globalFilterValue}
                     onChange={onGlobalFilterChange}
-                    placeholder="Search requester, module, reason, or status"
+                    placeholder={i18nT("static.1dqdhhw")}
                     className="w-full"
                   />
                 </IconField>
 
                 <Button
                   type="button"
-                  label="Reset"
+                  label={i18nT("static.2zps2o")}
                   icon="pi pi-filter-slash"
                   severity="secondary"
                   outlined
@@ -1352,12 +1404,12 @@ const ApprovalInboxTableData = () => {
                 {isMobile
                   ? filteredMobileRows.length
                   : moduleFilteredRows.length}{" "}
-                pending request
+                {i18nT("static.172j1il")}{" "}
                 {(isMobile
                   ? filteredMobileRows.length
                   : moduleFilteredRows.length) === 1
                   ? ""
-                  : "s"}
+                  : i18nT("static.1w9pcoy")}
               </span>
             </section>
 
@@ -1368,7 +1420,7 @@ const ApprovalInboxTableData = () => {
 
       {/* Approval Detail */}
       <Dialog
-        header="Approval Detail"
+        header={i18nT("static.f2od2b")}
         visible={detailVisible}
         style={{
           width: "95vw",
@@ -1389,13 +1441,13 @@ const ApprovalInboxTableData = () => {
                 {moduleBody(selectedData)}
 
                 <Tag
-                  value={`Step ${selectedData.step_no}`}
+                  value={i18nT("static.gvtlm5", { p0: selectedData.step_no })}
                   severity="info"
                   rounded
                 />
 
                 <Tag
-                  value={formatStatusLabel(selectedData.status)}
+                  value={i18nT(formatStatusLabel(selectedData.status))}
                   severity={getStatusSeverity(selectedData.status)}
                   rounded
                 />
@@ -1403,7 +1455,9 @@ const ApprovalInboxTableData = () => {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Requester</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.uhx31h")}
+                  </p>
 
                   <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                     {selectedData.requester_name || "-"}
@@ -1411,7 +1465,9 @@ const ApprovalInboxTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Reference ID</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.4ovcdv")}
+                  </p>
 
                   <p className="m-0 mt-1 font-mono text-sm font-semibold text-slate-800">
                     #{selectedData.reference_id}
@@ -1419,7 +1475,9 @@ const ApprovalInboxTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Submitted At</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.5g5077")}
+                  </p>
 
                   <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                     {formatDateTime(selectedData.submitted_at)}
@@ -1427,20 +1485,22 @@ const ApprovalInboxTableData = () => {
                 </div>
 
                 <div>
-                  <p className="m-0 text-xs text-slate-500">Request Date</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.jqkaiq")}
+                  </p>
 
                   <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
-                    {getRequestTitle(selectedData)}
+                    {getRequestTitle(selectedData, i18nT)}
                   </p>
                 </div>
 
                 <div className="sm:col-span-2">
                   <p className="m-0 text-xs text-slate-500">
-                    Request Information
+                    {i18nT("static.1wt12hk")}{" "}
                   </p>
 
                   <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
-                    {getRequestSubtitle(selectedData)}
+                    {getRequestSubtitle(selectedData, i18nT)}
                   </p>
                 </div>
               </div>
@@ -1449,21 +1509,26 @@ const ApprovalInboxTableData = () => {
             {normalizeModuleCode(selectedData.module_code) === "LEAVE" && (
               <section className="rounded-xl border border-slate-200 bg-white p-4">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Leave Details
+                  {i18nT("static.nkoqnq")}{" "}
                 </h2>
 
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
-                    <p className="m-0 text-xs text-slate-500">Leave Type</p>
+                    <p className="m-0 text-xs text-slate-500">
+                      {i18nT("static.se3juw")}
+                    </p>
                     <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                       {selectedData.request_type_name || "-"}
                     </p>
                   </div>
 
                   <div>
-                    <p className="m-0 text-xs text-slate-500">Date Range</p>
+                    <p className="m-0 text-xs text-slate-500">
+                      {i18nT("static.1k8mzxs")}
+                    </p>
                     <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
-                      {formatDate(selectedData.request_date)} –{" "}
+                      {formatDate(selectedData.request_date)}{" "}
+                      {i18nT("static.hnl64v")}{" "}
                       {formatDate(
                         selectedData.request_end_date ||
                           selectedData.request_date,
@@ -1472,7 +1537,9 @@ const ApprovalInboxTableData = () => {
                   </div>
 
                   <div>
-                    <p className="m-0 text-xs text-slate-500">Working Days</p>
+                    <p className="m-0 text-xs text-slate-500">
+                      {i18nT("static.196bbqb")}
+                    </p>
                     <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                       {selectedData.request_seconds ?? "-"}
                     </p>
@@ -1483,7 +1550,7 @@ const ApprovalInboxTableData = () => {
 
             <section className="rounded-xl border border-slate-200 bg-white p-4">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Request Reason
+                {i18nT("static.hyvn9u")}{" "}
               </h2>
 
               <p className="m-0 mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-700">
@@ -1495,26 +1562,28 @@ const ApprovalInboxTableData = () => {
               "EMPLOYEE_LIFECYCLE" && (
               <section className="rounded-xl border border-slate-200 bg-white p-4">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Lifecycle Change Details
+                  {i18nT("static.1yr8c2v")}{" "}
                 </h2>
 
                 {isLoadingLifecycleDetail ? (
                   <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
                     <i className="pi pi-spin pi-spinner" />
-                    Loading lifecycle details...
+                    {i18nT("static.f7tii9")}{" "}
                   </div>
                 ) : lifecycleDetail ? (
                   <div className="mt-4 flex flex-col gap-5">
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
-                        <p className="m-0 text-xs text-slate-500">Employee</p>
+                        <p className="m-0 text-xs text-slate-500">
+                          {i18nT("static.1fak8xt")}
+                        </p>
                         <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                           {lifecycleDetail.case.employee_name}
                         </p>
                       </div>
                       <div>
                         <p className="m-0 text-xs text-slate-500">
-                          Lifecycle Owner
+                          {i18nT("static.crwzgc")}{" "}
                         </p>
                         <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                           {lifecycleDetail.case.requested_by_name}
@@ -1522,17 +1591,19 @@ const ApprovalInboxTableData = () => {
                       </div>
                       <div>
                         <p className="m-0 text-xs text-slate-500">
-                          Lifecycle Type
+                          {i18nT("static.1cozql1")}{" "}
                         </p>
                         <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
-                          {formatStatusLabel(
-                            lifecycleDetail.case.lifecycle_type,
+                          {i18nT(
+                            formatStatusLabel(
+                              lifecycleDetail.case.lifecycle_type,
+                            ),
                           )}
                         </p>
                       </div>
                       <div>
                         <p className="m-0 text-xs text-slate-500">
-                          Effective Date
+                          {i18nT("static.dfnnk2")}{" "}
                         </p>
                         <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
                           {formatDate(lifecycleDetail.case.effective_date)}
@@ -1543,44 +1614,48 @@ const ApprovalInboxTableData = () => {
                     {lifecycleDetail.employment_change && (
                       <div>
                         <h3 className="m-0 text-sm font-semibold text-slate-800">
-                          Employment Change Summary
+                          {i18nT("static.qlpiit")}{" "}
                         </h3>
                         <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
                           <table className="min-w-full text-sm">
                             <thead className="bg-slate-50 text-left text-slate-600">
                               <tr>
-                                <th className="px-3 py-2 font-medium">Field</th>
                                 <th className="px-3 py-2 font-medium">
-                                  Current
+                                  {i18nT("static.4d0paf")}
                                 </th>
                                 <th className="px-3 py-2 font-medium">
-                                  Proposed
+                                  {i18nT("static.1dw4k8q")}{" "}
+                                </th>
+                                <th className="px-3 py-2 font-medium">
+                                  {i18nT("static.1bv6k83")}{" "}
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {employmentChangeFields.map(({ key, label }) => (
-                                <tr
-                                  key={key}
-                                  className="border-t border-slate-100"
-                                >
-                                  <td className="px-3 py-2 font-medium text-slate-700">
-                                    {label}
-                                  </td>
-                                  <td className="px-3 py-2 text-slate-600">
-                                    {displayLifecycleValue(
-                                      lifecycleDetail.employment_change!
-                                        .previous[key],
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2 text-slate-800">
-                                    {displayLifecycleValue(
-                                      lifecycleDetail.employment_change!
-                                        .proposed[key],
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
+                              {employmentChangeFields.map(
+                                ({ key, labelKey }) => (
+                                  <tr
+                                    key={key}
+                                    className="border-t border-slate-100"
+                                  >
+                                    <td className="px-3 py-2 font-medium text-slate-700">
+                                      {i18nT(labelKey)}
+                                    </td>
+                                    <td className="px-3 py-2 text-slate-600">
+                                      {displayLifecycleValue(
+                                        lifecycleDetail.employment_change!
+                                          .previous[key],
+                                      )}
+                                    </td>
+                                    <td className="px-3 py-2 text-slate-800">
+                                      {displayLifecycleValue(
+                                        lifecycleDetail.employment_change!
+                                          .proposed[key],
+                                      )}
+                                    </td>
+                                  </tr>
+                                ),
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -1589,7 +1664,7 @@ const ApprovalInboxTableData = () => {
                   </div>
                 ) : (
                   <p className="m-0 mt-4 text-sm text-slate-500">
-                    Lifecycle details are unavailable.
+                    {i18nT("static.yzxvql")}{" "}
                   </p>
                 )}
               </section>
@@ -1598,17 +1673,17 @@ const ApprovalInboxTableData = () => {
             {normalizeModuleCode(selectedData.module_code) === "LEAVE" && (
               <section className="rounded-xl border border-slate-200 bg-white p-4">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Attachments
+                  {i18nT("static.8925gh")}{" "}
                 </h2>
 
                 {isLoadingAttachments ? (
                   <div className="mt-4 flex items-center gap-2 text-sm text-slate-500">
                     <i className="pi pi-spin pi-spinner" />
-                    Loading attachments...
+                    {i18nT("static.183xj9x")}{" "}
                   </div>
                 ) : attachments.length === 0 ? (
                   <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                    No attachment uploaded.
+                    {i18nT("static.1pxc5h")}{" "}
                   </div>
                 ) : (
                   <div className="mt-4 flex flex-col gap-2">
@@ -1624,16 +1699,16 @@ const ApprovalInboxTableData = () => {
 
                           <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
                             {formatFileSize(attachment.file_size)}
-                            {" • "}
-                            {attachment.content_type || "Unknown type"}
-                            {" • "}
+                            {i18nT("static.av53jt")}
+                            {attachment.content_type || i18nT("static.t2i5f")}
+                            {i18nT("static.av53jt")}
                             {formatDateTime(attachment.created_at)}
                           </p>
                         </div>
 
                         <Button
                           type="button"
-                          label="View"
+                          label={i18nT("static.q5w460")}
                           icon="pi pi-eye"
                           size="small"
                           severity="secondary"
@@ -1651,7 +1726,7 @@ const ApprovalInboxTableData = () => {
               {canReject && (
                 <Button
                   type="button"
-                  label="Reject"
+                  label={i18nT("static.1kej36u")}
                   icon="pi pi-times"
                   severity="danger"
                   outlined
@@ -1663,7 +1738,7 @@ const ApprovalInboxTableData = () => {
               {canApprove && (
                 <Button
                   type="button"
-                  label="Approve"
+                  label={i18nT("static.1s2ov2y")}
                   icon="pi pi-check"
                   severity="success"
                   disabled={isSaving}
@@ -1677,7 +1752,9 @@ const ApprovalInboxTableData = () => {
 
       {/* Attachment Preview */}
       <Dialog
-        header={previewAttachment?.original_file_name ?? "Attachment Preview"}
+        header={
+          previewAttachment?.original_file_name ?? i18nT("static.1e6olng")
+        }
         visible={attachmentPreviewVisible}
         style={{
           width: "95vw",
@@ -1758,13 +1835,13 @@ const ApprovalInboxTableData = () => {
                 {moduleBody(selectedData)}
 
                 <Tag
-                  value={`Step ${selectedData.step_no}`}
+                  value={i18nT("static.gvtlm5", { p0: selectedData.step_no })}
                   severity="info"
                   rounded
                 />
 
                 <Tag
-                  value={formatStatusLabel(selectedData.status)}
+                  value={i18nT(formatStatusLabel(selectedData.status))}
                   severity={getStatusSeverity(selectedData.status)}
                   rounded
                 />
@@ -1775,8 +1852,8 @@ const ApprovalInboxTableData = () => {
               </p>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                {getRequestTitle(selectedData)} •{" "}
-                {getRequestSubtitle(selectedData)}
+                {getRequestTitle(selectedData, i18nT)} {i18nT("static.syyan8")}{" "}
+                {getRequestSubtitle(selectedData, i18nT)}
               </p>
             </section>
           )}
@@ -1789,8 +1866,8 @@ const ApprovalInboxTableData = () => {
             }`}
           >
             {actionType === "approve"
-              ? "Add an optional note before approving this request."
-              : "Provide a clear rejection reason before rejecting this request."}
+              ? i18nT("static.y27nc5")
+              : i18nT("static.1qdfwok")}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -1798,7 +1875,7 @@ const ApprovalInboxTableData = () => {
               htmlFor="note"
               className="text-sm font-medium text-slate-700"
             >
-              Note
+              {i18nT("static.5mau71")}{" "}
               {actionType === "reject" && (
                 <span className="ml-1 text-red-500">*</span>
               )}
@@ -1810,12 +1887,12 @@ const ApprovalInboxTableData = () => {
               rules={{
                 maxLength: {
                   value: MAX_NOTE_LENGTH,
-                  message: `Note cannot exceed ${MAX_NOTE_LENGTH} characters.`,
+                  message: i18nT("static.1863636", { p0: MAX_NOTE_LENGTH }),
                 },
 
                 validate: (value) => {
                   if (actionType === "reject" && !value.trim()) {
-                    return "Rejection reason is required.";
+                    return i18nT("Rejection reason is required.");
                   }
 
                   return true;
@@ -1833,8 +1910,8 @@ const ApprovalInboxTableData = () => {
                     disabled={isSaving}
                     placeholder={
                       actionType === "approve"
-                        ? "Optional approval note"
-                        : "Enter rejection reason"
+                        ? i18nT("static.1iw98xo")
+                        : i18nT("static.170dl1u")
                     }
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""

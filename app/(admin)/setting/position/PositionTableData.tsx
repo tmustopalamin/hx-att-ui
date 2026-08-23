@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -68,6 +69,7 @@ const EMPTY_POSITION: Position = {
 const getBody = () => document.body;
 
 const PositionTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -171,7 +173,7 @@ const PositionTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -183,7 +185,7 @@ const PositionTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -196,7 +198,7 @@ const PositionTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -208,8 +210,8 @@ const PositionTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -397,12 +399,10 @@ const PositionTableData = () => {
 
   const onClickDelete = (data: PositionRow) => {
     requestActionConfirmation({
-      header: "Delete Position",
+      header: i18nT("static.1f93erd"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this position?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1ljxezu")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -415,7 +415,7 @@ const PositionTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -424,7 +424,7 @@ const PositionTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -436,12 +436,10 @@ const PositionTableData = () => {
 
   const onClickRestore = (data: PositionRow) => {
     requestActionConfirmation({
-      header: "Restore Position",
+      header: i18nT("static.yt819s"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this position?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1us7apz")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -454,7 +452,7 @@ const PositionTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -463,7 +461,7 @@ const PositionTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -475,12 +473,10 @@ const PositionTableData = () => {
 
   const onClickPurge = (data: PositionRow) => {
     requestActionConfirmation({
-      header: "Delete Position Permanently",
+      header: i18nT("static.mjpyt8"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -493,7 +489,7 @@ const PositionTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -502,7 +498,7 @@ const PositionTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -515,14 +511,19 @@ const PositionTableData = () => {
   const statusColumnBody = (rowData: PositionRow) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -532,7 +533,7 @@ const PositionTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -542,7 +543,9 @@ const PositionTableData = () => {
 
   const parentColumnBody = (rowData: PositionRow) => {
     if (!rowData.parent_name) {
-      return <span className="text-sm text-slate-400">No parent</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.lha3lq")}</span>
+      );
     }
 
     return (
@@ -556,7 +559,11 @@ const PositionTableData = () => {
 
   const departmentColumnBody = (rowData: PositionRow) => {
     if (!rowData.department_name) {
-      return <span className="text-sm text-slate-400">No department</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.1nlh2ss")}
+        </span>
+      );
     }
 
     return (
@@ -577,7 +584,11 @@ const PositionTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -590,7 +601,7 @@ const PositionTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -607,7 +618,7 @@ const PositionTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -628,7 +639,7 @@ const PositionTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -643,7 +654,7 @@ const PositionTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -666,7 +677,7 @@ const PositionTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -678,7 +689,7 @@ const PositionTableData = () => {
       <Button
         type="submit"
         form="position-form"
-        label={isAddNew ? "Create Position" : "Save Changes"}
+        label={isAddNew ? i18nT("static.qtfas4") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving || referenceDataLoading || referenceDataError}
@@ -708,12 +719,11 @@ const PositionTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Position
+                  {i18nT("static.1quewx6")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage job positions, reporting hierarchy, departments, and
-                  active status.
+                  {i18nT("static.nn2m5c")}{" "}
                 </p>
               </div>
             </div>
@@ -721,7 +731,7 @@ const PositionTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -734,7 +744,7 @@ const PositionTableData = () => {
 
               <Button
                 type="button"
-                label="New Position"
+                label={i18nT("static.1ijwcvk")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -759,7 +769,7 @@ const PositionTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -770,7 +780,7 @@ const PositionTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search position, parent, or department"
+                placeholder={i18nT("static.1rab5g9")}
                 className="w-full"
               />
             </IconField>
@@ -801,8 +811,8 @@ const PositionTableData = () => {
               tableStyle={{
                 minWidth: "76rem",
               }}
-              emptyMessage="No position data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1tucn93")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -818,7 +828,7 @@ const PositionTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "11rem",
@@ -832,7 +842,7 @@ const PositionTableData = () => {
 
               <Column
                 field="name"
-                header="Position Name"
+                header={i18nT("static.1lfdam5")}
                 sortable
                 style={{
                   minWidth: "20rem",
@@ -846,7 +856,7 @@ const PositionTableData = () => {
 
               <Column
                 field="parent_name"
-                header="Parent Position"
+                header={i18nT("static.twb038")}
                 sortable
                 body={parentColumnBody}
                 style={{
@@ -856,7 +866,7 @@ const PositionTableData = () => {
 
               <Column
                 field="department_name"
-                header="Department"
+                header={i18nT("static.1430r53")}
                 sortable
                 body={departmentColumnBody}
                 style={{
@@ -866,7 +876,7 @@ const PositionTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -875,7 +885,7 @@ const PositionTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -931,7 +941,7 @@ const PositionTableData = () => {
                 htmlFor="code"
                 className="text-sm font-medium text-slate-700"
               >
-                Position Code
+                {i18nT("static.lm95cz")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -939,7 +949,7 @@ const PositionTableData = () => {
                 name="code"
                 control={control}
                 rules={{
-                  required: "Position code is required.",
+                  required: i18nT("static.w1nqig"),
                   validate: {
                     noSpaces: (value) =>
                       !/\s/.test(value) ||
@@ -947,7 +957,7 @@ const PositionTableData = () => {
                   },
                   maxLength: {
                     value: 50,
-                    message: "Position code cannot exceed 50 characters.",
+                    message: i18nT("static.3uc4f5"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -956,7 +966,7 @@ const PositionTableData = () => {
                       {...field}
                       id="code"
                       autoComplete="off"
-                      placeholder="Example: DEV_LEAD"
+                      placeholder={i18nT("static.rnd615")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -968,7 +978,7 @@ const PositionTableData = () => {
                       </small>
                     ) : (
                       <small className="text-slate-500">
-                        Use a short and unique position code.
+                        {i18nT("static.1k0imzz")}{" "}
                       </small>
                     )}
                   </>
@@ -981,7 +991,7 @@ const PositionTableData = () => {
                 htmlFor="name"
                 className="text-sm font-medium text-slate-700"
               >
-                Position Name
+                {i18nT("static.1lfdam5")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -989,10 +999,10 @@ const PositionTableData = () => {
                 name="name"
                 control={control}
                 rules={{
-                  required: "Position name is required.",
+                  required: i18nT("static.3so66u"),
                   maxLength: {
                     value: 50,
-                    message: "Position name cannot exceed 50 characters.",
+                    message: i18nT("static.srv3yj"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -1001,7 +1011,7 @@ const PositionTableData = () => {
                       {...field}
                       id="name"
                       autoComplete="off"
-                      placeholder="Example: Development Lead"
+                      placeholder={i18nT("static.1673z4u")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -1023,7 +1033,7 @@ const PositionTableData = () => {
               htmlFor="parent_id"
               className="text-sm font-medium text-slate-700"
             >
-              Parent Position
+              {i18nT("static.twb038")}{" "}
             </label>
 
             <Controller
@@ -1046,8 +1056,8 @@ const PositionTableData = () => {
                     }
                     placeholder={
                       parentPositionIsLoading
-                        ? "Loading positions..."
-                        : "No parent position"
+                        ? i18nT("static.14oqyk7")
+                        : i18nT("static.n2ezdx")
                     }
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
@@ -1063,15 +1073,12 @@ const PositionTableData = () => {
 
                   {!fieldState.error && !parentPositionError && (
                     <small className="text-slate-500">
-                      Optional. Select the position this position reports to.
+                      {i18nT("static.mme5cy")}{" "}
                     </small>
                   )}
 
                   {parentPositionError && (
-                    <small className="p-error">
-                      Positions could not be loaded. Refresh the page and try
-                      again.
-                    </small>
+                    <small className="p-error">{i18nT("static.a1l6qe")} </small>
                   )}
                 </>
               )}
@@ -1083,7 +1090,7 @@ const PositionTableData = () => {
               htmlFor="department_id"
               className="text-sm font-medium text-slate-700"
             >
-              Department
+              {i18nT("static.1430r53")}{" "}
             </label>
 
             <Controller
@@ -1104,8 +1111,8 @@ const PositionTableData = () => {
                     disabled={departmentIsLoading || Boolean(departmentError)}
                     placeholder={
                       departmentIsLoading
-                        ? "Loading departments..."
-                        : "Select a department"
+                        ? i18nT("static.s9n0xu")
+                        : i18nT("static.hm3v6s")
                     }
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
@@ -1121,15 +1128,12 @@ const PositionTableData = () => {
 
                   {!fieldState.error && !departmentError && (
                     <small className="text-slate-500">
-                      Optional. Assign this position to a department.
+                      {i18nT("static.1retbmx")}{" "}
                     </small>
                   )}
 
                   {departmentError && (
-                    <small className="p-error">
-                      Departments could not be loaded. Refresh the page and try
-                      again.
-                    </small>
+                    <small className="p-error">{i18nT("static.pi3tq3")} </small>
                   )}
                 </>
               )}
@@ -1148,12 +1152,11 @@ const PositionTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive positions remain stored but should not be
-                      available for new employee assignments.
+                      {i18nT("static.jvqh61")}{" "}
                     </p>
                   </div>
 

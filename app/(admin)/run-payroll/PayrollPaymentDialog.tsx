@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -29,6 +30,7 @@ import type { RootState } from "@/store/store";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 interface PayrollPaymentDialogProps {
   batch: PayrollBatch | null;
@@ -66,6 +68,7 @@ export default function PayrollPaymentDialog({
   onError,
   onSuccess,
 }: PayrollPaymentDialogProps) {
+  const { t: i18nT } = useI18n();
   const batchId = batch?.id ?? null;
   const paymentBatchesKey =
     visible && batchId
@@ -192,12 +195,12 @@ export default function PayrollPaymentDialog({
   };
   const confirmSettle = () => {
     requestActionConfirmation({
-      action: "Settle payroll payment",
+      action: i18nT("static.4e8rul"),
       target: paymentDetail?.batch.payment_batch_no,
       severity: "danger",
-      confirmLabel: "Confirm Settlement",
+      confirmLabel: i18nT("static.1mf1pgy"),
       confirmIcon: "pi pi-check-circle",
-      description: "Settle all payment items and mark payroll as paid?",
+      description: i18nT("static.1e3s0gx"),
       onAccept: () => settle(),
     });
   };
@@ -246,12 +249,12 @@ export default function PayrollPaymentDialog({
   const confirmReconcileFile = (file: File | undefined) => {
     if (!file) return;
     requestActionConfirmation({
-      action: "Import bank reconciliation",
+      action: i18nT("static.1am9wpr"),
       target: file.name,
       severity: "warning",
-      confirmLabel: "Import Result",
+      confirmLabel: i18nT("static.1qyuh6t"),
       confirmIcon: "pi pi-upload",
-      description: "Import this bank reconciliation result?",
+      description: i18nT("static.1ogxmx1"),
       onAccept: () => reconcileFile(file),
     });
   };
@@ -261,7 +264,7 @@ export default function PayrollPaymentDialog({
 
   return (
     <Dialog
-      header="Payroll Payment Settlement"
+      header={i18nT("static.1cncklb")}
       visible={visible}
       modal
       draggable={false}
@@ -274,7 +277,7 @@ export default function PayrollPaymentDialog({
       footer={
         <div className="flex justify-end gap-2">
           <Button
-            label="Close"
+            label={i18nT("static.1l0xxoj")}
             severity="secondary"
             text
             disabled={saving || settling || reconciling}
@@ -282,7 +285,7 @@ export default function PayrollPaymentDialog({
           />
           {isDraft && canPay && (
             <Button
-              label="Confirm Payment Settlement"
+              label={i18nT("static.a2xljk")}
               icon="pi pi-check"
               loading={settling}
               onClick={confirmSettle}
@@ -293,34 +296,37 @@ export default function PayrollPaymentDialog({
     >
       {paymentBatchesLoading ? (
         <div className="py-8 text-center text-sm text-slate-500">
-          Loading payment batches...
+          {i18nT("static.1dltlbh")}{" "}
         </div>
       ) : !paymentBatches?.length && !selectedPaymentBatchId && canPay ? (
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-          <Field label="Payment Batch Number *">
+          <Field label={i18nT("static.qzhmw0")}>
             <InputText
               value={paymentBatchNo || draftValues.paymentBatchNo}
               className="w-full"
+              placeholder={i18nT("Enter payment batch number")}
               onChange={(event) => {
                 setPaymentFormTouched(true);
                 setPaymentBatchNo(event.target.value);
               }}
             />
           </Field>
-          <Field label="Payment Date *">
+          <Field label={i18nT("static.18a1gul")}>
             <PrimeDatePicker
               value={paymentDate || draftValues.paymentDate}
               className="w-full"
+              placeholder={i18nT("Select payment date")}
               onValueChange={(value) => {
                 setPaymentFormTouched(true);
                 setPaymentDate(value);
               }}
             />
           </Field>
-          <Field label="Originating Bank Code">
+          <Field label={i18nT("static.1e7g7tl")}>
             <InputText
               value={bankCode}
               className="w-full"
+              placeholder={i18nT("Enter originating bank code")}
               onChange={(event) => {
                 setPaymentFormTouched(true);
                 setBankCode(event.target.value.toUpperCase());
@@ -329,52 +335,53 @@ export default function PayrollPaymentDialog({
           </Field>
           <div className="flex items-end">
             <Button
-              label="Create Payment Batch"
+              label={i18nT("static.1goh4lb")}
               icon="pi pi-plus"
               loading={saving}
               onClick={() => void create()}
             />
           </div>
           <p className="m-0 text-xs leading-5 text-slate-500 sm:col-span-2">
-            Destination accounts are read only from the encrypted payroll
-            snapshot. They are never shown in full on this screen.
+            {i18nT("static.1q757oj")}{" "}
           </p>
         </div>
       ) : !paymentBatches?.length && !selectedPaymentBatchId && canExport ? (
-        <Message
-          severity="info"
-          text="No payment batch exists yet. Export-only access can inspect and export existing payment batches, but cannot create one."
-        />
+        <Message severity="info" text={i18nT("static.1sgrnhx")} />
       ) : !detail ? (
         <div className="py-8 text-center text-sm text-slate-500">
-          Loading payment batch...
+          {i18nT("static.1fyhy2h")}{" "}
         </div>
       ) : (
         <div className="flex flex-col gap-4 pt-2">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric
-              label="Payment Batch"
+              label={i18nT("static.g0ny45")}
               value={detail.batch.payment_batch_no}
             />
-            <Metric label="Payment Date" value={detail.batch.payment_date} />
             <Metric
-              label="Total Items"
+              label={i18nT("static.1tkvpiv")}
+              value={detail.batch.payment_date}
+            />
+            <Metric
+              label={i18nT("static.1rv4xe1")}
               value={String(detail.batch.total_items)}
             />
             <Metric
-              label="Total Amount"
+              label={i18nT("static.1q8ef2b")}
               value={formatCurrency(detail.batch.total_amount)}
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">Status</span>
+            <span className="text-sm text-slate-500">
+              {i18nT("static.3pd73")}
+            </span>
             <Tag
-              value={detail.batch.status}
+              value={i18nT(formatStatusLabel(detail.batch.status))}
               severity={detail.batch.status === "PAID" ? "success" : "warning"}
             />
             {canExport && (
               <Button
-                label="Export CSV"
+                label={i18nT("static.8p4e4z")}
                 icon="pi pi-download"
                 severity="secondary"
                 outlined
@@ -388,7 +395,9 @@ export default function PayrollPaymentDialog({
               detail.batch.status !== "CANCELLED" && (
                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                   <i className="pi pi-upload" />
-                  {reconciling ? "Importing..." : "Import Bank Result"}
+                  {reconciling
+                    ? i18nT("static.9bz0qi")
+                    : i18nT("static.10zw6cv")}
                   <input
                     type="file"
                     accept=".csv,text/csv"
@@ -412,35 +421,39 @@ export default function PayrollPaymentDialog({
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "62rem" }}
           >
-            <Column field="employee_code" header="Employee ID" />
-            <Column field="employee_name" header="Employee" />
+            <Column field="employee_code" header={i18nT("static.1lghzb2")} />
+            <Column field="employee_name" header={i18nT("static.1fak8xt")} />
             <Column
               field="department_name"
-              header="Department"
+              header={i18nT("static.1430r53")}
               body={(row: PayrollPaymentItemDetail) =>
                 row.department_name ?? "-"
               }
             />
             <Column
-              header="Destination Account"
+              header={i18nT("static.1fv7mac")}
               body={(row: PayrollPaymentItemDetail) =>
                 `${row.bank_code ?? "-"} · ${row.bank_account_masked}`
               }
             />
-            <Column field="bank_account_name" header="Account Name" />
             <Column
-              header="Amount"
+              field="bank_account_name"
+              header={i18nT("static.16iomzz")}
+            />
+            <Column
+              header={i18nT("static.a2ky21")}
               body={(row: PayrollPaymentItemDetail) =>
                 formatCurrency(row.amount)
               }
             />
             <Column
-              header="Bank Transfer Reference"
+              header={i18nT("static.127tzh3")}
               body={(row: PayrollPaymentItemDetail) =>
                 isDraft ? (
                   <InputText
                     value={references[row.id] ?? row.bank_reference ?? ""}
                     className="w-full"
+                    placeholder={i18nT("Enter bank transfer reference")}
                     maxLength={100}
                     onChange={(event) => {
                       setPaymentFormTouched(true);
@@ -458,19 +471,15 @@ export default function PayrollPaymentDialog({
           </DataTable>
           {isDraft && canPay && (
             <p className="m-0 text-xs leading-5 text-amber-700">
-              Confirm only after each bank transfer has completed. This action
-              publishes employee payslips and cannot be reversed.
+              {i18nT("static.boyvat")}{" "}
             </p>
           )}
           {!isDraft &&
             detail.batch.status !== "PAID" &&
             detail.batch.status !== "CANCELLED" && (
               <p className="m-0 text-xs leading-5 text-slate-500">
-                Upload a CSV with headers{" "}
-                <code>
-                  payment_item_id,status,bank_reference,failure_reason
-                </code>
-                . Status must be PAID or FAILED.
+                {i18nT("static.a6iu57")} <code>{i18nT("static.1ww8a0")} </code>
+                {i18nT("static.f50zx9")}{" "}
               </p>
             )}
         </div>

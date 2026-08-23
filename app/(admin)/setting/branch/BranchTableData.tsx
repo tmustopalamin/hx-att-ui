@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -87,6 +88,7 @@ const EMPTY_BRANCH: Branch = {
 const getBody = () => document.body;
 
 const BranchTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -201,7 +203,7 @@ const BranchTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -213,7 +215,7 @@ const BranchTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -226,7 +228,7 @@ const BranchTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -238,8 +240,8 @@ const BranchTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -340,7 +342,7 @@ const BranchTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message ?? "Branch created successfully.");
+      showSuccess(response.message ?? i18nT("static.juyz2c"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -368,7 +370,7 @@ const BranchTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message ?? "Branch updated successfully.");
+      showSuccess(response.message ?? i18nT("static.11ir0kr"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -382,7 +384,7 @@ const BranchTableData = () => {
 
       await refreshBranchData();
 
-      showSuccess(response.message ?? "Branch deleted successfully.");
+      showSuccess(response.message ?? i18nT("static.189vrah"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -394,7 +396,7 @@ const BranchTableData = () => {
 
       await refreshBranchData();
 
-      showSuccess(response.message ?? "Branch restored successfully.");
+      showSuccess(response.message ?? i18nT("static.2ohqx0"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -406,7 +408,7 @@ const BranchTableData = () => {
 
       await refreshBranchData();
 
-      showSuccess(response.message ?? "Branch permanently deleted.");
+      showSuccess(response.message ?? i18nT("static.uub82h"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -427,12 +429,10 @@ const BranchTableData = () => {
 
   const onClickDelete = (data: Branch) => {
     requestActionConfirmation({
-      header: "Delete Branch",
+      header: i18nT("static.1pabgge"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this branch?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1srnudn")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -445,7 +445,7 @@ const BranchTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -454,7 +454,7 @@ const BranchTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -466,12 +466,10 @@ const BranchTableData = () => {
 
   const onClickRestore = (data: Branch) => {
     requestActionConfirmation({
-      header: "Restore Branch",
+      header: i18nT("static.1orcol7"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this branch?
-          </span>
+          <span className="text-slate-600">{i18nT("static.jgn3ti")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -484,7 +482,7 @@ const BranchTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -493,7 +491,7 @@ const BranchTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -505,12 +503,10 @@ const BranchTableData = () => {
 
   const onClickPurge = (data: Branch) => {
     requestActionConfirmation({
-      header: "Delete Branch Permanently",
+      header: i18nT("static.bs7tcf"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -523,7 +519,7 @@ const BranchTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -532,7 +528,7 @@ const BranchTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -545,14 +541,19 @@ const BranchTableData = () => {
   const statusColumnBody = (rowData: Branch) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -562,7 +563,7 @@ const BranchTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -585,7 +586,11 @@ const BranchTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -598,7 +603,7 @@ const BranchTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -615,7 +620,7 @@ const BranchTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -636,7 +641,7 @@ const BranchTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -651,7 +656,7 @@ const BranchTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -675,7 +680,7 @@ const BranchTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -687,7 +692,7 @@ const BranchTableData = () => {
       <Button
         type="submit"
         form="branch-form"
-        label={isAddNew ? "Create Branch" : "Save Changes"}
+        label={isAddNew ? i18nT("static.1hoxhxz") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving || referenceDataLoading || referenceDataError}
@@ -717,12 +722,11 @@ const BranchTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Branch
+                  {i18nT("static.19gzx45")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage branch locations, agencies, contact details, and tax
-                  information.
+                  {i18nT("static.1hwyvzt")}{" "}
                 </p>
               </div>
             </div>
@@ -730,7 +734,7 @@ const BranchTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -743,7 +747,7 @@ const BranchTableData = () => {
 
               <Button
                 type="button"
-                label="New Branch"
+                label={i18nT("static.pymfy3")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -768,7 +772,7 @@ const BranchTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -779,7 +783,7 @@ const BranchTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search branch, agency, or location"
+                placeholder={i18nT("static.1baau78")}
                 className="w-full"
               />
             </IconField>
@@ -813,8 +817,8 @@ const BranchTableData = () => {
               tableStyle={{
                 minWidth: "86rem",
               }}
-              emptyMessage="No branch data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.bm18l8")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -830,7 +834,7 @@ const BranchTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -844,7 +848,7 @@ const BranchTableData = () => {
 
               <Column
                 field="name"
-                header="Branch Name"
+                header={i18nT("static.1k4s2ws")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -858,7 +862,7 @@ const BranchTableData = () => {
 
               <Column
                 field="agency_name"
-                header="Agency"
+                header={i18nT("static.1v3zejm")}
                 sortable
                 style={{
                   minWidth: "16rem",
@@ -868,7 +872,7 @@ const BranchTableData = () => {
 
               <Column
                 field="state_name"
-                header="Province / State"
+                header={i18nT("static.1pevyth")}
                 sortable
                 style={{
                   minWidth: "16rem",
@@ -878,7 +882,7 @@ const BranchTableData = () => {
 
               <Column
                 field="city_name"
-                header="City"
+                header={i18nT("static.142k4ma")}
                 sortable
                 style={{
                   minWidth: "14rem",
@@ -888,7 +892,7 @@ const BranchTableData = () => {
 
               <Column
                 field="phone_number"
-                header="Phone"
+                header={i18nT("static.kb2lhr")}
                 sortable
                 style={{
                   minWidth: "13rem",
@@ -898,7 +902,7 @@ const BranchTableData = () => {
 
               <Column
                 field="npwp15_number"
-                header="NPWP 15"
+                header={i18nT("static.14gfv0m")}
                 sortable
                 style={{
                   minWidth: "15rem",
@@ -910,7 +914,7 @@ const BranchTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -919,7 +923,7 @@ const BranchTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -974,11 +978,11 @@ const BranchTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Basic Information
+                {i18nT("static.20pywr")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Main identification and owning agency.
+                {i18nT("static.1doiacy")}{" "}
               </p>
             </div>
 
@@ -988,7 +992,7 @@ const BranchTableData = () => {
                   htmlFor="code"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Branch Code
+                  {i18nT("static.1m3zsjy")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -996,7 +1000,7 @@ const BranchTableData = () => {
                   name="code"
                   control={control}
                   rules={{
-                    required: "Branch code is required.",
+                    required: i18nT("static.1wibi47"),
                     validate: {
                       noSpaces: (value) =>
                         !/\s/.test(value) ||
@@ -1009,7 +1013,7 @@ const BranchTableData = () => {
                         {...field}
                         id="code"
                         autoComplete="off"
-                        placeholder="Example: JKT01"
+                        placeholder={i18nT("static.1ssx5j3")}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
                         }`}
@@ -1021,7 +1025,7 @@ const BranchTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Use a short and unique branch code.
+                          {i18nT("static.16bmalk")}{" "}
                         </small>
                       )}
                     </>
@@ -1034,7 +1038,7 @@ const BranchTableData = () => {
                   htmlFor="name"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Branch Name
+                  {i18nT("static.1k4s2ws")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1042,7 +1046,7 @@ const BranchTableData = () => {
                   name="name"
                   control={control}
                   rules={{
-                    required: "Branch name is required.",
+                    required: i18nT("static.16cooo9"),
                   }}
                   render={({ field, fieldState }) => (
                     <>
@@ -1050,7 +1054,7 @@ const BranchTableData = () => {
                         {...field}
                         id="name"
                         autoComplete="off"
-                        placeholder="Example: Jakarta Head Office"
+                        placeholder={i18nT("static.1lu0enh")}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
                         }`}
@@ -1071,7 +1075,7 @@ const BranchTableData = () => {
                   htmlFor="agency_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Agency
+                  {i18nT("static.1v3zejm")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1079,7 +1083,7 @@ const BranchTableData = () => {
                   name="agency_id"
                   control={control}
                   rules={{
-                    required: "Agency is required.",
+                    required: i18nT("static.18iyzsr"),
                     validate: (value) =>
                       Number(value) > 0 || "Agency is required.",
                   }}
@@ -1097,8 +1101,8 @@ const BranchTableData = () => {
                         disabled={agencyIsLoading || Boolean(agencyError)}
                         placeholder={
                           agencyIsLoading
-                            ? "Loading agencies..."
-                            : "Select an agency"
+                            ? i18nT("static.1d0yjf4")
+                            : i18nT("static.8xl90r")
                         }
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1114,14 +1118,13 @@ const BranchTableData = () => {
 
                       {!fieldState.error && !agencyError && (
                         <small className="text-slate-500">
-                          Select the agency that owns this branch.
+                          {i18nT("static.1w9hrv3")}{" "}
                         </small>
                       )}
 
                       {agencyError && (
                         <small className="p-error">
-                          Agencies could not be loaded. Refresh the page and try
-                          again.
+                          {i18nT("static.xmhi49")}{" "}
                         </small>
                       )}
                     </>
@@ -1135,11 +1138,11 @@ const BranchTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Location
+                {i18nT("static.pghiva")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Province, city, postal code, and complete address.
+                {i18nT("static.15ijlfc")}{" "}
               </p>
             </div>
 
@@ -1149,7 +1152,7 @@ const BranchTableData = () => {
                   htmlFor="state_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Province / State
+                  {i18nT("static.1pevyth")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1157,7 +1160,7 @@ const BranchTableData = () => {
                   name="state_id"
                   control={control}
                   rules={{
-                    required: "Province / state is required.",
+                    required: i18nT("static.1jcmnlq"),
                     validate: (value) =>
                       Number(value) > 0 || "Province / state is required.",
                   }}
@@ -1175,8 +1178,8 @@ const BranchTableData = () => {
                         disabled={stateIsLoading || Boolean(stateError)}
                         placeholder={
                           stateIsLoading
-                            ? "Loading provinces..."
-                            : "Select a province / state"
+                            ? i18nT("static.mtgucg")
+                            : i18nT("static.f1tobm")
                         }
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1199,8 +1202,7 @@ const BranchTableData = () => {
 
                       {stateError && (
                         <small className="p-error">
-                          Provinces could not be loaded. Refresh the page and
-                          try again.
+                          {i18nT("static.i2qd6x")}{" "}
                         </small>
                       )}
                     </>
@@ -1213,7 +1215,7 @@ const BranchTableData = () => {
                   htmlFor="city_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  City
+                  {i18nT("static.142k4ma")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1221,7 +1223,7 @@ const BranchTableData = () => {
                   name="city_id"
                   control={control}
                   rules={{
-                    required: "City is required.",
+                    required: i18nT("static.j4gfy3"),
                     validate: (value) =>
                       Number(value) > 0 || "City is required.",
                   }}
@@ -1244,10 +1246,10 @@ const BranchTableData = () => {
                         }
                         placeholder={
                           cityIsLoading
-                            ? "Loading cities..."
+                            ? i18nT("static.1ndgecw")
                             : Number(selectedStateId) > 0
-                              ? "Select a city"
-                              : "Select province / state first"
+                              ? i18nT("static.1rnb3r5")
+                              : i18nT("static.1cicnnh")
                         }
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1263,8 +1265,7 @@ const BranchTableData = () => {
 
                       {cityError && (
                         <small className="p-error">
-                          Cities could not be loaded. Refresh the page and try
-                          again.
+                          {i18nT("static.fb9czd")}{" "}
                         </small>
                       )}
                     </>
@@ -1277,7 +1278,7 @@ const BranchTableData = () => {
                   htmlFor="postal_code"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Postal Code
+                  {i18nT("static.1mbis3")}{" "}
                 </label>
 
                 <Controller
@@ -1290,12 +1291,12 @@ const BranchTableData = () => {
                         value={field.value ?? ""}
                         id="postal_code"
                         autoComplete="off"
-                        placeholder="Example: 12930"
+                        placeholder={i18nT("static.74dkl8")}
                         className="w-full"
                       />
 
                       <small className="text-slate-500">
-                        Optional branch postal code.
+                        {i18nT("static.6z0n83")}{" "}
                       </small>
                     </>
                   )}
@@ -1307,7 +1308,7 @@ const BranchTableData = () => {
                   htmlFor="address"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Address
+                  {i18nT("static.v2y2ur")}{" "}
                 </label>
 
                 <Controller
@@ -1321,12 +1322,12 @@ const BranchTableData = () => {
                         id="address"
                         rows={3}
                         autoResize
-                        placeholder="Enter the branch's complete address"
+                        placeholder={i18nT("static.17d31nn")}
                         className="w-full"
                       />
 
                       <small className="text-slate-500">
-                        Complete street and location information.
+                        {i18nT("static.qm4dy1")}{" "}
                       </small>
                     </>
                   )}
@@ -1339,11 +1340,11 @@ const BranchTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Contact & Tax
+                {i18nT("static.vrwdf4")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Contact numbers and branch tax identifiers.
+                {i18nT("static.nmgqi9")}{" "}
               </p>
             </div>
 
@@ -1353,7 +1354,7 @@ const BranchTableData = () => {
                   htmlFor="phone_number"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Phone Number
+                  {i18nT("static.1v8ev2w")}{" "}
                 </label>
 
                 <Controller
@@ -1365,7 +1366,7 @@ const BranchTableData = () => {
                       value={field.value ?? ""}
                       id="phone_number"
                       autoComplete="off"
-                      placeholder="Example: +62 21 1234 5678"
+                      placeholder={i18nT("static.1byfk5h")}
                       className="w-full"
                     />
                   )}
@@ -1377,7 +1378,7 @@ const BranchTableData = () => {
                   htmlFor="fax_number"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Fax Number
+                  {i18nT("static.uh7mkh")}{" "}
                 </label>
 
                 <Controller
@@ -1389,7 +1390,7 @@ const BranchTableData = () => {
                       value={field.value ?? ""}
                       id="fax_number"
                       autoComplete="off"
-                      placeholder="Optional fax number"
+                      placeholder={i18nT("static.13a3x8n")}
                       className="w-full"
                     />
                   )}
@@ -1401,7 +1402,7 @@ const BranchTableData = () => {
                   htmlFor="nitku_number"
                   className="text-sm font-medium text-slate-700"
                 >
-                  NITKU Number
+                  {i18nT("static.jqt821")}{" "}
                 </label>
 
                 <Controller
@@ -1413,7 +1414,7 @@ const BranchTableData = () => {
                       value={field.value ?? ""}
                       id="nitku_number"
                       autoComplete="off"
-                      placeholder="Enter NITKU number"
+                      placeholder={i18nT("static.1n3erj3")}
                       className="w-full"
                     />
                   )}
@@ -1425,7 +1426,7 @@ const BranchTableData = () => {
                   htmlFor="npwp15_number"
                   className="text-sm font-medium text-slate-700"
                 >
-                  NPWP 15 Number
+                  {i18nT("static.kcddkv")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1433,7 +1434,7 @@ const BranchTableData = () => {
                   name="npwp15_number"
                   control={control}
                   rules={{
-                    required: "NPWP 15 number is required.",
+                    required: i18nT("static.1o34sqc"),
                   }}
                   render={({ field, fieldState }) => (
                     <>
@@ -1442,7 +1443,7 @@ const BranchTableData = () => {
                         value={field.value ?? ""}
                         id="npwp15_number"
                         autoComplete="off"
-                        placeholder="Enter NPWP 15 number"
+                        placeholder={i18nT("static.opwcbh")}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
                         }`}
@@ -1463,7 +1464,7 @@ const BranchTableData = () => {
                   htmlFor="npwp16_number"
                   className="text-sm font-medium text-slate-700"
                 >
-                  NPWP 16 Number
+                  {i18nT("static.1ot0cqc")}{" "}
                 </label>
 
                 <Controller
@@ -1476,12 +1477,12 @@ const BranchTableData = () => {
                         value={field.value ?? ""}
                         id="npwp16_number"
                         autoComplete="off"
-                        placeholder="Enter NPWP 16 number"
+                        placeholder={i18nT("static.yiyg1y")}
                         className="w-full"
                       />
 
                       <small className="text-slate-500">
-                        Optional 16-digit NPWP identifier.
+                        {i18nT("static.whe13e")}{" "}
                       </small>
                     </>
                   )}
@@ -1503,12 +1504,11 @@ const BranchTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive branches remain stored but should not be
-                      available for new employee employment records.
+                      {i18nT("static.1lkpbul")}{" "}
                     </p>
                   </div>
 

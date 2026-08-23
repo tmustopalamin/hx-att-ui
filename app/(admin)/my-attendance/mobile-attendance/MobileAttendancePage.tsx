@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import React, {
   useCallback,
@@ -231,6 +232,7 @@ const normalizeProfile = (raw: unknown): CurrentEmployeeProfile => {
 };
 
 const MobileAttendancePage = () => {
+  const { t: i18nT, tText } = useI18n();
   const dispatch = useDispatch();
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -431,8 +433,8 @@ const MobileAttendancePage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: "Camera is not ready.",
+          summary: i18nT("static.1vks92p"),
+          detail: tText("Camera is not ready."),
         }),
       );
       return;
@@ -446,8 +448,8 @@ const MobileAttendancePage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: "Camera preview is not ready yet.",
+          summary: i18nT("static.1vks92p"),
+          detail: tText("Camera preview is not ready yet."),
         }),
       );
       return;
@@ -462,8 +464,8 @@ const MobileAttendancePage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: "Failed to access image canvas.",
+          summary: i18nT("static.1vks92p"),
+          detail: tText("Failed to access image canvas."),
         }),
       );
       return;
@@ -477,8 +479,8 @@ const MobileAttendancePage = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
-        detail: "Photo captured successfully.",
+        summary: i18nT("static.udvru8"),
+        detail: tText("Photo captured successfully."),
       }),
     );
   };
@@ -525,8 +527,8 @@ const MobileAttendancePage = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "Please capture photo first.",
+          summary: i18nT("static.fh2d8v"),
+          detail: tText("Please capture photo first."),
         }),
       );
       return;
@@ -537,8 +539,8 @@ const MobileAttendancePage = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "Location is required before submit.",
+          summary: i18nT("static.fh2d8v"),
+          detail: tText("Location is required before submit."),
         }),
       );
       return;
@@ -574,8 +576,8 @@ const MobileAttendancePage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: "Attendance submitted successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: tText("Attendance submitted successfully."),
         }),
       );
 
@@ -586,7 +588,7 @@ const MobileAttendancePage = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(error, "message"),
           }),
         );
@@ -595,7 +597,7 @@ const MobileAttendancePage = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: error.message,
           }),
         );
@@ -604,8 +606,8 @@ const MobileAttendancePage = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
-            detail: "Failed to submit attendance.",
+            summary: i18nT("static.1vks92p"),
+            detail: tText("Failed to submit attendance."),
           }),
         );
       }
@@ -616,11 +618,11 @@ const MobileAttendancePage = () => {
 
   const confirmSubmitAttendance = () => {
     requestActionConfirmation({
-      action: "Submit attendance",
-      target: currentProfile.employee_name ?? "current employee",
-      description: "Submit the captured photo and location as attendance?",
+      action: i18nT("static.auu974"),
+      target: currentProfile.employee_name ?? tText("current employee"),
+      description: i18nT("static.ft6z50"),
       severity: "info",
-      confirmLabel: "Submit attendance",
+      confirmLabel: i18nT("static.auu974"),
       confirmIcon: "pi pi-send",
       onAccept: handleSubmitAttendance,
     });
@@ -648,28 +650,28 @@ const MobileAttendancePage = () => {
             <div className="min-w-0 flex-1">
               <p className="truncate text-lg font-semibold text-slate-900 md:text-xl">
                 {currentProfileLoading
-                  ? "Loading employee..."
-                  : currentProfile.employee_name || "Employee"}
+                  ? tText("Loading employee...")
+                  : currentProfile.employee_name || tText("Employee")}
               </p>
 
               <p className="truncate text-sm text-slate-500">
                 {currentProfileLoading
-                  ? "Loading code..."
-                  : currentProfile.employee_code || "No employee code"}
+                  ? tText("Loading code...")
+                  : currentProfile.employee_code || tText("No employee code")}
                 {currentProfile.position_name
-                  ? ` • ${currentProfile.position_name}`
+                  ? i18nT("static.8ajqn4", { p0: currentProfile.position_name })
                   : ""}
               </p>
 
               <p className="truncate text-xs text-slate-500 md:text-sm">
                 {[currentProfile.branch_name, currentProfile.agency_name]
                   .filter(Boolean)
-                  .join(" • ") || "Web Attendance"}
+                  .join(" · ") || tText("Web Attendance")}
               </p>
 
               {currentProfileError && (
                 <p className="mt-1 text-xs text-red-500">
-                  Failed to load employee info.
+                  {i18nT("static.12g5aob")}{" "}
                 </p>
               )}
             </div>
@@ -677,14 +679,16 @@ const MobileAttendancePage = () => {
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:min-w-[320px]">
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-              <p className="text-xs text-slate-500">Current Time</p>
+              <p className="text-xs text-slate-500">
+                {i18nT("static.1bvxeo7")}
+              </p>
               <p className="text-sm font-medium text-slate-900">
                 {formatDateTimeWithSeconds(now)}
               </p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-              <p className="text-xs text-slate-500">Last Submitted</p>
+              <p className="text-xs text-slate-500">{i18nT("static.4x8584")}</p>
               <p className="text-sm font-medium text-slate-900">
                 {formatDateTimeWithSeconds(lastSubmittedAt)}
               </p>
@@ -700,10 +704,10 @@ const MobileAttendancePage = () => {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900 md:text-lg">
-                    Step 1 · Prepare Access
+                    {i18nT("static.1987d0")}{" "}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Allow camera and location before capturing attendance.
+                    {i18nT("static.1tvw0rc")}{" "}
                   </p>
                 </div>
 
@@ -713,7 +717,8 @@ const MobileAttendancePage = () => {
                       cameraPermission,
                     )}`}
                   >
-                    Camera: {getStatusLabel(cameraPermission)}
+                    {i18nT("static.vgplj0")}{" "}
+                    {tText(getStatusLabel(cameraPermission))}
                   </div>
 
                   <div
@@ -721,15 +726,16 @@ const MobileAttendancePage = () => {
                       locationPermission,
                     )}`}
                   >
-                    Location: {getStatusLabel(locationPermission)}
+                    {i18nT("static.u00eyc")}{" "}
+                    {tText(getStatusLabel(locationPermission))}
                   </div>
                 </div>
               </div>
 
               {(cameraError || locationError) && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                  {cameraError && <p>{cameraError}</p>}
-                  {locationError && <p>{locationError}</p>}
+                  {cameraError && <p>{tText(cameraError)}</p>}
+                  {locationError && <p>{tText(locationError)}</p>}
                 </div>
               )}
 
@@ -737,7 +743,7 @@ const MobileAttendancePage = () => {
                 <Button
                   type="button"
                   icon="pi pi-shield"
-                  label="Allow Camera & Location"
+                  label={i18nT("static.15derii")}
                   onClick={requestAllPermissions}
                   className="w-full sm:w-auto"
                   severity="secondary"
@@ -747,7 +753,7 @@ const MobileAttendancePage = () => {
                 <Button
                   type="button"
                   icon="pi pi-map-marker"
-                  label="Refresh Location"
+                  label={i18nT("static.1xd1nx7")}
                   onClick={refreshLocation}
                   disabled={locationPermission === "loading"}
                   className="w-full sm:w-auto"
@@ -763,17 +769,19 @@ const MobileAttendancePage = () => {
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900 md:text-lg">
-                    Step 2 · Capture Photo
+                    {i18nT("static.1uscvdq")}{" "}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Make sure your face is clear and visible.
+                    {i18nT("static.1w9kzng")}{" "}
                   </p>
                 </div>
 
                 <div className="text-left sm:text-right">
-                  <p className="text-xs text-slate-500">Photo Status</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.7qt0jf")}
+                  </p>
                   <p className="text-sm font-medium text-slate-900">
-                    {capturedPhoto ? "Captured" : "Not Captured"}
+                    {capturedPhoto ? tText("Captured") : tText("Not Captured")}
                   </p>
                 </div>
               </div>
@@ -790,7 +798,7 @@ const MobileAttendancePage = () => {
                 ) : (
                   <img
                     src={capturedPhoto}
-                    alt="Captured attendance"
+                    alt={tText("Captured attendance")}
                     className="h-[260px] w-full object-cover sm:h-[320px] lg:h-[420px]"
                   />
                 )}
@@ -802,7 +810,7 @@ const MobileAttendancePage = () => {
                 <Button
                   type="button"
                   icon="pi pi-camera"
-                  label="Capture Photo"
+                  label={i18nT("static.1d7319p")}
                   onClick={capturePhoto}
                   disabled={cameraPermission !== "granted"}
                   className="w-full sm:w-auto"
@@ -811,7 +819,7 @@ const MobileAttendancePage = () => {
                 <Button
                   type="button"
                   icon="pi pi-refresh"
-                  label="Retake Photo"
+                  label={i18nT("static.1j9uauv")}
                   onClick={retakePhoto}
                   severity="secondary"
                   outlined
@@ -826,17 +834,17 @@ const MobileAttendancePage = () => {
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900 md:text-lg">
-                    Step 3 · Check Location
+                    {i18nT("static.1vmu75e")}{" "}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Confirm your location before submitting.
+                    {i18nT("static.q1080u")}{" "}
                   </p>
                 </div>
 
                 <Button
                   type="button"
                   icon="pi pi-external-link"
-                  label="Open Map"
+                  label={i18nT("static.1obuvcr")}
                   disabled={!googleMapsUrl}
                   onClick={() => {
                     if (googleMapsUrl) {
@@ -856,7 +864,7 @@ const MobileAttendancePage = () => {
               {mapEmbedUrl ? (
                 <div className="overflow-hidden rounded-2xl border border-slate-200">
                   <iframe
-                    title="Location preview"
+                    title={i18nT("static.dj380e")}
                     src={mapEmbedUrl}
                     className="h-[220px] w-full md:h-[280px]"
                     loading="lazy"
@@ -864,14 +872,16 @@ const MobileAttendancePage = () => {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center text-sm text-slate-500">
-                  Location preview will appear here after GPS is captured.
+                  {i18nT("static.p1zoh3")}{" "}
                 </div>
               )}
 
               <div className="rounded-xl bg-slate-50 p-4">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                   <div>
-                    <p className="text-xs text-slate-500">Latitude</p>
+                    <p className="text-xs text-slate-500">
+                      {i18nT("static.udp36t")}
+                    </p>
                     <p className="text-sm font-medium text-slate-900">
                       {geoData.latitude !== null
                         ? geoData.latitude.toFixed(6)
@@ -880,7 +890,9 @@ const MobileAttendancePage = () => {
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">Longitude</p>
+                    <p className="text-xs text-slate-500">
+                      {i18nT("static.sltujy")}
+                    </p>
                     <p className="text-sm font-medium text-slate-900">
                       {geoData.longitude !== null
                         ? geoData.longitude.toFixed(6)
@@ -889,16 +901,22 @@ const MobileAttendancePage = () => {
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">GPS Accuracy</p>
+                    <p className="text-xs text-slate-500">
+                      {i18nT("static.1doq40")}
+                    </p>
                     <p className="text-sm font-medium text-slate-900">
                       {geoData.accuracy !== null
-                        ? `±${geoData.accuracy.toFixed(0)} m`
+                        ? i18nT("static.1vrsdby", {
+                            p0: geoData.accuracy.toFixed(0),
+                          })
                         : "-"}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">Captured At</p>
+                    <p className="text-xs text-slate-500">
+                      {i18nT("static.9m2x74")}
+                    </p>
                     <p className="text-sm font-medium text-slate-900">
                       {formatDateTimeWithSeconds(geoData.capturedAt)}
                     </p>
@@ -914,10 +932,10 @@ const MobileAttendancePage = () => {
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-base font-semibold text-slate-900 md:text-lg">
-                  Attendance Summary
+                  {i18nT("static.1w1ugxu")}{" "}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Review the required data, then submit once.
+                  {i18nT("static.1nmjki7")}{" "}
                 </p>
               </div>
 
@@ -925,56 +943,69 @@ const MobileAttendancePage = () => {
 
               <div className="grid grid-cols-1 gap-3">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">Employee</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.1fak8xt")}
+                  </p>
                   <p className="text-sm font-medium text-slate-900">
                     {currentProfileLoading
-                      ? "Loading employee..."
+                      ? tText("Loading employee...")
                       : currentProfile.employee_name || "-"}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">Employee Code</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.ncb762")}
+                  </p>
                   <p className="text-sm font-medium text-slate-900">
                     {currentProfileLoading
-                      ? "Loading code..."
+                      ? tText("Loading code...")
                       : currentProfile.employee_code || "-"}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">Current Time</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.1bvxeo7")}
+                  </p>
                   <p className="text-sm font-medium text-slate-900">
                     {formatDateTimeWithSeconds(now)}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">Photo</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.n2dhtv")}
+                  </p>
                   <p className="text-sm font-medium text-slate-900">
-                    {capturedPhoto ? "Ready" : "Not captured yet"}
+                    {capturedPhoto ? tText("Ready") : tText("Not captured yet")}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-xs text-slate-500">Location</p>
+                  <p className="text-xs text-slate-500">
+                    {i18nT("static.pghiva")}
+                  </p>
                   <p className="text-sm font-medium text-slate-900">
                     {geoData.latitude !== null && geoData.longitude !== null
-                      ? "Ready"
-                      : "Not captured yet"}
+                      ? tText("Ready")
+                      : tText("Not captured yet")}
                   </p>
                 </div>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
-                Attendance will be submitted as a Web Attendance event and
-                processed automatically by the system.
+                {i18nT("static.1lodehx")}{" "}
               </div>
 
               <Button
                 type="button"
                 icon={isSubmitting ? undefined : "pi pi-send"}
-                label={isSubmitting ? "Submitting..." : "Submit Attendance"}
+                label={
+                  isSubmitting
+                    ? tText("Submitting...")
+                    : tText("Submit Attendance")
+                }
                 onClick={confirmSubmitAttendance}
                 disabled={!canSubmit}
                 className="w-full"

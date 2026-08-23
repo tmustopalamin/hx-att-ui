@@ -24,12 +24,14 @@
 /* === Override Global Font === */
 html,
 body {
-  font-family: "Lato", sans-serif;
+  font-family:
+    "Lato", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
 }
 
 /* === PrimeReact Components pakai font Lato juga === */
 .p-component {
-  font-family: "Lato", sans-serif;
+  font-family:
+    "Lato", "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
 }
 
 .custom-sidebar .p-sidebar-content {

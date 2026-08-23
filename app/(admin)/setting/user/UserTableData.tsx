@@ -1,4 +1,5 @@
 "use client";
+import { getClientLocale, translateStaticText, useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -163,14 +164,19 @@ const parseApiError = async (response: Response) => {
 
   if (contentType.includes("application/json")) {
     return response.json().catch(() => ({
-      message: "An unexpected error occurred.",
+      message: translateStaticText(
+        "An unexpected error occurred.",
+        getClientLocale(),
+      ),
     }));
   }
 
   const text = await response.text().catch(() => "");
 
   return {
-    message: text || "An unexpected error occurred.",
+    message:
+      text ||
+      translateStaticText("An unexpected error occurred.", getClientLocale()),
   };
 };
 
@@ -336,6 +342,7 @@ const purgeUserApi = async (id: number) => {
 };
 
 const UserTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -501,8 +508,12 @@ const UserTableData = () => {
 
         return {
           label: organization
-            ? `${employeeName} (${employeeCode}) • ${organization}`
-            : `${employeeName} (${employeeCode})`,
+            ? i18nT("static.v5lfdh", {
+                p0: employeeName,
+                p1: employeeCode,
+                p2: organization,
+              })
+            : i18nT("static.14r9r1n", { p0: employeeName, p1: employeeCode }),
 
           value: employee.id,
         };
@@ -555,7 +566,7 @@ const UserTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -566,7 +577,7 @@ const UserTableData = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Warning",
+        summary: i18nT("static.fh2d8v"),
         detail: message,
       }),
     );
@@ -578,7 +589,7 @@ const UserTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -591,7 +602,7 @@ const UserTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -609,7 +620,7 @@ const UserTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: message,
           }),
         );
@@ -622,8 +633,8 @@ const UserTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -664,7 +675,7 @@ const UserTableData = () => {
 
   const openEdit = (data: UserListRow) => {
     if (data.deleted_at) {
-      showWarning("Deleted user cannot be edited.");
+      showWarning(i18nT("static.dhw6j4"));
 
       return;
     }
@@ -718,7 +729,7 @@ const UserTableData = () => {
     }
 
     if (isEditingSelf && !formData.is_active) {
-      showWarning("You cannot deactivate your own account.");
+      showWarning(i18nT("static.1w2rugp"));
 
       return;
     }
@@ -728,9 +739,7 @@ const UserTableData = () => {
       isSuperadmin &&
       !formData.role.some((role) => role.toLowerCase() === "superadmin")
     ) {
-      showWarning(
-        "You cannot remove the superadmin role from your own account.",
-      );
+      showWarning(i18nT("static.wv9wyq"));
 
       return;
     }
@@ -754,9 +763,7 @@ const UserTableData = () => {
 
       showSuccess(
         response?.message ||
-          (isAddNew
-            ? "User created successfully."
-            : "User updated successfully."),
+          (isAddNew ? i18nT("static.1b2yy07") : i18nT("static.18bfjg")),
       );
 
       /*
@@ -774,7 +781,7 @@ const UserTableData = () => {
 
   const handleDelete = async (data: UserListRow) => {
     if (data.id === currentUserId) {
-      showWarning("You cannot delete your own account.");
+      showWarning(i18nT("static.116d1co"));
 
       return;
     }
@@ -787,7 +794,7 @@ const UserTableData = () => {
 
       await refreshUserData();
 
-      showSuccess(response.message || "User deleted successfully.");
+      showSuccess(response.message || i18nT("static.t15gxy"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -805,7 +812,7 @@ const UserTableData = () => {
 
       await refreshUserData();
 
-      showSuccess(response.message || "User restored successfully.");
+      showSuccess(response.message || i18nT("static.1xcm76p"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -816,13 +823,13 @@ const UserTableData = () => {
 
   const handlePurge = async (data: UserListRow) => {
     if (!data.deleted_at) {
-      showWarning("Only deleted users can be permanently removed.");
+      showWarning(i18nT("static.1nbdvf6"));
 
       return;
     }
 
     if (data.id === currentUserId) {
-      showWarning("You cannot permanently delete your own account.");
+      showWarning(i18nT("static.wyvykb"));
 
       return;
     }
@@ -835,7 +842,7 @@ const UserTableData = () => {
 
       await refreshUserData();
 
-      showSuccess(response.message || "User permanently deleted.");
+      showSuccess(response.message || i18nT("static.1cewgx4"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -846,11 +853,11 @@ const UserTableData = () => {
 
   const onClickDelete = (data: UserListRow) => {
     requestActionConfirmation({
-      header: "Delete User",
+      header: i18nT("static.y4gqs1"),
 
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">Delete this user account?</span>
+          <span className="text-slate-600">{i18nT("static.o1513z")}</span>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-sm font-semibold text-slate-800">
@@ -858,7 +865,7 @@ const UserTableData = () => {
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              {data.username} • {data.email}
+              {data.username} {i18nT("static.syyan8")} {data.email}
             </p>
           </div>
         </div>
@@ -878,7 +885,7 @@ const UserTableData = () => {
         <div className="flex justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -887,7 +894,7 @@ const UserTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -899,9 +906,9 @@ const UserTableData = () => {
 
   const onClickRestore = (data: UserListRow) => {
     requestActionConfirmation({
-      header: "Restore User",
+      header: i18nT("static.1qai8dc"),
 
-      message: "Restore this user account?",
+      message: i18nT("static.zyffce"),
 
       icon: "pi pi-refresh",
 
@@ -917,13 +924,11 @@ const UserTableData = () => {
 
   const onClickPurge = (data: UserListRow) => {
     requestActionConfirmation({
-      header: "Delete User Permanently",
+      header: i18nT("static.1xeocf8"),
 
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <div className="rounded-lg border border-red-200 bg-red-50 p-3">
             <p className="m-0 text-sm font-semibold text-red-800">
@@ -949,7 +954,7 @@ const UserTableData = () => {
         <div className="flex justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -958,7 +963,7 @@ const UserTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -992,7 +997,7 @@ const UserTableData = () => {
         );
 
       if (existingUsers.length === 0) {
-        showWarning("No existing user data is available to export.");
+        showWarning(i18nT("static.1by0s62"));
 
         return;
       }
@@ -1045,9 +1050,7 @@ const UserTableData = () => {
 
       saveAs(fileBlob, fileName);
 
-      showSuccess(
-        `${existingUsers.length} existing users exported successfully.`,
-      );
+      showSuccess(i18nT("static.1oqmn30", { p0: existingUsers.length }));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -1073,7 +1076,7 @@ const UserTableData = () => {
     const employeeName = getUserEmployeeName(rowData);
 
     if (employeeName === "-" && !rowData.employee_id) {
-      return <Tag value="Not linked" severity="warning" rounded />;
+      return <Tag value={i18nT("static.1auoutz")} severity="warning" rounded />;
     }
 
     return (
@@ -1107,7 +1110,9 @@ const UserTableData = () => {
     const roles = getUserRoles(rowData);
 
     if (roles.length === 0) {
-      return <span className="text-sm text-slate-400">No role</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.svp9iu")}</span>
+      );
     }
 
     return (
@@ -1133,27 +1138,37 @@ const UserTableData = () => {
   const activeBody = (rowData: UserListRow) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="danger" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="danger"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     return rowData.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
-      <Tag value="Inactive" severity="secondary" icon="pi pi-ban" rounded />
+      <Tag
+        value={i18nT("static.13zf5vc")}
+        severity="secondary"
+        icon="pi pi-ban"
+        rounded
+      />
     );
   };
 
   const passwordStatusBody = (rowData: UserListRow) => {
     return rowData.must_change_password ? (
-      <Tag value="Must Change" severity="warning" rounded />
+      <Tag value={i18nT("static.1ypcei8")} severity="warning" rounded />
     ) : (
-      <Tag value="Normal" severity="success" rounded />
+      <Tag value={i18nT("static.onobjm")} severity="success" rounded />
     );
   };
 
@@ -1162,7 +1177,11 @@ const UserTableData = () => {
 
     if (rowData.deleted_at) {
       if (!canRestoreUser && !canPurgeUser) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -1177,7 +1196,7 @@ const UserTableData = () => {
               severity="success"
               loading={isCurrentRow && processingAction === "restore"}
               disabled={isProcessing}
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -1196,7 +1215,7 @@ const UserTableData = () => {
               severity="danger"
               loading={isCurrentRow && processingAction === "purge"}
               disabled={isProcessing}
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -1219,7 +1238,7 @@ const UserTableData = () => {
             size="small"
             severity="help"
             disabled={isProcessing}
-            tooltip="Edit"
+            tooltip={i18nT("static.1i1lcq9")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -1240,8 +1259,8 @@ const UserTableData = () => {
             disabled={isProcessing || rowData.id === currentUserId}
             tooltip={
               rowData.id === currentUserId
-                ? "You cannot delete your own account"
-                : "Delete"
+                ? i18nT("static.104pq5i")
+                : i18nT("static.oay2cq")
             }
             tooltipOptions={{
               appendTo: getBody,
@@ -1274,7 +1293,7 @@ const UserTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -1286,7 +1305,7 @@ const UserTableData = () => {
       <Button
         type="submit"
         form="user-form"
-        label={isAddNew ? "Create User" : "Save Changes"}
+        label={isAddNew ? i18nT("static.1pjr6lw") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={
@@ -1318,12 +1337,11 @@ const UserTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Users
+                  {i18nT("static.1uyoj7")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage login accounts, employee assignments, roles, and
-                  account status.
+                  {i18nT("static.pqgt4m")}{" "}
                 </p>
               </div>
             </div>
@@ -1332,7 +1350,7 @@ const UserTableData = () => {
               {canCreateUser && (
                 <Button
                   type="button"
-                  label="Refresh"
+                  label={i18nT("static.28r6qc")}
                   icon="pi pi-refresh"
                   severity="secondary"
                   outlined
@@ -1348,7 +1366,7 @@ const UserTableData = () => {
 
               <Button
                 type="button"
-                label="Export Excel"
+                label={i18nT("static.1tpgeic")}
                 icon="pi pi-file-excel"
                 severity="success"
                 outlined
@@ -1366,7 +1384,7 @@ const UserTableData = () => {
               {canCreateUser && (
                 <Button
                   type="button"
-                  label="New User"
+                  label={i18nT("static.1okrgyo")}
                   icon="pi pi-plus"
                   size="small"
                   disabled={isProcessing || isSaving || isExporting}
@@ -1380,7 +1398,9 @@ const UserTableData = () => {
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-500">Existing Users</p>
+              <p className="m-0 text-xs text-slate-500">
+                {i18nT("static.18sjugc")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summary.total}
@@ -1388,7 +1408,9 @@ const UserTableData = () => {
             </div>
 
             <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-              <p className="m-0 text-xs text-green-700">Active</p>
+              <p className="m-0 text-xs text-green-700">
+                {i18nT("static.8qzyhb")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
                 {summary.active}
@@ -1396,7 +1418,9 @@ const UserTableData = () => {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-600">Inactive</p>
+              <p className="m-0 text-xs text-slate-600">
+                {i18nT("static.13zf5vc")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summary.inactive}
@@ -1404,7 +1428,9 @@ const UserTableData = () => {
             </div>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-              <p className="m-0 text-xs text-blue-700">Linked Employees</p>
+              <p className="m-0 text-xs text-blue-700">
+                {i18nT("static.8nok09")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
                 {summary.linkedEmployee}
@@ -1426,12 +1452,12 @@ const UserTableData = () => {
                   htmlFor="show_deleted_users"
                   className="cursor-pointer text-sm text-slate-600"
                 >
-                  Show deleted users
+                  {i18nT("static.52im6x")}{" "}
                 </label>
               </div>
             ) : (
               <span className="text-xs text-slate-500">
-                Showing existing user accounts.
+                {i18nT("static.115o3ye")}{" "}
               </span>
             )}
 
@@ -1441,7 +1467,7 @@ const UserTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search user, employee, code, department, position, or email"
+                placeholder={i18nT("static.ztctil")}
                 className="w-full"
               />
             </IconField>
@@ -1480,8 +1506,8 @@ const UserTableData = () => {
               tableStyle={{
                 minWidth: "100rem",
               }}
-              emptyMessage="No user data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.ne5bpb")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -1497,7 +1523,7 @@ const UserTableData = () => {
 
               <Column
                 field="username"
-                header="Login Account"
+                header={i18nT("static.1r69so9")}
                 sortable
                 body={userBody}
                 style={{
@@ -1507,7 +1533,7 @@ const UserTableData = () => {
 
               <Column
                 field="employee_name"
-                header="Employee"
+                header={i18nT("static.1fak8xt")}
                 sortable
                 body={employeeBody}
                 style={{
@@ -1517,7 +1543,7 @@ const UserTableData = () => {
 
               <Column
                 field="department_name"
-                header="Organization"
+                header={i18nT("static.725tl6")}
                 sortable
                 body={organizationBody}
                 style={{
@@ -1526,7 +1552,7 @@ const UserTableData = () => {
               />
 
               <Column
-                header="Roles"
+                header={i18nT("static.hbz43i")}
                 body={roleBody}
                 style={{
                   minWidth: "20rem",
@@ -1535,7 +1561,7 @@ const UserTableData = () => {
 
               <Column
                 field="is_active"
-                header="Account Status"
+                header={i18nT("static.1tebuhq")}
                 sortable
                 body={activeBody}
                 style={{
@@ -1545,7 +1571,7 @@ const UserTableData = () => {
 
               <Column
                 field="must_change_password"
-                header="Password Status"
+                header={i18nT("static.19tog22")}
                 sortable
                 body={passwordStatusBody}
                 style={{
@@ -1554,7 +1580,7 @@ const UserTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionBody}
                 frozen
                 alignFrozen="right"
@@ -1577,7 +1603,7 @@ const UserTableData = () => {
 
       {/* User Form */}
       <Dialog
-        header={isAddNew ? "New User" : "Edit User"}
+        header={isAddNew ? i18nT("static.1okrgyo") : i18nT("static.171of4w")}
         visible={dialogVisible}
         style={{
           width: "95vw",
@@ -1608,10 +1634,7 @@ const UserTableData = () => {
             <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <i className="pi pi-exclamation-circle mt-0.5" />
 
-              <span>
-                Role or employee reference data could not be loaded. Refresh the
-                page before saving.
-              </span>
+              <span>{i18nT("static.135r4bx")} </span>
             </div>
           )}
 
@@ -1621,7 +1644,7 @@ const UserTableData = () => {
                 htmlFor="employee_id"
                 className="text-sm font-medium text-slate-700"
               >
-                Employee
+                {i18nT("static.1fak8xt")}{" "}
               </label>
 
               <Controller
@@ -1635,7 +1658,7 @@ const UserTableData = () => {
                     options={employeeOptions}
                     optionLabel="label"
                     optionValue="value"
-                    placeholder="Select employee"
+                    placeholder={i18nT("static.1izgm0n")}
                     filter
                     showClear
                     loading={employeeIsLoading}
@@ -1649,8 +1672,7 @@ const UserTableData = () => {
               />
 
               <small className="text-slate-500">
-                Employee assignment can be empty when this is a system-only
-                account.
+                {i18nT("static.1shsfnk")}{" "}
               </small>
             </div>
 
@@ -1659,7 +1681,7 @@ const UserTableData = () => {
                 htmlFor="username"
                 className="text-sm font-medium text-slate-700"
               >
-                Username
+                {i18nT("static.7s11ax")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -1667,22 +1689,21 @@ const UserTableData = () => {
                 name="username"
                 control={control}
                 rules={{
-                  required: "Username is required.",
+                  required: i18nT("static.1d43s9u"),
 
                   minLength: {
                     value: 3,
-                    message: "Username must contain at least 3 characters.",
+                    message: i18nT("static.1ejvsud"),
                   },
 
                   maxLength: {
                     value: 50,
-                    message: "Username cannot exceed 50 characters.",
+                    message: i18nT("static.1wlrshb"),
                   },
 
                   pattern: {
                     value: /^[a-zA-Z0-9._-]+$/,
-                    message:
-                      "Username may only contain letters, numbers, dot, underscore, and hyphen.",
+                    message: i18nT("static.1sf635t"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -1693,7 +1714,7 @@ const UserTableData = () => {
                       value={field.value ?? ""}
                       autoComplete="off"
                       disabled={isSaving}
-                      placeholder="Enter username"
+                      placeholder={i18nT("static.11nba67")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -1717,7 +1738,7 @@ const UserTableData = () => {
                 htmlFor="email"
                 className="text-sm font-medium text-slate-700"
               >
-                Email
+                {i18nT("static.inbfc7")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -1725,16 +1746,16 @@ const UserTableData = () => {
                 name="email"
                 control={control}
                 rules={{
-                  required: "Email is required.",
+                  required: i18nT("static.19ve3zw"),
 
                   maxLength: {
                     value: 254,
-                    message: "Email cannot exceed 254 characters.",
+                    message: i18nT("static.agitfb"),
                   },
 
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Email format is not valid.",
+                    message: i18nT("static.10qqhm1"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -1746,7 +1767,7 @@ const UserTableData = () => {
                       value={field.value ?? ""}
                       autoComplete="off"
                       disabled={isSaving}
-                      placeholder="user@company.com"
+                      placeholder={i18nT("static.12p78my")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -1770,7 +1791,7 @@ const UserTableData = () => {
                 htmlFor="role"
                 className="text-sm font-medium text-slate-700"
               >
-                Roles
+                {i18nT("static.hbz43i")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -1790,7 +1811,7 @@ const UserTableData = () => {
                       options={roleOptions}
                       optionLabel="label"
                       optionValue="value"
-                      placeholder="Select roles"
+                      placeholder={i18nT("static.vis8kw")}
                       filter
                       display="chip"
                       loading={roleIsLoading}
@@ -1816,7 +1837,7 @@ const UserTableData = () => {
                 htmlFor="password"
                 className="text-sm font-medium text-slate-700"
               >
-                Password
+                {i18nT("static.cf437c")}{" "}
                 {isAddNew && <span className="ml-1 text-red-500">*</span>}
               </label>
 
@@ -1826,7 +1847,7 @@ const UserTableData = () => {
                 rules={{
                   validate: (value) => {
                     if (isAddNew && !value.trim()) {
-                      return "Password is required.";
+                      return i18nT("Password is required.");
                     }
 
                     if (
@@ -1835,7 +1856,9 @@ const UserTableData = () => {
                         value,
                       )
                     ) {
-                      return "Use 12-128 characters with uppercase, lowercase, number, and symbol.";
+                      return i18nT(
+                        "Use 12-128 characters with uppercase, lowercase, number, and symbol.",
+                      );
                     }
 
                     return true;
@@ -1852,8 +1875,8 @@ const UserTableData = () => {
                       autoComplete="new-password"
                       placeholder={
                         isAddNew
-                          ? "Enter password"
-                          : "Leave empty to keep current password"
+                          ? i18nT("static.1quldxa")
+                          : i18nT("static.1073aa3")
                       }
                       className="w-full"
                       inputClassName={`w-full ${
@@ -1877,7 +1900,7 @@ const UserTableData = () => {
                 htmlFor="confirm_password"
                 className="text-sm font-medium text-slate-700"
               >
-                Confirm Password
+                {i18nT("static.1xwndc0")}{" "}
                 {isAddNew && <span className="ml-1 text-red-500">*</span>}
               </label>
 
@@ -1889,7 +1912,7 @@ const UserTableData = () => {
                     const password = getValues("password");
 
                     if (isAddNew && !value.trim()) {
-                      return "Password confirmation is required.";
+                      return i18nT("Password confirmation is required.");
                     }
 
                     if (password || value) {
@@ -1911,7 +1934,7 @@ const UserTableData = () => {
                       toggleMask
                       disabled={isSaving}
                       autoComplete="new-password"
-                      placeholder="Confirm password"
+                      placeholder={i18nT("static.p7hh5s")}
                       className="w-full"
                       inputClassName={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
@@ -1940,16 +1963,16 @@ const UserTableData = () => {
                         htmlFor="user_is_active"
                         className="cursor-pointer text-sm font-medium text-slate-700"
                       >
-                        Active User
+                        {i18nT("static.fqmzsa")}{" "}
                       </label>
 
                       <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                        Inactive users cannot log in to the application.
+                        {i18nT("static.n11ooy")}{" "}
                       </p>
 
                       {isEditingSelf && (
                         <p className="m-0 mt-1 text-xs text-amber-700">
-                          You cannot deactivate your own account.
+                          {i18nT("static.1w2rugp")}{" "}
                         </p>
                       )}
                     </div>

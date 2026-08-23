@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -61,6 +62,7 @@ const EMPTY_DOCUMENT_TYPE: DocumentType = {
 const getBody = () => document.body;
 
 const DocumentTypeTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -108,7 +110,7 @@ const DocumentTypeTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -120,7 +122,7 @@ const DocumentTypeTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -133,7 +135,7 @@ const DocumentTypeTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -145,8 +147,8 @@ const DocumentTypeTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -299,12 +301,10 @@ const DocumentTypeTableData = () => {
 
   const onClickDelete = (data: DocumentType) => {
     requestActionConfirmation({
-      header: "Delete Document Type",
+      header: i18nT("static.r0xowh"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this document type?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1n4ie02")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -317,7 +317,7 @@ const DocumentTypeTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -326,7 +326,7 @@ const DocumentTypeTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -338,12 +338,10 @@ const DocumentTypeTableData = () => {
 
   const onClickRestore = (data: DocumentType) => {
     requestActionConfirmation({
-      header: "Restore Document Type",
+      header: i18nT("static.1hr26gi"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this document type?
-          </span>
+          <span className="text-slate-600">{i18nT("static.ybx1c9")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -356,7 +354,7 @@ const DocumentTypeTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -365,7 +363,7 @@ const DocumentTypeTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -377,12 +375,10 @@ const DocumentTypeTableData = () => {
 
   const onClickPurge = (data: DocumentType) => {
     requestActionConfirmation({
-      header: "Delete Document Type Permanently",
+      header: i18nT("static.xmxmp0"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -395,7 +391,7 @@ const DocumentTypeTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -404,7 +400,7 @@ const DocumentTypeTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -417,14 +413,19 @@ const DocumentTypeTableData = () => {
   const statusColumnBody = (rowData: DocumentType) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -434,7 +435,7 @@ const DocumentTypeTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -444,7 +445,11 @@ const DocumentTypeTableData = () => {
 
   const descriptionColumnBody = (rowData: DocumentType) => {
     if (!rowData.description) {
-      return <span className="text-sm text-slate-400">No description</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.17eujsg")}
+        </span>
+      );
     }
 
     return (
@@ -464,7 +469,11 @@ const DocumentTypeTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -477,7 +486,7 @@ const DocumentTypeTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -494,7 +503,7 @@ const DocumentTypeTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -515,7 +524,7 @@ const DocumentTypeTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -530,7 +539,7 @@ const DocumentTypeTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -545,7 +554,7 @@ const DocumentTypeTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -557,7 +566,7 @@ const DocumentTypeTableData = () => {
       <Button
         type="submit"
         form="document-type-form"
-        label={isAddNew ? "Create Document Type" : "Save Changes"}
+        label={isAddNew ? i18nT("static.154g1py") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -587,12 +596,11 @@ const DocumentTypeTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Document Type
+                  {i18nT("static.1lemy44")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage document type codes, names, descriptions, and active
-                  status.
+                  {i18nT("static.j3f5nb")}{" "}
                 </p>
               </div>
             </div>
@@ -600,7 +608,7 @@ const DocumentTypeTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -613,7 +621,7 @@ const DocumentTypeTableData = () => {
 
               <Button
                 type="button"
-                label="New Document Type"
+                label={i18nT("static.vj9w8i")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -638,7 +646,7 @@ const DocumentTypeTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -649,7 +657,7 @@ const DocumentTypeTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code, name, or description"
+                placeholder={i18nT("static.41pktm")}
                 className="w-full"
               />
             </IconField>
@@ -675,8 +683,8 @@ const DocumentTypeTableData = () => {
               tableStyle={{
                 minWidth: "68rem",
               }}
-              emptyMessage="No document type data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1a19vwf")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -692,7 +700,7 @@ const DocumentTypeTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "11rem",
@@ -706,7 +714,7 @@ const DocumentTypeTableData = () => {
 
               <Column
                 field="name"
-                header="Document Type Name"
+                header={i18nT("static.u57o0n")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -720,7 +728,7 @@ const DocumentTypeTableData = () => {
 
               <Column
                 field="description"
-                header="Description"
+                header={i18nT("static.sjj37t")}
                 sortable
                 body={descriptionColumnBody}
                 style={{
@@ -730,7 +738,7 @@ const DocumentTypeTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -739,7 +747,7 @@ const DocumentTypeTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -794,7 +802,7 @@ const DocumentTypeTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Document Type Code
+              {i18nT("static.1fm05ix")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -802,7 +810,7 @@ const DocumentTypeTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Document type code is required.",
+                required: i18nT("static.1a3rwoy"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) ||
@@ -810,7 +818,7 @@ const DocumentTypeTableData = () => {
                 },
                 maxLength: {
                   value: 50,
-                  message: "Document type code cannot exceed 50 characters.",
+                  message: i18nT("static.ngmgr3"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -819,7 +827,7 @@ const DocumentTypeTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: overtime_doc"
+                    placeholder={i18nT("static.rwlqv9")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -831,7 +839,7 @@ const DocumentTypeTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique document type code.
+                      {i18nT("static.1fyi4fh")}{" "}
                     </small>
                   )}
                 </>
@@ -844,7 +852,7 @@ const DocumentTypeTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Document Type Name
+              {i18nT("static.u57o0n")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -852,10 +860,10 @@ const DocumentTypeTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Document type name is required.",
+                required: i18nT("static.1cfjv70"),
                 maxLength: {
                   value: 50,
-                  message: "Document type name cannot exceed 50 characters.",
+                  message: i18nT("static.1tbi4ot"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -864,7 +872,7 @@ const DocumentTypeTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Overtime Document"
+                    placeholder={i18nT("static.57nv8x")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -885,7 +893,7 @@ const DocumentTypeTableData = () => {
               htmlFor="description"
               className="text-sm font-medium text-slate-700"
             >
-              Description
+              {i18nT("static.sjj37t")}{" "}
             </label>
 
             <Controller
@@ -899,7 +907,7 @@ const DocumentTypeTableData = () => {
                     id="description"
                     rows={4}
                     autoResize
-                    placeholder="Enter a short description for this document type"
+                    placeholder={i18nT("static.77u8c")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -911,8 +919,7 @@ const DocumentTypeTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Optional information explaining when this document type is
-                      used.
+                      {i18nT("static.z3hbt8")}{" "}
                     </small>
                   )}
                 </>
@@ -932,12 +939,11 @@ const DocumentTypeTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive document types remain stored but should not be
-                      available for new records.
+                      {i18nT("static.1xr9c3j")}{" "}
                     </p>
                   </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import CardTitle from "@/app/_components/CardTitle";
 import useGetDocumentDetailApproval from "@/app/hooks/use-get-document-detail-approval";
@@ -32,6 +33,7 @@ import { useDispatch } from "react-redux";
 import useSWR from "swr";
 
 const ApprovalTableData = () => {
+  const { t: i18nT } = useI18n();
   const [selectedDocId, setSelectedDoc] = useState<number>();
   const {
     data: dataDocDetail,
@@ -66,7 +68,7 @@ const ApprovalTableData = () => {
         <div className="flex gap-2">
           <Button
             tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="Detail"
+            tooltip={i18nT("static.ei31dg")}
             rounded
             severity="info"
             label=""
@@ -90,8 +92,8 @@ const ApprovalTableData = () => {
 
   const onClickApprove = () => {
     requestActionConfirmation({
-      message: "Do you want to approve this record?",
-      header: "Approve Confirmation",
+      message: i18nT("static.etfq95"),
+      header: i18nT("static.4zf173"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -103,13 +105,13 @@ const ApprovalTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-success"
@@ -129,7 +131,7 @@ const ApprovalTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -139,7 +141,7 @@ const ApprovalTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -148,7 +150,7 @@ const ApprovalTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -158,8 +160,8 @@ const ApprovalTableData = () => {
 
   const onClickReject = () => {
     requestActionConfirmation({
-      message: "Do you want to reject this record?",
-      header: "Reject Confirmation",
+      message: i18nT("static.vurzx3"),
+      header: i18nT("static.1m2qxjf"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -171,13 +173,13 @@ const ApprovalTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-success"
@@ -197,7 +199,7 @@ const ApprovalTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -207,7 +209,7 @@ const ApprovalTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -216,7 +218,7 @@ const ApprovalTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -232,7 +234,7 @@ const ApprovalTableData = () => {
 
   return (
     <>
-      <Card title={<CardTitle title="Approval Task" url="" />}>
+      <Card title={<CardTitle title={i18nT("static.1ne1rfj")} url="" />}>
         <div className="p-3 flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div></div>
@@ -242,7 +244,7 @@ const ApprovalTableData = () => {
                 className="p-inputtext-sm"
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
+                placeholder={i18nT("static.p9ap2o")}
               />
             </IconField>
           </div>
@@ -258,9 +260,9 @@ const ApprovalTableData = () => {
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
             globalFilterFields={["document_name"]}
-            emptyMessage="No approval task found."
+            emptyMessage={i18nT("static.1djr4bk")}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={approvalTaskLoading}
           >
@@ -269,13 +271,16 @@ const ApprovalTableData = () => {
               headerStyle={{ width: "3rem" }}
               body={(data, options) => options.rowIndex + 1}
             />
-            <Column field="document_name" header="Document Type" />
-            <Column field="requester_employee_name" header="Requester" />
-            <Column field="status" header="Status" />
-            <Column field="approved_by" header="Approved By" />
+            <Column field="document_name" header={i18nT("static.1lemy44")} />
+            <Column
+              field="requester_employee_name"
+              header={i18nT("static.uhx31h")}
+            />
+            <Column field="status" header={i18nT("static.3pd73")} />
+            <Column field="approved_by" header={i18nT("static.eph8dj")} />
             <Column
               field="acted_at"
-              header="Approved At"
+              header={i18nT("static.g3qwy3")}
               body={(row: ApprovalRequestLine) =>
                 formatDisplayDateTime(row.acted_at)
               }
@@ -283,7 +288,7 @@ const ApprovalTableData = () => {
             <Column
               headerClassName="bg-white"
               className="bg-white"
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(rowData) => actionApproveColumnBody(rowData)}
               frozen={true}
               alignFrozen="right"
@@ -309,10 +314,10 @@ const ApprovalTableData = () => {
                     appendTo: () => document.body,
                     position: "top",
                   }}
-                  tooltip="Reject"
+                  tooltip={i18nT("static.1kej36u")}
                   rounded
                   severity="danger"
-                  label="Reject"
+                  label={i18nT("static.1kej36u")}
                   icon="pi pi-times"
                   size="small"
                   onClick={() => {
@@ -325,10 +330,10 @@ const ApprovalTableData = () => {
                     appendTo: () => document.body,
                     position: "top",
                   }}
-                  tooltip="Approve"
+                  tooltip={i18nT("static.1s2ov2y")}
                   rounded
                   severity="success"
-                  label="Approve"
+                  label={i18nT("static.1s2ov2y")}
                   icon="pi pi-check"
                   size="small"
                   onClick={() => {
@@ -340,43 +345,63 @@ const ApprovalTableData = () => {
           );
         }}
       >
-        {isLoadingDocDetail && <p>Loading...</p>}
-        {errorDocDetail && <p className="text-red-500">Error fetching data</p>}
+        {isLoadingDocDetail && <p>{i18nT("static.6kndir")}</p>}
+        {errorDocDetail && (
+          <p className="text-red-500">{i18nT("static.13jy7ix")}</p>
+        )}
         {dataDocDetail && dataDocDetail.document_type_id === 3 && (
           <>
             <div className="grid grid-cols-[180px_1fr] gap-y-2 text-sm">
-              <div className="font-semibold text-gray-600">Requester</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.uhx31h")}
+              </div>
               <div>{dataDocDetail.employee_name}</div>
 
               <div className="font-semibold text-gray-600">
-                Leave Balance Used
+                {i18nT("static.15hph5l")}{" "}
               </div>
               <div>{dataDocDetail.employee_leave_balance_name}</div>
 
-              <div className="font-semibold text-gray-600">Leave Name</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.1oxekwz")}
+              </div>
               <div>{dataDocDetail.leave_type_name}</div>
 
-              <div className="font-semibold text-gray-600">Start Date</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.7bl5hd")}
+              </div>
               <div>{formatDisplayDate(dataDocDetail.start_date)}</div>
 
-              <div className="font-semibold text-gray-600">End Date</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.1j4m31m")}
+              </div>
               <div>{formatDisplayDate(dataDocDetail.end_date)}</div>
 
-              <div className="font-semibold text-gray-600">Total Days</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.141yy28")}
+              </div>
               <div>{dataDocDetail.total_days}</div>
 
-              <div className="font-semibold text-gray-600">Reason</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.i36sl5")}
+              </div>
               <div className="break-all whitespace-pre-line">
                 {dataDocDetail.reason}
               </div>
 
-              <div className="font-semibold text-gray-600">Status</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.3pd73")}
+              </div>
               <div>{dataDocDetail.status}</div>
 
-              <div className="font-semibold text-gray-600">Approved By</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.eph8dj")}
+              </div>
               <div>{dataDocDetail.approved_by_name}</div>
 
-              <div className="font-semibold text-gray-600">Approved At</div>
+              <div className="font-semibold text-gray-600">
+                {i18nT("static.g3qwy3")}
+              </div>
               <div>{formatDisplayDateTime(dataDocDetail.approved_at)}</div>
             </div>
           </>

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -25,6 +26,7 @@ import PayrollAdjustmentPanel from "./PayrollAdjustmentPanel";
 import PerformanceEarningPanel from "./PerformanceEarningPanel";
 import HolidayPositionIncentivePanel from "./HolidayPositionIncentivePanel";
 import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 interface PayrollBatchDetailDataProps {
   batchId: number;
@@ -58,6 +60,7 @@ const statusSeverity = (
 export default function PayrollBatchDetailData({
   batchId,
 }: PayrollBatchDetailDataProps) {
+  const { t: i18nT } = useI18n();
   const detailUrl = `/api/payroll-batches/${batchId}/detail`;
   const { data, error, isLoading } = useSWR<PayrollBatchDetail>(detailUrl, () =>
     getPayrollBatchDetail(batchId),
@@ -93,13 +96,16 @@ export default function PayrollBatchDetailData({
                   {data.batch.batch_no}
                 </h1>
                 <Tag
-                  value={data.batch.status}
+                  value={i18nT(formatStatusLabel(data.batch.status))}
                   severity={statusSeverity(data.batch.status)}
                 />
               </div>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Payroll period {formatDisplayDate(data.batch.period_start)} to{" "}
-                {formatDisplayDate(data.batch.period_end)} · Payment date{" "}
+                {i18nT("static.1lhep1j")}{" "}
+                {formatDisplayDate(data.batch.period_start)}{" "}
+                {i18nT("static.idyip0")}{" "}
+                {formatDisplayDate(data.batch.period_end)}{" "}
+                {i18nT("static.1ewdooc")}{" "}
                 {formatDisplayDate(data.batch.payroll_date)}
               </p>
             </div>
@@ -109,16 +115,13 @@ export default function PayrollBatchDetailData({
             className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
             <i className="pi pi-arrow-left text-sm" />
-            Back to Payroll
+            {i18nT("static.rnmopi")}{" "}
           </Link>
         </div>
       </Card>
 
       {readinessError ? (
-        <Message
-          severity="warn"
-          text="Source readiness is unavailable. Refresh after the API migration is applied before calculating payroll."
-        />
+        <Message severity="warn" text={i18nT("static.t45kcq")} />
       ) : readiness ? (
         <PayrollSourceReadinessPanel readiness={readiness} />
       ) : null}
@@ -127,11 +130,10 @@ export default function PayrollBatchDetailData({
         <div className="p-3 sm:p-4 md:p-5">
           <div className="mb-4">
             <h2 className="m-0 text-base font-semibold text-slate-800">
-              Employee Payroll Results
+              {i18nT("static.1ex48ey")}{" "}
             </h2>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Select an employee to inspect the frozen attendance and
-              calculation results.
+              {i18nT("static.1brz5hp")}{" "}
             </p>
           </div>
           <DataTable
@@ -152,30 +154,38 @@ export default function PayrollBatchDetailData({
             responsiveLayout="scroll"
             size="small"
             tableStyle={{ minWidth: "62rem" }}
-            emptyMessage="No employee result is available for this batch."
+            emptyMessage={i18nT("static.biabwz")}
           >
-            <Column field="employee_code" header="Employee ID" sortable />
-            <Column field="employee_name" header="Employee" sortable />
             <Column
-              header="Gross Income"
+              field="employee_code"
+              header={i18nT("static.1lghzb2")}
+              sortable
+            />
+            <Column
+              field="employee_name"
+              header={i18nT("static.1fak8xt")}
+              sortable
+            />
+            <Column
+              header={i18nT("static.awjta6")}
               body={(row: PayrollEmployeeResultDetail) =>
                 formatCurrency(row.gross_income)
               }
             />
             <Column
-              header="Deduction"
+              header={i18nT("static.1lt98r0")}
               body={(row: PayrollEmployeeResultDetail) =>
                 formatCurrency(row.employee_deduction)
               }
             />
             <Column
-              header="PPh 21"
+              header={i18nT("static.mlv85w")}
               body={(row: PayrollEmployeeResultDetail) =>
                 formatCurrency(row.pph21_amount)
               }
             />
             <Column
-              header="Take Home Pay"
+              header={i18nT("static.1brz9dr")}
               body={(row: PayrollEmployeeResultDetail) => (
                 <span className="font-semibold text-slate-800">
                   {formatCurrency(row.take_home_pay)}
@@ -183,9 +193,12 @@ export default function PayrollBatchDetailData({
               )}
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: PayrollEmployeeResultDetail) => (
-                <Tag value={row.status} severity={statusSeverity(row.status)} />
+                <Tag
+                  value={i18nT(formatStatusLabel(row.status))}
+                  severity={statusSeverity(row.status)}
+                />
               )}
             />
           </DataTable>
@@ -214,6 +227,7 @@ function PayrollSourceReadinessPanel({
 }: {
   readiness: PayrollBatchSourceReadiness;
 }) {
+  const { t: i18nT } = useI18n();
   const statusSeverity = (status: string) => {
     if (status === "READY") return "success" as const;
     if (status === "WARNING") return "warning" as const;
@@ -225,17 +239,18 @@ function PayrollSourceReadinessPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="m-0 text-base font-semibold text-slate-800">
-              Payroll Source Readiness
+              {i18nT("static.1arqacr")}{" "}
             </h2>
             <p className="m-0 mt-1 text-xs text-slate-500">
-              Master, employee detail, configuration, attendance, and business
-              rules are checked against the validation snapshot.
+              {i18nT("static.1jvrh6p")}{" "}
             </p>
           </div>
           <div className="flex gap-2">
             <Tag
               value={
-                readiness.source_manifest_current ? "Synchronized" : "Stale"
+                readiness.source_manifest_current
+                  ? i18nT("static.1sm1t8b")
+                  : i18nT("static.3vuf4u")
               }
               severity={
                 readiness.source_manifest_current ? "success" : "danger"
@@ -244,8 +259,8 @@ function PayrollSourceReadinessPanel({
             <Tag
               value={
                 readiness.ready_for_calculation
-                  ? "Ready to calculate"
-                  : "Calculation blocked"
+                  ? i18nT("static.fq1f6d")
+                  : i18nT("static.weurra")
               }
               severity={readiness.ready_for_calculation ? "success" : "warning"}
             />
@@ -262,7 +277,7 @@ function PayrollSourceReadinessPanel({
                   {domain.domain.replaceAll("_", " ")}
                 </span>
                 <Tag
-                  value={domain.status}
+                  value={i18nT(formatStatusLabel(domain.status))}
                   severity={statusSeverity(domain.status)}
                 />
               </div>
@@ -272,8 +287,8 @@ function PayrollSourceReadinessPanel({
               {(domain.blocking_count > 0 || domain.warning_count > 0) && (
                 <p className="m-0 mt-1 text-xs font-medium text-amber-700">
                   {domain.blocking_count > 0
-                    ? `${domain.blocking_count} blocking issue(s)`
-                    : `${domain.warning_count} warning(s)`}
+                    ? i18nT("static.1bqbeel", { p0: domain.blocking_count })
+                    : i18nT("static.1gx8ykr", { p0: domain.warning_count })}
                 </p>
               )}
             </div>
@@ -289,6 +304,7 @@ function EmployeeResultPanel({
 }: {
   result: PayrollEmployeeResultDetail;
 }) {
+  const { t: i18nT } = useI18n();
   const attendance = result.attendance;
   const proration = result.proration_details_json ?? {};
   const prorationValue = (key: string) => {
@@ -313,36 +329,42 @@ function EmployeeResultPanel({
                 <p className="m-0">{result.error_message}</p>
                 {result.error_code && (
                   <small className="text-xs text-red-500">
-                    Code: {result.error_code}
+                    {i18nT("static.gsq7ai")} {result.error_code}
                   </small>
                 )}
               </div>
             )}
           </div>
-          <Tag value={result.status} severity={statusSeverity(result.status)} />
+          <Tag
+            value={i18nT(formatStatusLabel(result.status))}
+            severity={statusSeverity(result.status)}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Amount label="Base Salary" value={result.base_salary} />
-          <Amount label="Gross Income" value={result.gross_income} />
+          <Amount label={i18nT("static.38iui2")} value={result.base_salary} />
+          <Amount label={i18nT("static.awjta6")} value={result.gross_income} />
           <Amount
-            label="Employee Deduction"
+            label={i18nT("static.1yemymq")}
             value={result.employee_deduction}
           />
-          <Amount label="PPh 21" value={result.pph21_amount} />
+          <Amount label={i18nT("static.mlv85w")} value={result.pph21_amount} />
           <Amount
-            label="Employer Contribution"
+            label={i18nT("static.cgfoly")}
             value={result.employer_contribution}
           />
-          <Amount label="Company Cost" value={result.company_payroll_cost} />
           <Amount
-            label="Take Home Pay"
+            label={i18nT("static.1mhojd5")}
+            value={result.company_payroll_cost}
+          />
+          <Amount
+            label={i18nT("static.1brz9dr")}
             value={result.take_home_pay}
             emphasized
           />
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-xs font-medium text-slate-500">
-              Proration Factor
+              {i18nT("static.1kc2dwu")}{" "}
             </p>
             <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
               {result.proration_factor}
@@ -353,35 +375,40 @@ function EmployeeResultPanel({
         {Object.keys(proration).length > 0 && (
           <section>
             <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
-              Proration Breakdown
+              {i18nT("static.1cigod8")}{" "}
             </h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <Metric label="Method" value={prorationValue("method_code")} />
               <Metric
-                label="Denominator"
+                label={i18nT("static.16cmxjk")}
+                value={prorationValue("method_code")}
+              />
+              <Metric
+                label={i18nT("static.18cbssj")}
                 value={prorationValue("denominator_days")}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
               <Metric
-                label="Employment"
+                label={i18nT("static.1eqehn7")}
                 value={prorationValue("employment_days")}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
               <Metric
-                label="Non-payable"
+                label={i18nT("static.yfvb1r")}
                 value={prorationValue("non_payable_days")}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
               <Metric
-                label="Payable"
+                label={i18nT("static.15ju7o9")}
                 value={prorationValue("payable_days")}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
-              <Metric label="Scope" value={prorationValue("salary_scope")} />
+              <Metric
+                label={i18nT("static.rpvfkb")}
+                value={prorationValue("salary_scope")}
+              />
             </div>
             <p className="m-0 mt-2 text-xs leading-5 text-slate-500">
-              The factor is frozen at validation and applies to basic salary
-              only. Paid leave remains payable.
+              {i18nT("static.mzc62v")}{" "}
             </p>
           </section>
         )}
@@ -389,31 +416,34 @@ function EmployeeResultPanel({
         {attendance && (
           <section>
             <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
-              Frozen Attendance
+              {i18nT("static.g3hd72")}{" "}
             </h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               <Metric
-                label="Scheduled"
+                label={i18nT("static.1b7ctnc")}
                 value={attendance.scheduled_days}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
               <Metric
-                label="Present"
+                label={i18nT("static.1m3e00c")}
                 value={attendance.present_days}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
               <Metric
-                label="Unpaid Leave"
+                label={i18nT("static.1xgh3nr")}
                 value={attendance.unpaid_leave_days}
-                suffix="days"
+                suffix={i18nT("static.1wewy2y")}
               />
               <Metric
-                label="Overtime"
+                label={i18nT("static.c4jx3y")}
                 value={formatDuration(attendance.approved_overtime_seconds)}
               />
               <Metric
-                label="Late / Early Out"
-                value={`${formatDuration(attendance.late_seconds)} / ${formatDuration(attendance.early_out_seconds)}`}
+                label={i18nT("static.hc7xkj")}
+                value={i18nT("static.hvhngx", {
+                  p0: formatDuration(attendance.late_seconds),
+                  p1: formatDuration(attendance.early_out_seconds),
+                })}
               />
             </div>
           </section>
@@ -421,7 +451,7 @@ function EmployeeResultPanel({
 
         <section>
           <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
-            Calculated Components
+            {i18nT("static.168fn3r")}{" "}
           </h3>
           <DataTable
             value={result.components}
@@ -431,13 +461,13 @@ function EmployeeResultPanel({
             scrollable
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "46rem" }}
-            emptyMessage="No calculated component is available."
+            emptyMessage={i18nT("static.bqd1tu")}
           >
-            <Column field="component_name" header="Component" />
-            <Column field="component_type" header="Type" />
-            <Column field="source" header="Source" />
+            <Column field="component_name" header={i18nT("static.bvqo3k")} />
+            <Column field="component_type" header={i18nT("static.1m2zofh")} />
+            <Column field="source" header={i18nT("static.r5qyuw")} />
             <Column
-              header="Calculation"
+              header={i18nT("static.1gig16e")}
               body={(row: PayrollComponentResult) => {
                 const calculator = row.calculation_details_json?.calculator;
                 return typeof calculator === "string"
@@ -446,13 +476,13 @@ function EmployeeResultPanel({
               }}
             />
             <Column
-              header="Base"
+              header={i18nT("static.19phq7s")}
               body={(row: PayrollComponentResult) =>
                 row.base_amount ? formatCurrency(row.base_amount) : "-"
               }
             />
             <Column
-              header="Amount"
+              header={i18nT("static.a2ky21")}
               body={(row: PayrollComponentResult) => formatCurrency(row.amount)}
             />
           </DataTable>
@@ -502,12 +532,13 @@ function Metric({
   value: string;
   suffix?: string;
 }) {
+  const { t: i18nT } = useI18n();
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p className="m-0 text-xs font-medium text-slate-500">{label}</p>
       <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
         {value}
-        {suffix ? ` ${suffix}` : ""}
+        {suffix ? i18nT("static.m3cxo5", { p0: suffix }) : ""}
       </p>
     </div>
   );

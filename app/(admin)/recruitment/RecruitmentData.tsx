@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -135,6 +136,7 @@ const statusSeverity = (
 };
 
 export default function RecruitmentData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -212,7 +214,7 @@ export default function RecruitmentData() {
       requisitions
         .filter((item) => item.status === "OPEN")
         .map((item) => ({
-          label: `${item.code} — ${item.job_title}`,
+          label: i18nT("static.1v0umq8", { p0: item.code, p1: item.job_title }),
           value: item.id,
         })),
     [requisitions],
@@ -231,7 +233,10 @@ export default function RecruitmentData() {
           (item) => !["HIRED", "REJECTED", "WITHDRAWN"].includes(item.status),
         )
         .map((item) => ({
-          label: `${item.candidate_name} — ${item.job_title}`,
+          label: i18nT("static.1v0umq8", {
+            p0: item.candidate_name,
+            p1: item.job_title,
+          }),
           value: item.id,
         })),
     [applications],
@@ -276,11 +281,11 @@ export default function RecruitmentData() {
       reset();
       setDialog(null);
       await refresh();
-      notify("success", "Saved", success);
+      notify("success", i18nT("static.12ek4is"), success);
     } catch (error: unknown) {
       notify(
         "error",
-        "Unable to save",
+        i18nT("static.rulhkg"),
         apiErrorMessage(
           error,
           "Review the data and refresh if another user has made a change.",
@@ -300,15 +305,11 @@ export default function RecruitmentData() {
       await reloadRequisitions();
       notify(
         "success",
-        "Updated",
-        `Requisition is now ${status.toLowerCase()}.`,
+        i18nT("static.miz9ao"),
+        i18nT("static.18c838j", { p0: status.toLowerCase() }),
       );
     } catch {
-      notify(
-        "error",
-        "Unable to update",
-        "The requisition has changed or cannot use that status.",
-      );
+      notify("error", i18nT("static.1yhx6qk"), i18nT("static.17n6yr4"));
     } finally {
       setSaving(false);
     }
@@ -320,27 +321,27 @@ export default function RecruitmentData() {
     const cancelling = status === "CANCELLED";
     requestActionConfirmation({
       action: cancelling
-        ? "Cancel requisition"
+        ? i18nT("static.1xwfim3")
         : status === "CLOSED"
-          ? "Close requisition"
-          : "Open requisition",
+          ? i18nT("static.1py01df")
+          : i18nT("static.1w3q4bd"),
       target: `${row.code} · ${row.job_title}`,
       severity: cancelling || status === "CLOSED" ? "danger" : "warning",
       confirmLabel: cancelling
-        ? "Cancel"
+        ? i18nT("static.ew9em3")
         : status === "CLOSED"
-          ? "Close"
-          : "Open",
+          ? i18nT("static.1l0xxoj")
+          : i18nT("static.n6hn1l"),
       confirmIcon: cancelling
         ? "pi pi-times"
         : status === "CLOSED"
           ? "pi pi-lock"
           : "pi pi-folder-open",
       description: cancelling
-        ? "Cancel this requisition?"
+        ? i18nT("static.9wqk5y")
         : status === "CLOSED"
-          ? "Close this requisition?"
-          : "Open this requisition?",
+          ? i18nT("static.1lupgda")
+          : i18nT("static.17di4kk"),
       onAccept: () => changeRequisitionStatus(row, status),
     });
   };
@@ -352,13 +353,13 @@ export default function RecruitmentData() {
     try {
       await updateRecruitmentCandidateStatus(row.id, row.row_version, status);
       await reloadCandidates();
-      notify("success", "Updated", `Candidate is now ${status.toLowerCase()}.`);
-    } catch {
       notify(
-        "error",
-        "Unable to update",
-        "The candidate has changed or cannot use that status.",
+        "success",
+        i18nT("static.miz9ao"),
+        i18nT("static.1lyzsvw", { p0: status.toLowerCase() }),
       );
+    } catch {
+      notify("error", i18nT("static.1yhx6qk"), i18nT("static.1g8lu4f"));
     } finally {
       setSaving(false);
     }
@@ -369,14 +370,12 @@ export default function RecruitmentData() {
   ) => {
     const archiving = status === "ARCHIVED";
     requestActionConfirmation({
-      action: archiving ? "Archive candidate" : "Reactivate candidate",
+      action: archiving ? i18nT("static.14ow54g") : i18nT("static.1qpq5no"),
       target: row.full_name,
       severity: archiving ? "danger" : "warning",
-      confirmLabel: archiving ? "Archive" : "Reactivate",
+      confirmLabel: archiving ? i18nT("static.w0suw5") : i18nT("static.ezrmxd"),
       confirmIcon: archiving ? "pi pi-folder" : "pi pi-refresh",
-      description: archiving
-        ? "Archive this candidate?"
-        : "Reactivate this candidate?",
+      description: archiving ? i18nT("static.1jq1jiv") : i18nT("static.c1t7kb"),
       onAccept: () => changeCandidateStatus(row, status),
     });
   };
@@ -388,11 +387,15 @@ export default function RecruitmentData() {
     try {
       await updateRecruitmentOfferStatus(row.id, row.row_version, status);
       await refresh();
-      notify("success", "Updated", `Offer is now ${status.toLowerCase()}.`);
+      notify(
+        "success",
+        i18nT("static.miz9ao"),
+        i18nT("static.1tvtcwt", { p0: status.toLowerCase() }),
+      );
     } catch (error: unknown) {
       notify(
         "error",
-        "Unable to update",
+        i18nT("static.1yhx6qk"),
         apiErrorMessage(
           error,
           "The offer has changed or cannot use that status.",
@@ -410,23 +413,27 @@ export default function RecruitmentData() {
     const accepting = status === "ACCEPTED";
     requestActionConfirmation({
       action: declining
-        ? "Decline offer"
+        ? i18nT("static.5jy8nj")
         : accepting
-          ? "Accept offer"
-          : "Send offer",
+          ? i18nT("static.1bes0jj")
+          : i18nT("static.pq8z9"),
       target: `${row.candidate_name} · ${row.job_title}`,
       severity: declining ? "danger" : "warning",
-      confirmLabel: declining ? "Decline" : accepting ? "Accept" : "Send",
+      confirmLabel: declining
+        ? i18nT("static.oo69tl")
+        : accepting
+          ? i18nT("static.me22x5")
+          : i18nT("static.1vatbdb"),
       confirmIcon: declining
         ? "pi pi-times"
         : accepting
           ? "pi pi-check"
           : "pi pi-send",
       description: declining
-        ? "Decline this offer?"
+        ? i18nT("static.1luuyqa")
         : accepting
-          ? "Accept this offer?"
-          : "Send this offer?",
+          ? i18nT("static.133qxb6")
+          : i18nT("static.uug11s"),
       onAccept: () => changeOfferStatus(row, status),
     });
   };
@@ -461,7 +468,7 @@ export default function RecruitmentData() {
   const applicationActions = (row: RecruitmentApplication) => (
     <div className="flex flex-wrap gap-1">
       <Button
-        label="History"
+        label={i18nT("static.yugfpb")}
         icon="pi pi-history"
         text
         severity="secondary"
@@ -473,7 +480,7 @@ export default function RecruitmentData() {
       />
       {canManage && row.status === "APPLIED" ? (
         <Button
-          label="Screen"
+          label={i18nT("static.178pk4x")}
           text
           size="small"
           onClick={() => openApplicationStatus(row, "SCREENING")}
@@ -483,14 +490,14 @@ export default function RecruitmentData() {
       ["APPLIED", "SCREENING", "INTERVIEW", "OFFER"].includes(row.status) ? (
         <>
           <Button
-            label="Withdraw"
+            label={i18nT("static.88y37b")}
             text
             severity="secondary"
             size="small"
             onClick={() => openApplicationStatus(row, "WITHDRAWN")}
           />
           <Button
-            label="Reject"
+            label={i18nT("static.1kej36u")}
             text
             severity="danger"
             size="small"
@@ -504,7 +511,7 @@ export default function RecruitmentData() {
     <div className="flex gap-1">
       {row.status === "DRAFT" ? (
         <Button
-          label="Open"
+          label={i18nT("static.n6hn1l")}
           text
           size="small"
           onClick={() => confirmRequisitionStatus(row, "OPEN")}
@@ -513,7 +520,7 @@ export default function RecruitmentData() {
       ) : null}
       {row.status === "OPEN" ? (
         <Button
-          label="Close"
+          label={i18nT("static.1l0xxoj")}
           text
           severity="secondary"
           size="small"
@@ -523,7 +530,7 @@ export default function RecruitmentData() {
       ) : null}
       {row.status === "DRAFT" || row.status === "OPEN" ? (
         <Button
-          label="Cancel"
+          label={i18nT("static.ew9em3")}
           text
           severity="danger"
           size="small"
@@ -537,7 +544,7 @@ export default function RecruitmentData() {
     <div className="flex flex-wrap gap-1">
       {row.resume_original_file_name ? (
         <Button
-          label="Download Resume"
+          label={i18nT("static.1o765y8")}
           icon="pi pi-download"
           text
           severity="secondary"
@@ -553,7 +560,9 @@ export default function RecruitmentData() {
       {canManage && row.status === "ACTIVE" ? (
         <Button
           label={
-            row.resume_original_file_name ? "Replace Resume" : "Upload Resume"
+            row.resume_original_file_name
+              ? i18nT("static.ly9tr2")
+              : i18nT("static.1hpezaf")
           }
           icon="pi pi-upload"
           text
@@ -567,7 +576,7 @@ export default function RecruitmentData() {
       ) : null}
       {canManage && row.status === "ACTIVE" ? (
         <Button
-          label="Archive"
+          label={i18nT("static.w0suw5")}
           text
           severity="danger"
           size="small"
@@ -577,7 +586,7 @@ export default function RecruitmentData() {
       ) : null}
       {canManage && row.status === "ARCHIVED" ? (
         <Button
-          label="Reactivate"
+          label={i18nT("static.ezrmxd")}
           text
           size="small"
           disabled={saving}
@@ -590,7 +599,7 @@ export default function RecruitmentData() {
     <div className="flex flex-wrap gap-1">
       {row.status === "DRAFT" ? (
         <Button
-          label="Send"
+          label={i18nT("static.1vatbdb")}
           text
           size="small"
           onClick={() => confirmOfferStatus(row, "SENT")}
@@ -600,14 +609,14 @@ export default function RecruitmentData() {
       {row.status === "SENT" ? (
         <>
           <Button
-            label="Accept"
+            label={i18nT("static.me22x5")}
             text
             size="small"
             onClick={() => confirmOfferStatus(row, "ACCEPTED")}
             disabled={saving}
           />
           <Button
-            label="Decline"
+            label={i18nT("static.oo69tl")}
             text
             severity="danger"
             size="small"
@@ -618,7 +627,9 @@ export default function RecruitmentData() {
       ) : null}
       {row.status === "ACCEPTED" && canLinkEmployee && row.lifecycle_case_id ? (
         <Tag
-          value={`Onboarding ${row.onboarding_status || "created"}`}
+          value={i18nT("static.mebeis", {
+            p0: row.onboarding_status || i18nT("static.dupnej"),
+          })}
           severity={statusSeverity(row.onboarding_status || "DRAFT")}
         />
       ) : null}
@@ -628,7 +639,7 @@ export default function RecruitmentData() {
         <>
           {canCreateEmployeeFromOffer && !row.linked_employee_id ? (
             <Button
-              label="Create Employee & Onboard"
+              label={i18nT("static.m3t8um")}
               icon="pi pi-user-plus"
               text
               size="small"
@@ -639,8 +650,8 @@ export default function RecruitmentData() {
           <Button
             label={
               row.linked_employee_id
-                ? "Resume Onboarding"
-                : "Link Existing Employee"
+                ? i18nT("static.16f2qwb")
+                : i18nT("static.twl4am")
             }
             text
             size="small"
@@ -655,7 +666,7 @@ export default function RecruitmentData() {
   const footer = (label: string, onSave: () => void) => (
     <div className="flex justify-end gap-2">
       <Button
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         text
         severity="secondary"
         onClick={close}
@@ -676,16 +687,16 @@ export default function RecruitmentData() {
       score !== null &&
       (!Number.isFinite(score) || score < 0 || score > 100)
     ) {
-      notify("error", "Validation", "Score must be between 0 and 100.");
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.kigx71"));
       return;
     }
     requestActionConfirmation({
-      action: "Complete interview",
+      action: i18nT("static.1l00exx"),
       target: `Interview #${selectedInterview.id}`,
       severity: "warning",
-      confirmLabel: "Complete interview",
+      confirmLabel: i18nT("static.1l00exx"),
       confirmIcon: "pi pi-check-circle",
-      description: "Complete this interview?",
+      description: i18nT("static.1gez7cq"),
       onAccept: () =>
         save(
           () =>
@@ -705,16 +716,16 @@ export default function RecruitmentData() {
   const confirmCancelInterview = () => {
     const reason = interviewCancellationReason.trim();
     if (!selectedInterview || !reason) {
-      notify("error", "Validation", "Cancellation reason is required.");
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.1svshzr"));
       return;
     }
     requestActionConfirmation({
-      action: "Cancel interview",
+      action: i18nT("static.1x7m3go"),
       target: `Interview #${selectedInterview.id}`,
       severity: "danger",
-      confirmLabel: "Cancel interview",
+      confirmLabel: i18nT("static.1x7m3go"),
       confirmIcon: "pi pi-times",
-      description: "Cancel this interview?",
+      description: i18nT("static.19ueac7"),
       onAccept: () =>
         save(
           () =>
@@ -737,15 +748,14 @@ export default function RecruitmentData() {
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-              Recruitment
+              {i18nT("static.15r5kbt")}{" "}
             </h1>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Manage vacancies, candidates, interviews, offers, and the hand-off
-              to employee onboarding.
+              {i18nT("static.8wu40r")}{" "}
             </p>
           </div>
           <Button
-            label="Refresh"
+            label={i18nT("static.28r6qc")}
             icon="pi pi-refresh"
             outlined
             severity="secondary"
@@ -755,11 +765,11 @@ export default function RecruitmentData() {
           />
         </div>
         <TabView>
-          <TabPanel header="Requisitions">
+          <TabPanel header={i18nT("static.1244wus")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="New Requisition"
+                  label={i18nT("static.whgb9t")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => showDialog("requisition")}
@@ -774,27 +784,27 @@ export default function RecruitmentData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No requisition found."
+              emptyMessage={i18nT("static.1bnqob0")}
             >
-              <Column field="code" header="Code" />
-              <Column field="job_title" header="Job Title" />
+              <Column field="code" header={i18nT("static.xoaiok")} />
+              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
               <Column
                 field="department_name"
-                header="Department"
+                header={i18nT("static.1430r53")}
                 body={(row: RecruitmentRequisition) =>
                   row.department_name || "-"
                 }
               />
-              <Column field="headcount" header="Headcount" />
+              <Column field="headcount" header={i18nT("static.13gfwzm")} />
               <Column
                 field="target_start_date"
-                header="Target Start"
+                header={i18nT("static.1oyq5tw")}
                 body={(row: RecruitmentRequisition) =>
                   formatDisplayDate(row.target_start_date)
                 }
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row: RecruitmentRequisition) => (
                   <Tag
                     value={row.status}
@@ -803,15 +813,18 @@ export default function RecruitmentData() {
                 )}
               />
               {canManage && (
-                <Column header="Action" body={requisitionActions} />
+                <Column
+                  header={i18nT("static.2wk0tb")}
+                  body={requisitionActions}
+                />
               )}
             </DataTable>
           </TabPanel>
-          <TabPanel header="Candidates">
+          <TabPanel header={i18nT("static.uojsmj")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="New Candidate"
+                  label={i18nT("static.1geipt0")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => showDialog("candidate")}
@@ -826,26 +839,26 @@ export default function RecruitmentData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No candidate found."
+              emptyMessage={i18nT("static.1bdfsjf")}
             >
-              <Column field="full_name" header="Candidate" />
+              <Column field="full_name" header={i18nT("static.1vb7im2")} />
               <Column
                 field="email"
-                header="Email"
+                header={i18nT("static.inbfc7")}
                 body={(row) => row.email || "-"}
               />
               <Column
                 field="phone_number"
-                header="Phone"
+                header={i18nT("static.kb2lhr")}
                 body={(row) => row.phone_number || "-"}
               />
               <Column
                 field="source"
-                header="Source"
+                header={i18nT("static.r5qyuw")}
                 body={(row) => row.source || "-"}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row) => (
                   <Tag
                     value={row.status}
@@ -853,14 +866,14 @@ export default function RecruitmentData() {
                   />
                 )}
               />
-              <Column header="Action" body={candidateActions} />
+              <Column header={i18nT("static.2wk0tb")} body={candidateActions} />
             </DataTable>
           </TabPanel>
-          <TabPanel header="Applications">
+          <TabPanel header={i18nT("static.d6g082")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="New Application"
+                  label={i18nT("static.1mt9atf")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => showDialog("application")}
@@ -875,19 +888,22 @@ export default function RecruitmentData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No application found."
+              emptyMessage={i18nT("static.5s1h3e")}
             >
-              <Column field="candidate_name" header="Candidate" />
-              <Column field="requisition_code" header="Requisition" />
-              <Column field="job_title" header="Job Title" />
+              <Column field="candidate_name" header={i18nT("static.1vb7im2")} />
               <Column
-                header="Applied"
+                field="requisition_code"
+                header={i18nT("static.juyien")}
+              />
+              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
+              <Column
+                header={i18nT("static.gpyu7e")}
                 body={(row: RecruitmentApplication) =>
                   formatDisplayDate(row.applied_at)
                 }
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row: RecruitmentApplication) => (
                   <Tag
                     value={row.status}
@@ -895,14 +911,17 @@ export default function RecruitmentData() {
                   />
                 )}
               />
-              <Column header="Action" body={applicationActions} />
+              <Column
+                header={i18nT("static.2wk0tb")}
+                body={applicationActions}
+              />
             </DataTable>
           </TabPanel>
-          <TabPanel header="Interviews">
+          <TabPanel header={i18nT("static.jxlebp")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="Schedule Interview"
+                  label={i18nT("static.1ugtb2n")}
                   icon="pi pi-calendar-plus"
                   size="small"
                   onClick={() => showDialog("interview")}
@@ -917,20 +936,23 @@ export default function RecruitmentData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No interview found."
+              emptyMessage={i18nT("static.17e5tfp")}
             >
-              <Column field="candidate_name" header="Candidate" />
-              <Column field="job_title" header="Job Title" />
-              <Column field="interview_type" header="Type" />
+              <Column field="candidate_name" header={i18nT("static.1vb7im2")} />
+              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
+              <Column field="interview_type" header={i18nT("static.1m2zofh")} />
               <Column
-                header="Schedule"
+                header={i18nT("static.19hwlpo")}
                 body={(row: RecruitmentInterview) =>
                   formatDisplayDateTime(row.scheduled_at)
                 }
               />
-              <Column field="interviewer_name" header="Interviewer" />
               <Column
-                header="Status"
+                field="interviewer_name"
+                header={i18nT("static.1j5tv1f")}
+              />
+              <Column
+                header={i18nT("static.3pd73")}
                 body={(row: RecruitmentInterview) => (
                   <Tag
                     value={row.status}
@@ -940,12 +962,12 @@ export default function RecruitmentData() {
               />
               {canManage && (
                 <Column
-                  header="Action"
+                  header={i18nT("static.2wk0tb")}
                   body={(row: RecruitmentInterview) =>
                     row.status === "SCHEDULED" ? (
                       <div className="flex gap-1">
                         <Button
-                          label="Complete"
+                          label={i18nT("static.rcgk2q")}
                           text
                           size="small"
                           onClick={() => {
@@ -958,7 +980,7 @@ export default function RecruitmentData() {
                           }}
                         />
                         <Button
-                          label="Cancel"
+                          label={i18nT("static.ew9em3")}
                           text
                           severity="danger"
                           size="small"
@@ -975,11 +997,11 @@ export default function RecruitmentData() {
               )}
             </DataTable>
           </TabPanel>
-          <TabPanel header="Offers">
+          <TabPanel header={i18nT("static.kkuebu")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="New Offer"
+                  label={i18nT("static.1blyqlz")}
                   icon="pi pi-send"
                   size="small"
                   onClick={() => showDialog("offer")}
@@ -994,12 +1016,12 @@ export default function RecruitmentData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No offer found."
+              emptyMessage={i18nT("static.1xin6va")}
             >
-              <Column field="candidate_name" header="Candidate" />
-              <Column field="job_title" header="Job Title" />
+              <Column field="candidate_name" header={i18nT("static.1vb7im2")} />
+              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
               <Column
-                header="Salary"
+                header={i18nT("static.12knp7n")}
                 body={(row: RecruitmentOffer) =>
                   row.offered_salary
                     ? new Intl.NumberFormat("id-ID", {
@@ -1012,13 +1034,13 @@ export default function RecruitmentData() {
               />
               <Column
                 field="proposed_start_date"
-                header="Start Date"
+                header={i18nT("static.7bl5hd")}
                 body={(row: RecruitmentOffer) =>
                   formatDisplayDate(row.proposed_start_date)
                 }
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row: RecruitmentOffer) => (
                   <Tag
                     value={row.status}
@@ -1026,13 +1048,15 @@ export default function RecruitmentData() {
                   />
                 )}
               />
-              {canManage && <Column header="Action" body={offerActions} />}
+              {canManage && (
+                <Column header={i18nT("static.2wk0tb")} body={offerActions} />
+              )}
             </DataTable>
           </TabPanel>
         </TabView>
       </div>
       <Dialog
-        header="New Requisition"
+        header={i18nT("static.whgb9t")}
         visible={dialog === "requisition"}
         modal
         draggable={false}
@@ -1041,7 +1065,7 @@ export default function RecruitmentData() {
         onHide={close}
         footer={footer("Save", () => {
           if (!requisition.code.trim() || !requisition.job_title.trim()) {
-            notify("error", "Validation", "Code and job title are required.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.1itn6i7"));
             return;
           }
           void save(
@@ -1058,7 +1082,7 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Code
+            {i18nT("static.xoaiok")}{" "}
             <InputText
               value={requisition.code}
               onChange={(event) =>
@@ -1067,7 +1091,7 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Job Title
+            {i18nT("static.1kwmmbm")}{" "}
             <InputText
               value={requisition.job_title}
               onChange={(event) =>
@@ -1079,7 +1103,7 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Headcount
+            {i18nT("static.13gfwzm")}{" "}
             <InputNumber
               value={requisition.headcount}
               min={1}
@@ -1090,8 +1114,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Target Start{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.1oyq5tw")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={requisition.target_start_date}
               onValueChange={(value) =>
@@ -1100,8 +1126,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
-            Description{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.sjj37t")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={3}
               autoResize
@@ -1117,7 +1145,7 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header="New Candidate"
+        header={i18nT("static.1geipt0")}
         visible={dialog === "candidate"}
         modal
         draggable={false}
@@ -1126,7 +1154,7 @@ export default function RecruitmentData() {
         onHide={close}
         footer={footer("Save", () => {
           if (!candidate.full_name.trim()) {
-            notify("error", "Validation", "Candidate name is required.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.sm0pqe"));
             return;
           }
           void save(
@@ -1144,7 +1172,7 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Full Name
+            {i18nT("static.4eocnj")}{" "}
             <InputText
               value={candidate.full_name}
               onChange={(event) =>
@@ -1153,7 +1181,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Email <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.inbfc7")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               type="email"
               value={candidate.email}
@@ -1163,7 +1194,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Phone <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.kb2lhr")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               value={candidate.phone_number}
               onChange={(event) =>
@@ -1172,8 +1206,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Source{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.r5qyuw")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               value={candidate.source}
               onChange={(event) =>
@@ -1184,7 +1220,7 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header="New Application"
+        header={i18nT("static.1mt9atf")}
         visible={dialog === "application"}
         modal
         draggable={false}
@@ -1193,11 +1229,7 @@ export default function RecruitmentData() {
         onHide={close}
         footer={footer("Save", () => {
           if (!application.job_requisition_id || !application.candidate_id) {
-            notify(
-              "error",
-              "Validation",
-              "Select an open requisition and an active candidate.",
-            );
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.1auab8n"));
             return;
           }
           void save(
@@ -1209,11 +1241,11 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Open Requisition
+            {i18nT("static.1ayy4l5")}{" "}
             <Dropdown
               value={application.job_requisition_id || null}
               options={requisitionOptions}
-              placeholder="Select requisition"
+              placeholder={i18nT("static.193yt1")}
               className="w-full"
               filter
               onChange={(event) =>
@@ -1225,11 +1257,11 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Candidate
+            {i18nT("static.1vb7im2")}{" "}
             <Dropdown
               value={application.candidate_id || null}
               options={candidateOptions}
-              placeholder="Select candidate"
+              placeholder={i18nT("static.1mlhopk")}
               className="w-full"
               filter
               onChange={(event) =>
@@ -1243,7 +1275,7 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header="Schedule Interview"
+        header={i18nT("static.1ugtb2n")}
         visible={dialog === "interview"}
         modal
         draggable={false}
@@ -1256,11 +1288,7 @@ export default function RecruitmentData() {
             !interview.interviewer_employee_id ||
             !interview.scheduled_at
           ) {
-            notify(
-              "error",
-              "Validation",
-              "Application, interviewer, and schedule are required.",
-            );
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.bb4rv2"));
             return;
           }
           void save(
@@ -1276,11 +1304,11 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Application
+            {i18nT("static.9mg0rp")}{" "}
             <Dropdown
               value={interview.application_id || null}
               options={activeApplicationOptions}
-              placeholder="Select application"
+              placeholder={i18nT("static.e0s7j")}
               className="w-full"
               filter
               onChange={(event) =>
@@ -1292,11 +1320,11 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Interview Type
+            {i18nT("static.urgh6c")}{" "}
             <Dropdown
               value={interview.interview_type}
               options={["HR", "USER", "TECHNICAL", "FINAL"]}
-              placeholder="Select type"
+              placeholder={i18nT("static.1q1rq33")}
               className="w-full"
               onChange={(event) =>
                 setInterview({
@@ -1307,7 +1335,7 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Schedule
+            {i18nT("static.19hwlpo")}{" "}
             <PrimeDatePicker
               value={interview.scheduled_at}
               withTime
@@ -1317,11 +1345,11 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Interviewer
+            {i18nT("static.1j5tv1f")}{" "}
             <Dropdown
               value={interview.interviewer_employee_id || null}
               options={employeeOptions}
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               className="w-full"
               filter
               onChange={(event) =>
@@ -1337,8 +1365,8 @@ export default function RecruitmentData() {
       <Dialog
         header={
           resumeCandidate?.resume_original_file_name
-            ? "Replace Resume"
-            : "Upload Resume"
+            ? i18nT("static.ly9tr2")
+            : i18nT("static.1hpezaf")
         }
         visible={dialog === "candidateResume"}
         modal
@@ -1348,11 +1376,11 @@ export default function RecruitmentData() {
         onHide={close}
         footer={footer("Upload", () => {
           if (!resumeCandidate || !resumeFile) {
-            notify("error", "Validation", "Select a PDF resume first.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.1rz0vx9"));
             return;
           }
           if (resumeFile.type !== "application/pdf") {
-            notify("error", "Validation", "Only PDF resumes are allowed.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.1dvcrlz"));
             return;
           }
           void save(
@@ -1372,8 +1400,8 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
-            {resumeCandidate?.full_name || "Candidate"}. PDF only, maximum 10
-            MB.
+            {resumeCandidate?.full_name || i18nT("static.1vb7im2")}
+            {i18nT("static.15pracv")}{" "}
           </p>
           <input
             type="file"
@@ -1384,7 +1412,7 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header="Complete Interview"
+        header={i18nT("static.u0u32d")}
         visible={dialog === "completeInterview"}
         modal
         draggable={false}
@@ -1395,9 +1423,9 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Score{" "}
+            {i18nT("static.x9tsfp")}{" "}
             <span className="font-normal text-slate-400">
-              (0–100, optional)
+              {i18nT("static.1pvd8ls")}{" "}
             </span>
             <InputNumber
               value={completion.score ? Number(completion.score) : null}
@@ -1412,8 +1440,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Feedback{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.detaua")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={4}
               autoResize
@@ -1426,7 +1456,7 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header="Cancel Interview"
+        header={i18nT("static.w0a1m0")}
         visible={dialog === "cancelInterview"}
         modal
         draggable={false}
@@ -1438,13 +1468,14 @@ export default function RecruitmentData() {
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
             {selectedInterview
-              ? `${selectedInterview.candidate_name} — ${formatDisplayDateTime(
-                  selectedInterview.scheduled_at,
-                )}`
-              : "Scheduled interview"}
+              ? i18nT("static.1v0umq8", {
+                  p0: selectedInterview.candidate_name,
+                  p1: formatDisplayDateTime(selectedInterview.scheduled_at),
+                })
+              : i18nT("static.132ntkb")}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Cancellation Reason
+            {i18nT("static.egtd7y")}{" "}
             <InputTextarea
               rows={4}
               autoResize
@@ -1457,7 +1488,7 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header="New Offer"
+        header={i18nT("static.1blyqlz")}
         visible={dialog === "offer"}
         modal
         draggable={false}
@@ -1466,7 +1497,7 @@ export default function RecruitmentData() {
         onHide={close}
         footer={footer("Save", () => {
           if (!offer.application_id) {
-            notify("error", "Validation", "Select an application.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.1hiy68k"));
             return;
           }
           const salary = offer.offered_salary.trim();
@@ -1474,7 +1505,7 @@ export default function RecruitmentData() {
             salary &&
             (!Number.isFinite(Number(salary)) || Number(salary) < 0)
           ) {
-            notify("error", "Validation", "Salary is invalid.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.lk9f98"));
             return;
           }
           void save(
@@ -1495,11 +1526,11 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Application
+            {i18nT("static.9mg0rp")}{" "}
             <Dropdown
               value={offer.application_id || null}
               options={activeApplicationOptions}
-              placeholder="Select application"
+              placeholder={i18nT("static.e0s7j")}
               className="w-full"
               filter
               onChange={(event) =>
@@ -1508,8 +1539,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Offered Salary{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.u68b4m")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               keyfilter="num"
               value={offer.offered_salary}
@@ -1519,8 +1552,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Proposed Start{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.9dbw8r")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={offer.proposed_start_date}
               onValueChange={(value) =>
@@ -1529,8 +1564,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Offer Expiry{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.ajc6fo")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={offer.expires_at}
               withTime
@@ -1540,7 +1577,10 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Notes <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.4f76ga")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={3}
               autoResize
@@ -1553,7 +1593,14 @@ export default function RecruitmentData() {
         </div>
       </Dialog>
       <Dialog
-        header={`${applicationTransition.status === "SCREENING" ? "Move to Screening" : applicationTransition.status === "REJECTED" ? "Reject Application" : "Withdraw Application"}`}
+        header={i18nT("static.m3cxo5", {
+          p0:
+            applicationTransition.status === "SCREENING"
+              ? i18nT("static.exbxh1")
+              : applicationTransition.status === "REJECTED"
+                ? i18nT("static.198t1a8")
+                : i18nT("static.4kf79x"),
+        })}
         visible={dialog === "applicationStatus"}
         modal
         draggable={false}
@@ -1564,11 +1611,7 @@ export default function RecruitmentData() {
           if (!selectedApplication) return;
           const reason = applicationTransition.reason.trim();
           if (applicationTransition.status !== "SCREENING" && !reason) {
-            notify(
-              "error",
-              "Validation",
-              "Reason is required for rejection or withdrawal.",
-            );
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.125je4a"));
             return;
           }
           void save(
@@ -1590,15 +1633,18 @@ export default function RecruitmentData() {
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
             {selectedApplication
-              ? `${selectedApplication.candidate_name} — ${selectedApplication.job_title}`
-              : "Application"}
+              ? i18nT("static.1v0umq8", {
+                  p0: selectedApplication.candidate_name,
+                  p1: selectedApplication.job_title,
+                })
+              : i18nT("static.9mg0rp")}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Reason
+            {i18nT("static.i36sl5")}{" "}
             <span className="font-normal text-slate-400">
               {applicationTransition.status === "SCREENING"
-                ? "Optional internal note"
-                : "Required for audit trail"}
+                ? i18nT("static.xpojne")
+                : i18nT("static.1xw2uvg")}
             </span>
             <InputTextarea
               rows={4}
@@ -1617,8 +1663,8 @@ export default function RecruitmentData() {
       <Dialog
         header={
           activityApplication
-            ? `Application History — ${activityApplication.candidate_name}`
-            : "Application History"
+            ? i18nT("static.p3ydyp", { p0: activityApplication.candidate_name })
+            : i18nT("static.1hvxw0x")
         }
         visible={dialog === "applicationActivity"}
         modal
@@ -1632,7 +1678,7 @@ export default function RecruitmentData() {
         footer={
           <div className="flex justify-end">
             <Button
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               text
               severity="secondary"
               onClick={() => {
@@ -1650,19 +1696,19 @@ export default function RecruitmentData() {
           size="small"
           stripedRows
           rowHover
-          emptyMessage="No application history found."
+          emptyMessage={i18nT("static.1xfs3xe")}
         >
-          <Column field="activity_type" header="Activity" />
-          <Column field="previous_status" header="From" />
-          <Column field="new_status" header="To" />
+          <Column field="activity_type" header={i18nT("static.17yt05o")} />
+          <Column field="previous_status" header={i18nT("static.6s9hn9")} />
+          <Column field="new_status" header={i18nT("static.iaukp0")} />
           <Column
             field="notes"
-            header="Notes"
+            header={i18nT("static.4f76ga")}
             body={(row: RecruitmentActivity) => row.notes || "—"}
           />
-          <Column field="actor_name" header="Actor" />
+          <Column field="actor_name" header={i18nT("static.1e0unve")} />
           <Column
-            header="Occurred At"
+            header={i18nT("static.3ow3yj")}
             body={(row: RecruitmentActivity) =>
               formatDisplayDateTime(row.occurred_at)
             }
@@ -1670,7 +1716,7 @@ export default function RecruitmentData() {
         </DataTable>
       </Dialog>
       <Dialog
-        header="Link Employee and Start Onboarding"
+        header={i18nT("static.c74z87")}
         visible={dialog === "linkEmployee"}
         modal
         draggable={false}
@@ -1687,11 +1733,7 @@ export default function RecruitmentData() {
               !employeeLink.employee_id ||
               !employeeLink.effective_date
             ) {
-              notify(
-                "error",
-                "Validation",
-                "Employee and effective date are required.",
-              );
+              notify("error", i18nT("static.gy1qqi"), i18nT("static.1flvj5o"));
               return;
             }
             void save(
@@ -1712,37 +1754,34 @@ export default function RecruitmentData() {
       >
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
-            Create the employee first from{" "}
-            <strong>Employees → Quick Add Employee</strong>, then link that
-            record here. This preserves the employee master as the single source
-            of truth.
+            {i18nT("static.irfkwk")} <strong>{i18nT("static.fovxks")}</strong>
+            {i18nT("static.1gi2ax8")}{" "}
           </p>
           {selectedOffer ? (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
               <div>
-                <span className="font-semibold">Candidate:</span>{" "}
+                <span className="font-semibold">{i18nT("static.19xxxs0")}</span>{" "}
                 {selectedOffer.candidate_name}
               </div>
               <div>
-                <span className="font-semibold">Employee:</span>{" "}
+                <span className="font-semibold">{i18nT("static.zdinq9")}</span>{" "}
                 {employeeOptions.find(
                   (option) => option.value === employeeLink.employee_id,
-                )?.label || "Select an employee"}
+                )?.label || i18nT("static.atd8u4")}
               </div>
               {selectedOffer.linked_employee_id ? (
                 <p className="mb-0 mt-2 text-xs text-amber-700">
-                  This offer is partially linked. Resume Onboarding keeps the
-                  existing employee and cannot be reassigned here.
+                  {i18nT("static.1udnfa")}{" "}
                 </p>
               ) : null}
             </div>
           ) : null}
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee
+            {i18nT("static.1fak8xt")}{" "}
             <Dropdown
               value={employeeLink.employee_id || null}
               options={employeeOptions}
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               className="w-full"
               filter
               disabled={Boolean(selectedOffer?.linked_employee_id) || saving}
@@ -1755,7 +1794,7 @@ export default function RecruitmentData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Onboarding Effective Date
+            {i18nT("static.1ojc17v")}{" "}
             <PrimeDatePicker
               value={employeeLink.effective_date}
               onValueChange={(value) =>

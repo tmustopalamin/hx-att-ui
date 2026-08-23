@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo } from "react";
 import { Card } from "primereact/card";
@@ -56,13 +57,19 @@ const fallbackDepartmentColors = [
   chartColors.emerald,
 ];
 
-const getGreeting = (name: string) => {
+const getGreeting = (
+  name: string,
+  translate: (
+    source: string,
+    params?: Record<string, string | number | null | undefined>,
+  ) => string,
+) => {
   const hour = new Date().getHours();
 
-  if (hour < 12) return `Good morning, ${name}`;
-  if (hour < 18) return `Good afternoon, ${name}`;
-  if (hour < 21) return `Good evening, ${name}`;
-  return `Good night, ${name}`;
+  if (hour < 12) return translate("Good morning, {name}", { name });
+  if (hour < 18) return translate("Good afternoon, {name}", { name });
+  if (hour < 21) return translate("Good evening, {name}", { name });
+  return translate("Good night, {name}", { name });
 };
 
 const getTodayDate = () => {
@@ -121,6 +128,7 @@ const InfoHint = ({ text }: { text: string }) => {
 };
 
 const DashboardPageComponent = () => {
+  const { t: i18nT, tText } = useI18n();
   const router = useRouter();
   const profileState = useSelector((state: RootState) => state.profile);
 
@@ -134,7 +142,8 @@ const DashboardPageComponent = () => {
     permissions?: unknown;
   };
 
-  const adminName = String(profile.name ?? "Admin").trim() || "Admin";
+  const profileName = String(profile.name ?? "").trim();
+  const adminName = profileName || tText("Admin");
 
   const permissionSet = useMemo(() => {
     return new Set(getProfilePermissions(profileState));
@@ -161,31 +170,31 @@ const DashboardPageComponent = () => {
 
   const quickAccessItems: QuickAccessItem[] = [
     {
-      label: "Attendance Summary",
+      label: i18nT("static.1w1ugxu"),
       icon: "pi-file-check",
       href: "/attendance-summary",
       permission: "attendance-summary.read",
     },
     {
-      label: "Attendance Log",
+      label: i18nT("static.rjym30"),
       icon: "pi-clock",
       href: "/attendance-log",
       permission: "attendance-log.read",
     },
     {
-      label: "Employees",
+      label: i18nT("static.f4bo3a"),
       icon: "pi-users",
       href: "/employees",
       permission: "employee.read",
     },
     {
-      label: "Leave Management",
+      label: i18nT("static.51exaz"),
       icon: "pi-calendar-minus",
       href: "/leave-management",
       permission: "leave-management.read",
     },
     {
-      label: "Overtime Management",
+      label: i18nT("static.1oswk5t"),
       icon: "pi-stopwatch",
       href: "/overtime-management",
       permission: "overtime-management.read",
@@ -199,68 +208,89 @@ const DashboardPageComponent = () => {
   const todayCards: DashboardCard[] = useMemo(() => {
     return [
       {
-        label: "Attendance Rate",
+        label: i18nT("static.jqophg"),
         value: formatPercent(attendanceRate),
         icon: "pi-chart-line",
         iconBg: "bg-blue-50",
         iconColor: "text-blue-600",
-        note: `${presentToday} present from ${activeEmployees} active employees`,
-        info: "Percentage of active employees who are marked present today. This is calculated from Present Today divided by Active Employees.",
+        note: tText("{present} present from {active} active employees", {
+          present: presentToday,
+          active: activeEmployees,
+        }),
+        info: tText(
+          "Percentage of active employees who are marked present today. This is calculated from Present Today divided by Active Employees.",
+        ),
         href: "/attendance-summary",
         permission: "attendance-summary.read",
       },
       {
-        label: "Present Today",
+        label: i18nT("static.1nvmzhh"),
         value: presentToday,
         icon: "pi-check-circle",
         iconBg: "bg-emerald-50",
         iconColor: "text-emerald-600",
-        note: "Employees marked present today",
-        info: "Number of employees whose attendance summary status is present for today.",
+        note: tText("Employees marked present today"),
+        info: tText(
+          "Number of employees whose attendance summary status is present for today.",
+        ),
         href: "/attendance-summary",
         permission: "attendance-summary.read",
       },
       {
-        label: "Absent Today",
+        label: i18nT("static.1wtl09"),
         value: absentToday,
         icon: "pi-times-circle",
         iconBg: "bg-red-50",
         iconColor: "text-red-600",
-        note: `${formatPercent(absenceRate)} of active employees`,
-        info: "Number of employees marked absent today from attendance summary.",
+        note: tText("{rate} of active employees", {
+          rate: formatPercent(absenceRate),
+        }),
+        info: tText(
+          "Number of employees marked absent today from attendance summary.",
+        ),
         href: "/attendance-summary",
         permission: "attendance-summary.read",
       },
       {
-        label: "Late Today",
+        label: i18nT("static.gckkj0"),
         value: lateToday,
         icon: "pi-clock",
         iconBg: "bg-amber-50",
         iconColor: "text-amber-600",
-        note: `${formatPercent(lateRate)} of active employees`,
-        info: "Number of employees marked late today based on attendance summary.",
+        note: tText("{rate} of active employees", {
+          rate: formatPercent(lateRate),
+        }),
+        info: tText(
+          "Number of employees marked late today based on attendance summary.",
+        ),
         href: "/attendance-summary",
         permission: "attendance-summary.read",
       },
       {
-        label: "On Leave Today",
+        label: i18nT("static.sa9ww6"),
         value: onLeaveToday,
         icon: "pi-calendar-minus",
         iconBg: "bg-violet-50",
         iconColor: "text-violet-600",
-        note: `${formatPercent(leaveRate)} of active employees`,
-        info: "Number of employees marked as leave today in attendance summary after attendance processing.",
+        note: tText("{rate} of active employees", {
+          rate: formatPercent(leaveRate),
+        }),
+        info: tText(
+          "Number of employees marked as leave today in attendance summary after attendance processing.",
+        ),
         href: "/leave-management",
         permission: "leave-management.read",
       },
       {
-        label: "Active Employees",
+        label: i18nT("static.hn4r4u"),
         value: activeEmployees,
         icon: "pi-users",
         iconBg: "bg-sky-50",
         iconColor: "text-sky-600",
-        note: "Current active workforce",
-        info: "Total active employees currently available in employee master data.",
+        note: tText("Current active workforce"),
+        info: tText(
+          "Total active employees currently available in employee master data.",
+        ),
         href: "/employees",
         permission: "employee.read",
       },
@@ -275,56 +305,60 @@ const DashboardPageComponent = () => {
     absentToday,
     lateToday,
     onLeaveToday,
+    i18nT,
+    tText,
   ]);
 
   const organizationCards: DashboardCard[] = useMemo(() => {
     return [
       {
-        label: "Total Employees",
+        label: i18nT("static.ei3vmk"),
         value: data?.organization_snapshot.total_employees ?? 0,
         icon: "pi-users",
         iconBg: "bg-blue-50",
         iconColor: "text-blue-600",
-        note: "All registered employees",
-        info: "Total employees from employee master data.",
+        note: tText("All registered employees"),
+        info: tText("Total employees from employee master data."),
         href: "/employees",
         permission: "employee.read",
       },
       {
-        label: "Departments",
+        label: i18nT("static.zcmjcs"),
         value: data?.organization_snapshot.departments ?? 0,
         icon: "pi-briefcase",
         iconBg: "bg-purple-50",
         iconColor: "text-purple-600",
-        note: "Active department master data",
-        info: "Total active departments in master data.",
+        note: tText("Active department master data"),
+        info: tText("Total active departments in master data."),
         href: "/setting/department",
         permission: "master-data.read",
       },
       {
-        label: "Branches",
+        label: i18nT("static.10dqi2x"),
         value: data?.organization_snapshot.branches ?? 0,
         icon: "pi-sitemap",
         iconBg: "bg-cyan-50",
         iconColor: "text-cyan-600",
-        note: "Available branch setup",
-        info: "Total active branches in master data.",
+        note: tText("Available branch setup"),
+        info: tText("Total active branches in master data."),
         href: "/setting/branch",
         permission: "master-data.read",
       },
       {
-        label: "Birthdays This Week",
+        label: i18nT("static.1u1gjv1"),
         value: data?.people_admin_notes.birthdays_this_week ?? 0,
         icon: "pi-gift",
         iconBg: "bg-pink-50",
         iconColor: "text-pink-600",
-        note: "Employee birthdays this week",
-        info: "Number of employees whose birthday falls within the current week.",
+        note: tText("Employee birthdays this week"),
+        info: tText(
+          "Number of employees whose birthday falls within the current week.",
+        ),
         href: "/employees",
         permission: "employee.read",
       },
     ];
-  }, [data]);
+  }, [data, i18nT, tText]);
 
   const attendanceTrendData = useMemo(() => {
     const rows = data?.charts.attendance_trend ?? [];
@@ -334,7 +368,7 @@ const DashboardPageComponent = () => {
       labels,
       datasets: [
         {
-          label: "Present",
+          label: i18nT("static.1m3e00c"),
           data: rows.map((item) => item.present),
           borderColor: chartColors.blue,
           backgroundColor: chartColors.blue,
@@ -342,7 +376,7 @@ const DashboardPageComponent = () => {
           fill: false,
         },
         {
-          label: "Absent",
+          label: i18nT("static.meu720"),
           data: rows.map((item) => item.absent),
           borderColor: chartColors.red,
           backgroundColor: chartColors.red,
@@ -351,7 +385,7 @@ const DashboardPageComponent = () => {
         },
       ],
     };
-  }, [data]);
+  }, [data, i18nT]);
 
   const lateTrendData = useMemo(() => {
     const rows = data?.charts.late_trend ?? [];
@@ -361,21 +395,21 @@ const DashboardPageComponent = () => {
       labels,
       datasets: [
         {
-          label: "Late Employees",
+          label: i18nT("static.moo8dc"),
           data: rows.map((item) => item.value),
           backgroundColor: chartColors.amber,
           borderRadius: 8,
         },
       ],
     };
-  }, [data]);
+  }, [data, i18nT]);
 
   const departmentData = useMemo(() => {
     const rows = data?.charts.employees_by_department ?? [];
 
     if (rows.length === 0) {
       return {
-        labels: ["No Data"],
+        labels: [tText("No Data")],
         datasets: [
           {
             data: [1],
@@ -401,7 +435,7 @@ const DashboardPageComponent = () => {
         },
       ],
     };
-  }, [data]);
+  }, [data, tText]);
 
   const lineChartOptions = {
     responsive: true,
@@ -545,19 +579,18 @@ const DashboardPageComponent = () => {
                 </div>
 
                 <h2 className="text-3xl font-bold tracking-tight">
-                  {getGreeting(adminName)}!
+                  {getGreeting(adminName, tText)}!
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-50">
-                  Monitor today&apos;s attendance, employee availability, and
-                  workforce summary from live HRIS data.
+                  {i18nT("static.1cz7gt0")}{" "}
                 </p>
               </div>
 
               {visibleQuickAccessItems.length > 0 && (
                 <div>
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">
-                    Quick Access
+                    {i18nT("static.bj0pda")}{" "}
                   </p>
 
                   <div className="flex flex-wrap gap-3">
@@ -585,7 +618,7 @@ const DashboardPageComponent = () => {
             <div className="hidden items-end justify-center lg:flex lg:w-[260px]">
               <img
                 src="/images/welcome-dashboard.png"
-                alt="Welcome Dashboard"
+                alt={i18nT("static.p6kkxr")}
                 className="w-56 drop-shadow-2xl"
               />
             </div>
@@ -605,20 +638,20 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-2xl font-bold text-slate-800">
-                      Attendance Trend
+                      {i18nT("static.19oenup")}{" "}
                     </h3>
-                    <InfoHint text="Shows daily present and absent employee counts for the current 14-day dashboard period." />
+                    <InfoHint text={i18nT("static.107p5rp")} />
                   </div>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Daily present versus absent trend.
+                    {i18nT("static.hh6me1")}{" "}
                   </p>
                 </div>
 
                 {hasPermission("attendance-summary.read") && (
                   <Button
                     type="button"
-                    label="Open Summary"
+                    label={i18nT("static.13909ph")}
                     icon="pi pi-arrow-right"
                     text
                     onClick={() => router.push("/attendance-summary")}
@@ -644,13 +677,13 @@ const DashboardPageComponent = () => {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-2xl font-bold text-slate-800">
-                    Today Summary
+                    {i18nT("static.1qvjwiu")}{" "}
                   </h3>
-                  <InfoHint text="Simple ratio summary calculated from today's attendance data and active employee count." />
+                  <InfoHint text={i18nT("static.ldx8nk")} />
                 </div>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  Quick attendance ratio for today.
+                  {i18nT("static.rkgkwk")}{" "}
                 </p>
               </div>
 
@@ -658,7 +691,7 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-600">
-                      Attendance Rate
+                      {i18nT("static.jqophg")}{" "}
                     </span>
                     <span className="text-sm font-bold text-blue-600">
                       {formatPercent(attendanceRate)}
@@ -675,7 +708,7 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-600">
-                      Absence Rate
+                      {i18nT("static.18u1pqi")}{" "}
                     </span>
                     <span className="text-sm font-bold text-red-600">
                       {formatPercent(absenceRate)}
@@ -692,7 +725,7 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-600">
-                      Late Rate
+                      {i18nT("static.bpsa3d")}{" "}
                     </span>
                     <span className="text-sm font-bold text-amber-600">
                       {formatPercent(lateRate)}
@@ -709,7 +742,7 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-slate-600">
-                      Leave Rate
+                      {i18nT("static.nzw0ki")}{" "}
                     </span>
                     <span className="text-sm font-bold text-violet-600">
                       {formatPercent(leaveRate)}
@@ -727,14 +760,18 @@ const DashboardPageComponent = () => {
               <div className="mt-auto rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4">
                 <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
-                    <p className="text-xs text-slate-500">Present</p>
+                    <p className="text-xs text-slate-500">
+                      {i18nT("static.1m3e00c")}
+                    </p>
                     <p className="mt-1 text-lg font-bold text-emerald-600">
                       {presentToday}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-xs text-slate-500">Active Staff</p>
+                    <p className="text-xs text-slate-500">
+                      {i18nT("static.qq2r5l")}
+                    </p>
                     <p className="mt-1 text-lg font-bold text-blue-600">
                       {activeEmployees}
                     </p>
@@ -754,20 +791,20 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-2xl font-bold text-slate-800">
-                      Late Trend
+                      {i18nT("static.p5a46y")}{" "}
                     </h3>
-                    <InfoHint text="Shows daily number of employees marked late for the current dashboard period." />
+                    <InfoHint text={i18nT("static.k9f9c7")} />
                   </div>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Daily number of employees arriving late.
+                    {i18nT("static.dapb09")}{" "}
                   </p>
                 </div>
 
                 {hasPermission("attendance-summary.read") && (
                   <Button
                     type="button"
-                    label="Open Summary"
+                    label={i18nT("static.13909ph")}
                     icon="pi pi-arrow-right"
                     text
                     onClick={() => router.push("/attendance-summary")}
@@ -794,20 +831,20 @@ const DashboardPageComponent = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-2xl font-bold text-slate-800">
-                      Employees by Department
+                      {i18nT("static.1nnr9m3")}{" "}
                     </h3>
-                    <InfoHint text="Shows active employee distribution by current department assignment." />
+                    <InfoHint text={i18nT("static.p6zifc")} />
                   </div>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Current employee distribution by department.
+                    {i18nT("static.c6k61t")}{" "}
                   </p>
                 </div>
 
                 {hasPermission("master-data.read") && (
                   <Button
                     type="button"
-                    label="Departments"
+                    label={i18nT("static.zcmjcs")}
                     icon="pi pi-arrow-right"
                     text
                     onClick={() => router.push("/setting/department")}
@@ -831,9 +868,9 @@ const DashboardPageComponent = () => {
       <div>
         <div className="mb-3 flex items-center gap-2">
           <h3 className="text-xl font-bold text-slate-800">
-            Organization Snapshot
+            {i18nT("static.3mqvuq")}{" "}
           </h3>
-          <InfoHint text="Summary of employee and organization master data available in the system." />
+          <InfoHint text={i18nT("static.13ixpwe")} />
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

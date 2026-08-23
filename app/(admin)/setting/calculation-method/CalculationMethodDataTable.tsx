@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { type ChangeEvent, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -54,6 +55,7 @@ const emptyPayload = (): CalculationMethodPayload => ({
 });
 
 export default function CalculationMethodDataTable() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll-config");
@@ -78,7 +80,10 @@ export default function CalculationMethodDataTable() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -90,7 +95,7 @@ export default function CalculationMethodDataTable() {
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   };
   const closeDialog = () => {
@@ -124,14 +129,11 @@ export default function CalculationMethodDataTable() {
     const code = form.code?.trim().toUpperCase() ?? "";
     const name = form.name.trim();
     if (!code || !name) {
-      notify("error", "Code and name are required.");
+      notify("error", i18nT("static.u9zubr"));
       return;
     }
     if (!/^[A-Z0-9_]+$/.test(code)) {
-      notify(
-        "error",
-        "Code may contain only uppercase letters, numbers, and underscores.",
-      );
+      notify("error", i18nT("static.1bzmybo"));
       return;
     }
     try {
@@ -151,7 +153,7 @@ export default function CalculationMethodDataTable() {
       else await createCalculationMethod(payload);
       await mutate();
       closeDialog();
-      notify("success", "Calculation method saved successfully.");
+      notify("success", i18nT("static.rai4np"));
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -162,7 +164,7 @@ export default function CalculationMethodDataTable() {
     try {
       await deleteCalculationMethod(row.id, row.row_version);
       await mutate();
-      notify("success", "Calculation method deleted successfully.");
+      notify("success", i18nT("static.1lv4pdj"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -171,7 +173,7 @@ export default function CalculationMethodDataTable() {
     try {
       await restoreCalculationMethod(row.id, row.row_version);
       await mutate();
-      notify("success", "Calculation method restored successfully.");
+      notify("success", i18nT("static.k2h4v2"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -180,7 +182,7 @@ export default function CalculationMethodDataTable() {
     try {
       await purgeCalculationMethod(row.id);
       await mutate();
-      notify("success", "Calculation method permanently deleted.");
+      notify("success", i18nT("static.18vhhvr"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -202,7 +204,7 @@ export default function CalculationMethodDataTable() {
           ? "This method will be available again."
           : "This action cannot be undone.";
     requestActionConfirmation({
-      header: `${label} Calculation Method`,
+      header: i18nT("static.1tud2b1", { p0: label }),
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">{message}</span>
@@ -224,18 +226,23 @@ export default function CalculationMethodDataTable() {
   const status = (row: CalculationMethod) => {
     if (row.deleted_at)
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     return row.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -251,12 +258,14 @@ export default function CalculationMethodDataTable() {
     return items.length ? (
       <span className="text-sm text-slate-700">{items.join(", ")}</span>
     ) : (
-      <span className="text-sm text-slate-400">None</span>
+      <span className="text-sm text-slate-400">{i18nT("static.deku7v")}</span>
     );
   };
   const actions = (row: CalculationMethod) => {
     if (!canManage)
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     if (row.deleted_at) {
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
@@ -268,7 +277,7 @@ export default function CalculationMethodDataTable() {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "restore")}
             />
@@ -281,14 +290,14 @@ export default function CalculationMethodDataTable() {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "purge")}
             />
           )}
         </div>
       ) : (
-        <span className="text-sm text-slate-400">No action</span>
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
       );
     }
     return (
@@ -300,7 +309,7 @@ export default function CalculationMethodDataTable() {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => openEdit(row)}
         />
@@ -311,7 +320,7 @@ export default function CalculationMethodDataTable() {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => ask(row, "delete")}
         />
@@ -338,18 +347,17 @@ export default function CalculationMethodDataTable() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Calculation Method
+                  {i18nT("static.16vvan3")}{" "}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Define how payroll components are calculated and which
-                  additional input each method requires.
+                  {i18nT("static.r9q68c")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -361,7 +369,7 @@ export default function CalculationMethodDataTable() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Calculation Method"
+                  label={i18nT("static.hqkx3d")}
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -382,7 +390,7 @@ export default function CalculationMethodDataTable() {
                   htmlFor="method-show-deleted"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -391,7 +399,7 @@ export default function CalculationMethodDataTable() {
               <InputText
                 value={search}
                 onChange={onSearch}
-                placeholder="Search code, name, or description"
+                placeholder={i18nT("static.41pktm")}
                 className="w-full"
               />
             </IconField>
@@ -413,8 +421,8 @@ export default function CalculationMethodDataTable() {
               size="small"
               loading={isValidating}
               tableStyle={{ minWidth: "67rem" }}
-              emptyMessage="No calculation method found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.139ecoy")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -425,7 +433,7 @@ export default function CalculationMethodDataTable() {
               />
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 body={(row: CalculationMethod) => (
                   <span className="font-mono text-sm font-semibold text-slate-700">
@@ -436,7 +444,7 @@ export default function CalculationMethodDataTable() {
               />
               <Column
                 field="name"
-                header="Method Name"
+                header={i18nT("static.nnmx2r")}
                 sortable
                 body={(row: CalculationMethod) => (
                   <span className="font-medium text-slate-800">{row.name}</span>
@@ -444,17 +452,17 @@ export default function CalculationMethodDataTable() {
                 style={{ minWidth: "16rem" }}
               />
               <Column
-                header="Additional Input"
+                header={i18nT("static.19nrj7c")}
                 body={requirements}
                 style={{ minWidth: "14rem" }}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={status}
                 style={{ minWidth: "10rem" }}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actions}
                 frozen
                 alignFrozen="right"
@@ -473,7 +481,7 @@ export default function CalculationMethodDataTable() {
       </Card>
 
       <Dialog
-        header={selected ? "Edit Calculation Method" : "New Calculation Method"}
+        header={selected ? i18nT("static.1ngxoqx") : i18nT("static.hqkx3d")}
         visible={dialogVisible}
         style={{ width: "95vw", maxWidth: "42rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -487,7 +495,7 @@ export default function CalculationMethodDataTable() {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -498,7 +506,7 @@ export default function CalculationMethodDataTable() {
             <Button
               type="submit"
               form="calculation-method-form"
-              label={selected ? "Save Changes" : "Create Calculation Method"}
+              label={selected ? i18nT("static.6gmm1l") : i18nT("static.hr1odh")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -516,38 +524,38 @@ export default function CalculationMethodDataTable() {
           }}
         >
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Field label="Code" required>
+            <Field label={i18nT("static.xoaiok")} required>
               <InputText
                 value={form.code ?? ""}
                 maxLength={50}
                 autoComplete="off"
                 className="w-full"
-                placeholder="e.g. FIXED_AMOUNT"
+                placeholder={i18nT("static.10t75de")}
                 onChange={(event) => updateForm("code", event.target.value)}
               />
               <small className="text-slate-500">
-                Uppercase letters, numbers, and underscores only.
+                {i18nT("static.1v8tb1w")}{" "}
               </small>
             </Field>
-            <Field label="Name" required>
+            <Field label={i18nT("static.4el6o6")} required>
               <InputText
                 value={form.name}
                 maxLength={100}
                 autoComplete="off"
                 className="w-full"
-                placeholder="e.g. Fixed Amount"
+                placeholder={i18nT("static.nd206j")}
                 onChange={(event) => updateForm("name", event.target.value)}
               />
             </Field>
           </div>
-          <Field label="Description">
+          <Field label={i18nT("static.sjj37t")}>
             <InputTextarea
               value={form.description ?? ""}
               rows={3}
               autoResize
               maxLength={500}
               className="w-full"
-              placeholder="Describe how this method is calculated"
+              placeholder={i18nT("static.1f148lb")}
               onChange={(event) =>
                 updateForm("description", event.target.value)
               }
@@ -555,18 +563,18 @@ export default function CalculationMethodDataTable() {
           </Field>
           <div className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3">
             <span className="text-sm font-medium text-slate-700">
-              Required input
+              {i18nT("static.14kbklg")}{" "}
             </span>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <ToggleField
                 id="method-formula"
-                label="Formula"
+                label={i18nT("static.1b8agvx")}
                 checked={form.requires_formula}
                 onChange={(value) => updateForm("requires_formula", value)}
               />
               <ToggleField
                 id="method-reference"
-                label="Reference component"
+                label={i18nT("static.1sacpi5")}
                 checked={form.requires_reference_component}
                 onChange={(value) =>
                   updateForm("requires_reference_component", value)
@@ -574,7 +582,7 @@ export default function CalculationMethodDataTable() {
               />
               <ToggleField
                 id="method-attendance"
-                label="Attendance data"
+                label={i18nT("static.5977ja")}
                 checked={form.requires_attendance}
                 onChange={(value) => updateForm("requires_attendance", value)}
               />
@@ -585,7 +593,7 @@ export default function CalculationMethodDataTable() {
               htmlFor="method-active"
               className="cursor-pointer text-sm font-medium text-slate-700"
             >
-              Active
+              {i18nT("static.8qzyhb")}{" "}
             </label>
             <InputSwitch
               inputId="method-active"

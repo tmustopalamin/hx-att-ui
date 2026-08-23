@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { type ChangeEvent, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -58,13 +59,14 @@ const basisLabel = (row: PayrollProrationMethod) => {
     case "CALENDAR_DAYS":
       return "Calendar days";
     case "FIXED_DIVISOR":
-      return `Fixed divisor${row.fixed_divisor_days ? ` (${row.fixed_divisor_days})` : ""}`;
+      return "Fixed divisor";
     default:
       return "No proration";
   }
 };
 
 export default function ProrationMethodDataTable() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll-config");
@@ -88,7 +90,10 @@ export default function ProrationMethodDataTable() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -101,7 +106,7 @@ export default function ProrationMethodDataTable() {
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   };
 
@@ -137,7 +142,7 @@ export default function ProrationMethodDataTable() {
     const name = form.name.trim();
     const description = form.description.trim();
     if (!name || !description) {
-      notify("error", "Name and description are required.");
+      notify("error", i18nT("static.wb4hoi"));
       return;
     }
     if (
@@ -146,7 +151,7 @@ export default function ProrationMethodDataTable() {
         form.fixed_divisor_days < 1 ||
         form.fixed_divisor_days > 366)
     ) {
-      notify("error", "Fixed divisor must be a whole number from 1 to 366.");
+      notify("error", i18nT("static.1x8oter"));
       return;
     }
     try {
@@ -167,7 +172,7 @@ export default function ProrationMethodDataTable() {
       }
       await mutate();
       closeDialog();
-      notify("success", "Proration method saved successfully.");
+      notify("success", i18nT("static.2mlfg2"));
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -179,7 +184,7 @@ export default function ProrationMethodDataTable() {
     try {
       await deletePayrollProrationMethod(row.id, row.row_version);
       await mutate();
-      notify("success", "Proration method retired successfully.");
+      notify("success", i18nT("static.ebompo"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -189,7 +194,7 @@ export default function ProrationMethodDataTable() {
     try {
       await restorePayrollProrationMethod(row.id, row.row_version);
       await mutate();
-      notify("success", "Proration method restored successfully.");
+      notify("success", i18nT("static.ak8rdb"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -199,7 +204,7 @@ export default function ProrationMethodDataTable() {
     try {
       await purgePayrollProrationMethod(row.id);
       await mutate();
-      notify("success", "Proration method permanently deleted.");
+      notify("success", i18nT("static.1c7habm"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -216,15 +221,15 @@ export default function ProrationMethodDataTable() {
           ? "Restore"
           : "Delete Permanently";
     requestActionConfirmation({
-      header: `${label} Proration Method`,
+      header: i18nT("static.196bc3u", { p0: label }),
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">
             {action === "purge"
-              ? "This action cannot be undone."
+              ? i18nT("static.7xrzse")
               : action === "delete"
-                ? "It cannot be selected for new payroll settings."
-                : "It will be available for payroll settings again."}
+                ? i18nT("static.ppfe0k")
+                : i18nT("static.1to1idh")}
           </span>
           <span className="font-semibold text-slate-800">{row.name}</span>
         </div>
@@ -244,16 +249,23 @@ export default function ProrationMethodDataTable() {
 
   const status = (row: PayrollProrationMethod) => {
     if (row.deleted_at)
-      return <Tag value="Deleted" severity="secondary" rounded />;
+      return (
+        <Tag value={i18nT("static.1v6qcju")} severity="secondary" rounded />
+      );
     return row.is_active ? (
-      <Tag value="Active" severity="success" rounded />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" rounded />
     ) : (
-      <Tag value="Inactive" severity="warning" rounded />
+      <Tag value={i18nT("static.13zf5vc")} severity="warning" rounded />
     );
   };
 
   const actions = (row: PayrollProrationMethod) => {
-    if (!canManage) return <span className="text-sm text-slate-400">—</span>;
+    if (!canManage)
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.112tcox")}
+        </span>
+      );
     if (row.deleted_at) {
       return (
         <div className="flex justify-end gap-2">
@@ -265,7 +277,7 @@ export default function ProrationMethodDataTable() {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "restore")}
             />
@@ -278,7 +290,7 @@ export default function ProrationMethodDataTable() {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "purge")}
             />
@@ -295,7 +307,7 @@ export default function ProrationMethodDataTable() {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => openEdit(row)}
         />
@@ -307,7 +319,7 @@ export default function ProrationMethodDataTable() {
             outlined
             severity="danger"
             size="small"
-            tooltip="Retire"
+            tooltip={i18nT("static.rgquxi")}
             tooltipOptions={{ appendTo: getBody, position: "top" }}
             onClick={() => ask(row, "delete")}
           />
@@ -336,18 +348,17 @@ export default function ProrationMethodDataTable() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Proration Method
+                  {i18nT("static.1onznmg")}{" "}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage controlled payroll proration methods and the
-                  explanation shown to HR.
+                  {i18nT("static.1e3tja0")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -359,7 +370,7 @@ export default function ProrationMethodDataTable() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Fixed Divisor"
+                  label={i18nT("static.1sj2j79")}
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -380,7 +391,7 @@ export default function ProrationMethodDataTable() {
                   htmlFor="proration-show-deleted"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -389,7 +400,7 @@ export default function ProrationMethodDataTable() {
               <InputText
                 value={search}
                 onChange={onSearch}
-                placeholder="Search code, name, or description"
+                placeholder={i18nT("static.41pktm")}
                 className="w-full"
               />
             </IconField>
@@ -410,11 +421,11 @@ export default function ProrationMethodDataTable() {
             size="small"
             loading={isValidating}
             tableStyle={{ minWidth: "72rem" }}
-            emptyMessage="No proration method found."
+            emptyMessage={i18nT("static.1vy3ir7")}
           >
             <Column
               field="code"
-              header="Code"
+              header={i18nT("static.xoaiok")}
               sortable
               body={(row: PayrollProrationMethod) => (
                 <span className="font-mono text-xs font-semibold text-slate-700">
@@ -422,33 +433,46 @@ export default function ProrationMethodDataTable() {
                 </span>
               )}
             />
-            <Column field="name" header="Name" sortable />
+            <Column field="name" header={i18nT("static.4el6o6")} sortable />
             <Column
-              header="Basis"
-              body={(row: PayrollProrationMethod) => basisLabel(row)}
+              header={i18nT("static.1s593bh")}
+              body={(row: PayrollProrationMethod) => (
+                <>
+                  {i18nT(basisLabel(row))}
+                  {row.fixed_divisor_days
+                    ? ` (${row.fixed_divisor_days} ${i18nT("days")})`
+                    : ""}
+                </>
+              )}
             />
             <Column
-              header="Explanation"
+              header={i18nT("static.1az7jg0")}
               body={(row: PayrollProrationMethod) => (
                 <span className="block max-w-xl whitespace-normal text-sm text-slate-600">
                   {row.description}
                 </span>
               )}
             />
-            <Column header="Status" body={status} />
+            <Column header={i18nT("static.3pd73")} body={status} />
             <Column
-              header="Managed"
+              header={i18nT("static.1xwvywm")}
               body={(row: PayrollProrationMethod) =>
                 row.is_system ? (
-                  <Tag value="System" severity="info" rounded />
+                  <Tag
+                    value={i18nT("static.13qbhrw")}
+                    severity="info"
+                    rounded
+                  />
                 ) : (
-                  <span className="text-sm text-slate-500">Custom</span>
+                  <span className="text-sm text-slate-500">
+                    {i18nT("static.15dsham")}
+                  </span>
                 )
               }
             />
             {canManage && (
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 frozen
                 alignFrozen="right"
                 body={actions}
@@ -456,15 +480,13 @@ export default function ProrationMethodDataTable() {
             )}
           </DataTable>
           <p className="m-0 text-xs leading-5 text-slate-500">
-            System methods provide the supported algorithms. Custom entries are
-            fixed-divisor variants only; they cannot introduce a new calculation
-            algorithm.
+            {i18nT("static.8djz44")}{" "}
           </p>
         </div>
       </Card>
 
       <Dialog
-        header={selected ? "Edit Proration Method" : "New Fixed Divisor"}
+        header={selected ? i18nT("static.1nwtdie") : i18nT("static.1sj2j79")}
         visible={dialogVisible}
         modal
         draggable={false}
@@ -474,14 +496,14 @@ export default function ProrationMethodDataTable() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={saving}
               onClick={closeDialog}
             />
             <Button
-              label="Save Method"
+              label={i18nT("static.1fbqkeh")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void submit()}
@@ -491,7 +513,9 @@ export default function ProrationMethodDataTable() {
       >
         <div className="flex flex-col gap-4 pt-2">
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-medium text-slate-700">Name *</span>
+            <span className="text-sm font-medium text-slate-700">
+              {i18nT("static.bpumi0")}
+            </span>
             <InputText
               value={form.name}
               autoFocus
@@ -501,7 +525,7 @@ export default function ProrationMethodDataTable() {
           </label>
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">
-              Explanation *
+              {i18nT("static.y7skby")}{" "}
             </span>
             <InputTextarea
               value={form.description}
@@ -515,7 +539,7 @@ export default function ProrationMethodDataTable() {
           </label>
           <label className="flex flex-col gap-2">
             <span className="text-sm font-medium text-slate-700">
-              Fixed Divisor Days *
+              {i18nT("static.uetv38")}{" "}
             </span>
             <InputText
               type="number"
@@ -530,12 +554,14 @@ export default function ProrationMethodDataTable() {
             />
             {selected && (
               <span className="text-xs text-slate-500">
-                The method code and divisor are immutable after creation.
+                {i18nT("static.5d716g")}{" "}
               </span>
             )}
           </label>
           <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
-            <span className="text-sm font-medium text-slate-700">Active</span>
+            <span className="text-sm font-medium text-slate-700">
+              {i18nT("static.8qzyhb")}
+            </span>
             <InputSwitch
               checked={form.is_active}
               onChange={(event) =>
@@ -545,8 +571,7 @@ export default function ProrationMethodDataTable() {
           </div>
           {selected?.is_system && (
             <p className="m-0 text-xs leading-5 text-blue-700">
-              This is a system-managed algorithm. Its code, basis, and divisor
-              cannot be changed.
+              {i18nT("static.1qqnhnu")}{" "}
             </p>
           )}
         </div>

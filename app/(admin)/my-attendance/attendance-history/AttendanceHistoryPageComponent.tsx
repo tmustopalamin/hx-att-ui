@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import React, { useMemo, useState } from "react";
 import dayjs from "dayjs";
@@ -18,18 +19,18 @@ import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import { formatDateTimeWithSeconds } from "@/app/utils/date-format";
 
 type SourceOption = {
-  label: string;
+  labelKey: string;
   value: string;
 };
 
 const SOURCE_OPTIONS: SourceOption[] = [
-  { label: "All Sources", value: "ALL" },
-  { label: "Mobile App", value: "MOBILE" },
-  { label: "Machine", value: "MACHINE" },
-  { label: "Web", value: "WEB" },
-  { label: "API", value: "API" },
-  { label: "Face", value: "FACE" },
-  { label: "GPS", value: "GPS" },
+  { labelKey: "All Sources", value: "ALL" },
+  { labelKey: "Mobile App", value: "MOBILE" },
+  { labelKey: "Machine", value: "MACHINE" },
+  { labelKey: "Web", value: "WEB" },
+  { labelKey: "API", value: "API" },
+  { labelKey: "Face", value: "FACE" },
+  { labelKey: "GPS", value: "GPS" },
 ];
 
 const formatDateTime = (value?: string | null) => {
@@ -98,6 +99,7 @@ const getSourceLabel = (sourceValue: string) => {
 };
 
 const AttendanceHistoryPageComponent = () => {
+  const { t: i18nT, tText } = useI18n();
   const [sourceFilter, setSourceFilter] = useState<string>("ALL");
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
   const [dateTo, setDateTo] = useState<Date | null>(null);
@@ -143,7 +145,9 @@ const AttendanceHistoryPageComponent = () => {
     const finalPhotoUrl = buildPhotoUrl(rowData.photo_url);
 
     if (!finalPhotoUrl) {
-      return <span className="text-sm text-slate-400">No Photo</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.1uy2e")}</span>
+      );
     }
 
     return (
@@ -154,7 +158,7 @@ const AttendanceHistoryPageComponent = () => {
       >
         <img
           src={finalPhotoUrl}
-          alt="Attendance"
+          alt={tText("Attendance")}
           className="h-12 w-12 object-cover"
         />
       </button>
@@ -163,7 +167,10 @@ const AttendanceHistoryPageComponent = () => {
 
   const sourceBodyTemplate = (rowData: AttendanceLog) => {
     return (
-      <Tag value={getSourceLabel(getSourceValue(rowData))} severity="info" />
+      <Tag
+        value={tText(getSourceLabel(getSourceValue(rowData)))}
+        severity="info"
+      />
     );
   };
 
@@ -179,7 +186,7 @@ const AttendanceHistoryPageComponent = () => {
   const processedBodyTemplate = (rowData: AttendanceLog) => {
     return (
       <Tag
-        value={rowData.processed ? "Processed" : "Pending"}
+        value={tText(rowData.processed ? "Processed" : "Pending")}
         severity={getProcessedSeverity(!!rowData.processed)}
       />
     );
@@ -198,7 +205,7 @@ const AttendanceHistoryPageComponent = () => {
         className="text-sm font-medium text-blue-600 hover:underline"
         onClick={() => window.open(mapUrl!, "_blank", "noopener,noreferrer")}
       >
-        Open Map
+        {i18nT("static.1obuvcr")}{" "}
       </button>
     );
   };
@@ -216,17 +223,17 @@ const AttendanceHistoryPageComponent = () => {
             <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900">
-                  Attendance History
+                  {i18nT("static.16ukhgu")}{" "}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Review your attendance log history.
+                  {i18nT("static.px68n9")}{" "}
                 </p>
               </div>
 
               <Button
                 type="button"
                 icon="pi pi-refresh"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 onClick={() => mutate()}
                 severity="secondary"
                 outlined
@@ -236,11 +243,14 @@ const AttendanceHistoryPageComponent = () => {
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Source
+                  {i18nT("static.r5qyuw")}{" "}
                 </label>
                 <Dropdown
                   value={sourceFilter}
-                  options={SOURCE_OPTIONS}
+                  options={SOURCE_OPTIONS.map((option) => ({
+                    label: i18nT(option.labelKey),
+                    value: option.value,
+                  }))}
                   onChange={(e) => setSourceFilter(e.value)}
                   optionLabel="label"
                   optionValue="value"
@@ -250,7 +260,7 @@ const AttendanceHistoryPageComponent = () => {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Date From
+                  {i18nT("static.pkgk6v")}{" "}
                 </label>
                 <Calendar
                   value={dateFrom}
@@ -263,7 +273,7 @@ const AttendanceHistoryPageComponent = () => {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">
-                  Date To
+                  {i18nT("static.1iqht4m")}{" "}
                 </label>
                 <Calendar
                   value={dateTo}
@@ -288,7 +298,7 @@ const AttendanceHistoryPageComponent = () => {
             rowHover
             scrollable
             tableStyle={{ minWidth: "60rem" }}
-            emptyMessage="No attendance history found."
+            emptyMessage={i18nT("static.tl9trl")}
           >
             <Column
               header="#"
@@ -296,34 +306,34 @@ const AttendanceHistoryPageComponent = () => {
               body={(_, options) => options.rowIndex + 1}
             />
             <Column
-              header="Date Time"
+              header={i18nT("static.16l1nsi")}
               style={{ minWidth: "14rem" }}
               body={(rowData: AttendanceLog) =>
                 formatDateTime(rowData.event_time)
               }
             />
             <Column
-              header="Source"
+              header={i18nT("static.r5qyuw")}
               style={{ minWidth: "8rem" }}
               body={sourceBodyTemplate}
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               style={{ minWidth: "8rem" }}
               body={statusBodyTemplate}
             />
             <Column
-              header="Photo"
+              header={i18nT("static.n2dhtv")}
               style={{ minWidth: "7rem" }}
               body={photoBodyTemplate}
             />
             <Column
-              header="Location"
+              header={i18nT("static.pghiva")}
               style={{ minWidth: "8rem" }}
               body={locationBodyTemplate}
             />
             <Column
-              header="Processed"
+              header={i18nT("static.1k5drjf")}
               style={{ minWidth: "8rem" }}
               body={processedBodyTemplate}
             />
@@ -332,7 +342,7 @@ const AttendanceHistoryPageComponent = () => {
       </div>
 
       <Dialog
-        header="Attendance Photo"
+        header={i18nT("static.1tkcrji")}
         visible={!!previewPhoto}
         style={{ width: "32rem", maxWidth: "95vw" }}
         onHide={() => setPreviewPhoto(null)}
@@ -340,7 +350,7 @@ const AttendanceHistoryPageComponent = () => {
         {previewPhoto && (
           <img
             src={previewPhoto}
-            alt="Attendance Preview"
+            alt={tText("Attendance Preview")}
             className="w-full rounded-xl"
           />
         )}

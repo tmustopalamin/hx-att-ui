@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -195,6 +196,7 @@ const hasApprovalDetail = (rowData: OvertimeRequest) => {
 };
 
 const OvertimeRequestTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("overtime");
@@ -290,7 +292,7 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -302,7 +304,7 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -313,8 +315,8 @@ const OvertimeRequestTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "Unknown error",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.1l8uddv"),
       }),
     );
   };
@@ -387,8 +389,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request created successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.19glane"),
         }),
       );
     } catch (err: unknown) {
@@ -420,8 +422,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request updated successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.1ywm30h"),
         }),
       );
     } catch (err: unknown) {
@@ -442,8 +444,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request deleted successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.sk82wv"),
         }),
       );
     } catch (err: unknown) {
@@ -459,8 +461,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Validation",
-          detail: "Cancellation reason is required.",
+          summary: i18nT("static.gy1qqi"),
+          detail: i18nT("static.1svshzr"),
         }),
       );
       return;
@@ -481,8 +483,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request cancelled successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.1e9r5z9"),
         }),
       );
     } catch (err: unknown) {
@@ -503,8 +505,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request restored successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.1jrj3xy"),
         }),
       );
     } catch (err: unknown) {
@@ -523,8 +525,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request deleted permanently.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.emmjxj"),
         }),
       );
     } catch (err: unknown) {
@@ -543,8 +545,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Overtime request submitted successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.1h215mf"),
         }),
       );
     } catch (err: unknown) {
@@ -591,8 +593,8 @@ const OvertimeRequestTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Invalid time",
-          detail: "Requested end time must be after requested start time.",
+          summary: i18nT("static.1usu9gp"),
+          detail: i18nT("static.14xe6f6"),
         }),
       );
       return;
@@ -612,8 +614,8 @@ const OvertimeRequestTableData = () => {
 
   const onClickSubmit = (data: OvertimeRequest) => {
     requestActionConfirmation({
-      message: "Do you want to submit this overtime request for approval?",
-      header: "Submit Confirmation",
+      message: i18nT("static.1bqpdg5"),
+      header: i18nT("static.1clrlpu"),
       icon: "pi pi-send",
       defaultFocus: "accept",
       accept: () => handleSubmitApproval(data),
@@ -621,13 +623,13 @@ const OvertimeRequestTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes, Submit"
+            label={i18nT("static.szg4cs")}
             icon="pi pi-send"
             onClick={options.accept}
             severity="success"
@@ -639,8 +641,8 @@ const OvertimeRequestTableData = () => {
 
   const onClickDelete = (data: OvertimeRequest) => {
     requestActionConfirmation({
-      message: "Do you want to delete this overtime request?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1x4wrky"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handleDelete(data),
@@ -648,13 +650,13 @@ const OvertimeRequestTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             severity="danger"
@@ -666,8 +668,8 @@ const OvertimeRequestTableData = () => {
 
   const onClickRestore = (data: OvertimeRequest) => {
     requestActionConfirmation({
-      message: "Do you want to restore this overtime request?",
-      header: "Restore Confirmation",
+      message: i18nT("static.1vtdl91"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handleRestore(data),
@@ -675,13 +677,13 @@ const OvertimeRequestTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             severity="success"
@@ -693,8 +695,8 @@ const OvertimeRequestTableData = () => {
 
   const onClickPurge = (data: OvertimeRequest) => {
     requestActionConfirmation({
-      message: "Do you want to delete this overtime request forever?",
-      header: "Delete Forever Confirmation",
+      message: i18nT("static.1qdvv2j"),
+      header: i18nT("static.zrx58y"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handlePurge(data),
@@ -702,13 +704,13 @@ const OvertimeRequestTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             severity="danger"
@@ -720,28 +722,28 @@ const OvertimeRequestTableData = () => {
 
   const statusBody = (rowData: OvertimeRequest) => {
     if (rowData.deleted_at) {
-      return <Tag value="Deleted" severity="secondary" />;
+      return <Tag value={i18nT("static.1v6qcju")} severity="secondary" />;
     }
 
     const status = rowData.status?.toUpperCase();
 
     if (status === "APPROVED") {
-      return <Tag value="Approved" severity="success" />;
+      return <Tag value={i18nT("static.1j3qly2")} severity="success" />;
     }
 
     if (status === "REJECTED") {
-      return <Tag value="Rejected" severity="danger" />;
+      return <Tag value={i18nT("static.1uofzaf")} severity="danger" />;
     }
 
     if (status === "CANCELLED") {
-      return <Tag value="Cancelled" severity="secondary" />;
+      return <Tag value={i18nT("static.1a3t1vg")} severity="secondary" />;
     }
 
     if (hasApprovalDetail(rowData)) {
-      return <Tag value="Waiting Approval" severity="warning" />;
+      return <Tag value={i18nT("static.1v7fs5n")} severity="warning" />;
     }
 
-    return <Tag value="Draft" severity="info" />;
+    return <Tag value={i18nT("static.129n38s")} severity="info" />;
   };
 
   const overtimeDateBody = (rowData: OvertimeRequest) => {
@@ -753,7 +755,7 @@ const OvertimeRequestTableData = () => {
 
         {rowData.submitted_at && (
           <span className="text-xs text-slate-500">
-            Submitted {formatDateTime(rowData.submitted_at)}
+            {i18nT("static.12at4de")} {formatDateTime(rowData.submitted_at)}
           </span>
         )}
       </div>
@@ -796,7 +798,7 @@ const OvertimeRequestTableData = () => {
           <>
             <Button
               tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="submit for approval"
+              tooltip={i18nT("static.q5s311")}
               rounded
               severity="success"
               icon="pi pi-send"
@@ -806,7 +808,7 @@ const OvertimeRequestTableData = () => {
 
             <Button
               tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="edit"
+              tooltip={i18nT("static.pi0p75")}
               rounded
               severity="help"
               icon="pi pi-pencil"
@@ -816,7 +818,7 @@ const OvertimeRequestTableData = () => {
 
             <Button
               tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="delete"
+              tooltip={i18nT("static.ssf22y")}
               rounded
               severity="danger"
               icon="pi pi-trash"
@@ -829,7 +831,7 @@ const OvertimeRequestTableData = () => {
         {!isDraft && hasApprovalDetail(rowData) && !rowData.deleted_at && (
           <Button
             tooltipOptions={{ appendTo: getBody, position: "top" }}
-            tooltip="approval detail"
+            tooltip={i18nT("static.mjrwmb")}
             rounded
             severity="secondary"
             icon="pi pi-list-check"
@@ -841,7 +843,7 @@ const OvertimeRequestTableData = () => {
         {canCancelRequest && (
           <Button
             tooltipOptions={{ appendTo: getBody, position: "top" }}
-            tooltip="cancel overtime"
+            tooltip={i18nT("static.yua8ai")}
             rounded
             severity="warning"
             icon="pi pi-ban"
@@ -859,7 +861,7 @@ const OvertimeRequestTableData = () => {
             {archivedAccess.canRestore && (
               <Button
                 tooltipOptions={{ appendTo: getBody, position: "top" }}
-                tooltip="restore"
+                tooltip={i18nT("static.1p9rz69")}
                 rounded
                 severity="success"
                 icon="pi pi-refresh"
@@ -871,7 +873,7 @@ const OvertimeRequestTableData = () => {
             {archivedAccess.canPurge && (
               <Button
                 tooltipOptions={{ appendTo: getBody, position: "top" }}
-                tooltip="delete forever"
+                tooltip={i18nT("static.m55cx1")}
                 rounded
                 severity="secondary"
                 icon="pi pi-times"
@@ -889,7 +891,7 @@ const OvertimeRequestTableData = () => {
     <div className="flex justify-end gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         className="p-button-text"
         onClick={handleDialogHide}
@@ -897,7 +899,7 @@ const OvertimeRequestTableData = () => {
       />
       <Button
         type="submit"
-        label={isSaving ? "Saving..." : "Save"}
+        label={isSaving ? i18nT("static.8kfkb3") : i18nT("static.lewgh4")}
         icon={isSaving ? "pi pi-spin pi-spinner" : "pi pi-check"}
         disabled={isSaving}
       />
@@ -919,10 +921,10 @@ const OvertimeRequestTableData = () => {
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="text-2xl font-semibold text-slate-800">
-                Overtime Request
+                {i18nT("static.x7kedz")}{" "}
               </div>
               <div className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                Create overtime as draft, then submit it for approval.
+                {i18nT("static.1hwb6a9")}{" "}
               </div>
             </div>
 
@@ -940,7 +942,7 @@ const OvertimeRequestTableData = () => {
                     htmlFor="showDeleted"
                     className="text-sm text-slate-700"
                   >
-                    Show deleted data
+                    {i18nT("static.1beum2j")}{" "}
                   </label>
                 </div>
               )}
@@ -950,12 +952,16 @@ const OvertimeRequestTableData = () => {
                 <InputText
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Search reason or status"
+                  placeholder={i18nT("static.c8h6mm")}
                   className="w-full lg:w-[20rem]"
                 />
               </IconField>
 
-              <Button label="New" icon="pi pi-plus" onClick={onClickNew} />
+              <Button
+                label={i18nT("static.12ludo1")}
+                icon="pi pi-plus"
+                onClick={onClickNew}
+              />
             </div>
           </div>
 
@@ -969,8 +975,8 @@ const OvertimeRequestTableData = () => {
             scrollable
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "80rem" }}
-            emptyMessage="No overtime request found."
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            emptyMessage={i18nT("static.z3l6r2")}
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             filters={filters}
             globalFilterFields={["reason", "status", "overtime_date"]}
@@ -982,19 +988,19 @@ const OvertimeRequestTableData = () => {
             />
 
             <Column
-              header="Overtime Date"
+              header={i18nT("static.bp5uwu")}
               body={overtimeDateBody}
               style={{ minWidth: "16rem" }}
             />
 
             <Column
-              header="Requested Time"
+              header={i18nT("static.s5z0w")}
               body={timeBody}
               style={{ minWidth: "16rem" }}
             />
 
             <Column
-              header="Duration"
+              header={i18nT("static.1n1dulp")}
               body={(rowData: OvertimeRequest) =>
                 formatSeconds(rowData.requested_seconds)
               }
@@ -1002,19 +1008,19 @@ const OvertimeRequestTableData = () => {
             />
 
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={statusBody}
               style={{ minWidth: "12rem" }}
             />
 
             <Column
-              header="Reason"
+              header={i18nT("static.i36sl5")}
               body={reasonBody}
               style={{ minWidth: "22rem" }}
             />
 
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={actionColumnBody}
               frozen
               alignFrozen="right"
@@ -1051,12 +1057,12 @@ const OvertimeRequestTableData = () => {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div className="flex flex-col gap-2 md:col-span-2">
               <label className="text-sm font-medium text-slate-700">
-                Overtime Date
+                {i18nT("static.bp5uwu")}{" "}
               </label>
               <Controller
                 name="overtime_date"
                 control={control}
-                rules={{ required: "Overtime date is required" }}
+                rules={{ required: i18nT("static.pix9mb") }}
                 render={({ field, fieldState }) => (
                   <>
                     <Calendar
@@ -1078,19 +1084,19 @@ const OvertimeRequestTableData = () => {
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">
-                Start Time
+                {i18nT("static.1l5g9d8")}{" "}
               </label>
               <Controller
                 name="requested_start_time"
                 control={control}
-                rules={{ required: "Start time is required" }}
+                rules={{ required: i18nT("static.1lu0959") }}
                 render={({ field, fieldState }) => (
                   <>
                     <Dropdown
                       value={field.value}
                       options={timeOptions}
                       onChange={(e) => field.onChange(e.value)}
-                      placeholder="Select start time"
+                      placeholder={i18nT("static.1upncpi")}
                       filter
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
@@ -1106,19 +1112,19 @@ const OvertimeRequestTableData = () => {
 
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">
-                End Time
+                {i18nT("static.brrqon")}{" "}
               </label>
               <Controller
                 name="requested_end_time"
                 control={control}
-                rules={{ required: "End time is required" }}
+                rules={{ required: i18nT("static.1ehgkyy") }}
                 render={({ field, fieldState }) => (
                   <>
                     <Dropdown
                       value={field.value}
                       options={timeOptions}
                       onChange={(e) => field.onChange(e.value)}
-                      placeholder="Select end time"
+                      placeholder={i18nT("static.om6tn1")}
                       filter
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
@@ -1135,24 +1141,25 @@ const OvertimeRequestTableData = () => {
             <div className="md:col-span-2">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Duration Preview
+                  {i18nT("static.1lcz0qp")}{" "}
                 </div>
                 <div className="mt-1 text-lg font-semibold text-slate-800">
                   {formatSeconds(previewSeconds)}
                 </div>
                 <div className="mt-1 text-sm text-slate-500">
                   {previewStartAt && previewEndAt
-                    ? `${formatDateTime(
-                        previewStartAt.toISOString(),
-                      )} - ${formatDateTime(previewEndAt.toISOString())}`
-                    : "Select date and time first"}
+                    ? i18nT("static.1t1akqf", {
+                        p0: formatDateTime(previewStartAt.toISOString()),
+                        p1: formatDateTime(previewEndAt.toISOString()),
+                      })
+                    : i18nT("static.gtffuh")}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-2 md:col-span-2">
               <label className="text-sm font-medium text-slate-700">
-                Reason
+                {i18nT("static.i36sl5")}{" "}
               </label>
               <Controller
                 name="reason"
@@ -1161,7 +1168,7 @@ const OvertimeRequestTableData = () => {
                   <InputTextarea
                     {...field}
                     rows={4}
-                    placeholder="Explain why overtime is needed"
+                    placeholder={i18nT("static.7ze80k")}
                   />
                 )}
               />
@@ -1171,7 +1178,7 @@ const OvertimeRequestTableData = () => {
       </form>
 
       <Dialog
-        header="Approval Detail"
+        header={i18nT("static.f2od2b")}
         visible={approvalDetailVisible}
         style={{ width: "95vw", maxWidth: "900px" }}
         breakpoints={{ "960px": "95vw" }}
@@ -1183,7 +1190,7 @@ const OvertimeRequestTableData = () => {
         {approvalDetailLoading && (
           <div className="flex items-center justify-center py-10">
             <i className="pi pi-spin pi-spinner mr-2" />
-            <span>Loading approval detail...</span>
+            <span>{i18nT("static.hczzbz")}</span>
           </div>
         )}
 
@@ -1192,7 +1199,9 @@ const OvertimeRequestTableData = () => {
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <Tag
-                  value={`Overtime: ${approvalDetail.overtime_status}`}
+                  value={i18nT("static.1j0gc54", {
+                    p0: approvalDetail.overtime_status,
+                  })}
                   severity={getStatusSeverity(approvalDetail.overtime_status)}
                 />
 
@@ -1200,7 +1209,9 @@ const OvertimeRequestTableData = () => {
                   approvalDetail.approval_status !==
                     approvalDetail.overtime_status && (
                     <Tag
-                      value={`Approval: ${approvalDetail.approval_status}`}
+                      value={i18nT("static.cntcsw", {
+                        p0: approvalDetail.approval_status,
+                      })}
                       severity={getStatusSeverity(
                         approvalDetail.approval_status,
                       )}
@@ -1210,7 +1221,9 @@ const OvertimeRequestTableData = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <div className="text-sm text-slate-500">Overtime Date</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.bp5uwu")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDate(approvalDetail.overtime_date)}
                   </div>
@@ -1218,17 +1231,21 @@ const OvertimeRequestTableData = () => {
 
                 <div>
                   <div className="text-sm text-slate-500">
-                    Approval Request ID
+                    {i18nT("static.1rlonzs")}{" "}
                   </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {approvalDetail.approval_request_id
-                      ? `#${approvalDetail.approval_request_id}`
+                      ? i18nT("static.16h857e", {
+                          p0: approvalDetail.approval_request_id,
+                        })
                       : "-"}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">Requested Time</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.s5z0w")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatTime(approvalDetail.requested_start_at)} -{" "}
                     {formatTime(approvalDetail.requested_end_at)}
@@ -1236,21 +1253,27 @@ const OvertimeRequestTableData = () => {
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">Duration</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.1n1dulp")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatSeconds(approvalDetail.requested_seconds)}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">Submitted At</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.5g5077")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDateTime(approvalDetail.submitted_at)}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">Completed At</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.b280cz")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDateTime(approvalDetail.completed_at)}
                   </div>
@@ -1260,12 +1283,12 @@ const OvertimeRequestTableData = () => {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="mb-4 text-lg font-semibold text-slate-800">
-                Approval Steps
+                {i18nT("static.1ibinx5")}{" "}
               </div>
 
               {approvalDetail.steps.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                  No approval step found.
+                  {i18nT("static.dlz1s5")}{" "}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -1278,7 +1301,9 @@ const OvertimeRequestTableData = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <Tag
-                              value={`Step ${step.step_no}`}
+                              value={i18nT("static.gvtlm5", {
+                                p0: step.step_no,
+                              })}
                               severity="info"
                             />
                             <Tag
@@ -1288,22 +1313,26 @@ const OvertimeRequestTableData = () => {
                           </div>
 
                           <div className="mt-3 text-sm text-slate-500">
-                            Approver
+                            {i18nT("static.1czzcoo")}{" "}
                           </div>
                           <div className="font-semibold text-slate-800">
                             {step.approver_name ||
-                              `Employee #${step.approver_employee_id}`}
+                              i18nT("static.iapzf0", {
+                                p0: step.approver_employee_id,
+                              })}
                           </div>
                         </div>
 
                         <div className="text-left md:text-right">
-                          <div className="text-sm text-slate-500">Acted By</div>
+                          <div className="text-sm text-slate-500">
+                            {i18nT("static.whiz93")}
+                          </div>
                           <div className="font-semibold text-slate-800">
                             {step.acted_by_name || "-"}
                           </div>
 
                           <div className="mt-2 text-sm text-slate-500">
-                            Acted At
+                            {i18nT("static.xvsntn")}{" "}
                           </div>
                           <div className="font-semibold text-slate-800">
                             {formatDateTime(step.acted_at)}
@@ -1324,12 +1353,12 @@ const OvertimeRequestTableData = () => {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="mb-4 text-lg font-semibold text-slate-800">
-                Approval Timeline
+                {i18nT("static.17aougp")}{" "}
               </div>
 
               {approvalDetail.actions.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                  No approval action found.
+                  {i18nT("static.417q9p")}{" "}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -1346,7 +1375,9 @@ const OvertimeRequestTableData = () => {
                         <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                           <div className="font-semibold text-slate-800">
                             {action.action}
-                            {action.step_no ? ` - Step ${action.step_no}` : ""}
+                            {action.step_no
+                              ? i18nT("static.vr06fy", { p0: action.step_no })
+                              : ""}
                           </div>
 
                           <div className="text-sm text-slate-500">
@@ -1355,9 +1386,11 @@ const OvertimeRequestTableData = () => {
                         </div>
 
                         <div className="mt-1 text-sm text-slate-600">
-                          By{" "}
+                          {i18nT("static.n9pol0")}{" "}
                           {action.actor_name ||
-                            `Employee #${action.actor_employee_id}`}
+                            i18nT("static.iapzf0", {
+                              p0: action.actor_employee_id,
+                            })}
                         </div>
 
                         {action.note && (
@@ -1376,7 +1409,7 @@ const OvertimeRequestTableData = () => {
       </Dialog>
 
       <Dialog
-        header="Cancel Overtime Request"
+        header={i18nT("static.11qdseb")}
         visible={cancelDialogVisible}
         style={{ width: "95vw", maxWidth: "36rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -1395,7 +1428,7 @@ const OvertimeRequestTableData = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -1408,7 +1441,7 @@ const OvertimeRequestTableData = () => {
             />
             <Button
               type="button"
-              label="Cancel Overtime"
+              label={i18nT("static.1oblt16")}
               icon="pi pi-ban"
               severity="warning"
               loading={isCancelling}
@@ -1421,14 +1454,14 @@ const OvertimeRequestTableData = () => {
         <div className="flex flex-col gap-3 pt-2">
           {selectedData && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              Cancel overtime on {formatDate(selectedData.overtime_date)}?
+              {i18nT("static.ud7sx3")} {formatDate(selectedData.overtime_date)}?
             </div>
           )}
           <label
             htmlFor="selfCancelReason"
             className="text-sm font-medium text-slate-700"
           >
-            Cancellation reason <span className="text-red-500">*</span>
+            {i18nT("static.1361ff2")} <span className="text-red-500">*</span>
           </label>
           <InputTextarea
             id="selfCancelReason"
@@ -1438,7 +1471,7 @@ const OvertimeRequestTableData = () => {
             maxLength={1000}
             disabled={isCancelling}
             className="w-full"
-            placeholder="Explain why you are cancelling this request"
+            placeholder={i18nT("static.1i2fmlc")}
             onChange={(event) => setCancelReason(event.target.value)}
           />
         </div>

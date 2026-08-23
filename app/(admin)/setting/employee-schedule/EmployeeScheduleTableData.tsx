@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
@@ -42,6 +43,7 @@ import {
 } from "@/app/services/bank-service";
 
 const EmployeeScheduleTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("master-data");
@@ -93,7 +95,7 @@ const EmployeeScheduleTableData = () => {
     <div className="text-right flex gap-5 justify-end">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         onClick={() => {
           setVisible(false);
@@ -102,7 +104,7 @@ const EmployeeScheduleTableData = () => {
       />
       <Button
         type="submit"
-        label={isAddNew ? "Submit" : "Save"}
+        label={isAddNew ? i18nT("static.hvztxh") : i18nT("static.lewgh4")}
         icon="pi pi-check"
       />
     </div>
@@ -143,7 +145,7 @@ const EmployeeScheduleTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -153,7 +155,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -162,7 +164,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -176,8 +178,8 @@ const EmployeeScheduleTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "error",
-          detail: "please select data",
+          summary: i18nT("static.9bb0pd"),
+          detail: i18nT("static.yiy5uj"),
         }),
       );
       return;
@@ -198,7 +200,7 @@ const EmployeeScheduleTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -209,7 +211,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -218,7 +220,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -242,7 +244,7 @@ const EmployeeScheduleTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -252,7 +254,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -261,7 +263,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -284,7 +286,7 @@ const EmployeeScheduleTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -294,7 +296,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -303,7 +305,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -327,7 +329,7 @@ const EmployeeScheduleTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -337,7 +339,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -346,7 +348,7 @@ const EmployeeScheduleTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -378,9 +380,9 @@ const EmployeeScheduleTableData = () => {
 
   const activeColumnBody = (rowData: Bank) => {
     return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="danger" />
+      <Tag value={i18nT("static.13zf5vc")} severity="danger" />
     );
   };
 
@@ -394,7 +396,7 @@ const EmployeeScheduleTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="delete forever"
+              tooltip={i18nT("static.m55cx1")}
               rounded
               severity="secondary"
               label=""
@@ -412,7 +414,7 @@ const EmployeeScheduleTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="restore"
+              tooltip={i18nT("static.1p9rz69")}
               rounded
               severity="success"
               label=""
@@ -430,7 +432,7 @@ const EmployeeScheduleTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="delete"
+              tooltip={i18nT("static.ssf22y")}
               rounded
               severity="danger"
               label=""
@@ -444,7 +446,7 @@ const EmployeeScheduleTableData = () => {
 
           <Button
             tooltipOptions={{ appendTo: () => document.body, position: "top" }}
-            tooltip="update"
+            tooltip={i18nT("static.b45n5g")}
             rounded
             severity="help"
             label=""
@@ -461,8 +463,8 @@ const EmployeeScheduleTableData = () => {
 
   const onClickDelete = (data: Bank) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.bn1ao7"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -473,13 +475,13 @@ const EmployeeScheduleTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-danger"
@@ -491,8 +493,8 @@ const EmployeeScheduleTableData = () => {
 
   const onClickRestore = (data: Bank) => {
     requestActionConfirmation({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
+      message: i18nT("static.c06jc4"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -503,13 +505,13 @@ const EmployeeScheduleTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-success"
@@ -521,8 +523,8 @@ const EmployeeScheduleTableData = () => {
 
   const onClickPurge = (data: Bank) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1umz31y"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -532,13 +534,13 @@ const EmployeeScheduleTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-danger"
@@ -550,12 +552,12 @@ const EmployeeScheduleTableData = () => {
 
   return (
     <>
-      <Card title={<CardTitle title="Bank" url="" />}>
+      <Card title={<CardTitle title={i18nT("static.192q8xj")} url="" />}>
         <div className="p-3 flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <Button
-                label="New"
+                label={i18nT("static.12ludo1")}
                 icon="pi pi-plus"
                 size="small"
                 onClick={() => {
@@ -573,7 +575,7 @@ const EmployeeScheduleTableData = () => {
                     checked={isShowDeletedDataChecked}
                   />
                   <label htmlFor="showDeletedData" className="ml-2">
-                    show deleted data
+                    {i18nT("static.1s8ywez")}{" "}
                   </label>
                 </div>
               )}
@@ -585,7 +587,7 @@ const EmployeeScheduleTableData = () => {
                 className="p-inputtext-sm"
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
+                placeholder={i18nT("static.p9ap2o")}
               />
             </IconField>
           </div>
@@ -601,10 +603,10 @@ const EmployeeScheduleTableData = () => {
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
             globalFilterFields={["name"]}
-            emptyMessage="No Bank found."
+            emptyMessage={i18nT("static.17lkhli")}
             header={<></>}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
           >
@@ -613,17 +615,17 @@ const EmployeeScheduleTableData = () => {
               headerStyle={{ width: "3rem" }}
               body={(data, options) => options.rowIndex + 1}
             ></Column>
-            <Column field="code" header="Code"></Column>
-            <Column field="name" header="Name"></Column>
+            <Column field="code" header={i18nT("static.xoaiok")}></Column>
+            <Column field="name" header={i18nT("static.4el6o6")}></Column>
             <Column
               field="is_active"
-              header="Active"
+              header={i18nT("static.8qzyhb")}
               body={activeColumnBody}
             ></Column>
             <Column
               headerClassName="bg-white"
               className="bg-white"
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(rowData) => actionColumnBody(rowData)}
               frozen={true}
               alignFrozen="right"
@@ -649,21 +651,21 @@ const EmployeeScheduleTableData = () => {
         >
           <div className="flex flex-col gap-5">
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="code">Code</label>
+              <label htmlFor="code">{i18nT("static.xoaiok")}</label>
               <Controller
                 name="code"
                 control={control}
                 rules={{
-                  required: "*required",
+                  required: i18nT("static.1lf34iw"),
                   validate: (value) =>
                     !/\s/.test(value) || "must not contain spaces.",
-                  maxLength: { value: 50, message: "maximum 50 character" },
+                  maxLength: { value: 50, message: i18nT("static.qf28bp") },
                 }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
                       id="code"
-                      placeholder="example: bank_abc"
+                      placeholder={i18nT("static.1q0sleu")}
                       {...field}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
@@ -679,19 +681,19 @@ const EmployeeScheduleTableData = () => {
             </div>
 
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
+              <label htmlFor="name">{i18nT("static.4el6o6")}</label>
               <Controller
                 name="name"
                 control={control}
                 rules={{
-                  required: "*required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
+                  required: i18nT("static.1lf34iw"),
+                  maxLength: { value: 50, message: i18nT("static.qf28bp") },
                 }}
                 render={({ field, fieldState }) => (
                   <>
                     <InputText
                       id="name"
-                      placeholder="example: Bank abc"
+                      placeholder={i18nT("static.1lyet2t")}
                       {...field}
                       className={fieldState.invalid ? "p-invalid" : ""}
                     />
@@ -707,7 +709,7 @@ const EmployeeScheduleTableData = () => {
             </div>
 
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
+              <label htmlFor="is_active">{i18nT("static.8qzyhb")}</label>
               <Controller
                 name="is_active"
                 control={control}

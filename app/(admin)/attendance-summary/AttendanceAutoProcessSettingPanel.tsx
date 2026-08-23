@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useEffect, useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -22,25 +23,26 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 const swrKey = "/api/attendance-summary/auto-process-setting";
 
 const intervalOptions = [
-  { label: "Every 1 minute", value: 1 },
-  { label: "Every 2 minutes", value: 2 },
-  { label: "Every 5 minutes", value: 5 },
-  { label: "Every 10 minutes", value: 10 },
-  { label: "Every 15 minutes", value: 15 },
-  { label: "Every 30 minutes", value: 30 },
-  { label: "Every 60 minutes", value: 60 },
+  { labelKey: "Every 1 minute", value: 1 },
+  { labelKey: "Every 2 minutes", value: 2 },
+  { labelKey: "Every 5 minutes", value: 5 },
+  { labelKey: "Every 10 minutes", value: 10 },
+  { labelKey: "Every 15 minutes", value: 15 },
+  { labelKey: "Every 30 minutes", value: 30 },
+  { labelKey: "Every 60 minutes", value: 60 },
 ];
 
 const lookbackOptions = [
-  { label: "Today only", value: 0 },
-  { label: "Today + 1 day back", value: 1 },
-  { label: "Today + 2 days back", value: 2 },
-  { label: "Today + 3 days back", value: 3 },
-  { label: "Today + 7 days back", value: 7 },
+  { labelKey: "Today only", value: 0 },
+  { labelKey: "Today + 1 day back", value: 1 },
+  { labelKey: "Today + 2 days back", value: 2 },
+  { labelKey: "Today + 3 days back", value: 3 },
+  { labelKey: "Today + 7 days back", value: 7 },
 ];
 
 const formatDateTime = (value: string | null) => {
@@ -62,6 +64,7 @@ const getStatusSeverity = (
 };
 
 const AttendanceAutoProcessSettingPanel = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const [visible, setVisible] = useState(false);
@@ -135,8 +138,8 @@ const AttendanceAutoProcessSettingPanel = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message || "Auto process setting updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message || i18nT("static.16clvwh"),
         }),
       );
 
@@ -147,7 +150,7 @@ const AttendanceAutoProcessSettingPanel = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -156,7 +159,7 @@ const AttendanceAutoProcessSettingPanel = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -172,47 +175,55 @@ const AttendanceAutoProcessSettingPanel = () => {
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="text-sm font-semibold text-slate-900">
-              Auto Process Attendance Summary
+              {i18nT("static.1e7mfze")}{" "}
             </div>
 
             {setting?.auto_process_enabled ? (
-              <Tag value="ON" severity="success" />
+              <Tag value={i18nT("static.zrh9ao")} severity="success" />
             ) : (
-              <Tag value="OFF" severity="secondary" />
+              <Tag value={i18nT("static.csaup6")} severity="secondary" />
             )}
 
             <Tag
-              value={setting?.last_process_status || "Never Run"}
+              value={
+                setting?.last_process_status
+                  ? i18nT(formatStatusLabel(setting.last_process_status))
+                  : i18nT("static.fwk86k")
+              }
               severity={getStatusSeverity(setting?.last_process_status)}
             />
           </div>
 
           <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-600 md:grid-cols-2">
             <div>
-              Interval:{" "}
+              {i18nT("static.quxzwm")}{" "}
               <span className="font-medium">
                 {setting?.auto_process_enabled
-                  ? `Every ${setting.process_interval_minutes} min`
+                  ? i18nT("static.1v3hpcs", {
+                      p0: setting.process_interval_minutes,
+                    })
                   : "-"}
               </span>
             </div>
 
             <div>
-              Lookback:{" "}
+              {i18nT("static.fjd2x9")}{" "}
               <span className="font-medium">
-                {setting ? `${setting.lookback_days} day(s)` : "-"}
+                {setting
+                  ? i18nT("static.lyg1dh", { p0: setting.lookback_days })
+                  : "-"}
               </span>
             </div>
 
             <div>
-              Last Process:{" "}
+              {i18nT("static.9x8ogu")}{" "}
               <span className="font-medium">
                 {formatDateTime(setting?.last_process_at ?? null)}
               </span>
             </div>
 
             <div>
-              Last Processed Count:{" "}
+              {i18nT("static.1wugv60")}{" "}
               <span className="font-medium">
                 {setting?.last_processed_count ?? 0}
               </span>
@@ -224,7 +235,7 @@ const AttendanceAutoProcessSettingPanel = () => {
               className="mt-2 max-w-2xl truncate text-xs text-red-600"
               title={setting.last_process_error}
             >
-              Error: {setting.last_process_error}
+              {i18nT("static.e4prip")} {setting.last_process_error}
             </div>
           )}
         </div>
@@ -232,7 +243,7 @@ const AttendanceAutoProcessSettingPanel = () => {
         <Button
           type="button"
           icon="pi pi-cog"
-          label="Auto Process Setting"
+          label={i18nT("static.8tj2gj")}
           size="small"
           loading={isLoading}
           onClick={() => setVisible(true)}
@@ -240,7 +251,7 @@ const AttendanceAutoProcessSettingPanel = () => {
       </div>
 
       <Dialog
-        header="Attendance Processing & Mobile Attendance Policy"
+        header={i18nT("static.201jac")}
         visible={visible}
         style={{ width: "36rem", maxWidth: "95vw" }}
         onHide={() => setVisible(false)}
@@ -248,14 +259,14 @@ const AttendanceAutoProcessSettingPanel = () => {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               className="p-button-text"
               onClick={() => setVisible(false)}
             />
             <Button
               type="button"
-              label="Save"
+              label={i18nT("static.lewgh4")}
               icon="pi pi-check"
               loading={saving}
               onClick={saveSetting}
@@ -267,10 +278,10 @@ const AttendanceAutoProcessSettingPanel = () => {
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <div className="text-sm font-semibold text-slate-900">
-                Enable Auto Process
+                {i18nT("static.gv7170")}{" "}
               </div>
               <div className="mt-1 text-xs text-slate-500">
-                Automatically process attendance summary in the background.
+                {i18nT("static.ch5ti0")}{" "}
               </div>
             </div>
 
@@ -287,13 +298,16 @@ const AttendanceAutoProcessSettingPanel = () => {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
-              Process Interval
+              {i18nT("static.tkjpmz")}{" "}
             </label>
 
             <Dropdown
               className="w-full"
               value={form.process_interval_minutes}
-              options={intervalOptions}
+              options={intervalOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               optionLabel="label"
               optionValue="value"
               disabled={!form.auto_process_enabled}
@@ -305,21 +319,21 @@ const AttendanceAutoProcessSettingPanel = () => {
               }
             />
 
-            <small className="text-slate-500">
-              Worker checks the setting regularly, but process will only run
-              based on this interval.
-            </small>
+            <small className="text-slate-500">{i18nT("static.1npq83s")} </small>
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-700">
-              Lookback Days
+              {i18nT("static.1oi8y60")}{" "}
             </label>
 
             <Dropdown
               className="w-full"
               value={form.lookback_days}
-              options={lookbackOptions}
+              options={lookbackOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               optionLabel="label"
               optionValue="value"
               disabled={!form.auto_process_enabled}
@@ -331,28 +345,25 @@ const AttendanceAutoProcessSettingPanel = () => {
               }
             />
 
-            <small className="text-slate-500">
-              Example: 3 means process today and 3 days before today.
-            </small>
+            <small className="text-slate-500">{i18nT("static.sdlg0x")} </small>
           </div>
 
           <div className="border-t border-slate-200 pt-5">
             <div className="text-sm font-semibold text-slate-900">
-              Mobile Attendance Security Policy
+              {i18nT("static.kdjp9e")}{" "}
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              These checks are enforced by the backend for every mobile
-              attendance submission.
+              {i18nT("static.zb5ltw")}{" "}
             </p>
           </div>
 
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <div className="text-sm font-semibold text-slate-900">
-                Enable Mobile Attendance
+                {i18nT("static.hrfg93")}{" "}
               </div>
               <div className="mt-1 text-xs text-slate-500">
-                Block all mobile submissions when disabled.
+                {i18nT("static.1c2orku")}{" "}
               </div>
             </div>
             <InputSwitch
@@ -369,7 +380,7 @@ const AttendanceAutoProcessSettingPanel = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
               <span className="text-sm font-medium text-slate-700">
-                Require camera photo
+                {i18nT("static.2hsv")}{" "}
               </span>
               <InputSwitch
                 checked={form.mobile_attendance_require_photo}
@@ -384,7 +395,7 @@ const AttendanceAutoProcessSettingPanel = () => {
             </div>
             <div className="flex items-center justify-between rounded-xl border border-slate-200 p-3">
               <span className="text-sm font-medium text-slate-700">
-                Require GPS location
+                {i18nT("static.1xpwlrb")}{" "}
               </span>
               <InputSwitch
                 checked={form.mobile_attendance_require_location}
@@ -403,12 +414,10 @@ const AttendanceAutoProcessSettingPanel = () => {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <div className="text-sm font-semibold text-amber-950">
-                  Enforce Android Play Integrity
+                  {i18nT("static.1xjv5yn")}{" "}
                 </div>
                 <div className="mt-1 text-xs leading-5 text-amber-800">
-                  Submissions with missing or failed integrity evidence are
-                  quarantined for admin review. Enable only after Android and
-                  API credentials are configured.
+                  {i18nT("static.1mk8npd")}{" "}
                 </div>
               </div>
               <InputSwitch
@@ -425,11 +434,10 @@ const AttendanceAutoProcessSettingPanel = () => {
             <div className="mt-4 flex items-center justify-between border-t border-amber-200 pt-4">
               <div>
                 <div className="text-sm font-medium text-amber-950">
-                  Allow non-Play/internal APK installs
+                  {i18nT("static.ux19ro")}{" "}
                 </div>
                 <div className="mt-1 text-xs text-amber-800">
-                  Accept an UNLICENSED verdict for company-distributed APKs;
-                  device and app integrity checks still apply.
+                  {i18nT("static.vh90j1")}{" "}
                 </div>
               </div>
               <InputSwitch
@@ -451,7 +459,7 @@ const AttendanceAutoProcessSettingPanel = () => {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
-                Maximum GPS accuracy (meters)
+                {i18nT("static.cmyven")}{" "}
               </label>
               <InputNumber
                 className="w-full"
@@ -469,7 +477,7 @@ const AttendanceAutoProcessSettingPanel = () => {
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
-                Minimum submit interval (seconds)
+                {i18nT("static.16gn49a")}{" "}
               </label>
               <InputNumber
                 className="w-full"
@@ -488,7 +496,7 @@ const AttendanceAutoProcessSettingPanel = () => {
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
-                Maximum client clock drift (seconds)
+                {i18nT("static.1r3aoh5")}{" "}
               </label>
               <InputNumber
                 className="w-full"
@@ -506,7 +514,7 @@ const AttendanceAutoProcessSettingPanel = () => {
             </div>
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">
-                Maximum photo size (bytes)
+                {i18nT("static.uo8f4c")}{" "}
               </label>
               <InputNumber
                 className="w-full"
@@ -526,11 +534,11 @@ const AttendanceAutoProcessSettingPanel = () => {
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="mb-3 text-sm font-semibold text-slate-900">
-              Optional Geofence
+              {i18nT("static.1mwu0px")}{" "}
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <InputNumber
-                placeholder="Latitude"
+                placeholder={i18nT("static.udp36t")}
                 className="w-full"
                 value={form.mobile_attendance_geofence_latitude}
                 minFractionDigits={6}
@@ -544,7 +552,7 @@ const AttendanceAutoProcessSettingPanel = () => {
                 }
               />
               <InputNumber
-                placeholder="Longitude"
+                placeholder={i18nT("static.sltujy")}
                 className="w-full"
                 value={form.mobile_attendance_geofence_longitude}
                 minFractionDigits={6}
@@ -558,7 +566,7 @@ const AttendanceAutoProcessSettingPanel = () => {
                 }
               />
               <InputNumber
-                placeholder="Radius (meters)"
+                placeholder={i18nT("static.1rvi020")}
                 className="w-full"
                 value={form.mobile_attendance_geofence_radius_meters}
                 min={10}
@@ -573,8 +581,7 @@ const AttendanceAutoProcessSettingPanel = () => {
               />
             </div>
             <small className="mt-2 block text-slate-500">
-              Leave all three values empty to allow attendance from any
-              location. Fill all three to enforce an area.
+              {i18nT("static.11vaxkr")}{" "}
             </small>
           </div>
         </div>

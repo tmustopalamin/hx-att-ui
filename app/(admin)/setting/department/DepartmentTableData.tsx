@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -61,6 +62,7 @@ const EMPTY_DEPARTMENT: Department = {
 const getBody = () => document.body;
 
 const DepartmentTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -138,7 +140,7 @@ const DepartmentTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -150,7 +152,7 @@ const DepartmentTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -163,7 +165,7 @@ const DepartmentTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -175,8 +177,8 @@ const DepartmentTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -351,12 +353,10 @@ const DepartmentTableData = () => {
 
   const onClickDelete = (data: Department) => {
     requestActionConfirmation({
-      header: "Delete Department",
+      header: i18nT("static.ys6r98"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this department?
-          </span>
+          <span className="text-slate-600">{i18nT("static.xc7001")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -369,7 +369,7 @@ const DepartmentTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -378,7 +378,7 @@ const DepartmentTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -390,12 +390,10 @@ const DepartmentTableData = () => {
 
   const onClickRestore = (data: Department) => {
     requestActionConfirmation({
-      header: "Restore Department",
+      header: i18nT("static.11zvezh"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this department?
-          </span>
+          <span className="text-slate-600">{i18nT("static.yp8k9c")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -408,7 +406,7 @@ const DepartmentTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -417,7 +415,7 @@ const DepartmentTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -429,12 +427,10 @@ const DepartmentTableData = () => {
 
   const onClickPurge = (data: Department) => {
     requestActionConfirmation({
-      header: "Delete Department Permanently",
+      header: i18nT("static.1oe538x"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -447,7 +443,7 @@ const DepartmentTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -456,7 +452,7 @@ const DepartmentTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -469,14 +465,19 @@ const DepartmentTableData = () => {
   const statusColumnBody = (rowData: Department) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -486,7 +487,7 @@ const DepartmentTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -496,7 +497,9 @@ const DepartmentTableData = () => {
 
   const parentColumnBody = (rowData: Department) => {
     if (!rowData.parent_name) {
-      return <span className="text-sm text-slate-400">No parent</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.lha3lq")}</span>
+      );
     }
 
     return (
@@ -515,7 +518,11 @@ const DepartmentTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -528,7 +535,7 @@ const DepartmentTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -545,7 +552,7 @@ const DepartmentTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -566,7 +573,7 @@ const DepartmentTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -581,7 +588,7 @@ const DepartmentTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -596,7 +603,7 @@ const DepartmentTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -608,7 +615,7 @@ const DepartmentTableData = () => {
       <Button
         type="submit"
         form="department-form"
-        label={isAddNew ? "Create Department" : "Save Changes"}
+        label={isAddNew ? i18nT("static.rhb76h") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -638,12 +645,11 @@ const DepartmentTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Department
+                  {i18nT("static.1430r53")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage department structures, parent departments, and active
-                  status.
+                  {i18nT("static.1k38jmg")}{" "}
                 </p>
               </div>
             </div>
@@ -651,7 +657,7 @@ const DepartmentTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -664,7 +670,7 @@ const DepartmentTableData = () => {
 
               <Button
                 type="button"
-                label="New Department"
+                label={i18nT("static.hdfs65")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -689,7 +695,7 @@ const DepartmentTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -700,7 +706,7 @@ const DepartmentTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code, department, or parent"
+                placeholder={i18nT("static.89jo9z")}
                 className="w-full"
               />
             </IconField>
@@ -726,8 +732,8 @@ const DepartmentTableData = () => {
               tableStyle={{
                 minWidth: "62rem",
               }}
-              emptyMessage="No department data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.vp56vm")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -743,7 +749,7 @@ const DepartmentTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "11rem",
@@ -757,7 +763,7 @@ const DepartmentTableData = () => {
 
               <Column
                 field="name"
-                header="Department Name"
+                header={i18nT("static.ho7sp2")}
                 sortable
                 style={{
                   minWidth: "20rem",
@@ -771,7 +777,7 @@ const DepartmentTableData = () => {
 
               <Column
                 field="parent_name"
-                header="Parent Department"
+                header={i18nT("static.u3bwmx")}
                 sortable
                 body={parentColumnBody}
                 style={{
@@ -781,7 +787,7 @@ const DepartmentTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -790,7 +796,7 @@ const DepartmentTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -845,7 +851,7 @@ const DepartmentTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Department Code
+              {i18nT("static.1axx4pg")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -853,7 +859,7 @@ const DepartmentTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Department code is required.",
+                required: i18nT("static.15psy0x"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) ||
@@ -861,7 +867,7 @@ const DepartmentTableData = () => {
                 },
                 maxLength: {
                   value: 50,
-                  message: "Department code cannot exceed 50 characters.",
+                  message: i18nT("static.1nyrs7g"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -870,7 +876,7 @@ const DepartmentTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: IT"
+                    placeholder={i18nT("static.dgzd72")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -882,7 +888,7 @@ const DepartmentTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique department code.
+                      {i18nT("static.1jtegd2")}{" "}
                     </small>
                   )}
                 </>
@@ -895,7 +901,7 @@ const DepartmentTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Department Name
+              {i18nT("static.ho7sp2")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -903,10 +909,10 @@ const DepartmentTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Department name is required.",
+                required: i18nT("static.1772dtb"),
                 maxLength: {
                   value: 50,
-                  message: "Department name cannot exceed 50 characters.",
+                  message: i18nT("static.1ewbv5i"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -915,7 +921,7 @@ const DepartmentTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Information Technology"
+                    placeholder={i18nT("static.efreu7")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -936,7 +942,7 @@ const DepartmentTableData = () => {
               htmlFor="parent_id"
               className="text-sm font-medium text-slate-700"
             >
-              Parent Department
+              {i18nT("static.u3bwmx")}{" "}
             </label>
 
             <Controller
@@ -957,8 +963,8 @@ const DepartmentTableData = () => {
                     disabled={parentIsLoading || Boolean(parentError)}
                     placeholder={
                       parentIsLoading
-                        ? "Loading departments..."
-                        : "No parent department"
+                        ? i18nT("static.s9n0xu")
+                        : i18nT("static.1hkzwsg")
                     }
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
@@ -974,15 +980,12 @@ const DepartmentTableData = () => {
 
                   {!fieldState.error && !parentError && (
                     <small className="text-slate-500">
-                      Optional. Leave empty for a top-level department.
+                      {i18nT("static.1mahuan")}{" "}
                     </small>
                   )}
 
                   {parentError && (
-                    <small className="p-error">
-                      Departments could not be loaded. Refresh the page and try
-                      again.
-                    </small>
+                    <small className="p-error">{i18nT("static.pi3tq3")} </small>
                   )}
                 </>
               )}
@@ -1001,12 +1004,11 @@ const DepartmentTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive departments remain stored but should not be
-                      available for new employee assignments.
+                      {i18nT("static.y5jy02")}{" "}
                     </p>
                   </div>
 

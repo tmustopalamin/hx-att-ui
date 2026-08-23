@@ -1,4 +1,5 @@
 "use client";
+import { getClientLocale, translateStaticText, useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -101,7 +102,7 @@ const parseErrorResponse = async (res: Response) => {
     return {
       success: false,
       code: String(res.status),
-      message: "Unknown error",
+      message: translateStaticText("Unknown error", getClientLocale()),
     };
   }
 };
@@ -299,6 +300,20 @@ const getStatusSeverity = (status?: string | null) => {
   return "info";
 };
 
+const formatStatusLabel = (status?: string | null) => {
+  const normalized = String(status ?? "")
+    .trim()
+    .toUpperCase();
+  if (!normalized) return "Unknown";
+  return normalized
+    .split("_")
+    .map((word) => {
+      const lower = word.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
+};
+
 const formatDate = (value?: string | Date | null) => {
   return formatDisplayDate(value);
 };
@@ -333,6 +348,7 @@ const hasApprovalDetail = (rowData: RequestLeave) => {
 };
 
 const RequestLeaveTableData = () => {
+  const { t: i18nT, tText } = useI18n();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("request-leave");
@@ -420,7 +436,7 @@ const RequestLeaveTableData = () => {
   const leaveTypeOptions = useMemo(
     () =>
       leaveTypeRows.map((item) => ({
-        label: `${item.name} (${item.code})`,
+        label: i18nT("static.14r9r1n", { p0: item.name, p1: item.code }),
         value: item.id,
       })),
     [leaveTypeRows],
@@ -482,9 +498,14 @@ const RequestLeaveTableData = () => {
         );
       })
       .map((item) => ({
-        label: `${item.leave_type_name ?? `Leave Type #${item.leave_type_id}`} • ${formatDate(
-          item.period_start,
-        )} - ${formatDate(item.period_end)} • Balance ${item.closing_balance}`,
+        label: i18nT("static.2rslm0", {
+          p0:
+            item.leave_type_name ??
+            i18nT("static.1o2yi6x", { p0: item.leave_type_id }),
+          p1: formatDate(item.period_start),
+          p2: formatDate(item.period_end),
+          p3: item.closing_balance,
+        }),
         value: item.id,
       }));
   }, [leaveBalanceRows, leaveTypeId, startDate, endDate]);
@@ -507,7 +528,7 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -519,7 +540,7 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -538,7 +559,7 @@ const RequestLeaveTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
+        summary: i18nT("static.1vks92p"),
         detail: message,
       }),
     );
@@ -600,8 +621,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: "Attachment deleted successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: tText("Attachment deleted successfully."),
         }),
       );
     } catch (err: unknown) {
@@ -613,8 +634,10 @@ const RequestLeaveTableData = () => {
 
   const onClickDeleteAttachment = (attachment: RequestLeaveAttachment) => {
     requestActionConfirmation({
-      message: `Do you want to delete ${attachment.original_file_name}?`,
-      header: "Delete Attachment",
+      message: tText("Do you want to delete {fileName}?", {
+        fileName: attachment.original_file_name,
+      }),
+      header: i18nT("static.1003m6j"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handleDeleteAttachment(attachment),
@@ -622,13 +645,13 @@ const RequestLeaveTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes, Delete"
+            label={i18nT("static.riyibb")}
             icon="pi pi-trash"
             onClick={options.accept}
             severity="danger"
@@ -704,10 +727,10 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: i18nT("static.udvru8"),
           detail: getResponseMessage(
             res,
-            "Request leave created successfully.",
+            tText("Request leave created successfully."),
           ),
         }),
       );
@@ -751,10 +774,10 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: i18nT("static.udvru8"),
           detail: getResponseMessage(
             res,
-            "Request leave updated successfully.",
+            tText("Request leave updated successfully."),
           ),
         }),
       );
@@ -775,10 +798,10 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: i18nT("static.udvru8"),
           detail: getResponseMessage(
             res,
-            "Request leave deleted successfully.",
+            tText("Request leave deleted successfully."),
           ),
         }),
       );
@@ -797,10 +820,10 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: i18nT("static.udvru8"),
           detail: getResponseMessage(
             res,
-            "Request leave restored successfully.",
+            tText("Request leave restored successfully."),
           ),
         }),
       );
@@ -819,8 +842,11 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: getResponseMessage(res, "Request leave deleted permanently."),
+          summary: i18nT("static.udvru8"),
+          detail: getResponseMessage(
+            res,
+            tText("Request leave deleted permanently."),
+          ),
         }),
       );
     } catch (err: unknown) {
@@ -838,10 +864,10 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: i18nT("static.udvru8"),
           detail: getResponseMessage(
             res,
-            "Request leave submitted successfully.",
+            tText("Request leave submitted successfully."),
           ),
         }),
       );
@@ -882,8 +908,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "Please select leave type.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText("Please select leave type."),
         }),
       );
       return;
@@ -894,8 +920,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "Please select leave balance.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText("Please select leave balance."),
         }),
       );
       return;
@@ -906,8 +932,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "Reason is required for this leave type.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText("Reason is required for this leave type."),
         }),
       );
       return;
@@ -918,8 +944,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "Start date and end date are required.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText("Start date and end date are required."),
         }),
       );
       return;
@@ -930,8 +956,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "End date cannot be before start date.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText("End date cannot be before start date."),
         }),
       );
       return;
@@ -942,8 +968,8 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "Total leave days must be greater than 0.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText("Total leave days must be greater than 0."),
         }),
       );
       return;
@@ -957,8 +983,10 @@ const RequestLeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Validation",
-          detail: "Total leave days cannot be greater than closing balance.",
+          summary: i18nT("static.gy1qqi"),
+          detail: tText(
+            "Total leave days cannot be greater than closing balance.",
+          ),
         }),
       );
       return;
@@ -974,8 +1002,8 @@ const RequestLeaveTableData = () => {
 
   const onClickSubmit = (data: RequestLeave) => {
     requestActionConfirmation({
-      message: "Do you want to submit this leave request for approval?",
-      header: "Submit Confirmation",
+      message: i18nT("static.154h3kp"),
+      header: i18nT("static.1clrlpu"),
       icon: "pi pi-send",
       defaultFocus: "accept",
       accept: () => handleSubmitApproval(data),
@@ -983,13 +1011,13 @@ const RequestLeaveTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes, Submit"
+            label={i18nT("static.szg4cs")}
             icon="pi pi-send"
             onClick={options.accept}
             severity="success"
@@ -1001,8 +1029,8 @@ const RequestLeaveTableData = () => {
 
   const onClickDelete = (data: RequestLeave) => {
     requestActionConfirmation({
-      message: "Do you want to delete this leave request?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1e31nv4"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handleDelete(data),
@@ -1010,13 +1038,13 @@ const RequestLeaveTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             severity="danger"
@@ -1028,8 +1056,8 @@ const RequestLeaveTableData = () => {
 
   const onClickRestore = (data: RequestLeave) => {
     requestActionConfirmation({
-      message: "Do you want to restore this leave request?",
-      header: "Restore Confirmation",
+      message: i18nT("static.1r72f4t"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handleRestore(data),
@@ -1037,13 +1065,13 @@ const RequestLeaveTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             severity="success"
@@ -1055,8 +1083,8 @@ const RequestLeaveTableData = () => {
 
   const onClickPurge = (data: RequestLeave) => {
     requestActionConfirmation({
-      message: "Do you want to delete this leave request forever?",
-      header: "Delete Forever Confirmation",
+      message: i18nT("static.nds3od"),
+      header: i18nT("static.zrx58y"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => handlePurge(data),
@@ -1064,13 +1092,13 @@ const RequestLeaveTableData = () => {
       footer: (options) => (
         <div className="flex justify-end gap-3">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             severity="danger"
@@ -1082,28 +1110,28 @@ const RequestLeaveTableData = () => {
 
   const statusBody = (rowData: RequestLeave) => {
     if (rowData.deleted_at) {
-      return <Tag value="Deleted" severity="secondary" />;
+      return <Tag value={tText("Deleted")} severity="secondary" />;
     }
 
     const status = rowData.status?.toUpperCase();
 
     if (status === "APPROVED") {
-      return <Tag value="Approved" severity="success" />;
+      return <Tag value={tText("Approved")} severity="success" />;
     }
 
     if (status === "REJECTED") {
-      return <Tag value="Rejected" severity="danger" />;
+      return <Tag value={tText("Rejected")} severity="danger" />;
     }
 
     if (status === "CANCELLED") {
-      return <Tag value="Cancelled" severity="secondary" />;
+      return <Tag value={tText("Cancelled")} severity="secondary" />;
     }
 
     if (hasApprovalDetail(rowData)) {
-      return <Tag value="Waiting Approval" severity="warning" />;
+      return <Tag value={tText("Waiting Approval")} severity="warning" />;
     }
 
-    return <Tag value="Draft" severity="info" />;
+    return <Tag value={tText("Draft")} severity="info" />;
   };
 
   const leaveTypeBody = (rowData: RequestLeave) => {
@@ -1117,12 +1145,12 @@ const RequestLeaveTableData = () => {
           {formatDate(rowData.start_date)} - {formatDate(rowData.end_date)}
         </span>
         <span className="text-sm text-slate-500">
-          Total days: {rowData.total_days}
+          {i18nT("static.s3w76m")} {rowData.total_days}
         </span>
 
         {rowData.submitted_at && (
           <span className="text-xs text-slate-500">
-            Submitted {formatDateTime(rowData.submitted_at)}
+            {i18nT("static.12at4de")} {formatDateTime(rowData.submitted_at)}
           </span>
         )}
       </div>
@@ -1154,18 +1182,24 @@ const RequestLeaveTableData = () => {
     }
 
     if (status === "REJECTED") {
-      return <span className="text-sm text-slate-600">Rejected</span>;
+      return (
+        <span className="text-sm text-slate-600">
+          {i18nT("static.1uofzaf")}
+        </span>
+      );
     }
 
     if (hasApprovalDetail(rowData)) {
       return (
         <span className="text-sm text-slate-600">
-          Submitted {formatDateTime(rowData.submitted_at)}
+          {i18nT("static.12at4de")} {formatDateTime(rowData.submitted_at)}
         </span>
       );
     }
 
-    return <span className="text-sm text-slate-500">Not submitted</span>;
+    return (
+      <span className="text-sm text-slate-500">{i18nT("static.11h0zu7")}</span>
+    );
   };
 
   const actionColumnBody = (rowData: RequestLeave) => {
@@ -1179,7 +1213,7 @@ const RequestLeaveTableData = () => {
               appendTo: getBody,
               position: "top",
             }}
-            tooltip="submit for approval"
+            tooltip={i18nT("static.q5s311")}
             rounded
             severity="success"
             icon="pi pi-send"
@@ -1194,7 +1228,7 @@ const RequestLeaveTableData = () => {
               appendTo: getBody,
               position: "top",
             }}
-            tooltip="edit"
+            tooltip={i18nT("static.pi0p75")}
             rounded
             severity="help"
             icon="pi pi-pencil"
@@ -1209,7 +1243,7 @@ const RequestLeaveTableData = () => {
               appendTo: getBody,
               position: "top",
             }}
-            tooltip="delete"
+            tooltip={i18nT("static.ssf22y")}
             rounded
             severity="danger"
             icon="pi pi-trash"
@@ -1224,7 +1258,7 @@ const RequestLeaveTableData = () => {
               appendTo: getBody,
               position: "top",
             }}
-            tooltip="approval detail"
+            tooltip={i18nT("static.mjrwmb")}
             rounded
             severity="secondary"
             icon="pi pi-list-check"
@@ -1241,7 +1275,7 @@ const RequestLeaveTableData = () => {
                   appendTo: getBody,
                   position: "top",
                 }}
-                tooltip="restore"
+                tooltip={i18nT("static.1p9rz69")}
                 rounded
                 severity="success"
                 icon="pi pi-refresh"
@@ -1256,7 +1290,7 @@ const RequestLeaveTableData = () => {
                   appendTo: getBody,
                   position: "top",
                 }}
-                tooltip="delete forever"
+                tooltip={i18nT("static.m55cx1")}
                 rounded
                 severity="secondary"
                 icon="pi pi-times"
@@ -1274,7 +1308,7 @@ const RequestLeaveTableData = () => {
     <div className="flex justify-end gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         className="p-button-text"
         onClick={handleDialogHide}
@@ -1282,7 +1316,7 @@ const RequestLeaveTableData = () => {
       />
       <Button
         type="button"
-        label={isSaving ? "Saving..." : "Save"}
+        label={isSaving ? tText("Saving...") : tText("Save")}
         icon={isSaving ? "pi pi-spin pi-spinner" : "pi pi-check"}
         disabled={isSaving}
         onClick={handleSubmit(onSubmit)}
@@ -1305,10 +1339,10 @@ const RequestLeaveTableData = () => {
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="text-2xl font-semibold text-slate-800">
-                Request Leave
+                {i18nT("static.y4pt85")}{" "}
               </div>
               <div className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
-                Create leave request as draft, then submit it for approval.
+                {i18nT("static.10tmdzk")}{" "}
               </div>
             </div>
 
@@ -1326,7 +1360,7 @@ const RequestLeaveTableData = () => {
                     htmlFor="showDeleted"
                     className="text-sm text-slate-700"
                   >
-                    Show deleted data
+                    {i18nT("static.1beum2j")}{" "}
                   </label>
                 </div>
               )}
@@ -1336,13 +1370,17 @@ const RequestLeaveTableData = () => {
                 <InputText
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Search reason or status"
+                  placeholder={i18nT("static.c8h6mm")}
                   className="w-full lg:w-[20rem]"
                 />
               </IconField>
 
               {canCreate && (
-                <Button label="New" icon="pi pi-plus" onClick={onClickNew} />
+                <Button
+                  label={i18nT("static.12ludo1")}
+                  icon="pi pi-plus"
+                  onClick={onClickNew}
+                />
               )}
             </div>
           </div>
@@ -1357,8 +1395,8 @@ const RequestLeaveTableData = () => {
             scrollable
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "92rem" }}
-            emptyMessage="No request leave found."
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            emptyMessage={i18nT("static.1m6g1rm")}
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             filters={filters}
             globalFilterFields={[
@@ -1376,43 +1414,43 @@ const RequestLeaveTableData = () => {
             />
 
             <Column
-              header="Leave Type"
+              header={i18nT("static.se3juw")}
               body={leaveTypeBody}
               style={{ minWidth: "16rem" }}
             />
 
             <Column
-              header="Date"
+              header={i18nT("static.ggjuyh")}
               body={dateBody}
               style={{ minWidth: "20rem" }}
             />
 
             <Column
-              header="Total Days"
+              header={i18nT("static.141yy28")}
               body={(rowData: RequestLeave) => rowData.total_days}
               style={{ minWidth: "10rem" }}
             />
 
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={statusBody}
               style={{ minWidth: "12rem" }}
             />
 
             <Column
-              header="Reason"
+              header={i18nT("static.i36sl5")}
               body={reasonBody}
               style={{ minWidth: "22rem" }}
             />
 
             <Column
-              header="Approval Info"
+              header={i18nT("static.rttine")}
               body={approvalInfoBody}
               style={{ minWidth: "18rem" }}
             />
 
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={actionColumnBody}
               frozen
               alignFrozen="right"
@@ -1438,7 +1476,7 @@ const RequestLeaveTableData = () => {
       </Card>
 
       <Dialog
-        header={popupHeaderTitle}
+        header={tText(popupHeaderTitle)}
         visible={visible}
         style={{ width: "95vw", maxWidth: "760px" }}
         breakpoints={{ "960px": "95vw" }}
@@ -1453,15 +1491,17 @@ const RequestLeaveTableData = () => {
             <div className="md:col-span-2">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  Selected Balance
+                  {i18nT("static.o1rscg")}{" "}
                 </div>
                 <div className="mt-1 text-lg font-semibold text-slate-800">
                   {selectedLeaveBalance.leave_type_name ?? "-"}
                 </div>
                 <div className="mt-1 text-sm text-slate-500">
-                  Period {formatDate(selectedLeaveBalance.period_start)} -{" "}
-                  {formatDate(selectedLeaveBalance.period_end)} • Closing
-                  Balance {selectedLeaveBalance.closing_balance}
+                  {i18nT("static.11hwh7o")}{" "}
+                  {formatDate(selectedLeaveBalance.period_start)} -{" "}
+                  {formatDate(selectedLeaveBalance.period_end)}{" "}
+                  {i18nT("static.qvlt7y")}{" "}
+                  {selectedLeaveBalance.closing_balance}
                 </div>
               </div>
             </div>
@@ -1469,12 +1509,12 @@ const RequestLeaveTableData = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">
-              Leave Type
+              {i18nT("static.se3juw")}{" "}
             </label>
             <Controller
               name="leave_type_id"
               control={control}
-              rules={{ required: "Leave type is required" }}
+              rules={{ required: i18nT("static.1sgcm61") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1482,7 +1522,7 @@ const RequestLeaveTableData = () => {
                     options={leaveTypeOptions}
                     optionLabel="label"
                     optionValue="value"
-                    placeholder="Select leave type"
+                    placeholder={i18nT("static.64jas6")}
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                     onChange={(event) => {
                       field.onChange(event.value ?? 0);
@@ -1503,7 +1543,8 @@ const RequestLeaveTableData = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">
-              Leave Balance{selectedLeaveType?.is_deductible ? " *" : ""}
+              {i18nT("static.1es4nt0")}
+              {selectedLeaveType?.is_deductible ? " *" : ""}
             </label>
             <Controller
               name="employee_leave_balance_id"
@@ -1512,7 +1553,7 @@ const RequestLeaveTableData = () => {
                 validate: (value) =>
                   !selectedLeaveType?.is_deductible ||
                   Boolean(value) ||
-                  "Leave balance is required for this leave type",
+                  tText("Leave balance is required for this leave type"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -1521,8 +1562,8 @@ const RequestLeaveTableData = () => {
                     options={leaveBalanceOptions}
                     placeholder={
                       selectedLeaveType?.is_deductible
-                        ? "Select leave balance"
-                        : "Not required for this leave type"
+                        ? tText("Select leave balance")
+                        : tText("Not required for this leave type")
                     }
                     showClear
                     disabled={!selectedLeaveType?.is_deductible}
@@ -1541,13 +1582,13 @@ const RequestLeaveTableData = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">
-              Start Date
+              {i18nT("static.7bl5hd")}{" "}
             </label>
             <Controller
               name="start_date"
               control={control}
               rules={{
-                required: "Start date is required",
+                required: i18nT("static.oz4lds"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -1570,13 +1611,13 @@ const RequestLeaveTableData = () => {
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-slate-700">
-              End Date
+              {i18nT("static.1j4m31m")}{" "}
             </label>
             <Controller
               name="end_date"
               control={control}
               rules={{
-                required: "End date is required",
+                required: i18nT("static.1fu7gpr"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -1600,22 +1641,27 @@ const RequestLeaveTableData = () => {
           <div className="md:col-span-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                Leave Days Preview
+                {i18nT("static.wqkwhn")}{" "}
               </div>
               <div className="mt-1 text-lg font-semibold text-slate-800">
                 {isPreviewLoading
-                  ? "Calculating..."
-                  : `${previewTotalDays} day(s)`}
+                  ? tText("Calculating...")
+                  : i18nT("static.y7k7q", {
+                      p0: previewTotalDays,
+                      p1: tText("day(s)"),
+                    })}
               </div>
               <div className="mt-1 text-sm text-slate-500">
-                Backend preview excludes weekends and {previewHolidayDays}{" "}
-                holiday day(s).
+                {i18nT("static.17hzze9")} {previewHolidayDays}{" "}
+                {i18nT("static.1e1ynjj")}{" "}
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-2 md:col-span-2">
-            <label className="text-sm font-medium text-slate-700">Reason</label>
+            <label className="text-sm font-medium text-slate-700">
+              {i18nT("static.i36sl5")}
+            </label>
             <Controller
               name="reason"
               control={control}
@@ -1623,14 +1669,14 @@ const RequestLeaveTableData = () => {
                 validate: (value) =>
                   !selectedLeaveType?.requires_reason ||
                   Boolean(value?.trim()) ||
-                  "Reason is required for this leave type",
+                  tText("Reason is required for this leave type"),
               }}
               render={({ field, fieldState }) => (
                 <>
                   <InputTextarea
                     {...field}
                     rows={4}
-                    placeholder="Explain your leave reason"
+                    placeholder={i18nT("static.hjtedg")}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
@@ -1645,23 +1691,23 @@ const RequestLeaveTableData = () => {
 
           <div className="flex flex-col gap-3 md:col-span-2">
             <label className="text-sm font-medium text-slate-700">
-              Attachment
+              {i18nT("static.1417wqw")}{" "}
             </label>
 
             {!isAddNew && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-3 text-sm font-semibold text-slate-700">
-                  Existing Attachments
+                  {i18nT("static.2hvj7a")}{" "}
                 </div>
 
                 {isLoadingAttachments ? (
                   <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
                     <i className="pi pi-spin pi-spinner" />
-                    <span>Loading attachments...</span>
+                    <span>{i18nT("static.183xj9x")}</span>
                   </div>
                 ) : attachments.length === 0 ? (
                   <div className="py-3 text-sm text-slate-500">
-                    No attachment uploaded.
+                    {i18nT("static.1pxc5h")}{" "}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -1677,9 +1723,9 @@ const RequestLeaveTableData = () => {
 
                           <div className="mt-1 text-xs text-slate-500">
                             {formatFileSize(attachment.file_size)}
-                            {" • "}
+                            {i18nT("static.syyan8")}
                             {attachment.content_type}
-                            {" • "}
+                            {i18nT("static.syyan8")}
                             {formatDateTime(attachment.created_at)}
                           </div>
                         </div>
@@ -1687,7 +1733,7 @@ const RequestLeaveTableData = () => {
                         <div className="flex shrink-0 items-center gap-2">
                           <Button
                             type="button"
-                            label="View"
+                            label={i18nT("static.q5w460")}
                             icon="pi pi-eye"
                             size="small"
                             outlined
@@ -1708,8 +1754,8 @@ const RequestLeaveTableData = () => {
                             type="button"
                             label={
                               deletingAttachmentId === attachment.id
-                                ? "Deleting..."
-                                : "Delete"
+                                ? tText("Deleting...")
+                                : tText("Delete")
                             }
                             icon={
                               deletingAttachmentId === attachment.id
@@ -1746,14 +1792,14 @@ const RequestLeaveTableData = () => {
             />
 
             <div className="text-xs text-slate-500">
-              JPG, JPEG, PNG, or PDF. Maximum file size 5 MB.
+              {i18nT("static.6lubrx")}{" "}
             </div>
           </div>
         </div>
       </Dialog>
 
       <Dialog
-        header="Approval Detail"
+        header={i18nT("static.f2od2b")}
         visible={approvalDetailVisible}
         style={{ width: "95vw", maxWidth: "900px" }}
         breakpoints={{ "960px": "95vw" }}
@@ -1765,7 +1811,7 @@ const RequestLeaveTableData = () => {
         {approvalDetailLoading && (
           <div className="flex items-center justify-center py-10">
             <i className="pi pi-spin pi-spinner mr-2" />
-            <span>Loading approval detail...</span>
+            <span>{i18nT("static.hczzbz")}</span>
           </div>
         )}
 
@@ -1774,7 +1820,11 @@ const RequestLeaveTableData = () => {
             <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <Tag
-                  value={`Leave: ${approvalDetail.leave_status}`}
+                  value={tText("Leave: {status}", {
+                    status: tText(
+                      formatStatusLabel(approvalDetail.leave_status),
+                    ),
+                  })}
                   severity={getStatusSeverity(approvalDetail.leave_status)}
                 />
 
@@ -1782,7 +1832,11 @@ const RequestLeaveTableData = () => {
                   approvalDetail.approval_status !==
                     approvalDetail.leave_status && (
                     <Tag
-                      value={`Approval: ${approvalDetail.approval_status}`}
+                      value={tText("Approval: {status}", {
+                        status: tText(
+                          formatStatusLabel(approvalDetail.approval_status),
+                        ),
+                      })}
                       severity={getStatusSeverity(
                         approvalDetail.approval_status,
                       )}
@@ -1792,7 +1846,9 @@ const RequestLeaveTableData = () => {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <div className="text-sm text-slate-500">Request No</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.1sw38hx")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {approvalDetail.request_no || "-"}
                   </div>
@@ -1800,24 +1856,30 @@ const RequestLeaveTableData = () => {
 
                 <div>
                   <div className="text-sm text-slate-500">
-                    Approval Request ID
+                    {i18nT("static.1rlonzs")}{" "}
                   </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {approvalDetail.approval_request_id
-                      ? `#${approvalDetail.approval_request_id}`
+                      ? i18nT("static.16h857e", {
+                          p0: approvalDetail.approval_request_id,
+                        })
                       : "-"}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">Submitted At</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.5g5077")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDateTime(approvalDetail.submitted_at)}
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-sm text-slate-500">Completed At</div>
+                  <div className="text-sm text-slate-500">
+                    {i18nT("static.b280cz")}
+                  </div>
                   <div className="mt-1 font-semibold text-slate-800">
                     {formatDateTime(approvalDetail.completed_at)}
                   </div>
@@ -1827,12 +1889,12 @@ const RequestLeaveTableData = () => {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="mb-4 text-lg font-semibold text-slate-800">
-                Approval Steps
+                {i18nT("static.1ibinx5")}{" "}
               </div>
 
               {approvalDetail.steps.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                  No approval step found.
+                  {i18nT("static.dlz1s5")}{" "}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -1845,32 +1907,38 @@ const RequestLeaveTableData = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <Tag
-                              value={`Step ${step.step_no}`}
+                              value={tText("Step {step}", {
+                                step: step.step_no,
+                              })}
                               severity="info"
                             />
                             <Tag
-                              value={step.status}
+                              value={tText(formatStatusLabel(step.status))}
                               severity={getStatusSeverity(step.status)}
                             />
                           </div>
 
                           <div className="mt-3 text-sm text-slate-500">
-                            Approver
+                            {i18nT("static.1czzcoo")}{" "}
                           </div>
                           <div className="font-semibold text-slate-800">
                             {step.approver_name ||
-                              `Employee #${step.approver_employee_id}`}
+                              i18nT("static.iapzf0", {
+                                p0: step.approver_employee_id,
+                              })}
                           </div>
                         </div>
 
                         <div className="text-left md:text-right">
-                          <div className="text-sm text-slate-500">Acted By</div>
+                          <div className="text-sm text-slate-500">
+                            {i18nT("static.whiz93")}
+                          </div>
                           <div className="font-semibold text-slate-800">
                             {step.acted_by_name || "-"}
                           </div>
 
                           <div className="mt-2 text-sm text-slate-500">
-                            Acted At
+                            {i18nT("static.xvsntn")}{" "}
                           </div>
                           <div className="font-semibold text-slate-800">
                             {formatDateTime(step.acted_at)}
@@ -1891,12 +1959,12 @@ const RequestLeaveTableData = () => {
 
             <div className="rounded-2xl border border-slate-200 bg-white p-5">
               <div className="mb-4 text-lg font-semibold text-slate-800">
-                Approval Timeline
+                {i18nT("static.17aougp")}{" "}
               </div>
 
               {approvalDetail.actions.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                  No approval action found.
+                  {i18nT("static.417q9p")}{" "}
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
@@ -1913,7 +1981,11 @@ const RequestLeaveTableData = () => {
                         <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
                           <div className="font-semibold text-slate-800">
                             {action.action}
-                            {action.step_no ? ` - Step ${action.step_no}` : ""}
+                            {action.step_no
+                              ? tText(" - Step {step}", {
+                                  step: action.step_no,
+                                })
+                              : ""}
                           </div>
 
                           <div className="text-sm text-slate-500">
@@ -1922,9 +1994,11 @@ const RequestLeaveTableData = () => {
                         </div>
 
                         <div className="mt-1 text-sm text-slate-600">
-                          By{" "}
+                          {i18nT("static.n9pol0")}{" "}
                           {action.actor_name ||
-                            `Employee #${action.actor_employee_id}`}
+                            i18nT("static.iapzf0", {
+                              p0: action.actor_employee_id,
+                            })}
                         </div>
 
                         {action.note && (

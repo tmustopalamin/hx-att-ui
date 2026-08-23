@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -11,6 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 const AvatarWithSidebar = () => {
+  const { t } = useI18n();
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const profileData = useSelector((state: RootState) => state.profile);
@@ -57,8 +59,8 @@ const AvatarWithSidebar = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Logout Success",
-          detail: "Redirecting to login page...",
+          summary: t("auth.accountMenu.logoutSuccess"),
+          detail: t("auth.accountMenu.logoutRedirecting"),
         }),
       );
       setIsSidebarVisible(false);
@@ -74,7 +76,7 @@ const AvatarWithSidebar = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Logout Failed",
+          summary: t("auth.accountMenu.logoutFailed"),
           detail: errorMessage,
         }),
       );
@@ -89,16 +91,18 @@ const AvatarWithSidebar = () => {
         type="button"
         onClick={() => setIsSidebarVisible(true)}
         className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-1.5 py-1.5 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-        aria-label="Open account menu"
+        aria-label={t("auth.accountMenu.open")}
       >
         {" "}
         <div className="hidden min-w-0 text-right sm:block">
           {" "}
           <p className="max-w-[12rem] truncate text-sm font-semibold text-slate-700">
             {" "}
-            {profileData?.name || "User"}{" "}
+            {profileData?.name || t("auth.accountMenu.user")}{" "}
           </p>{" "}
-          <p className="text-xs text-slate-500">Account Menu</p>{" "}
+          <p className="text-xs text-slate-500">
+            {t("auth.accountMenu.account")}
+          </p>{" "}
         </div>{" "}
         <Avatar
           size="large"
@@ -133,15 +137,15 @@ const AvatarWithSidebar = () => {
                 {" "}
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                   {" "}
-                  Signed in as{" "}
+                  {t("auth.accountMenu.signedInAs")}{" "}
                 </p>{" "}
                 <h3 className="mt-1 truncate text-lg font-semibold text-slate-900">
                   {" "}
-                  {profileData?.name || "User"}{" "}
+                  {profileData?.name || t("auth.accountMenu.user")}{" "}
                 </h3>{" "}
                 <p className="mt-1 text-sm text-slate-500">
                   {" "}
-                  Manage your account, notifications, and current session.{" "}
+                  {t("auth.accountMenu.description")}{" "}
                 </p>{" "}
               </div>{" "}
             </div>{" "}
@@ -164,11 +168,11 @@ const AvatarWithSidebar = () => {
                   {" "}
                   <p className="text-sm font-semibold text-slate-800">
                     {" "}
-                    Account Settings{" "}
+                    {t("auth.accountMenu.settings")}{" "}
                   </p>{" "}
                   <p className="mt-1 text-sm text-slate-500">
                     {" "}
-                    Change your account details and profile information.{" "}
+                    {t("auth.accountMenu.settingsDescription")}{" "}
                   </p>{" "}
                 </div>{" "}
               </Link>{" "}
@@ -186,12 +190,11 @@ const AvatarWithSidebar = () => {
                   {" "}
                   <p className="text-sm font-semibold text-slate-800">
                     {" "}
-                    Notifications{" "}
+                    {t("auth.accountMenu.notifications")}{" "}
                   </p>{" "}
                   <p className="mt-1 text-sm text-slate-500">
                     {" "}
-                    View approval alerts, HRIS updates, and system
-                    messages.{" "}
+                    {t("auth.accountMenu.notificationsDescription")}{" "}
                   </p>{" "}
                 </div>{" "}
               </Link>{" "}
@@ -210,11 +213,13 @@ const AvatarWithSidebar = () => {
                   {" "}
                   <p className="text-sm font-semibold text-slate-800">
                     {" "}
-                    {loggingOut ? "Signing Out..." : "Sign Out"}{" "}
+                    {loggingOut
+                      ? t("auth.accountMenu.signingOut")
+                      : t("auth.accountMenu.signOut")}{" "}
                   </p>{" "}
                   <p className="mt-1 text-sm text-slate-500">
                     {" "}
-                    End the current session and return to the login page.{" "}
+                    {t("auth.accountMenu.signOutDescription")}{" "}
                   </p>{" "}
                 </div>{" "}
               </button>{" "}

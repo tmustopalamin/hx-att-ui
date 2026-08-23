@@ -1,5 +1,6 @@
 "use client";
 
+import { getClientLocale, translateStaticText } from "@/app/i18n";
 import type { ReactNode } from "react";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import type { ConfirmDialogProps } from "primereact/confirmdialog";
@@ -21,6 +22,14 @@ export interface ActionConfirmationOptions {
 export const ACTION_CONFIRM_GROUP = "hris-action-confirm";
 
 type LegacyConfirmationOptions = ConfirmDialogProps;
+
+const translateFallback = (source: string, params?: Record<string, string>) => {
+  const translated = translateStaticText(source, getClientLocale());
+  return translated.replace(
+    /\{(\w+)\}/g,
+    (_, name: string) => params?.[name] ?? `{${name}}`,
+  );
+};
 
 /**
  * The application-wide confirmation entry point for state-changing actions.
@@ -69,12 +78,14 @@ export function requestActionConfirmation(
 
     confirmDialog({
       group: ACTION_CONFIRM_GROUP,
-      header: `${action} confirmation`,
+      header: translateFallback("{p0} confirmation", { p0: action }),
       message: (
         <div className="flex flex-col gap-1 text-sm leading-5">
           <span className="text-slate-600">
             {description ??
-              `Are you sure you want to ${action.toLowerCase()} this item?`}
+              translateFallback("Are you sure you want to {p0} this item?", {
+                p0: action.toLowerCase(),
+              })}
           </span>
           {target && (
             <span className="font-semibold text-slate-800">{target}</span>

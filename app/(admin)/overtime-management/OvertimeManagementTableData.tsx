@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -120,6 +121,7 @@ const formatDuration = (seconds?: number | null) => {
 };
 
 const OvertimeManagementTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -208,10 +210,10 @@ const OvertimeManagementTableData = () => {
     return Array.from(availableStatuses)
       .sort((first, second) => first.localeCompare(second))
       .map((status) => ({
-        label: formatStatusLabel(status),
+        label: i18nT(formatStatusLabel(status)),
         value: status,
       }));
-  }, [rows]);
+  }, [i18nT, rows]);
 
   const filteredData = useMemo(() => {
     if (hasInvalidDateRange) {
@@ -300,7 +302,7 @@ const OvertimeManagementTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -311,7 +313,7 @@ const OvertimeManagementTableData = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Validation",
+        summary: i18nT("static.gy1qqi"),
         detail: message,
       }),
     );
@@ -323,7 +325,7 @@ const OvertimeManagementTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -336,7 +338,7 @@ const OvertimeManagementTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -348,8 +350,8 @@ const OvertimeManagementTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -431,8 +433,7 @@ const OvertimeManagementTableData = () => {
       setMassLoading(true);
       const targets = await previewMassOvertime(buildMassPayload());
       setMassTargets(targets);
-      if (targets.length === 0)
-        showWarning("No active employee matches the selected target.");
+      if (targets.length === 0) showWarning(i18nT("static.s407aa"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -444,21 +445,18 @@ const OvertimeManagementTableData = () => {
     try {
       const payload = buildMassPayload();
       if (massTargets.length === 0) {
-        showWarning("Preview the employee target before creating overtime.");
+        showWarning(i18nT("static.15y6fh4"));
         return;
       }
       if (massTargets.some((target) => target.has_active_request)) {
-        showWarning(
-          "One or more target employees already have an active request. Resolve the conflict before creating the batch.",
-        );
+        showWarning(i18nT("static.9lraxd"));
         return;
       }
       setMassLoading(true);
       const response = await createMassOvertime(payload);
       await refreshOvertimeManagementData();
       showSuccess(
-        response.message ||
-          `${massTargets.length} overtime request(s) created successfully.`,
+        response.message || i18nT("static.jobeya", { p0: massTargets.length }),
       );
       closeMassDialog();
     } catch (err: unknown) {
@@ -490,7 +488,7 @@ const OvertimeManagementTableData = () => {
     if (!selectedData) return;
     const reason = cancelNote.trim();
     if (!reason) {
-      showWarning("Cancellation reason is required.");
+      showWarning(i18nT("static.1svshzr"));
       return;
     }
     try {
@@ -505,9 +503,7 @@ const OvertimeManagementTableData = () => {
       setCancelDialogVisible(false);
       setSelectedData(null);
       setCancelNote("");
-      showSuccess(
-        response.message || "Overtime request cancelled successfully.",
-      );
+      showSuccess(response.message || i18nT("static.1e9r5z9"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -529,9 +525,7 @@ const OvertimeManagementTableData = () => {
 
       await refreshOvertimeManagementData();
 
-      showSuccess(
-        response.message || "Overtime request approved successfully.",
-      );
+      showSuccess(response.message || i18nT("static.mbul73"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -542,26 +536,24 @@ const OvertimeManagementTableData = () => {
 
   const onClickApprove = (row: OvertimeRequest) => {
     requestActionConfirmation({
-      header: "Approve Overtime Request",
+      header: i18nT("static.6ue2nk"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            Approve this overtime request manually?
-          </span>
+          <span className="text-slate-600">{i18nT("static.7zrksq")} </span>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-sm font-semibold text-slate-800">
-              {row.employee_name || "Unknown employee"}
+              {row.employee_name || i18nT("static.1drwniz")}
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              {formatDate(row.overtime_date)} ·{" "}
-              {formatTime(row.requested_start_at)} –{" "}
+              {formatDate(row.overtime_date)} {i18nT("static.19xoda3")}{" "}
+              {formatTime(row.requested_start_at)} {i18nT("static.hnl64v")}{" "}
               {formatTime(row.requested_end_at)}
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              Requested duration: {formatDuration(row.requested_seconds)}
+              {i18nT("static.d78p3t")} {formatDuration(row.requested_seconds)}
             </p>
           </div>
         </div>
@@ -576,7 +568,7 @@ const OvertimeManagementTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -585,7 +577,7 @@ const OvertimeManagementTableData = () => {
 
           <Button
             type="button"
-            label="Approve"
+            label={i18nT("static.1s2ov2y")}
             icon="pi pi-check"
             severity="success"
             onClick={options.accept}
@@ -611,15 +603,13 @@ const OvertimeManagementTableData = () => {
     const cleanNote = rejectNote.trim();
 
     if (!cleanNote) {
-      showWarning("Rejection reason is required.");
+      showWarning(i18nT("static.hvpt41"));
 
       return;
     }
 
     if (cleanNote.length > MAX_REJECTION_NOTE_LENGTH) {
-      showWarning(
-        `Rejection reason cannot exceed ${MAX_REJECTION_NOTE_LENGTH} characters.`,
-      );
+      showWarning(i18nT("static.14is6ph", { p0: MAX_REJECTION_NOTE_LENGTH }));
 
       return;
     }
@@ -642,9 +632,7 @@ const OvertimeManagementTableData = () => {
       setSelectedData(null);
       setRejectNote("");
 
-      showSuccess(
-        response.message || "Overtime request rejected successfully.",
-      );
+      showSuccess(response.message || i18nT("static.1u5dua6"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -659,7 +647,7 @@ const OvertimeManagementTableData = () => {
     if (status === "APPROVED") {
       return (
         <Tag
-          value="Approved"
+          value={i18nT("static.1j3qly2")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -670,7 +658,7 @@ const OvertimeManagementTableData = () => {
     if (status === "REJECTED") {
       return (
         <Tag
-          value="Rejected"
+          value={i18nT("static.1uofzaf")}
           severity="danger"
           icon="pi pi-times-circle"
           rounded
@@ -680,13 +668,18 @@ const OvertimeManagementTableData = () => {
 
     if (status === "CANCELLED") {
       return (
-        <Tag value="Cancelled" severity="secondary" icon="pi pi-ban" rounded />
+        <Tag
+          value={i18nT("static.1a3t1vg")}
+          severity="secondary"
+          icon="pi pi-ban"
+          rounded
+        />
       );
     }
 
     return (
       <Tag
-        value={formatStatusLabel(status || "PENDING")}
+        value={i18nT(formatStatusLabel(status || "PENDING"))}
         severity="warning"
         icon="pi pi-clock"
         rounded
@@ -697,7 +690,7 @@ const OvertimeManagementTableData = () => {
   const employeeBody = (row: OvertimeRequest) => {
     return (
       <span className="text-sm font-medium text-slate-800">
-        {row.employee_name || "Unknown employee"}
+        {row.employee_name || i18nT("static.1drwniz")}
       </span>
     );
   };
@@ -706,7 +699,7 @@ const OvertimeManagementTableData = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="whitespace-nowrap text-sm font-medium text-slate-700">
-          {formatTime(row.requested_start_at)} –{" "}
+          {formatTime(row.requested_start_at)} {i18nT("static.hnl64v")}{" "}
           {formatTime(row.requested_end_at)}
         </span>
 
@@ -777,7 +770,9 @@ const OvertimeManagementTableData = () => {
       (!showManagementDecision || (!canApprove && !canReject)) &&
       !(canCancel && isCancellable)
     ) {
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     }
 
     return (
@@ -792,7 +787,7 @@ const OvertimeManagementTableData = () => {
             severity="success"
             loading={isCurrentRowProcessing && processingAction === "approve"}
             disabled={isActionRunning}
-            tooltip="Approve"
+            tooltip={i18nT("static.1s2ov2y")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -811,7 +806,7 @@ const OvertimeManagementTableData = () => {
             severity="danger"
             loading={isCurrentRowProcessing && processingAction === "reject"}
             disabled={isActionRunning}
-            tooltip="Reject"
+            tooltip={i18nT("static.1kej36u")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -830,7 +825,7 @@ const OvertimeManagementTableData = () => {
             severity="warning"
             loading={isCurrentRowProcessing && processingAction === "cancel"}
             disabled={isActionRunning}
-            tooltip="Cancel"
+            tooltip={i18nT("static.ew9em3")}
             tooltipOptions={{ appendTo: getBody, position: "top" }}
             onClick={() => {
               setSelectedData(row);
@@ -878,12 +873,11 @@ const OvertimeManagementTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Overtime Management
+                  {i18nT("static.1oswk5t")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review employee overtime requests. Requests with an approval
-                  workflow are processed from Approval Inbox.
+                  {i18nT("static.722yfg")}{" "}
                 </p>
               </div>
             </div>
@@ -892,7 +886,7 @@ const OvertimeManagementTableData = () => {
               {canCreate && (
                 <Button
                   type="button"
-                  label="Create Mass Overtime"
+                  label={i18nT("static.zdnhm")}
                   icon="pi pi-users"
                   size="small"
                   className="w-full sm:w-auto"
@@ -901,7 +895,7 @@ const OvertimeManagementTableData = () => {
               )}
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -917,19 +911,23 @@ const OvertimeManagementTableData = () => {
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-500">Filtered Requests</p>
+              <p className="m-0 text-xs text-slate-500">
+                {i18nT("static.j9j9tg")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summaryStats.total}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-400">
-                {rows.length} total records
+                {rows.length} {i18nT("static.tmqg87")}{" "}
               </p>
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="m-0 text-xs text-amber-700">Pending</p>
+              <p className="m-0 text-xs text-amber-700">
+                {i18nT("static.e8nfto")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
                 {summaryStats.pending}
@@ -937,7 +935,9 @@ const OvertimeManagementTableData = () => {
             </div>
 
             <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-              <p className="m-0 text-xs text-green-700">Approved</p>
+              <p className="m-0 text-xs text-green-700">
+                {i18nT("static.1j3qly2")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
                 {summaryStats.approved}
@@ -945,7 +945,9 @@ const OvertimeManagementTableData = () => {
             </div>
 
             <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="m-0 text-xs text-red-700">Rejected</p>
+              <p className="m-0 text-xs text-red-700">
+                {i18nT("static.1uofzaf")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
                 {summaryStats.rejected}
@@ -953,7 +955,9 @@ const OvertimeManagementTableData = () => {
             </div>
 
             <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-1">
-              <p className="m-0 text-xs text-slate-600">Cancelled</p>
+              <p className="m-0 text-xs text-slate-600">
+                {i18nT("static.1a3t1vg")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summaryStats.cancelled}
@@ -965,11 +969,11 @@ const OvertimeManagementTableData = () => {
           <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Overtime Request Filter
+                {i18nT("static.1jyfstj")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Filter requests by employee, status, or overtime date.
+                {i18nT("static.1ioq2zc")}{" "}
               </p>
             </div>
 
@@ -979,7 +983,7 @@ const OvertimeManagementTableData = () => {
 
                 <InputText
                   value={keyword}
-                  placeholder="Search employee, reason, approval, or time"
+                  placeholder={i18nT("static.1m228g6")}
                   className="w-full"
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     setKeyword(event.target.value)
@@ -991,7 +995,7 @@ const OvertimeManagementTableData = () => {
                 appendTo={getBody}
                 value={statusFilter}
                 options={statusOptions}
-                placeholder="All Statuses"
+                placeholder={i18nT("static.18zxnji")}
                 showClear
                 className="w-full"
                 onChange={(event) => setStatusFilter(event.value ?? null)}
@@ -1002,7 +1006,7 @@ const OvertimeManagementTableData = () => {
                 value={dateFrom}
                 dateFormat="dd MM yy"
                 showIcon
-                placeholder="Overtime From"
+                placeholder={i18nT("static.11hroym")}
                 className="w-full"
                 onChange={(event) =>
                   setDateFrom((event.value as Date | null) ?? null)
@@ -1014,7 +1018,7 @@ const OvertimeManagementTableData = () => {
                 value={dateTo}
                 dateFormat="dd MM yy"
                 showIcon
-                placeholder="Overtime To"
+                placeholder={i18nT("static.ltgcf")}
                 className="w-full"
                 onChange={(event) =>
                   setDateTo((event.value as Date | null) ?? null)
@@ -1026,19 +1030,19 @@ const OvertimeManagementTableData = () => {
               <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <i className="pi pi-exclamation-circle mt-0.5" />
 
-                <span>Overtime From cannot be later than Overtime To.</span>
+                <span>{i18nT("static.17m7nzz")}</span>
               </div>
             )}
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs text-slate-500">
-                {filteredData.length} matching request
-                {filteredData.length === 1 ? "" : "s"}
+                {filteredData.length} {i18nT("static.giuo2r")}{" "}
+                {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}
               </span>
 
               <Button
                 type="button"
-                label="Reset Filters"
+                label={i18nT("static.1ljj5w3")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -1069,8 +1073,8 @@ const OvertimeManagementTableData = () => {
               tableStyle={{
                 minWidth: "100rem",
               }}
-              emptyMessage="No overtime request data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.lrx1y")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -1086,7 +1090,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="employee_name"
-                header="Employee"
+                header={i18nT("static.1fak8xt")}
                 sortable
                 body={employeeBody}
                 style={{
@@ -1096,7 +1100,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="overtime_date"
-                header="Overtime Date"
+                header={i18nT("static.bp5uwu")}
                 sortable
                 body={(row: OvertimeRequest) => (
                   <span className="whitespace-nowrap text-sm font-medium text-slate-700">
@@ -1109,7 +1113,7 @@ const OvertimeManagementTableData = () => {
               />
 
               <Column
-                header="Requested Time"
+                header={i18nT("static.s5z0w")}
                 body={overtimePeriodBody}
                 style={{
                   minWidth: "17rem",
@@ -1118,7 +1122,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="status"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusBody}
                 style={{
@@ -1128,7 +1132,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="reason"
-                header="Reason"
+                header={i18nT("static.i36sl5")}
                 body={reasonBody}
                 style={{
                   minWidth: "21rem",
@@ -1137,7 +1141,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="rejection_reason"
-                header="Rejection Reason"
+                header={i18nT("static.1ib4ur8")}
                 body={rejectionReasonBody}
                 style={{
                   minWidth: "22rem",
@@ -1146,7 +1150,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="approved_by_name"
-                header="Approval"
+                header={i18nT("static.17ztw7a")}
                 body={approvalBody}
                 style={{
                   minWidth: "17rem",
@@ -1155,7 +1159,7 @@ const OvertimeManagementTableData = () => {
 
               <Column
                 field="submitted_at"
-                header="Submitted At"
+                header={i18nT("static.5g5077")}
                 sortable
                 body={(row: OvertimeRequest) => (
                   <span className="whitespace-nowrap text-sm text-slate-700">
@@ -1168,7 +1172,7 @@ const OvertimeManagementTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionBody}
                 frozen
                 alignFrozen="right"
@@ -1191,7 +1195,7 @@ const OvertimeManagementTableData = () => {
 
       {/* Reject Dialog */}
       <Dialog
-        header="Reject Overtime Request"
+        header={i18nT("static.gnyeqs")}
         visible={rejectDialogVisible}
         style={{
           width: "95vw",
@@ -1210,7 +1214,7 @@ const OvertimeManagementTableData = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -1221,7 +1225,7 @@ const OvertimeManagementTableData = () => {
 
             <Button
               type="button"
-              label="Reject Request"
+              label={i18nT("static.1khp33z")}
               icon="pi pi-times-circle"
               severity="danger"
               loading={processingAction === "reject"}
@@ -1238,17 +1242,19 @@ const OvertimeManagementTableData = () => {
           {selectedData && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="m-0 text-sm font-semibold text-slate-800">
-                {selectedData.employee_name || "Unknown employee"}
+                {selectedData.employee_name || i18nT("static.1drwniz")}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                {formatDate(selectedData.overtime_date)} ·{" "}
-                {formatTime(selectedData.requested_start_at)} –{" "}
+                {formatDate(selectedData.overtime_date)}{" "}
+                {i18nT("static.19xoda3")}{" "}
+                {formatTime(selectedData.requested_start_at)}{" "}
+                {i18nT("static.hnl64v")}{" "}
                 {formatTime(selectedData.requested_end_at)}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Requested duration:{" "}
+                {i18nT("static.d78p3t")}{" "}
                 {formatDuration(selectedData.requested_seconds)}
               </p>
             </div>
@@ -1259,7 +1265,7 @@ const OvertimeManagementTableData = () => {
               htmlFor="rejectNote"
               className="text-sm font-medium text-slate-700"
             >
-              Rejection Reason
+              {i18nT("static.1ib4ur8")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -1270,14 +1276,14 @@ const OvertimeManagementTableData = () => {
               autoResize
               maxLength={MAX_REJECTION_NOTE_LENGTH}
               disabled={processingAction === "reject"}
-              placeholder="Explain why this overtime request is rejected"
+              placeholder={i18nT("static.kj0d8q")}
               className="w-full"
               onChange={(event) => setRejectNote(event.target.value)}
             />
 
             <div className="flex items-start justify-between gap-3">
               <small className="text-slate-500">
-                This reason will be stored and shown to the employee.
+                {i18nT("static.1nsrprn")}{" "}
               </small>
 
               <small className="shrink-0 text-slate-400">
@@ -1289,7 +1295,7 @@ const OvertimeManagementTableData = () => {
       </Dialog>
 
       <Dialog
-        header="Cancel Overtime Request"
+        header={i18nT("static.11qdseb")}
         visible={cancelDialogVisible}
         style={{ width: "95vw", maxWidth: "36rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -1303,7 +1309,7 @@ const OvertimeManagementTableData = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -1312,7 +1318,7 @@ const OvertimeManagementTableData = () => {
             />
             <Button
               type="button"
-              label="Cancel Overtime"
+              label={i18nT("static.1oblt16")}
               icon="pi pi-ban"
               severity="warning"
               loading={processingAction === "cancel"}
@@ -1325,16 +1331,18 @@ const OvertimeManagementTableData = () => {
         <div className="flex flex-col gap-3 pt-2">
           {selectedData && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              Cancel overtime for{" "}
-              <strong>{selectedData.employee_name || "employee"}</strong> on{" "}
-              {formatDate(selectedData.overtime_date)}.
+              {i18nT("static.16m3ww5")}{" "}
+              <strong>
+                {selectedData.employee_name || i18nT("static.5gxg69")}
+              </strong>{" "}
+              {i18nT("static.qyxx3k")} {formatDate(selectedData.overtime_date)}.
             </div>
           )}
           <label
             htmlFor="cancelNote"
             className="text-sm font-medium text-slate-700"
           >
-            Cancellation reason <span className="text-red-500">*</span>
+            {i18nT("static.1361ff2")} <span className="text-red-500">*</span>
           </label>
           <InputTextarea
             id="cancelNote"
@@ -1343,7 +1351,7 @@ const OvertimeManagementTableData = () => {
             autoResize
             maxLength={MAX_REJECTION_NOTE_LENGTH}
             disabled={processingAction === "cancel"}
-            placeholder="Explain why this overtime is cancelled"
+            placeholder={i18nT("static.1ykn5oo")}
             className="w-full"
             onChange={(event) => setCancelNote(event.target.value)}
           />
@@ -1351,7 +1359,7 @@ const OvertimeManagementTableData = () => {
       </Dialog>
 
       <Dialog
-        header="Create Mass Overtime"
+        header={i18nT("static.zdnhm")}
         visible={massDialogVisible}
         style={{ width: "96vw", maxWidth: "58rem" }}
         breakpoints={{ "960px": "96vw", "640px": "98vw" }}
@@ -1365,7 +1373,7 @@ const OvertimeManagementTableData = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -1374,7 +1382,7 @@ const OvertimeManagementTableData = () => {
             />
             <Button
               type="button"
-              label="Preview Employees"
+              label={i18nT("static.x8eiqu")}
               icon="pi pi-search"
               severity="secondary"
               outlined
@@ -1384,7 +1392,7 @@ const OvertimeManagementTableData = () => {
             />
             <Button
               type="button"
-              label="Create Requests"
+              label={i18nT("static.n0f0hd")}
               icon="pi pi-check"
               loading={massLoading}
               disabled={
@@ -1399,14 +1407,12 @@ const OvertimeManagementTableData = () => {
       >
         <div className="flex flex-col gap-5 pt-2">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm text-blue-800">
-            Employees are resolved on the server using the employment assignment
-            effective on the overtime date. All requests are created in one
-            transaction and use the normal manager approval chain.
+            {i18nT("static.14jh5a6")}{" "}
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">
-                Overtime date *
+                {i18nT("static.chrwy8")}{" "}
               </label>
               <Calendar
                 value={massDate}
@@ -1421,14 +1427,17 @@ const OvertimeManagementTableData = () => {
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">
-                Department *
+                {i18nT("static.1ju2ukd")}{" "}
               </label>
               <Dropdown
                 value={massDepartmentId}
                 options={departments
                   .filter((item) => item.is_active)
                   .map((item) => ({
-                    label: `${item.name} (${item.code})`,
+                    label: i18nT("static.14r9r1n", {
+                      p0: item.name,
+                      p1: item.code,
+                    }),
                     value: item.id,
                   }))}
                 onChange={(event) => {
@@ -1436,7 +1445,7 @@ const OvertimeManagementTableData = () => {
                   setMassPositionId(null);
                   setMassTargets([]);
                 }}
-                placeholder="Select department"
+                placeholder={i18nT("static.sln621")}
                 showClear
                 filter
                 appendTo={getBody}
@@ -1445,7 +1454,7 @@ const OvertimeManagementTableData = () => {
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-slate-700">
-                Position (optional)
+                {i18nT("static.13ar4mx")}{" "}
               </label>
               <Dropdown
                 value={massPositionId}
@@ -1458,14 +1467,17 @@ const OvertimeManagementTableData = () => {
                         item.department_id === null),
                   )
                   .map((item) => ({
-                    label: `${item.name} (${item.code})`,
+                    label: i18nT("static.14r9r1n", {
+                      p0: item.name,
+                      p1: item.code,
+                    }),
                     value: item.id,
                   }))}
                 onChange={(event) => {
                   setMassPositionId(event.value ?? null);
                   setMassTargets([]);
                 }}
-                placeholder="All positions in department"
+                placeholder={i18nT("static.1t0n4tv")}
                 showClear
                 filter
                 appendTo={getBody}
@@ -1476,7 +1488,7 @@ const OvertimeManagementTableData = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Start *
+                  {i18nT("static.neuj8l")}{" "}
                 </label>
                 <InputText
                   type="time"
@@ -1489,7 +1501,7 @@ const OvertimeManagementTableData = () => {
               </div>
               <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-slate-700">
-                  End *
+                  {i18nT("static.bayyak")}{" "}
                 </label>
                 <InputText
                   type="time"
@@ -1503,13 +1515,15 @@ const OvertimeManagementTableData = () => {
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-slate-700">Reason</label>
+            <label className="text-sm font-medium text-slate-700">
+              {i18nT("static.i36sl5")}
+            </label>
             <InputTextarea
               value={massReason}
               rows={3}
               autoResize
               maxLength={1000}
-              placeholder="Reason for this mass overtime"
+              placeholder={i18nT("static.1vw3ybd")}
               onChange={(event) => {
                 setMassReason(event.target.value);
                 setMassTargets([]);
@@ -1520,15 +1534,15 @@ const OvertimeManagementTableData = () => {
             <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
               <div>
                 <p className="m-0 text-sm font-semibold text-slate-800">
-                  Target employees
+                  {i18nT("static.vjbys1")}{" "}
                 </p>
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  {massTargets.length} employee(s) selected by the server
+                  {massTargets.length} {i18nT("static.cpjjtl")}{" "}
                 </p>
               </div>
               {massTargets.length > 0 && (
                 <Tag
-                  value={`${massTargets.length} target`}
+                  value={i18nT("static.1q510b6", { p0: massTargets.length })}
                   severity="info"
                   rounded
                 />
@@ -1537,7 +1551,7 @@ const OvertimeManagementTableData = () => {
             <div className="max-h-56 overflow-auto p-3">
               {massTargets.length === 0 ? (
                 <p className="m-0 p-3 text-sm text-slate-500">
-                  Choose a date/target and click Preview Employees.
+                  {i18nT("static.11y2ujb")}{" "}
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
@@ -1550,7 +1564,8 @@ const OvertimeManagementTableData = () => {
                         {target.full_name}
                       </p>
                       <p className="m-0 mt-1 text-xs text-slate-500">
-                        {target.department_name} · {target.position_name}
+                        {target.department_name} {i18nT("static.19xoda3")}{" "}
+                        {target.position_name}
                       </p>
                       {target.validation_error && (
                         <p className="m-0 mt-2 text-xs text-red-600">

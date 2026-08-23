@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
@@ -45,6 +46,7 @@ import dayjs from "dayjs";
 import { Calendar } from "primereact/calendar";
 
 const SalaryComponentTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll");
@@ -129,7 +131,7 @@ const SalaryComponentTableData = () => {
     <div className="text-right flex gap-5 justify-end">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         onClick={() => {
           setVisible(false);
@@ -138,7 +140,7 @@ const SalaryComponentTableData = () => {
       />
       <Button
         type="submit"
-        label={isAddNew ? "Submit" : "Save"}
+        label={isAddNew ? i18nT("static.hvztxh") : i18nT("static.lewgh4")}
         icon="pi pi-check"
       />
     </div>
@@ -146,9 +148,9 @@ const SalaryComponentTableData = () => {
 
   const activeColumnBody = (rowData: SalaryComponent) => {
     return rowData.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="danger" />
+      <Tag value={i18nT("static.13zf5vc")} severity="danger" />
     );
   };
 
@@ -159,9 +161,11 @@ const SalaryComponentTableData = () => {
           {/* HEADER */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b pb-3">
             <div>
-              <div className="text-2xl font-semibold">Salary Component</div>
+              <div className="text-2xl font-semibold">
+                {i18nT("static.ac73jo")}
+              </div>
               <div className="text-sm text-gray-500">
-                Manage salary component master data
+                {i18nT("static.l2faml")}{" "}
               </div>
             </div>
 
@@ -176,7 +180,7 @@ const SalaryComponentTableData = () => {
                     checked={isShowDeletedDataChecked}
                   />
                   <label htmlFor="showDeletedData" className="ml-2">
-                    show deleted data
+                    {i18nT("static.1s8ywez")}{" "}
                   </label>
                 </div>
               )}
@@ -187,12 +191,12 @@ const SalaryComponentTableData = () => {
                   className="p-inputtext-sm"
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Keyword Search"
+                  placeholder={i18nT("static.p9ap2o")}
                 />
               </IconField>
 
               <Button
-                label="New"
+                label={i18nT("static.12ludo1")}
                 icon="pi pi-plus"
                 size="small"
                 onClick={() => {
@@ -225,17 +229,29 @@ const SalaryComponentTableData = () => {
               header="#"
               body={(data, options) => options.rowIndex + 1}
             ></Column>
-            <Column field="code" header="Code"></Column>
-            <Column field="name" header="Name"></Column>
-            <Column field="component_type" header="Component Type"></Column>
-            <Column field="calculation_type" header="Calculation Type"></Column>
-            <Column field="default_amount" header="Default Amount"></Column>
-            <Column field="percentage" header="Percentage"></Column>
-            <Column field="base_component" header="Base Component"></Column>
-            <Column field="taxable" header="Taxable"></Column>
+            <Column field="code" header={i18nT("static.xoaiok")}></Column>
+            <Column field="name" header={i18nT("static.4el6o6")}></Column>
+            <Column
+              field="component_type"
+              header={i18nT("static.c0we20")}
+            ></Column>
+            <Column
+              field="calculation_type"
+              header={i18nT("static.csg7bm")}
+            ></Column>
+            <Column
+              field="default_amount"
+              header={i18nT("static.6eblxy")}
+            ></Column>
+            <Column field="percentage" header={i18nT("static.wa149h")}></Column>
+            <Column
+              field="base_component"
+              header={i18nT("static.1pa05g7")}
+            ></Column>
+            <Column field="taxable" header={i18nT("static.vgbaji")}></Column>
             <Column
               field="is_active"
-              header="Active"
+              header={i18nT("static.8qzyhb")}
               body={activeColumnBody}
             ></Column>
           </DataTable>

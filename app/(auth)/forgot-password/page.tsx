@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -15,8 +16,10 @@ import type { ResponseType } from "@/app/types/response-type";
 import { showToast } from "@/store/ToastSlice";
 import { apiFetch } from "@/app/utils/api-client";
 import { getErrorMessage } from "@/app/utils/error-messages";
+import LanguageSwitcher from "@/app/_components/LanguageSwitcher";
 
 const ForgotPasswordPage = () => {
+  const { t } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -47,8 +50,8 @@ const ForgotPasswordPage = () => {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    document.title = "Reset Password - PT. Hexing Technology";
-  }, []);
+    document.title = `${t("auth.reset.title")} - PT. Hexing Technology`;
+  }, [t]);
 
   const onSubmit = async (formData: ForgotPassword) => {
     try {
@@ -75,7 +78,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "OTP Sent",
+          summary: t("auth.reset.otpSent"),
           detail: responseData.message,
         }),
       );
@@ -88,7 +91,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Failed",
+          summary: t("auth.reset.failed"),
           detail: errorMessage,
         }),
       );
@@ -105,11 +108,11 @@ const ForgotPasswordPage = () => {
       const otpValue = String(otpToken || "").trim();
 
       if (otpValue.length !== 6) {
-        throw new Error("OTP must be 6 digits.");
+        throw new Error(t("auth.reset.otpInvalid"));
       }
 
       if (!challengeId) {
-        throw new Error("Reset session expired. Please request a new OTP.");
+        throw new Error(t("auth.reset.sessionExpired"));
       }
 
       const responseData = await apiFetch<ResponseType<string | null>>(
@@ -128,7 +131,7 @@ const ForgotPasswordPage = () => {
 
       const verifiedResetToken = String(responseData?.data || "").trim();
       if (!verifiedResetToken) {
-        throw new Error("Reset session expired. Please request a new OTP.");
+        throw new Error(t("auth.reset.sessionExpired"));
       }
 
       setResetToken(verifiedResetToken);
@@ -139,7 +142,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
+          summary: t("auth.reset.success"),
           detail: responseData.message,
         }),
       );
@@ -152,7 +155,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Failed",
+          summary: t("auth.reset.failed"),
           detail: errorMessage,
         }),
       );
@@ -167,7 +170,7 @@ const ForgotPasswordPage = () => {
       setFormError("");
 
       if (!resetToken) {
-        throw new Error("Reset session expired. Please request a new OTP.");
+        throw new Error(t("auth.reset.sessionExpired"));
       }
 
       const responseData = await apiFetch<ResponseType<unknown>>(
@@ -189,7 +192,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Password reset",
+          summary: t("auth.reset.passwordReset"),
           detail: responseData.message,
         }),
       );
@@ -201,7 +204,7 @@ const ForgotPasswordPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Failed",
+          summary: t("auth.reset.failed"),
           detail: errorMessage,
         }),
       );
@@ -234,7 +237,7 @@ const ForgotPasswordPage = () => {
               step === "email" ? "text-slate-800" : "text-slate-500"
             }`}
           >
-            Email
+            {t("auth.login.email")}
           </span>
         </div>
 
@@ -255,7 +258,7 @@ const ForgotPasswordPage = () => {
               step === "otp" ? "text-slate-800" : "text-slate-500"
             }`}
           >
-            OTP
+            {t("static.13ezd6")}{" "}
           </span>
         </div>
 
@@ -276,7 +279,7 @@ const ForgotPasswordPage = () => {
               step === "password" ? "text-slate-800" : "text-slate-500"
             }`}
           >
-            Password
+            {t("auth.login.password")}
           </span>
         </div>
       </div>
@@ -296,7 +299,9 @@ const ForgotPasswordPage = () => {
           </div>
 
           <div>
-            <p className="text-sm font-semibold text-red-700">Process failed</p>
+            <p className="text-sm font-semibold text-red-700">
+              {t("auth.reset.processFailed")}
+            </p>
             <p className="mt-1 text-sm leading-5 text-red-600">{formError}</p>
           </div>
         </div>
@@ -309,11 +314,11 @@ const ForgotPasswordPage = () => {
       <>
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">
-            Reset password
+            {t("auth.reset.title")}
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Enter your registered email address and we will send an OTP code.
+            {t("auth.reset.emailDescription")}
           </p>
         </div>
 
@@ -326,17 +331,17 @@ const ForgotPasswordPage = () => {
               htmlFor="email"
               className="text-sm font-semibold text-slate-700"
             >
-              Email
+              {t("auth.login.email")}
             </label>
 
             <Controller
               name="email"
               control={control}
               rules={{
-                required: "Email is required",
+                required: t("auth.reset.emailRequired"),
                 pattern: {
                   value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: "Please enter a valid email address",
+                  message: t("auth.reset.emailInvalid"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -350,7 +355,7 @@ const ForgotPasswordPage = () => {
                       id="email"
                       {...field}
                       type="email"
-                      placeholder="name@company.com"
+                      placeholder={t("static.1ng56ta")}
                       autoComplete="email"
                       disabled={submitting}
                       className={`${inputBaseClass} pl-11 pr-4 ${
@@ -375,7 +380,11 @@ const ForgotPasswordPage = () => {
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
           >
             {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
-            <span>{submitting ? "Sending OTP..." : "Send OTP"}</span>
+            <span>
+              {submitting
+                ? t("auth.reset.sendingOtp")
+                : t("auth.reset.sendOtp")}
+            </span>
           </button>
         </form>
       </>
@@ -387,11 +396,11 @@ const ForgotPasswordPage = () => {
       <>
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">
-            Verify OTP
+            {t("auth.reset.verifyTitle")}
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Enter the 6-digit OTP code sent to your registered email.
+            {t("auth.reset.verifyDescription")}
           </p>
         </div>
 
@@ -410,7 +419,7 @@ const ForgotPasswordPage = () => {
           </div>
 
           <p className="text-center text-xs leading-5 text-slate-500">
-            Make sure the code is entered correctly before confirming.
+            {t("auth.reset.otpInstruction")}
           </p>
         </div>
 
@@ -422,7 +431,11 @@ const ForgotPasswordPage = () => {
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
           >
             {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
-            <span>{submitting ? "Confirming..." : "Confirm OTP"}</span>
+            <span>
+              {submitting
+                ? t("auth.reset.confirmingOtp")
+                : t("auth.reset.confirmOtp")}
+            </span>
           </button>
 
           <button
@@ -437,7 +450,7 @@ const ForgotPasswordPage = () => {
             }}
             className="flex h-12 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-all hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50"
           >
-            Back to email
+            {t("auth.reset.backToEmail")}
           </button>
         </div>
       </>
@@ -449,11 +462,10 @@ const ForgotPasswordPage = () => {
       <>
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">
-            Create new password
+            {t("auth.reset.createTitle")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            Use at least 12 characters with uppercase, lowercase, number, and
-            symbol.
+            {t("auth.reset.createDescription")}
           </p>
         </div>
 
@@ -469,16 +481,16 @@ const ForgotPasswordPage = () => {
               htmlFor="password"
               className="text-sm font-semibold text-slate-700"
             >
-              New password
+              {t("auth.reset.newPassword")}
             </label>
             <Controller
               name="password"
               control={resetPasswordControl}
               rules={{
-                required: "New password is required",
+                required: t("auth.reset.passwordRequired"),
                 minLength: {
                   value: 12,
-                  message: "Password must be at least 12 characters",
+                  message: t("auth.reset.passwordMinLength"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -511,12 +523,12 @@ const ForgotPasswordPage = () => {
               htmlFor="confirmPassword"
               className="text-sm font-semibold text-slate-700"
             >
-              Confirm new password
+              {t("auth.reset.confirmPassword")}
             </label>
             <Controller
               name="confirmPassword"
               control={resetPasswordControl}
-              rules={{ required: "Password confirmation is required" }}
+              rules={{ required: t("auth.reset.confirmationRequired") }}
               render={({ field, fieldState }) => (
                 <>
                   <Password
@@ -548,7 +560,9 @@ const ForgotPasswordPage = () => {
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-blue-600/30 disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:shadow-none"
           >
             {submitting && <i className="pi pi-spin pi-spinner text-sm" />}
-            <span>{submitting ? "Saving..." : "Reset password"}</span>
+            <span>
+              {submitting ? t("auth.reset.saving") : t("auth.reset.title")}
+            </span>
           </button>
         </form>
       </>
@@ -557,6 +571,9 @@ const ForgotPasswordPage = () => {
 
   return (
     <main className="fixed inset-0 flex min-h-screen w-screen items-center justify-center overflow-hidden bg-slate-100 px-4 py-8">
+      <div className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+        <LanguageSwitcher compact />
+      </div>
       <div className="pointer-events-none absolute -left-28 -top-28 h-72 w-72 rounded-full bg-blue-200/50 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-sky-200/60 blur-3xl" />
       <div className="pointer-events-none absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/40 blur-3xl" />
@@ -568,7 +585,7 @@ const ForgotPasswordPage = () => {
               <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm md:h-32 md:w-32">
                 <Image
                   src="/images/logo.png"
-                  alt="PT. Hexing Technology"
+                  alt={t("static.kvg22y")}
                   width={104}
                   height={24}
                   priority
@@ -578,7 +595,7 @@ const ForgotPasswordPage = () => {
             </div>
 
             <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">
-              HRIS System
+              {t("static.1cpvh20")}{" "}
             </p>
           </div>
 
@@ -593,14 +610,14 @@ const ForgotPasswordPage = () => {
               href="/login"
               className="text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"
             >
-              Back to sign in
+              {t("auth.reset.backToSignIn")}
             </Link>
           </div>
         </div>
 
         <p className="mt-5 text-center text-xs text-slate-500">
-          © {new Date().getFullYear()} PT. Hexing Technology. All rights
-          reserved.
+          {t("static.108t1hg")} {new Date().getFullYear()}{" "}
+          {t("static.jcxwpg")}{" "}
         </p>
       </section>
     </main>

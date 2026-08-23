@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useCallback, useEffect } from "react";
 import { requestActionConfirmation } from "./ActionConfirmDialog";
@@ -8,6 +9,7 @@ import { requestActionConfirmation } from "./ActionConfirmDialog";
  * dialogs/navigation. A clean form never produces an unnecessary prompt.
  */
 export function useDirtyFormGuard(isDirty: boolean, enabled = true) {
+  const { t: i18nT } = useI18n();
   useEffect(() => {
     if (!enabled || !isDirty) return;
 
@@ -18,23 +20,23 @@ export function useDirtyFormGuard(isDirty: boolean, enabled = true) {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [enabled, isDirty]);
+  }, [enabled, i18nT, isDirty]);
 
   const confirmDiscard = useCallback((): Promise<boolean> => {
     if (!isDirty || !enabled) return Promise.resolve(true);
 
     return new Promise<boolean>((resolve) => {
       requestActionConfirmation({
-        action: "Discard changes",
-        description: "Discard unsaved changes and close this form?",
+        action: i18nT("static.t5asgc"),
+        description: i18nT("static.55p5oe"),
         severity: "danger",
-        confirmLabel: "Discard",
+        confirmLabel: i18nT("static.8g1qg1"),
         confirmIcon: "pi pi-trash",
         onAccept: () => resolve(true),
         onReject: () => resolve(false),
       });
     });
-  }, [enabled, isDirty]);
+  }, [enabled, i18nT, isDirty]);
 
   return { confirmDiscard };
 }

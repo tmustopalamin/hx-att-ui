@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   createEmployeeEmergencyContact,
@@ -58,6 +59,7 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 const helperTextClass = "mt-1 text-xs text-slate-500";
 
 const EmployeeEmergencyContactDataTable = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -95,7 +97,7 @@ const EmployeeEmergencyContactDataTable = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -158,10 +160,8 @@ const EmployeeEmergencyContactDataTable = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: isAddMode
-            ? "Emergency contact created successfully"
-            : "Emergency contact updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: isAddMode ? i18nT("static.z1yn8v") : i18nT("static.19d24wu"),
         }),
       );
 
@@ -173,7 +173,7 @@ const EmployeeEmergencyContactDataTable = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -182,7 +182,7 @@ const EmployeeEmergencyContactDataTable = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -192,8 +192,8 @@ const EmployeeEmergencyContactDataTable = () => {
 
   const onDelete = (row: EmployeeEmergencyContactRow) => {
     requestActionConfirmation({
-      message: "Do you want to delete this emergency contact?",
-      header: "Delete Confirmation",
+      message: i18nT("static.cuc5gl"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -207,8 +207,8 @@ const EmployeeEmergencyContactDataTable = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "Success",
-              detail: "Emergency contact deleted successfully",
+              summary: i18nT("static.udvru8"),
+              detail: i18nT("static.1i9pxhc"),
             }),
           );
           await loadData();
@@ -218,7 +218,7 @@ const EmployeeEmergencyContactDataTable = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "Error",
+                summary: i18nT("static.1vks92p"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -230,9 +230,9 @@ const EmployeeEmergencyContactDataTable = () => {
 
   const activeBodyTemplate = (row: EmployeeEmergencyContactRow) => {
     return row.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="secondary" />
+      <Tag value={i18nT("static.13zf5vc")} severity="secondary" />
     );
   };
 
@@ -247,7 +247,7 @@ const EmployeeEmergencyContactDataTable = () => {
           icon="pi pi-pencil"
           severity="secondary"
           onClick={() => openEdit(row)}
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ position: "top" }}
         />
         <Button
@@ -258,7 +258,7 @@ const EmployeeEmergencyContactDataTable = () => {
           icon="pi pi-trash"
           severity="danger"
           onClick={() => onDelete(row)}
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ position: "top" }}
         />
       </div>
@@ -269,7 +269,7 @@ const EmployeeEmergencyContactDataTable = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -278,7 +278,7 @@ const EmployeeEmergencyContactDataTable = () => {
       />
       <Button
         type="button"
-        label={isAddMode ? "Create Contact" : "Save Changes"}
+        label={isAddMode ? i18nT("static.lao6zl") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
@@ -290,12 +290,12 @@ const EmployeeEmergencyContactDataTable = () => {
     <>
       <div className="flex flex-col gap-5">
         <EmployeeDetailTableHeader
-          title="Emergency Contact"
-          description="Manage people to contact in case of emergency."
+          title={i18nT("static.682t3a")}
+          description={i18nT("static.1wrczvl")}
           actions={
             <Button
               type="button"
-              label="New Contact"
+              label={i18nT("static.6ibn6d")}
               icon="pi pi-plus"
               size="small"
               className="w-full sm:w-auto"
@@ -316,10 +316,10 @@ const EmployeeEmergencyContactDataTable = () => {
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
-          emptyMessage="No emergency contact found."
+          emptyMessage={i18nT("static.1a9axjr")}
           scrollable
           tableStyle={{ minWidth: "44rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -327,16 +327,16 @@ const EmployeeEmergencyContactDataTable = () => {
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "60px" }}
           />
-          <Column field="name" header="Name" />
-          <Column field="relationship_name" header="Relationship" />
-          <Column field="phone" header="Phone" />
+          <Column field="name" header={i18nT("static.4el6o6")} />
+          <Column field="relationship_name" header={i18nT("static.7fp6jf")} />
+          <Column field="phone" header={i18nT("static.kb2lhr")} />
           <Column
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={activeBodyTemplate}
             style={{ minWidth: "110px" }}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBodyTemplate}
             frozen
             alignFrozen="right"
@@ -348,9 +348,7 @@ const EmployeeEmergencyContactDataTable = () => {
       </div>
 
       <Dialog
-        header={
-          isAddMode ? "New Emergency Contact" : "Update Emergency Contact"
-        }
+        header={isAddMode ? i18nT("static.xa4sg8") : i18nT("static.1ex2ir9")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "42rem" }}
         onHide={hideDialog}
@@ -364,17 +362,17 @@ const EmployeeEmergencyContactDataTable = () => {
           <Controller
             name="name"
             control={control}
-            rules={{ required: "Name is required" }}
+            rules={{ required: i18nT("static.izdgzf") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="emergency_name" className={fieldLabelClass}>
-                  Name
+                  {i18nT("static.4el6o6")}{" "}
                 </label>
                 <InputText
                   id="emergency_name"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter full name"
+                  placeholder={i18nT("static.1d755f9")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -386,14 +384,14 @@ const EmployeeEmergencyContactDataTable = () => {
           <Controller
             name="relationship_id"
             control={control}
-            rules={{ required: "Relationship is required" }}
+            rules={{ required: i18nT("static.m0qu8u") }}
             render={({ field, fieldState }) => (
               <div>
                 <label
                   htmlFor="emergency_relationship"
                   className={fieldLabelClass}
                 >
-                  Relationship
+                  {i18nT("static.7fp6jf")}{" "}
                 </label>
                 <Dropdown
                   id="emergency_relationship"
@@ -403,7 +401,7 @@ const EmployeeEmergencyContactDataTable = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select relationship"
+                  placeholder={i18nT("static.1g6pggt")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -416,17 +414,17 @@ const EmployeeEmergencyContactDataTable = () => {
           <Controller
             name="phone"
             control={control}
-            rules={{ required: "Phone is required" }}
+            rules={{ required: i18nT("static.1vxzso2") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="emergency_phone" className={fieldLabelClass}>
-                  Phone
+                  {i18nT("static.kb2lhr")}{" "}
                 </label>
                 <InputText
                   id="emergency_phone"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter phone number"
+                  placeholder={i18nT("static.rrnpn2")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -444,10 +442,10 @@ const EmployeeEmergencyContactDataTable = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Active
+                        {i18nT("static.8qzyhb")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Control whether this emergency contact is still active.
+                        {i18nT("static.184ot7i")}{" "}
                       </p>
                     </div>
                     <InputSwitch

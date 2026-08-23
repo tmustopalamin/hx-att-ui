@@ -1,3 +1,4 @@
+import { useI18n } from "@/app/i18n";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
@@ -10,12 +11,13 @@ interface data {
 }
 
 const LoadingDataTable = () => {
+  const { t: i18nT } = useI18n();
   const values: data[] = [
-    { code: 1, description: "test" },
-    { code: 2, description: "test" },
-    { code: 3, description: "test" },
-    { code: 4, description: "test" },
-    { code: 5, description: "test" },
+    { code: 1, description: i18nT("static.1cs5qlh") },
+    { code: 2, description: i18nT("static.1cs5qlh") },
+    { code: 3, description: i18nT("static.1cs5qlh") },
+    { code: 4, description: i18nT("static.1cs5qlh") },
+    { code: 5, description: i18nT("static.1cs5qlh") },
   ];
 
   return (

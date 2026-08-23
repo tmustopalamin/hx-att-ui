@@ -1,4 +1,5 @@
 "use client";
+import { getClientLocale, translateStaticText, useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -199,13 +200,24 @@ const downloadAttendanceSummaryExcel = async (
       const json = await response.json().catch(() => null);
 
       throw new Error(
-        json?.message || json?.error || "Failed to export attendance summary.",
+        json?.message ||
+          json?.error ||
+          translateStaticText(
+            "Failed to export attendance summary.",
+            getClientLocale(),
+          ),
       );
     }
 
     const text = await response.text().catch(() => "");
 
-    throw new Error(text || "Failed to export attendance summary.");
+    throw new Error(
+      text ||
+        translateStaticText(
+          "Failed to export attendance summary.",
+          getClientLocale(),
+        ),
+    );
   }
 
   const blob = await response.blob();
@@ -259,18 +271,28 @@ const processAttendanceSummary = async (
     .catch(() => null)) as ProcessResponse | null;
 
   if (!response.ok) {
-    throw new Error(json?.message || "Failed to process attendance summary.");
+    throw new Error(
+      json?.message ||
+        translateStaticText(
+          "Failed to process attendance summary.",
+          getClientLocale(),
+        ),
+    );
   }
 
   return (
     json ?? {
       success: true,
-      message: "Attendance summary processed successfully.",
+      message: translateStaticText(
+        "Attendance summary processed successfully.",
+        getClientLocale(),
+      ),
     }
   );
 };
 
 const AttendanceSummaryTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const defaultRange = useMemo(() => {
@@ -378,10 +400,10 @@ const AttendanceSummaryTableData = () => {
     ).sort((first, second) => first.localeCompare(second));
 
     return values.map((value) => ({
-      label: formatStatusLabel(value),
+      label: i18nT(formatStatusLabel(value)),
       value,
     }));
-  }, [rows]);
+  }, [i18nT, rows]);
 
   const filteredRows = useMemo<AttendanceSummaryRowView[]>(() => {
     const search = keyword.trim().toLowerCase();
@@ -393,7 +415,8 @@ const AttendanceSummaryTableData = () => {
         const dateIsValid = summaryDate.isValid();
 
         const employeeDisplayName =
-          item.employee_name ?? `Employee #${item.employee_id}`;
+          item.employee_name ??
+          i18nT("Employee #{p0}", { p0: item.employee_id });
 
         return {
           ...item,
@@ -402,7 +425,7 @@ const AttendanceSummaryTableData = () => {
             : "unknown-date",
           group_date_label: dateIsValid
             ? formatDisplayDate(summaryDate.toDate())
-            : "Unknown Date",
+            : i18nT("Unknown Date"),
           employee_display_name: employeeDisplayName,
           employee_search_name: employeeDisplayName.toLowerCase(),
         };
@@ -448,7 +471,7 @@ const AttendanceSummaryTableData = () => {
           second.employee_display_name,
         );
       });
-  }, [rows, keyword, statusFilter]);
+  }, [i18nT, rows, keyword, statusFilter]);
 
   const groupedData = useMemo<AttendanceSummaryDateGroup[]>(() => {
     const groups = new Map<string, AttendanceSummaryRowView[]>();
@@ -641,7 +664,7 @@ const AttendanceSummaryTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -653,7 +676,7 @@ const AttendanceSummaryTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -666,8 +689,8 @@ const AttendanceSummaryTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: err.message,
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT(err.message),
         }),
       );
 
@@ -678,8 +701,8 @@ const AttendanceSummaryTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -728,7 +751,7 @@ const AttendanceSummaryTableData = () => {
     const { startDate, endDate } = getValues();
 
     if (!startDate || !endDate) {
-      const message = "Start Date and End Date are required.";
+      const message = i18nT("Start Date and End Date are required.");
 
       setActionError(message);
       showError(new Error(message));
@@ -736,7 +759,7 @@ const AttendanceSummaryTableData = () => {
     }
 
     if (dayjs(startDate).isAfter(dayjs(endDate), "day")) {
-      const message = "Start Date cannot be later than End Date.";
+      const message = i18nT("Start Date cannot be later than End Date.");
 
       setActionError(message);
       showError(new Error(message));
@@ -789,8 +812,14 @@ const AttendanceSummaryTableData = () => {
 
       const message =
         processedCount !== undefined
-          ? `Attendance summary processed successfully. ${processedCount} row(s) updated.`
-          : result.message || "Attendance summary processed successfully.";
+          ? i18nT(
+              "Attendance summary processed successfully. {p0} row(s) updated.",
+              {
+                p0: processedCount,
+              },
+            )
+          : result.message ||
+            i18nT("Attendance summary processed successfully.");
 
       setActionSuccess(message);
       showSuccess(message);
@@ -798,7 +827,7 @@ const AttendanceSummaryTableData = () => {
       const message =
         err instanceof Error
           ? err.message
-          : "Failed to process attendance summary.";
+          : i18nT("Failed to process attendance summary.");
 
       setActionError(message);
       showError(err);
@@ -811,7 +840,7 @@ const AttendanceSummaryTableData = () => {
     clearActionMessage();
 
     if (!appliedStartDate || !appliedEndDate) {
-      const message = "Apply Start Date and End Date before processing.";
+      const message = i18nT("Apply Start Date and End Date before processing.");
 
       setActionError(message);
       showError(new Error(message));
@@ -820,19 +849,17 @@ const AttendanceSummaryTableData = () => {
     }
 
     requestActionConfirmation({
-      header: "Process Attendance Summary",
+      header: i18nT("static.1kq1p6x"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            Process unresolved attendance summary data for:
-          </span>
+          <span className="text-slate-600">{i18nT("static.be9v53")} </span>
 
           <span className="font-semibold text-slate-800">
-            {currentRangeLabel}
+            {i18nT(currentRangeLabel)}
           </span>
 
           <span className="text-sm text-slate-500">
-            Existing summary data within this range may be recalculated.
+            {i18nT("static.sdy1z")}{" "}
           </span>
         </div>
       ),
@@ -846,7 +873,7 @@ const AttendanceSummaryTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -855,7 +882,7 @@ const AttendanceSummaryTableData = () => {
 
           <Button
             type="button"
-            label="Process"
+            label={i18nT("static.2ua80q")}
             icon="pi pi-refresh"
             severity="warning"
             onClick={options.accept}
@@ -869,7 +896,7 @@ const AttendanceSummaryTableData = () => {
     clearActionMessage();
 
     if (!appliedStartDate || !appliedEndDate) {
-      const message = "Apply Start Date and End Date before exporting.";
+      const message = i18nT("Apply Start Date and End Date before exporting.");
 
       setActionError(message);
       showError(new Error(message));
@@ -878,7 +905,7 @@ const AttendanceSummaryTableData = () => {
     }
 
     if (dayjs(appliedStartDate).isAfter(dayjs(appliedEndDate), "day")) {
-      const message = "Start Date cannot be later than End Date.";
+      const message = i18nT("Start Date cannot be later than End Date.");
 
       setActionError(message);
       showError(new Error(message));
@@ -894,7 +921,9 @@ const AttendanceSummaryTableData = () => {
         appliedEndDate,
       );
 
-      const message = `Attendance summary exported successfully: ${fileName}`;
+      const message = i18nT("Attendance summary exported successfully: {p0}", {
+        p0: fileName,
+      });
 
       setActionSuccess(message);
       showSuccess(message);
@@ -902,7 +931,7 @@ const AttendanceSummaryTableData = () => {
       const message =
         err instanceof Error
           ? err.message
-          : "Failed to export attendance summary.";
+          : i18nT("Failed to export attendance summary.");
 
       setActionError(message);
       showError(err);
@@ -947,7 +976,7 @@ const AttendanceSummaryTableData = () => {
     if (normalized === "PRESENT") {
       return (
         <Tag
-          value="Present"
+          value={i18nT("static.1m3e00c")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -957,14 +986,19 @@ const AttendanceSummaryTableData = () => {
 
     if (normalized === "IN_PROGRESS") {
       return (
-        <Tag value="In Progress" severity="info" icon="pi pi-clock" rounded />
+        <Tag
+          value={i18nT("static.w3n5x")}
+          severity="info"
+          icon="pi pi-clock"
+          rounded
+        />
       );
     }
 
     if (isIncompleteStatus(normalized)) {
       return (
         <Tag
-          value={formatStatusLabel(normalized)}
+          value={i18nT(formatStatusLabel(normalized))}
           severity="warning"
           icon="pi pi-exclamation-circle"
           rounded
@@ -975,7 +1009,7 @@ const AttendanceSummaryTableData = () => {
     if (normalized === "ABSENT") {
       return (
         <Tag
-          value="Absent"
+          value={i18nT("static.meu720")}
           severity="danger"
           icon="pi pi-times-circle"
           rounded
@@ -986,7 +1020,7 @@ const AttendanceSummaryTableData = () => {
     if (normalized === "DAY_OFF") {
       return (
         <Tag
-          value="Day Off"
+          value={i18nT("static.776hx0")}
           severity="secondary"
           icon="pi pi-calendar-times"
           rounded
@@ -996,16 +1030,27 @@ const AttendanceSummaryTableData = () => {
 
     if (normalized === "LEAVE") {
       return (
-        <Tag value="Leave" severity="info" icon="pi pi-briefcase" rounded />
+        <Tag
+          value={i18nT("static.1xf0sbk")}
+          severity="info"
+          icon="pi pi-briefcase"
+          rounded
+        />
       );
     }
 
     if (normalized === "UNSCHEDULED") {
-      return <Tag value="Unscheduled" severity="secondary" rounded />;
+      return (
+        <Tag value={i18nT("static.1ntsght")} severity="secondary" rounded />
+      );
     }
 
     return (
-      <Tag value={formatStatusLabel(normalized)} severity="secondary" rounded />
+      <Tag
+        value={i18nT(formatStatusLabel(normalized))}
+        severity="secondary"
+        rounded
+      />
     );
   };
 
@@ -1016,7 +1061,11 @@ const AttendanceSummaryTableData = () => {
       flags.push(
         <Tag
           key="leave"
-          value={rowData.leave_name ? `Leave: ${rowData.leave_name}` : "Leave"}
+          value={
+            rowData.leave_name
+              ? i18nT("static.1qfm976", { p0: rowData.leave_name })
+              : i18nT("static.1xf0sbk")
+          }
           severity="warning"
           rounded
         />,
@@ -1042,8 +1091,11 @@ const AttendanceSummaryTableData = () => {
           key="overtime"
           value={
             overtimeTime
-              ? `Overtime: ${overtimeDuration} (${overtimeTime})`
-              : `Overtime: ${overtimeDuration}`
+              ? i18nT("static.12vkwso", {
+                  p0: overtimeDuration,
+                  p1: overtimeTime,
+                })
+              : i18nT("static.1j0gc54", { p0: overtimeDuration })
           }
           severity="info"
           rounded
@@ -1053,45 +1105,86 @@ const AttendanceSummaryTableData = () => {
 
     if (rowData.is_missing_check_in) {
       flags.push(
-        <Tag key="missing-in" value="Missing In" severity="danger" rounded />,
+        <Tag
+          key="missing-in"
+          value={i18nT("static.gt5j7i")}
+          severity="danger"
+          rounded
+        />,
       );
     }
 
     if (rowData.is_missing_check_out) {
       flags.push(
-        <Tag key="missing-out" value="Missing Out" severity="danger" rounded />,
+        <Tag
+          key="missing-out"
+          value={i18nT("static.ye2qin")}
+          severity="danger"
+          rounded
+        />,
       );
     }
 
     if (rowData.is_late) {
-      flags.push(<Tag key="late" value="Late" severity="warning" rounded />);
+      flags.push(
+        <Tag
+          key="late"
+          value={i18nT("static.u9ge9")}
+          severity="warning"
+          rounded
+        />,
+      );
     }
 
     if (rowData.is_early_co) {
       flags.push(
-        <Tag key="early" value="Early Out" severity="warning" rounded />,
+        <Tag
+          key="early"
+          value={i18nT("static.saa7p4")}
+          severity="warning"
+          rounded
+        />,
       );
     }
 
     if (rowData.is_holiday) {
-      flags.push(<Tag key="holiday" value="Holiday" severity="info" rounded />);
+      flags.push(
+        <Tag
+          key="holiday"
+          value={i18nT("static.ih7a2j")}
+          severity="info"
+          rounded
+        />,
+      );
     }
 
     if (rowData.is_weekend) {
       flags.push(
-        <Tag key="weekend" value="Weekend" severity="secondary" rounded />,
+        <Tag
+          key="weekend"
+          value={i18nT("static.1kghrsy")}
+          severity="secondary"
+          rounded
+        />,
       );
     }
 
     if (rowData.is_absent) {
-      flags.push(<Tag key="absent" value="Absent" severity="danger" rounded />);
+      flags.push(
+        <Tag
+          key="absent"
+          value={i18nT("static.meu720")}
+          severity="danger"
+          rounded
+        />,
+      );
     }
 
     if (rowData.is_unscheduled) {
       flags.push(
         <Tag
           key="unscheduled"
-          value="Unscheduled"
+          value={i18nT("static.1ntsght")}
           severity="secondary"
           rounded
         />,
@@ -1099,7 +1192,11 @@ const AttendanceSummaryTableData = () => {
     }
 
     if (!flags.length) {
-      return <span className="text-sm text-slate-400">No flags</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.18bns95")}
+        </span>
+      );
     }
 
     return <div className="flex flex-wrap gap-1">{flags}</div>;
@@ -1115,7 +1212,7 @@ const AttendanceSummaryTableData = () => {
             ? dayjs(rowData.check_in_time).format("HH:mm:ss")
             : "-"}
 
-          <span className="mx-1 text-slate-400">→</span>
+          <span className="mx-1 text-slate-400">{i18nT("static.142kvve")}</span>
 
           {rowData.check_out_time
             ? dayjs(rowData.check_out_time).format("HH:mm:ss")
@@ -1123,8 +1220,8 @@ const AttendanceSummaryTableData = () => {
         </div>
 
         <div className="mt-1 text-xs text-slate-500">
-          {logCount} log
-          {logCount === 1 ? "" : "s"}
+          {logCount} {i18nT("static.hkgn69")}{" "}
+          {logCount === 1 ? "" : i18nT("static.1w9pcoy")}
         </div>
       </div>
     );
@@ -1138,7 +1235,7 @@ const AttendanceSummaryTableData = () => {
         </div>
 
         <div className="mt-1 text-xs text-slate-500">
-          Break {formatSeconds(rowData.break_seconds)}
+          {i18nT("static.17spnvc")} {formatSeconds(rowData.break_seconds)}
         </div>
       </div>
     );
@@ -1156,29 +1253,31 @@ const AttendanceSummaryTableData = () => {
       rowData.is_missing_check_out;
 
     if (!hasException) {
-      return <span className="text-sm text-slate-400">None</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.deku7v")}</span>
+      );
     }
 
     return (
       <div className="flex flex-col gap-1 text-xs">
         {lateSeconds > 0 && (
           <span className="text-amber-700">
-            Late {formatSeconds(lateSeconds)}
+            {i18nT("static.u9ge9")} {formatSeconds(lateSeconds)}
           </span>
         )}
 
         {earlyOutSeconds > 0 && (
           <span className="text-amber-700">
-            Early {formatSeconds(earlyOutSeconds)}
+            {i18nT("static.1zlcfw")} {formatSeconds(earlyOutSeconds)}
           </span>
         )}
 
         {rowData.is_missing_check_in && (
-          <span className="text-red-600">Missing check-in</span>
+          <span className="text-red-600">{i18nT("static.1kl86ht")}</span>
         )}
 
         {rowData.is_missing_check_out && (
-          <span className="text-red-600">Missing check-out</span>
+          <span className="text-red-600">{i18nT("static.78bkv6")}</span>
         )}
       </div>
     );
@@ -1190,12 +1289,14 @@ const AttendanceSummaryTableData = () => {
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <section className="rounded-xl border border-slate-200 bg-white p-4">
             <h3 className="m-0 mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Actual Scan
+              {i18nT("static.qn7l2w")}{" "}
             </h3>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="m-0 text-xs text-slate-500">Check In</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.2m3vb2")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatDateTime(rowData.check_in_time)}
@@ -1203,7 +1304,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Check Out</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.efitfj")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatDateTime(rowData.check_out_time)}
@@ -1211,7 +1314,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Logs</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.mnp3mu")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {rowData.attendance_log_count ?? 0}
@@ -1219,7 +1324,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Status</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.3pd73")}
+                </p>
 
                 <div className="mt-1">{renderStatusTag(rowData.status)}</div>
               </div>
@@ -1228,12 +1335,14 @@ const AttendanceSummaryTableData = () => {
 
           <section className="rounded-xl border border-slate-200 bg-white p-4">
             <h3 className="m-0 mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Scheduled Time
+              {i18nT("static.1iiunk1")}{" "}
             </h3>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="m-0 text-xs text-slate-500">Start</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.30xvgf")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatDateTime(rowData.scheduled_start_time)}
@@ -1241,7 +1350,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">End</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.1llf32i")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatDateTime(rowData.scheduled_end_time)}
@@ -1249,7 +1360,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Break Start</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.149t0qc")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatDateTime(rowData.scheduled_break_start_time)}
@@ -1257,7 +1370,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Break End</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.sviki5")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatDateTime(rowData.scheduled_break_end_time)}
@@ -1268,12 +1383,14 @@ const AttendanceSummaryTableData = () => {
 
           <section className="rounded-xl border border-slate-200 bg-white p-4">
             <h3 className="m-0 mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Summary Result
+              {i18nT("static.k39ps8")}{" "}
             </h3>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="m-0 text-xs text-slate-500">Work Hours</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.x8vlpb")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatSeconds(rowData.work_seconds)}
@@ -1281,7 +1398,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Break</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.17spnvc")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatSeconds(rowData.break_seconds)}
@@ -1289,7 +1408,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Late</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.u9ge9")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatSeconds(rowData.late_seconds)}
@@ -1297,7 +1418,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div>
-                <p className="m-0 text-xs text-slate-500">Early Out</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.saa7p4")}
+                </p>
 
                 <p className="m-0 mt-1 font-medium text-slate-800">
                   {formatSeconds(rowData.early_out_seconds)}
@@ -1305,7 +1428,9 @@ const AttendanceSummaryTableData = () => {
               </div>
 
               <div className="col-span-2">
-                <p className="m-0 mb-2 text-xs text-slate-500">Flags</p>
+                <p className="m-0 mb-2 text-xs text-slate-500">
+                  {i18nT("static.icm958")}
+                </p>
 
                 {renderCompactFlags(rowData)}
               </div>
@@ -1342,37 +1467,37 @@ const AttendanceSummaryTableData = () => {
   }[] = [
     {
       key: "ALL",
-      label: "All",
+      label: i18nT("static.wnjk2s"),
       count: selectedGroupSummary.total,
     },
     {
       key: "PRESENT",
-      label: "Present",
+      label: i18nT("static.1m3e00c"),
       count: selectedGroupSummary.present,
     },
     {
       key: "IN_PROGRESS",
-      label: "In Progress",
+      label: i18nT("static.w3n5x"),
       count: selectedGroupSummary.inProgress,
     },
     {
       key: "INCOMPLETE",
-      label: "Incomplete",
+      label: i18nT("static.t03g3p"),
       count: selectedGroupSummary.incomplete,
     },
     {
       key: "ABSENT",
-      label: "Absent",
+      label: i18nT("static.meu720"),
       count: selectedGroupSummary.absent,
     },
     {
       key: "DAY_OFF",
-      label: "Day Off",
+      label: i18nT("static.776hx0"),
       count: selectedGroupSummary.dayOff,
     },
     {
       key: "LEAVE",
-      label: "Leave",
+      label: i18nT("static.1xf0sbk"),
       count: selectedGroupSummary.leave,
     },
   ];
@@ -1398,12 +1523,11 @@ const AttendanceSummaryTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Attendance Summary
+                  {i18nT("static.1w1ugxu")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review daily attendance results, work duration, exceptions,
-                  leave, and overtime.
+                  {i18nT("static.uda9vd")}{" "}
                 </p>
               </div>
             </div>
@@ -1411,7 +1535,7 @@ const AttendanceSummaryTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1424,7 +1548,7 @@ const AttendanceSummaryTableData = () => {
 
               <Button
                 type="button"
-                label="Process Attendance"
+                label={i18nT("static.1eit71x")}
                 icon="pi pi-cog"
                 severity="warning"
                 size="small"
@@ -1436,7 +1560,7 @@ const AttendanceSummaryTableData = () => {
 
               <Button
                 type="button"
-                label="Export Excel"
+                label={i18nT("static.1tpgeic")}
                 icon="pi pi-file-excel"
                 severity="success"
                 outlined
@@ -1479,8 +1603,8 @@ const AttendanceSummaryTableData = () => {
                   rounded
                   severity="secondary"
                   size="small"
-                  aria-label="Dismiss message"
-                  tooltip="Dismiss message"
+                  aria-label={i18nT("static.1q15bfk")}
+                  tooltip={i18nT("static.1q15bfk")}
                   onClick={clearActionMessage}
                 />
               </div>
@@ -1490,19 +1614,23 @@ const AttendanceSummaryTableData = () => {
           {/* Summary Cards */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
             <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
-              <p className="m-0 text-xs text-slate-500">Applied Range</p>
+              <p className="m-0 text-xs text-slate-500">
+                {i18nT("static.1k1zuej")}
+              </p>
 
               <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
-                {currentRangeLabel}
+                {i18nT(currentRangeLabel)}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-400">
-                {summaryStats.total} filtered records
+                {summaryStats.total} {i18nT("static.16lj2ws")}{" "}
               </p>
             </div>
 
             <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-              <p className="m-0 text-xs text-green-700">Present</p>
+              <p className="m-0 text-xs text-green-700">
+                {i18nT("static.1m3e00c")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
                 {summaryStats.present}
@@ -1510,7 +1638,9 @@ const AttendanceSummaryTableData = () => {
             </div>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-              <p className="m-0 text-xs text-blue-700">In Progress</p>
+              <p className="m-0 text-xs text-blue-700">
+                {i18nT("static.w3n5x")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
                 {summaryStats.inProgress}
@@ -1518,7 +1648,9 @@ const AttendanceSummaryTableData = () => {
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="m-0 text-xs text-amber-700">Incomplete</p>
+              <p className="m-0 text-xs text-amber-700">
+                {i18nT("static.t03g3p")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
                 {summaryStats.incomplete}
@@ -1526,7 +1658,9 @@ const AttendanceSummaryTableData = () => {
             </div>
 
             <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="m-0 text-xs text-red-700">Absent</p>
+              <p className="m-0 text-xs text-red-700">
+                {i18nT("static.meu720")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
                 {summaryStats.absent}
@@ -1534,7 +1668,9 @@ const AttendanceSummaryTableData = () => {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-600">Day Off / Leave</p>
+              <p className="m-0 text-xs text-slate-600">
+                {i18nT("static.j4km6m")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summaryStats.dayOff + summaryStats.leave}
@@ -1546,12 +1682,11 @@ const AttendanceSummaryTableData = () => {
           <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Summary Filter
+                {i18nT("static.adlnp7")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Date changes require Apply Filter. Keyword and status filters
-                update the loaded data immediately.
+                {i18nT("static.1fpsl1")}{" "}
               </p>
             </div>
 
@@ -1560,22 +1695,22 @@ const AttendanceSummaryTableData = () => {
                 [
                   {
                     key: "TODAY",
-                    label: "Today",
+                    label: i18nT("static.1sawk0u"),
                     icon: "pi pi-calendar",
                   },
                   {
                     key: "THIS_WEEK",
-                    label: "This Week",
+                    label: i18nT("static.he9t3n"),
                     icon: "pi pi-calendar",
                   },
                   {
                     key: "THIS_MONTH",
-                    label: "This Month",
+                    label: i18nT("static.usin9z"),
                     icon: "pi pi-calendar",
                   },
                   {
                     key: "LAST_MONTH",
-                    label: "Last Month",
+                    label: i18nT("static.shnumn"),
                     icon: "pi pi-history",
                   },
                 ] as {
@@ -1607,7 +1742,7 @@ const AttendanceSummaryTableData = () => {
                   htmlFor="summary_start_date"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Start Date
+                  {i18nT("static.7bl5hd")}{" "}
                 </label>
 
                 <Controller
@@ -1620,7 +1755,7 @@ const AttendanceSummaryTableData = () => {
                       value={field.value}
                       dateFormat="dd MM yy"
                       showIcon
-                      placeholder="Start Date"
+                      placeholder={i18nT("static.7bl5hd")}
                       className="w-full"
                       onChange={(event) => {
                         field.onChange(event.value ?? null);
@@ -1637,7 +1772,7 @@ const AttendanceSummaryTableData = () => {
                   htmlFor="summary_end_date"
                   className="text-sm font-medium text-slate-700"
                 >
-                  End Date
+                  {i18nT("static.1j4m31m")}{" "}
                 </label>
 
                 <Controller
@@ -1650,7 +1785,7 @@ const AttendanceSummaryTableData = () => {
                       value={field.value}
                       dateFormat="dd MM yy"
                       showIcon
-                      placeholder="End Date"
+                      placeholder={i18nT("static.1j4m31m")}
                       className="w-full"
                       onChange={(event) => {
                         field.onChange(event.value ?? null);
@@ -1667,7 +1802,7 @@ const AttendanceSummaryTableData = () => {
                   htmlFor="summary_keyword"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Search
+                  {i18nT("static.1j0itop")}{" "}
                 </label>
 
                 <Controller
@@ -1681,7 +1816,7 @@ const AttendanceSummaryTableData = () => {
                         {...field}
                         value={field.value ?? ""}
                         id="summary_keyword"
-                        placeholder="Search employee, shift, leave, overtime, or date"
+                        placeholder={i18nT("static.sin5v2")}
                         className="w-full"
                       />
                     </IconField>
@@ -1694,7 +1829,7 @@ const AttendanceSummaryTableData = () => {
                   htmlFor="summary_status"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Status
+                  {i18nT("static.3pd73")}{" "}
                 </label>
 
                 <Controller
@@ -1706,7 +1841,7 @@ const AttendanceSummaryTableData = () => {
                       appendTo={getBody}
                       value={field.value}
                       options={statusOptions}
-                      placeholder="All Statuses"
+                      placeholder={i18nT("static.18zxnji")}
                       showClear
                       className="w-full"
                       onChange={(event) => field.onChange(event.value ?? null)}
@@ -1719,7 +1854,7 @@ const AttendanceSummaryTableData = () => {
             <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
               <Button
                 type="button"
-                label="Reset Filters"
+                label={i18nT("static.1ljj5w3")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -1729,7 +1864,7 @@ const AttendanceSummaryTableData = () => {
 
               <Button
                 type="button"
-                label="Apply Date Filter"
+                label={i18nT("static.vcbuap")}
                 icon="pi pi-filter"
                 className="w-full sm:w-auto"
                 onClick={onApplyFilter}
@@ -1742,11 +1877,11 @@ const AttendanceSummaryTableData = () => {
               <i className="pi pi-calendar-times mb-3 text-3xl text-slate-400" />
 
               <p className="m-0 text-sm font-semibold text-slate-700">
-                No attendance summary found
+                {i18nT("static.6ot065")}{" "}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Change the date range, status, or keyword filter.
+                {i18nT("static.j2fqrf")}{" "}
               </p>
             </div>
           ) : (
@@ -1756,18 +1891,20 @@ const AttendanceSummaryTableData = () => {
                 <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <h2 className="m-0 text-base font-semibold text-slate-800">
-                      Daily Overview
+                      {i18nT("static.1vom8ft")}{" "}
                     </h2>
 
                     <p className="m-0 mt-1 text-xs text-slate-500">
-                      Select a date to inspect employee attendance details.
+                      {i18nT("static.1kn7rqg")}{" "}
                     </p>
                   </div>
 
                   <Tag
-                    value={`${groupedData.length} day${
-                      groupedData.length === 1 ? "" : "s"
-                    }`}
+                    value={i18nT("static.hfmgvu", {
+                      p0: groupedData.length,
+                      p1:
+                        groupedData.length === 1 ? "" : i18nT("static.1w9pcoy"),
+                    })}
                     severity="secondary"
                     rounded
                   />
@@ -1799,8 +1936,10 @@ const AttendanceSummaryTableData = () => {
                             </div>
 
                             <div className="mt-1 text-xs text-slate-500">
-                              {group.rows.length} employee record
-                              {group.rows.length === 1 ? "" : "s"}
+                              {group.rows.length} {i18nT("static.1h11q02")}{" "}
+                              {group.rows.length === 1
+                                ? ""
+                                : i18nT("static.1w9pcoy")}
                             </div>
                           </div>
 
@@ -1812,7 +1951,7 @@ const AttendanceSummaryTableData = () => {
                         <div className="mt-4 grid grid-cols-2 gap-2">
                           <div className="rounded-lg border border-green-100 bg-green-50 px-3 py-2">
                             <div className="text-xs text-green-700">
-                              Present
+                              {i18nT("static.1m3e00c")}{" "}
                             </div>
 
                             <div className="text-base font-semibold text-green-800">
@@ -1822,7 +1961,7 @@ const AttendanceSummaryTableData = () => {
 
                           <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
                             <div className="text-xs text-blue-700">
-                              Progress
+                              {i18nT("static.79u6hy")}{" "}
                             </div>
 
                             <div className="text-base font-semibold text-blue-800">
@@ -1832,7 +1971,7 @@ const AttendanceSummaryTableData = () => {
 
                           <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
                             <div className="text-xs text-amber-700">
-                              Incomplete
+                              {i18nT("static.t03g3p")}{" "}
                             </div>
 
                             <div className="text-base font-semibold text-amber-800">
@@ -1841,7 +1980,9 @@ const AttendanceSummaryTableData = () => {
                           </div>
 
                           <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2">
-                            <div className="text-xs text-red-700">Absent</div>
+                            <div className="text-xs text-red-700">
+                              {i18nT("static.meu720")}
+                            </div>
 
                             <div className="text-base font-semibold text-red-800">
                               {group.absentCount}
@@ -1851,14 +1992,18 @@ const AttendanceSummaryTableData = () => {
 
                         <div className="mt-3 flex flex-wrap gap-1">
                           <Tag
-                            value={`${group.dayOffCount} Day Off`}
+                            value={i18nT("static.dsk4nq", {
+                              p0: group.dayOffCount,
+                            })}
                             severity="secondary"
                             rounded
                           />
 
                           {group.leaveCount > 0 && (
                             <Tag
-                              value={`${group.leaveCount} Leave`}
+                              value={i18nT("static.f27o62", {
+                                p0: group.leaveCount,
+                              })}
                               severity="warning"
                               rounded
                             />
@@ -1887,37 +2032,45 @@ const AttendanceSummaryTableData = () => {
                     <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                       <div>
                         <h2 className="m-0 text-base font-semibold text-slate-800">
-                          Employee Detail — {selectedGroup.dateLabel}
+                          {i18nT("static.h89fcm")} {selectedGroup.dateLabel}
                         </h2>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Showing {selectedGroupRows.length} of{" "}
-                          {selectedGroup.rows.length} employee records. Expand a
-                          row to view detailed scan and schedule information.
+                          {i18nT("static.1j6rifw")} {selectedGroupRows.length}{" "}
+                          {i18nT("static.t6uqnc")} {selectedGroup.rows.length}{" "}
+                          {i18nT("static.1rv8bm3")}{" "}
                         </p>
                       </div>
 
                       <div className="flex flex-wrap gap-2">
                         <Tag
-                          value={`${selectedGroupSummary.present} Present`}
+                          value={i18nT("static.1lmpux2", {
+                            p0: selectedGroupSummary.present,
+                          })}
                           severity="success"
                           rounded
                         />
 
                         <Tag
-                          value={`${selectedGroupSummary.inProgress} In Progress`}
+                          value={i18nT("static.1p8mz3r", {
+                            p0: selectedGroupSummary.inProgress,
+                          })}
                           severity="info"
                           rounded
                         />
 
                         <Tag
-                          value={`${selectedGroupSummary.incomplete} Incomplete`}
+                          value={i18nT("static.1uww7sr", {
+                            p0: selectedGroupSummary.incomplete,
+                          })}
                           severity="warning"
                           rounded
                         />
 
                         <Tag
-                          value={`${selectedGroupSummary.absent} Absent`}
+                          value={i18nT("static.tkkhwm", {
+                            p0: selectedGroupSummary.absent,
+                          })}
                           severity="danger"
                           rounded
                         />
@@ -1933,7 +2086,10 @@ const AttendanceSummaryTableData = () => {
                             <Button
                               key={item.key}
                               type="button"
-                              label={`${item.label} ${item.count}`}
+                              label={i18nT("static.y7k7q", {
+                                p0: item.label,
+                                p1: item.count,
+                              })}
                               size="small"
                               severity={isActive ? "info" : "secondary"}
                               outlined={!isActive}
@@ -1950,7 +2106,7 @@ const AttendanceSummaryTableData = () => {
 
                         <InputText
                           value={detailEmployeeSearch}
-                          placeholder="Search employee name"
+                          placeholder={i18nT("static.1otbkcq")}
                           className="w-full"
                           onChange={(event) => {
                             setDetailEmployeeSearch(event.target.value);
@@ -1995,7 +2151,7 @@ const AttendanceSummaryTableData = () => {
                       tableStyle={{
                         minWidth: "78rem",
                       }}
-                      emptyMessage="No employee data found for this filter."
+                      emptyMessage={i18nT("static.1ru6s3r")}
                     >
                       <Column
                         expander
@@ -2005,7 +2161,7 @@ const AttendanceSummaryTableData = () => {
                       />
 
                       <Column
-                        header="Employee"
+                        header={i18nT("static.1fak8xt")}
                         sortable
                         sortField="employee_display_name"
                         body={(rowData: AttendanceSummaryRowView) => (
@@ -2015,7 +2171,7 @@ const AttendanceSummaryTableData = () => {
                             </div>
 
                             <div className="mt-1 text-xs text-slate-500">
-                              {rowData.shift_name ?? "No shift"}
+                              {rowData.shift_name ?? i18nT("static.iwdx2m")}
                             </div>
                           </div>
                         )}
@@ -2026,7 +2182,7 @@ const AttendanceSummaryTableData = () => {
 
                       <Column
                         field="status"
-                        header="Status"
+                        header={i18nT("static.3pd73")}
                         sortable
                         body={(rowData: AttendanceSummaryRowView) =>
                           renderStatusTag(rowData.status)
@@ -2037,7 +2193,7 @@ const AttendanceSummaryTableData = () => {
                       />
 
                       <Column
-                        header="Scan"
+                        header={i18nT("static.u9kkco")}
                         body={renderScanSummary}
                         style={{
                           minWidth: "13rem",
@@ -2045,7 +2201,7 @@ const AttendanceSummaryTableData = () => {
                       />
 
                       <Column
-                        header="Worked"
+                        header={i18nT("static.1tkxo5d")}
                         body={renderWorkSummary}
                         style={{
                           minWidth: "10rem",
@@ -2053,7 +2209,7 @@ const AttendanceSummaryTableData = () => {
                       />
 
                       <Column
-                        header="Exceptions"
+                        header={i18nT("static.1vo1s1r")}
                         body={renderExceptionSummary}
                         style={{
                           minWidth: "13rem",
@@ -2061,7 +2217,7 @@ const AttendanceSummaryTableData = () => {
                       />
 
                       <Column
-                        header="Flags"
+                        header={i18nT("static.icm958")}
                         body={renderCompactFlags}
                         style={{
                           minWidth: "23rem",
@@ -2077,7 +2233,7 @@ const AttendanceSummaryTableData = () => {
           {isValidating && attendanceSummaryData && (
             <div className="flex items-center justify-end gap-2 text-xs text-slate-500">
               <i className="pi pi-spin pi-spinner" />
-              Refreshing attendance summary...
+              {i18nT("static.ae0y93")}{" "}
             </div>
           )}
         </div>

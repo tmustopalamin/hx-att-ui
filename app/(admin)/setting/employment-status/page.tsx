@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -55,10 +56,10 @@ const EMPTY_EMPLOYMENT_STATUS: EmploymentStatusFormData = {
 };
 
 const TAX_EMPLOYEE_TYPE_OPTIONS = [
-  { label: "Permanent employee", value: "PERMANENT" },
-  { label: "Non-permanent employee", value: "NON_PERMANENT" },
-  { label: "Commissioner / supervisor", value: "COMMISSIONER" },
-  { label: "Pensioner", value: "PENSIONER" },
+  { labelKey: "Permanent employee", value: "PERMANENT" },
+  { labelKey: "Non-permanent employee", value: "NON_PERMANENT" },
+  { labelKey: "Commissioner / supervisor", value: "COMMISSIONER" },
+  { labelKey: "Pensioner", value: "PENSIONER" },
 ];
 
 const getBody = () => document.body;
@@ -128,6 +129,7 @@ const submitEmploymentStatusRequest = async (
 };
 
 const EmploymentStatusSettingPage = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const [selectedData, setSelectedData] = useState<EmploymentStatus | null>(
@@ -171,7 +173,7 @@ const EmploymentStatusSettingPage = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -182,9 +184,8 @@ const EmploymentStatusSettingPage = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail:
-          err instanceof Error ? err.message : "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: err instanceof Error ? err.message : i18nT("static.37lwsc"),
       }),
     );
   };
@@ -336,12 +337,10 @@ const EmploymentStatusSettingPage = () => {
 
   const onClickDelete = (data: EmploymentStatus) => {
     requestActionConfirmation({
-      header: "Delete Employment Status",
+      header: i18nT("static.1l015mq"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this employment status?
-          </span>
+          <span className="text-slate-600">{i18nT("static.2ioefz")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -354,7 +353,7 @@ const EmploymentStatusSettingPage = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -363,7 +362,7 @@ const EmploymentStatusSettingPage = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -377,7 +376,7 @@ const EmploymentStatusSettingPage = () => {
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -387,7 +386,7 @@ const EmploymentStatusSettingPage = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -405,7 +404,7 @@ const EmploymentStatusSettingPage = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -420,7 +419,7 @@ const EmploymentStatusSettingPage = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -435,7 +434,7 @@ const EmploymentStatusSettingPage = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -447,7 +446,7 @@ const EmploymentStatusSettingPage = () => {
       <Button
         type="submit"
         form="employment-status-form"
-        label={isAddNew ? "Create Employment Status" : "Save Changes"}
+        label={isAddNew ? i18nT("static.6cibzt") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -477,11 +476,11 @@ const EmploymentStatusSettingPage = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Employment Status
+                  {i18nT("static.p2ngjv")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage employment status names and active availability.
+                  {i18nT("static.1hz299o")}{" "}
                 </p>
               </div>
             </div>
@@ -489,7 +488,7 @@ const EmploymentStatusSettingPage = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -502,7 +501,7 @@ const EmploymentStatusSettingPage = () => {
 
               <Button
                 type="button"
-                label="New Employment Status"
+                label={i18nT("static.4nchgl")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -519,7 +518,7 @@ const EmploymentStatusSettingPage = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search employment status"
+                placeholder={i18nT("static.g7dw9p")}
                 className="w-full"
               />
             </IconField>
@@ -545,8 +544,8 @@ const EmploymentStatusSettingPage = () => {
               tableStyle={{
                 minWidth: "42rem",
               }}
-              emptyMessage="No employment status data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1fih8ps")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -562,7 +561,7 @@ const EmploymentStatusSettingPage = () => {
 
               <Column
                 field="name"
-                header="Employment Status Name"
+                header={i18nT("static.1gvhy2y")}
                 sortable
                 style={{
                   minWidth: "22rem",
@@ -576,7 +575,7 @@ const EmploymentStatusSettingPage = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -586,7 +585,7 @@ const EmploymentStatusSettingPage = () => {
 
               <Column
                 field="default_tax_employee_type"
-                header="Tax Treatment"
+                header={i18nT("static.p6ft6e")}
                 body={(rowData: EmploymentStatus) =>
                   rowData.default_tax_employee_type ? (
                     <Tag
@@ -594,14 +593,14 @@ const EmploymentStatusSettingPage = () => {
                       severity="info"
                     />
                   ) : (
-                    <Tag value="Not configured" severity="warning" />
+                    <Tag value={i18nT("static.4tqh3i")} severity="warning" />
                   )
                 }
                 style={{ minWidth: "14rem" }}
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -656,7 +655,7 @@ const EmploymentStatusSettingPage = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Employment Status Name
+              {i18nT("static.1gvhy2y")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -664,11 +663,10 @@ const EmploymentStatusSettingPage = () => {
               name="name"
               control={control}
               rules={{
-                required: "Employment status name is required.",
+                required: i18nT("static.w788v7"),
                 maxLength: {
                   value: 50,
-                  message:
-                    "Employment status name cannot exceed 50 characters.",
+                  message: i18nT("static.snx3ki"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -677,7 +675,7 @@ const EmploymentStatusSettingPage = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Permanent"
+                    placeholder={i18nT("static.ipbq23")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -689,7 +687,7 @@ const EmploymentStatusSettingPage = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Enter the employment status shown in employee records.
+                      {i18nT("static.dfci1y")}{" "}
                     </small>
                   )}
                 </>
@@ -702,23 +700,26 @@ const EmploymentStatusSettingPage = () => {
               htmlFor="default_tax_employee_type"
               className="text-sm font-medium text-slate-700"
             >
-              Default Tax Treatment
+              {i18nT("static.1frqsnr")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
             <Controller
               name="default_tax_employee_type"
               control={control}
-              rules={{ required: "Tax treatment is required." }}
+              rules={{ required: i18nT("static.qxu61r") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
                     id="default_tax_employee_type"
                     value={field.value}
-                    options={TAX_EMPLOYEE_TYPE_OPTIONS}
+                    options={TAX_EMPLOYEE_TYPE_OPTIONS.map((option) => ({
+                      label: i18nT(option.labelKey),
+                      value: option.value,
+                    }))}
                     optionLabel="label"
                     optionValue="value"
-                    placeholder="Select tax treatment"
+                    placeholder={i18nT("static.1poctz8")}
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                     onChange={(event) => field.onChange(event.value)}
                   />
@@ -728,8 +729,7 @@ const EmploymentStatusSettingPage = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      This is the default PPh 21 treatment derived for employees
-                      using this employment status.
+                      {i18nT("static.yf4n7f")}{" "}
                     </small>
                   )}
                 </>
@@ -748,12 +748,11 @@ const EmploymentStatusSettingPage = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive employment statuses remain stored but should not
-                      be available for new employee records.
+                      {i18nT("static.1jz8ogx")}{" "}
                     </p>
                   </div>
 

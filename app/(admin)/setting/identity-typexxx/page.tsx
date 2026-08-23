@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -27,6 +28,7 @@ interface IdentityType {
 }
 
 const IdentityTypeSettingPage = () => {
+  const { t: i18nT } = useI18n();
   const [data, setData] = useState([]);
 
   const [globalFilterValue, setGlobalFilterValue] = useState("");
@@ -74,8 +76,6 @@ const IdentityTypeSettingPage = () => {
   };
 
   useEffect(() => {
-    document.title = "Identity Type Setting";
-
     getData();
   }, []);
 
@@ -103,13 +103,13 @@ const IdentityTypeSettingPage = () => {
   const footerContent = (
     <div>
       <Button
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         onClick={() => setVisible(false)}
         className="p-button-text"
       />
       <Button
-        label={isAddNew ? "Submit" : "Save"}
+        label={isAddNew ? i18nT("static.hvztxh") : i18nT("static.lewgh4")}
         icon="pi pi-check"
         disabled={!isValid}
         type="submit"
@@ -141,14 +141,14 @@ const IdentityTypeSettingPage = () => {
 
       toast.current?.show({
         severity: "success",
-        summary: "success",
-        detail: "add success",
+        summary: i18nT("static.g72xw0"),
+        detail: i18nT("static.1p94cwn"),
         life: 3000,
       });
     } catch (err: unknown) {
       toast.current?.show({
         severity: "error",
-        summary: "error",
+        summary: i18nT("static.9bb0pd"),
         detail: "Failed to submit the form. Please try again later" + err,
         life: 3000,
       });
@@ -178,14 +178,14 @@ const IdentityTypeSettingPage = () => {
 
       toast.current?.show({
         severity: "success",
-        summary: "success",
-        detail: "update success",
+        summary: i18nT("static.g72xw0"),
+        detail: i18nT("static.hxtfmf"),
         life: 3000,
       });
     } catch (err: unknown) {
       toast.current?.show({
         severity: "error",
-        summary: "error",
+        summary: i18nT("static.9bb0pd"),
         detail: "Failed to update the form. Please try again later" + err,
         life: 3000,
       });
@@ -214,14 +214,14 @@ const IdentityTypeSettingPage = () => {
 
       toast.current?.show({
         severity: "success",
-        summary: "success",
-        detail: "delete success",
+        summary: i18nT("static.g72xw0"),
+        detail: i18nT("static.waz5yx"),
         life: 3000,
       });
     } catch (err: unknown) {
       toast.current?.show({
         severity: "error",
-        summary: "error",
+        summary: i18nT("static.9bb0pd"),
         detail: "Failed to delete the form. Please try again later" + err,
         life: 3000,
       });
@@ -265,7 +265,7 @@ const IdentityTypeSettingPage = () => {
             label=""
             icon="pi pi-trash"
             size="small"
-            tooltip="Delete identity type"
+            tooltip={i18nT("static.xjsukc")}
             onClick={() => {
               onClickDelete(rowData.id);
             }}
@@ -275,7 +275,7 @@ const IdentityTypeSettingPage = () => {
             label=""
             icon="pi pi-pencil"
             size="small"
-            tooltip="Edit identity type"
+            tooltip={i18nT("static.wqir3j")}
             onClick={() => {
               onClickUpdate(rowData);
             }}
@@ -287,8 +287,8 @@ const IdentityTypeSettingPage = () => {
 
   const onClickDelete = (id: number) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.bn1ao7"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "reject",
       acceptClassName: "p-button-danger ml-3",
@@ -302,11 +302,11 @@ const IdentityTypeSettingPage = () => {
   return (
     <>
       <Toast ref={toast} position="top-center" />
-      <Card title={<CardTitle title="Identity Type" url="" />}>
+      <Card title={<CardTitle title={i18nT("static.4mj4o9")} url="" />}>
         <div className="p-3">
           <div className="flex items-center justify-between">
             <Button
-              label="New"
+              label={i18nT("static.12ludo1")}
               icon="pi pi-plus"
               size="small"
               onClick={() => {
@@ -320,7 +320,7 @@ const IdentityTypeSettingPage = () => {
                 className="p-inputtext-sm"
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Keyword Search"
+                placeholder={i18nT("static.p9ap2o")}
               />
             </IconField>
           </div>
@@ -334,10 +334,10 @@ const IdentityTypeSettingPage = () => {
             rowsPerPageOptions={[5, 10, 25, 50]}
             dataKey="id"
             globalFilterFields={["name"]}
-            emptyMessage="No identity type found."
+            emptyMessage={i18nT("static.ucf8b6")}
             header={header}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={tableLoading}
           >
@@ -346,14 +346,14 @@ const IdentityTypeSettingPage = () => {
               headerStyle={{ width: "3rem" }}
               body={(data, options) => options.rowIndex + 1}
             ></Column>
-            <Column field="name" header="Name"></Column>
+            <Column field="name" header={i18nT("static.4el6o6")}></Column>
             <Column
               field="is_active"
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={activeColumnBody}
             ></Column>
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(rowData) => actionColumnBody(rowData)}
             ></Column>
           </DataTable>
@@ -377,18 +377,18 @@ const IdentityTypeSettingPage = () => {
         >
           <div className="flex flex-col gap-5">
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="name">Name</label>
+              <label htmlFor="name">{i18nT("static.4el6o6")}</label>
               <InputText
                 {...register("name", {
-                  required: "this is required",
-                  maxLength: { value: 50, message: "maximum 50 character" },
+                  required: i18nT("static.zr2lb4"),
+                  maxLength: { value: 50, message: i18nT("static.qf28bp") },
                 })}
               />
               <small className="font-bold">{errors.name?.message}</small>
             </div>
 
             <div className="m-0 flex flex-col gap-2">
-              <label htmlFor="is_active">Active</label>
+              <label htmlFor="is_active">{i18nT("static.8qzyhb")}</label>
               <InputSwitch
                 {...register("is_active")}
                 checked={watch("is_active")}

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6,7 +7,6 @@ import { getSafeInternalPath } from "@/app/utils/safe-navigation";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { ProgressSpinner } from "primereact/progressspinner";
 import { requestActionConfirmation } from "./ActionConfirmDialog";
-import { formatRelativeNotificationTime } from "@/app/utils/date-format";
 
 import {
   archiveNotification,
@@ -18,10 +18,6 @@ import {
 } from "../services/notification-service";
 
 const MAX_BADGE_COUNT = 99;
-
-const formatNotificationTime = (value: string) => {
-  return formatRelativeNotificationTime(value);
-};
 
 const getPriorityClass = (priority: string) => {
   const normalized = priority.toUpperCase();
@@ -68,6 +64,7 @@ const getModuleIcon = (moduleCode: string) => {
 };
 
 const NotificationBell = () => {
+  const { t, formatRelativeTime } = useI18n();
   const router = useRouter();
   const panelRef = useRef<OverlayPanel>(null);
 
@@ -186,12 +183,12 @@ const NotificationBell = () => {
   ) => {
     event.stopPropagation();
     requestActionConfirmation({
-      action: "Archive notification",
+      action: t("common.notifications.archive"),
       target: notification.title,
       severity: "warning",
-      confirmLabel: "Archive",
+      confirmLabel: t("common.actions.archive"),
       confirmIcon: "pi pi-archive",
-      description: "Archive this notification?",
+      description: t("common.notifications.archiveConfirm"),
       onAccept: () => handleArchive(notification),
     });
   };
@@ -207,8 +204,8 @@ const NotificationBell = () => {
         type="button"
         onClick={openPanel}
         className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900"
-        aria-label="Open notifications"
-        title="Open notifications"
+        aria-label={t("common.notifications.title")}
+        title={t("common.notifications.title")}
       >
         <i className="pi pi-bell text-lg" />
 
@@ -227,9 +224,11 @@ const NotificationBell = () => {
         <div className="overflow-hidden rounded-2xl bg-white">
           <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-4">
             <div>
-              <p className="text-sm font-bold text-slate-900">Notifications</p>
+              <p className="text-sm font-bold text-slate-900">
+                {t("common.notifications.title")}
+              </p>
               <p className="mt-0.5 text-xs text-slate-500">
-                Latest HRIS updates and approval alerts.
+                {t("common.notifications.latestUpdates")}
               </p>
             </div>
 
@@ -239,7 +238,7 @@ const NotificationBell = () => {
               disabled={loading || unreadCount <= 0}
               className="rounded-full px-3 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-transparent"
             >
-              Mark all read
+              {t("common.notifications.markAllRead")}
             </button>
           </div>
 
@@ -259,10 +258,10 @@ const NotificationBell = () => {
                   <i className="pi pi-bell-slash text-lg" />
                 </div>
                 <p className="mt-3 text-sm font-semibold text-slate-800">
-                  No notifications
+                  {t("common.notifications.noNotifications")}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  New approval and HRIS updates will appear here.
+                  {t("common.notifications.emptyDescription")}
                 </p>
               </div>
             )}
@@ -316,7 +315,7 @@ const NotificationBell = () => {
                         </p>
 
                         <span className="shrink-0 text-[11px] text-slate-400">
-                          {formatNotificationTime(notification.created_at)}
+                          {formatRelativeTime(notification.created_at)}
                         </span>
                       </div>
 
@@ -345,8 +344,8 @@ const NotificationBell = () => {
                             confirmArchive(event, notification)
                           }
                           className="shrink-0 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-slate-700"
-                          aria-label="Archive notification"
-                          title="Archive notification"
+                          aria-label={t("common.notifications.archive")}
+                          title={t("common.notifications.archive")}
                         >
                           <i className="pi pi-times text-xs" />
                         </button>
@@ -363,7 +362,7 @@ const NotificationBell = () => {
               onClick={handleViewAll}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
             >
-              <span>View all notifications</span>
+              <span>{t("common.notifications.viewAll")}</span>
               <i className="pi pi-arrow-right text-xs" />
             </button>
           </div>

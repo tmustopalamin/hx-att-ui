@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/app/i18n";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import React, { Suspense, lazy, useMemo, useState } from "react";
 import { Button } from "primereact/button";
@@ -12,31 +13,33 @@ const WorkExperience = lazy(() => import("./WorkExperience"));
 
 const tabs: Array<{
   key: TabKey;
-  label: string;
+  labelKey: string;
   icon: string;
-  description: string;
+  descriptionKey: string;
 }> = [
   {
     key: "formal",
-    label: "Formal Education",
+    labelKey: "Formal Education",
     icon: "pi pi-building-columns",
-    description: "School, diploma, bachelor, master, and other formal records.",
+    descriptionKey:
+      "School, diploma, bachelor, master, and other formal records.",
   },
   {
     key: "informal",
-    label: "Informal Education",
+    labelKey: "Informal Education",
     icon: "pi pi-book",
-    description: "Course, workshop, training, and certification records.",
+    descriptionKey: "Course, workshop, training, and certification records.",
   },
   {
     key: "work-experience",
-    label: "Work Experience",
+    labelKey: "Work Experience",
     icon: "pi pi-briefcase",
-    description: "Previous company and professional experience records.",
+    descriptionKey: "Previous company and professional experience records.",
   },
 ];
 
 const EmployeeDetailEducationWorkExpTab = () => {
+  const { t: i18nT } = useI18n();
   const [activeTab, setActiveTab] = useState<TabKey>("formal");
 
   const activeTabMeta = useMemo(
@@ -78,7 +81,9 @@ const EmployeeDetailEducationWorkExpTab = () => {
                 >
                   <div className="flex items-center gap-3">
                     <span className={`${tab.icon} text-sm`} />
-                    <span className="text-sm font-semibold">{tab.label}</span>
+                    <span className="text-sm font-semibold">
+                      {i18nT(tab.labelKey)}
+                    </span>
                   </div>
                 </Button>
               );
@@ -90,10 +95,10 @@ const EmployeeDetailEducationWorkExpTab = () => {
               <span className={`${activeTabMeta.icon} mt-0.5 text-blue-600`} />
               <div>
                 <p className="text-sm font-semibold text-slate-900">
-                  {activeTabMeta.label}
+                  {i18nT(activeTabMeta.labelKey)}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {activeTabMeta.description}
+                  {i18nT(activeTabMeta.descriptionKey)}
                 </p>
               </div>
             </div>

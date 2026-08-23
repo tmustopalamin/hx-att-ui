@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -96,6 +97,7 @@ const statusSeverity = (
         : "warning";
 
 export default function EmployeeLifecycleData() {
+  const { t: i18nT } = useI18n();
   const searchParams = useSearchParams();
   const profile = useSelector((state: RootState) => state.profile);
   const dispatch = useDispatch();
@@ -183,7 +185,11 @@ export default function EmployeeLifecycleData() {
     () =>
       employees.map((employee) => ({
         label:
-          employee.full_name || `${employee.first_name} ${employee.last_name}`,
+          employee.full_name ||
+          i18nT("static.y7k7q", {
+            p0: employee.first_name,
+            p1: employee.last_name,
+          }),
         value: employee.id,
       })),
     [employees],
@@ -342,11 +348,7 @@ export default function EmployeeLifecycleData() {
 
   const createCase = async () => {
     if (!form.employee_id || !form.effective_date) {
-      notify(
-        "error",
-        "Validation",
-        "Employee and effective date are required.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.1flvj5o"));
       return;
     }
     const proposedJoinDate = employmentChange.join_date?.trim() || null;
@@ -360,11 +362,7 @@ export default function EmployeeLifecycleData() {
       proposedJoinDate !== currentJoinDate &&
       !form.reason?.trim()
     ) {
-      notify(
-        "error",
-        "Validation",
-        "Reason is required when the join date is changed.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.vjpj6d"));
       return;
     }
     setSaving(true);
@@ -382,20 +380,16 @@ export default function EmployeeLifecycleData() {
       setForm(emptyForm());
       setEmploymentChange(emptyEmploymentChange());
       await mutate();
-      notify(
-        "success",
-        "Lifecycle case created",
-        "The case is ready to be submitted.",
-      );
+      notify("success", i18nT("static.axd5v1"), i18nT("static.2mahnm"));
     } catch (error: unknown) {
       notify(
         "error",
-        "Lifecycle",
+        i18nT("static.1nvorn3"),
         isResponseTypeError(error)
           ? getErrorMessage(error, "message")
           : error instanceof Error
             ? error.message
-            : "Unable to create lifecycle case. Review the employment data and try again.",
+            : i18nT("static.o4lwju"),
       );
     } finally {
       setSaving(false);
@@ -424,20 +418,18 @@ export default function EmployeeLifecycleData() {
       if (selected?.id === row.id) await detail.mutate();
       notify(
         "success",
-        "Lifecycle updated",
-        action === "submit"
-          ? "Case submitted for approval."
-          : "Case cancelled.",
+        i18nT("static.1gzdoqg"),
+        action === "submit" ? i18nT("static.jobjnw") : i18nT("static.r7lfpo"),
       );
     } catch (error: unknown) {
       notify(
         "error",
-        "Lifecycle",
+        i18nT("static.1nvorn3"),
         isResponseTypeError(error)
           ? getErrorMessage(error, "message")
           : error instanceof Error
             ? error.message
-            : "Request could not be processed. Refresh and try again.",
+            : i18nT("static.16ypw6a"),
       );
     } finally {
       setSaving(false);
@@ -449,14 +441,12 @@ export default function EmployeeLifecycleData() {
   ) => {
     const isCancel = action === "cancel";
     requestActionConfirmation({
-      action: isCancel ? "Cancel lifecycle case" : "Submit lifecycle case",
+      action: isCancel ? i18nT("static.1snqs45") : i18nT("static.1xvck6n"),
       target: `${row.employee_name} · ${row.lifecycle_type.replaceAll("_", " ")}`,
       severity: isCancel ? "danger" : "warning",
-      confirmLabel: isCancel ? "Cancel Case" : "Submit for Approval",
+      confirmLabel: isCancel ? i18nT("static.13r863p") : i18nT("static.jub85"),
       confirmIcon: isCancel ? "pi pi-times" : "pi pi-send",
-      description: isCancel
-        ? "Cancel this lifecycle case?"
-        : "Submit this lifecycle case for approval?",
+      description: isCancel ? i18nT("static.16ja080") : i18nT("static.cl1222"),
       onAccept: () => transition(row, action),
     });
   };
@@ -467,11 +457,7 @@ export default function EmployeeLifecycleData() {
     dueDate: string | null,
   ): Promise<boolean> => {
     if (!selected || detail.data?.case.status !== "DRAFT") {
-      notify(
-        "error",
-        "Checklist",
-        "Task assignment is locked after the lifecycle is submitted.",
-      );
+      notify("error", i18nT("static.2ed3hr"), i18nT("static.1y4e1q7"));
       return false;
     }
     setSaving(true);
@@ -484,14 +470,10 @@ export default function EmployeeLifecycleData() {
         dueDate,
       );
       await detail.mutate();
-      notify(
-        "success",
-        "Checklist updated",
-        "Task owner and due date updated.",
-      );
+      notify("success", i18nT("static.hm62rc"), i18nT("static.1xqf4cr"));
       return true;
     } catch {
-      notify("error", "Checklist", "Task assignment could not be updated.");
+      notify("error", i18nT("static.2ed3hr"), i18nT("static.u0xwqp"));
       return false;
     } finally {
       setSaving(false);
@@ -507,9 +489,7 @@ export default function EmployeeLifecycleData() {
   if (error)
     return (
       <Card className="border border-red-200">
-        <p className="m-0 text-sm text-red-600">
-          Unable to load employee lifecycle data.
-        </p>
+        <p className="m-0 text-sm text-red-600">{i18nT("static.1t27id1")} </p>
       </Card>
     );
 
@@ -524,17 +504,16 @@ export default function EmployeeLifecycleData() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-                  Employee Lifecycle
+                  {i18nT("static.1hkrool")}{" "}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage onboarding, employment changes, and offboarding with an
-                  auditable checklist.
+                  {i18nT("static.pyph62")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex gap-2">
               <Button
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -544,7 +523,7 @@ export default function EmployeeLifecycleData() {
               />
               {canCreate && (
                 <Button
-                  label="New Lifecycle Case"
+                  label={i18nT("static.1kydyv7")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => setVisible(true)}
@@ -562,7 +541,7 @@ export default function EmployeeLifecycleData() {
             rowHover
             size="small"
             tableStyle={{ minWidth: "60rem" }}
-            emptyMessage="No employee lifecycle case found."
+            emptyMessage={i18nT("static.15o2um4")}
           >
             <Column
               header="#"
@@ -572,30 +551,30 @@ export default function EmployeeLifecycleData() {
               style={{ width: "4rem" }}
             />
             <Column
-              header="Employee"
+              header={i18nT("static.1fak8xt")}
               body={(row: EmployeeLifecycleCase) => (
                 <span className="font-medium text-slate-800">
                   {row.employee_name}
                 </span>
               )}
             />
-            <Column field="lifecycle_type" header="Type" />
-            <Column field="requested_by_name" header="Lifecycle Owner" />
+            <Column field="lifecycle_type" header={i18nT("static.1m2zofh")} />
+            <Column field="requested_by_name" header={i18nT("static.crwzgc")} />
             <Column
               field="effective_date"
-              header="Effective Date"
+              header={i18nT("static.dfnnk2")}
               body={(row: EmployeeLifecycleCase) =>
                 formatDisplayDate(row.effective_date)
               }
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: EmployeeLifecycleCase) => (
                 <Tag value={row.status} severity={statusSeverity(row.status)} />
               )}
             />
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               frozen
               alignFrozen="right"
               body={(row: EmployeeLifecycleCase) => {
@@ -608,8 +587,8 @@ export default function EmployeeLifecycleData() {
                       text
                       rounded
                       severity="secondary"
-                      aria-label="View detail"
-                      tooltip="View detail"
+                      aria-label={i18nT("static.1dtxu7d")}
+                      tooltip={i18nT("static.1dtxu7d")}
                       onClick={() => setSelected(row)}
                     />
                     {canCreate &&
@@ -619,8 +598,8 @@ export default function EmployeeLifecycleData() {
                           icon="pi pi-send"
                           text
                           rounded
-                          aria-label="Submit"
-                          tooltip="Submit"
+                          aria-label={i18nT("static.hvztxh")}
+                          tooltip={i18nT("static.hvztxh")}
                           disabled={saving}
                           onClick={() => confirmTransition(row, "submit")}
                         />
@@ -629,7 +608,7 @@ export default function EmployeeLifecycleData() {
                       row.status === "DRAFT" &&
                       !isLifecycleOwner && (
                         <span className="text-xs text-slate-500">
-                          Owner submits
+                          {i18nT("static.jrks31")}{" "}
                         </span>
                       )}
                     {canUpdate &&
@@ -641,8 +620,8 @@ export default function EmployeeLifecycleData() {
                           text
                           rounded
                           severity="danger"
-                          aria-label="Cancel"
-                          tooltip="Cancel"
+                          aria-label={i18nT("static.ew9em3")}
+                          tooltip={i18nT("static.ew9em3")}
                           disabled={saving}
                           onClick={() => confirmTransition(row, "cancel")}
                         />
@@ -655,7 +634,7 @@ export default function EmployeeLifecycleData() {
         </div>
       </Card>
       <Dialog
-        header="New Employee Lifecycle Case"
+        header={i18nT("static.6eh5nx")}
         visible={visible}
         modal
         draggable={false}
@@ -665,14 +644,14 @@ export default function EmployeeLifecycleData() {
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               disabled={saving}
               onClick={closeCreateCase}
             />
             <Button
-              label="Create Case"
+              label={i18nT("static.i9z1e3")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -683,12 +662,12 @@ export default function EmployeeLifecycleData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee
+            {i18nT("static.1fak8xt")}{" "}
             <Dropdown
               value={form.employee_id || null}
               options={employeeOptions}
               filter
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               className="w-full"
               onChange={(event) =>
                 (() => {
@@ -703,7 +682,7 @@ export default function EmployeeLifecycleData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Lifecycle Type
+            {i18nT("static.1cozql1")}{" "}
             <Dropdown
               value={form.lifecycle_type}
               options={["ONBOARDING", "EMPLOYMENT_CHANGE", "OFFBOARDING"]}
@@ -717,7 +696,7 @@ export default function EmployeeLifecycleData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Effective Date
+            {i18nT("static.dfnnk2")}{" "}
             <PrimeDatePicker
               value={form.effective_date}
               onValueChange={(value) =>
@@ -729,15 +708,14 @@ export default function EmployeeLifecycleData() {
             <section className="grid gap-4 rounded-lg border border-blue-100 bg-blue-50/50 p-4">
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Proposed Employment
+                  {i18nT("static.1tv99jr")}{" "}
                 </h2>
                 <p className="m-0 mt-1 text-sm text-slate-500">
-                  The current employment record remains unchanged until approval
-                  and every required checklist task is completed.
+                  {i18nT("static.130hlrk")}{" "}
                 </p>
                 {form.employee_id > 0 && isValidatingSelectedEmployment && (
                   <p className="m-0 mt-2 text-sm text-blue-700">
-                    Loading the employee&apos;s current employment data...
+                    {i18nT("static.m5xnue")}{" "}
                   </p>
                 )}
                 {form.employee_id > 0 &&
@@ -745,14 +723,15 @@ export default function EmployeeLifecycleData() {
                   !selectedEmployeeEmployment && (
                     <p className="m-0 mt-2 text-sm text-slate-600">
                       {selectedEmploymentError
-                        ? "Current employment data is not available. You may still save this lifecycle as a draft with empty employment data."
-                        : "This employee has no current employment record. The lifecycle can be saved as a draft with empty previous employment data; complete the proposed employment fields before submitting."}
+                        ? i18nT("static.b2lqgq")
+                        : i18nT("static.19ibo7o")}
                     </p>
                   )}
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Join Date <span className="text-red-500">*</span>
+                  {i18nT("static.136fqhb")}{" "}
+                  <span className="text-red-500">*</span>
                   <Calendar
                     value={toCalendarDate(employmentChange.join_date)}
                     appendTo={getBody}
@@ -769,12 +748,11 @@ export default function EmployeeLifecycleData() {
                     }
                   />
                   <small className="font-normal text-slate-500">
-                    The join date determines the employee&apos;s working period.
-                    Existing employees may correct it through approval.
+                    {i18nT("static.jzduoe")}{" "}
                   </small>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Employee Code
+                  {i18nT("static.ncb762")}{" "}
                   <InputText
                     value={employmentChange.code ?? ""}
                     onChange={(event) =>
@@ -786,7 +764,7 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Employment Status
+                  {i18nT("static.p2ngjv")}{" "}
                   <Dropdown
                     value={employmentChange.employment_status_id}
                     options={employmentStatuses.filter(
@@ -795,7 +773,7 @@ export default function EmployeeLifecycleData() {
                     optionLabel="name"
                     optionValue="id"
                     filter
-                    placeholder="Select employment status"
+                    placeholder={i18nT("static.loo409")}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -806,7 +784,7 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Department
+                  {i18nT("static.1430r53")}{" "}
                   <Dropdown
                     value={employmentChange.department_id}
                     options={departments.filter(
@@ -815,7 +793,7 @@ export default function EmployeeLifecycleData() {
                     optionLabel="name"
                     optionValue="id"
                     filter
-                    placeholder="Select department"
+                    placeholder={i18nT("static.sln621")}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -827,7 +805,7 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Position
+                  {i18nT("static.1quewx6")}{" "}
                   <Dropdown
                     value={employmentChange.position_id}
                     options={positionOptions.filter(
@@ -836,7 +814,7 @@ export default function EmployeeLifecycleData() {
                     optionLabel="name"
                     optionValue="id"
                     filter
-                    placeholder="Select position"
+                    placeholder={i18nT("static.1e100xw")}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -847,7 +825,7 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Agency
+                  {i18nT("static.1v3zejm")}{" "}
                   <Dropdown
                     value={employmentChange.agency_id}
                     options={agencies.filter(
@@ -857,7 +835,7 @@ export default function EmployeeLifecycleData() {
                     optionValue="id"
                     showClear
                     filter
-                    placeholder="Select agency"
+                    placeholder={i18nT("static.1aklnvk")}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -869,7 +847,7 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Branch
+                  {i18nT("static.19gzx45")}{" "}
                   <Dropdown
                     value={employmentChange.branch_id}
                     options={branchOptions.filter(
@@ -880,7 +858,7 @@ export default function EmployeeLifecycleData() {
                     showClear
                     filter
                     disabled={!employmentChange.agency_id}
-                    placeholder="Select branch"
+                    placeholder={i18nT("static.17q9myv")}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -891,7 +869,7 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Direct Supervisor
+                  {i18nT("static.1q1b9we")}{" "}
                   <Dropdown
                     value={employmentChange.supervisor_employee_id}
                     options={approvalEmployeeOptions.filter(
@@ -899,8 +877,8 @@ export default function EmployeeLifecycleData() {
                     )}
                     showClear
                     filter
-                    placeholder="Select supervisor"
-                    emptyMessage="No employee + approver account found"
+                    placeholder={i18nT("static.xhzk5d")}
+                    emptyMessage={i18nT("static.1j4mgrb")}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -912,8 +890,10 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Employment End Date{" "}
-                  <span className="font-normal text-slate-400">(optional)</span>
+                  {i18nT("static.t3xfbi")}{" "}
+                  <span className="font-normal text-slate-400">
+                    {i18nT("static.6pi6gi")}
+                  </span>
                   <Calendar
                     value={toCalendarDate(employmentChange.end_date)}
                     appendTo={getBody}
@@ -931,8 +911,10 @@ export default function EmployeeLifecycleData() {
                   />
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Probation End Date{" "}
-                  <span className="font-normal text-slate-400">(optional)</span>
+                  {i18nT("static.1ignfpe")}{" "}
+                  <span className="font-normal text-slate-400">
+                    {i18nT("static.6pi6gi")}
+                  </span>
                   <Calendar
                     value={toCalendarDate(employmentChange.probation_end_date)}
                     appendTo={getBody}
@@ -948,13 +930,14 @@ export default function EmployeeLifecycleData() {
                     }
                   />
                   <small className="font-normal text-slate-500">
-                    Optional. Leave blank when the employee did not undergo
-                    probation. Backdating is allowed for historical records.
+                    {i18nT("static.z1om5q")}{" "}
                   </small>
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Confirmation Date{" "}
-                  <span className="font-normal text-slate-400">(optional)</span>
+                  {i18nT("static.404n94")}{" "}
+                  <span className="font-normal text-slate-400">
+                    {i18nT("static.6pi6gi")}
+                  </span>
                   <Calendar
                     value={toCalendarDate(employmentChange.confirmation_date)}
                     appendTo={getBody}
@@ -970,14 +953,15 @@ export default function EmployeeLifecycleData() {
                     }
                   />
                   <small className="font-normal text-slate-500">
-                    Optional. Leave blank when the employee has no confirmation
-                    date. Backdating is allowed for historical records.
+                    {i18nT("static.16ota2k")}{" "}
                   </small>
                 </label>
               </div>
               <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Employment Notes{" "}
-                <span className="font-normal text-slate-400">(optional)</span>
+                {i18nT("static.qe13rq")}{" "}
+                <span className="font-normal text-slate-400">
+                  {i18nT("static.6pi6gi")}
+                </span>
                 <InputTextarea
                   value={employmentChange.notes ?? ""}
                   rows={3}
@@ -993,9 +977,9 @@ export default function EmployeeLifecycleData() {
             </section>
           )}
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Reason{" "}
+            {i18nT("static.i36sl5")}{" "}
             <span className="font-normal text-slate-400">
-              (required when Join Date changes)
+              {i18nT("static.l467u2")}{" "}
             </span>
             <InputTextarea
               value={form.reason ?? ""}
@@ -1011,8 +995,11 @@ export default function EmployeeLifecycleData() {
       <Dialog
         header={
           selected
-            ? `${selected.lifecycle_type.replace("_", " ")} - ${selected.employee_name}`
-            : "Lifecycle Detail"
+            ? i18nT("static.1t1akqf", {
+                p0: selected.lifecycle_type.replace("_", " "),
+                p1: selected.employee_name,
+              })
+            : i18nT("static.k0tscs")
         }
         visible={selected !== null}
         modal
@@ -1023,7 +1010,7 @@ export default function EmployeeLifecycleData() {
         footer={
           <div className="flex justify-end">
             <Button
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               text
               severity="secondary"
               onClick={() => setSelected(null)}
@@ -1034,11 +1021,13 @@ export default function EmployeeLifecycleData() {
         {detail.data ? (
           <div className="space-y-4">
             <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
-              Effective date:{" "}
+              {i18nT("static.iox8eg")}{" "}
               <span className="font-medium text-slate-800">
                 {formatDisplayDate(detail.data.case.effective_date)}
               </span>
-              <span className="ml-4 text-slate-500">Lifecycle owner: </span>
+              <span className="ml-4 text-slate-500">
+                {i18nT("static.y9d3wy")}{" "}
+              </span>
               <span className="font-medium text-slate-800">
                 {detail.data.case.requested_by_name}
               </span>
@@ -1057,9 +1046,9 @@ export default function EmployeeLifecycleData() {
                 header="#"
                 style={{ width: "4rem" }}
               />
-              <Column field="name" header="Checklist task" />
+              <Column field="name" header={i18nT("static.7u5nck")} />
               <Column
-                header="Owner Policy"
+                header={i18nT("static.q3tmuu")}
                 body={(row: EmployeeLifecycleDetail["tasks"][number]) =>
                   row.assignment_source === "ROLE"
                     ? `Role: ${row.assignment_role_code ?? row.owner_scope}`
@@ -1071,7 +1060,7 @@ export default function EmployeeLifecycleData() {
                 }
               />
               <Column
-                header="Assignee"
+                header={i18nT("static.brgbpm")}
                 body={(row: EmployeeLifecycleDetail["tasks"][number]) =>
                   employeeOptions.find(
                     (option) => option.value === row.assigned_employee_id,
@@ -1079,19 +1068,19 @@ export default function EmployeeLifecycleData() {
                 }
               />
               <Column
-                header="Due Date"
+                header={i18nT("static.vtfgln")}
                 body={(row: EmployeeLifecycleDetail["tasks"][number]) =>
                   formatDisplayDate(row.due_date, "—")
                 }
               />
               <Column
-                header="Required"
+                header={i18nT("static.mq0cow")}
                 body={(row: EmployeeLifecycleDetail["tasks"][number]) =>
                   row.is_required ? "Yes" : "No"
                 }
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row: EmployeeLifecycleDetail["tasks"][number]) => (
                   <Tag
                     value={row.status}
@@ -1103,11 +1092,11 @@ export default function EmployeeLifecycleData() {
               />
               {canUpdate && (
                 <Column
-                  header="Action"
+                  header={i18nT("static.2wk0tb")}
                   body={(row: EmployeeLifecycleDetail["tasks"][number]) => (
                     <div className="flex gap-1">
                       <Button
-                        label="Assign"
+                        label={i18nT("static.1f128rw")}
                         icon="pi pi-user-edit"
                         text
                         size="small"
@@ -1125,14 +1114,14 @@ export default function EmployeeLifecycleData() {
             </DataTable>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Loading detail...</p>
+          <p className="text-sm text-slate-500">{i18nT("static.ic10ii")}</p>
         )}
       </Dialog>
       <Dialog
         header={
           assignmentTask
-            ? `Assign Task - ${assignmentTask.name}`
-            : "Assign Checklist Task"
+            ? i18nT("static.52qwj2", { p0: assignmentTask.name })
+            : i18nT("static.763x61")
         }
         visible={assignmentTask !== null}
         modal
@@ -1145,26 +1134,26 @@ export default function EmployeeLifecycleData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               outlined
               disabled={saving}
               onClick={() => setAssignmentTask(null)}
             />
             <Button
-              label="Save Assignment"
+              label={i18nT("static.1mwuwmp")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving || detail.data?.case.status !== "DRAFT"}
               onClick={() => {
                 if (!assignmentTask) return;
                 requestActionConfirmation({
-                  action: "Save task assignment",
+                  action: i18nT("static.qix09q"),
                   target: assignmentTask.name,
                   severity: "info",
-                  confirmLabel: "Save Assignment",
+                  confirmLabel: i18nT("static.1mwuwmp"),
                   confirmIcon: "pi pi-check",
-                  description: "Update this task assignment?",
+                  description: i18nT("static.um5zmr"),
                   onAccept: async () => {
                     const isSaved = await assignTask(
                       assignmentTask.id,
@@ -1182,7 +1171,7 @@ export default function EmployeeLifecycleData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Task Owner
+            {i18nT("static.1tztaqr")}{" "}
             <Dropdown
               value={taskAssignment.assignedEmployeeId}
               options={assignmentOptions}
@@ -1190,11 +1179,11 @@ export default function EmployeeLifecycleData() {
               optionValue="value"
               filter
               showClear
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               emptyMessage={
                 assignmentTask?.assignment_source === "SUPERVISOR"
-                  ? "No employee + approver account found"
-                  : "No active employee found"
+                  ? i18nT("static.1j4mgrb")
+                  : i18nT("static.1digqk")
               }
               className="w-full"
               disabled={
@@ -1211,8 +1200,10 @@ export default function EmployeeLifecycleData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Due Date{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.vtfgln")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={taskAssignment.dueDate}
               className="w-full"
@@ -1223,8 +1214,7 @@ export default function EmployeeLifecycleData() {
             />
           </label>
           <p className="m-0 text-xs leading-5 text-slate-500">
-            The assigned employee receives a reminder up to three days before
-            the due date.
+            {i18nT("static.kjd6be")}{" "}
           </p>
         </div>
       </Dialog>

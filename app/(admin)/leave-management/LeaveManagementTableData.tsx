@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -83,6 +84,7 @@ const formatDateTime = (value?: string | null) => {
 };
 
 const LeaveManagementTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -148,10 +150,10 @@ const LeaveManagementTableData = () => {
     return Array.from(availableStatuses)
       .sort((first, second) => first.localeCompare(second))
       .map((status) => ({
-        label: formatStatusLabel(status),
+        label: i18nT(formatStatusLabel(status)),
         value: status,
       }));
-  }, [rows]);
+  }, [i18nT, rows]);
 
   const filteredData = useMemo(() => {
     if (hasInvalidDateRange) {
@@ -252,7 +254,7 @@ const LeaveManagementTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -263,7 +265,7 @@ const LeaveManagementTableData = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Validation",
+        summary: i18nT("static.gy1qqi"),
         detail: message,
       }),
     );
@@ -275,7 +277,7 @@ const LeaveManagementTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -288,7 +290,7 @@ const LeaveManagementTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -300,8 +302,8 @@ const LeaveManagementTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -345,7 +347,7 @@ const LeaveManagementTableData = () => {
 
       await refreshLeaveManagementData();
 
-      showSuccess(response.message || "Leave request approved successfully.");
+      showSuccess(response.message || i18nT("static.1amfu6l"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -356,25 +358,25 @@ const LeaveManagementTableData = () => {
 
   const onClickApprove = (row: LeaveManagementRow) => {
     requestActionConfirmation({
-      header: "Approve Leave Request",
+      header: i18nT("static.vpxz54"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            Approve this leave request manually?
-          </span>
+          <span className="text-slate-600">{i18nT("static.aeani2")} </span>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-sm font-semibold text-slate-800">
-              {row.employee_name || "Unknown employee"}
+              {row.employee_name || i18nT("static.1drwniz")}
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              {row.request_no || "No request number"} ·{" "}
-              {row.leave_name || "Unknown leave type"}
+              {row.request_no || i18nT("static.ngaclg")}{" "}
+              {i18nT("static.19xoda3")}{" "}
+              {row.leave_name || i18nT("static.15uhn5m")}
             </p>
 
             <p className="m-0 mt-1 text-xs text-slate-500">
-              {formatDate(row.start_date)} – {formatDate(row.end_date)}
+              {formatDate(row.start_date)} {i18nT("static.hnl64v")}{" "}
+              {formatDate(row.end_date)}
             </p>
           </div>
         </div>
@@ -389,7 +391,7 @@ const LeaveManagementTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -398,7 +400,7 @@ const LeaveManagementTableData = () => {
 
           <Button
             type="button"
-            label="Approve"
+            label={i18nT("static.1s2ov2y")}
             icon="pi pi-check"
             severity="success"
             onClick={options.accept}
@@ -424,15 +426,13 @@ const LeaveManagementTableData = () => {
     const cleanNote = rejectNote.trim();
 
     if (!cleanNote) {
-      showWarning("Rejection reason is required.");
+      showWarning(i18nT("static.hvpt41"));
 
       return;
     }
 
     if (cleanNote.length > MAX_REJECTION_NOTE_LENGTH) {
-      showWarning(
-        `Rejection reason cannot exceed ${MAX_REJECTION_NOTE_LENGTH} characters.`,
-      );
+      showWarning(i18nT("static.14is6ph", { p0: MAX_REJECTION_NOTE_LENGTH }));
 
       return;
     }
@@ -455,7 +455,7 @@ const LeaveManagementTableData = () => {
       setSelectedData(null);
       setRejectNote("");
 
-      showSuccess(response.message || "Leave request rejected successfully.");
+      showSuccess(response.message || i18nT("static.10zcc5w"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -470,7 +470,7 @@ const LeaveManagementTableData = () => {
     if (status === "APPROVED") {
       return (
         <Tag
-          value="Approved"
+          value={i18nT("static.1j3qly2")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -481,7 +481,7 @@ const LeaveManagementTableData = () => {
     if (status === "REJECTED") {
       return (
         <Tag
-          value="Rejected"
+          value={i18nT("static.1uofzaf")}
           severity="danger"
           icon="pi pi-times-circle"
           rounded
@@ -491,13 +491,18 @@ const LeaveManagementTableData = () => {
 
     if (status === "CANCELLED") {
       return (
-        <Tag value="Cancelled" severity="secondary" icon="pi pi-ban" rounded />
+        <Tag
+          value={i18nT("static.1a3t1vg")}
+          severity="secondary"
+          icon="pi pi-ban"
+          rounded
+        />
       );
     }
 
     return (
       <Tag
-        value={formatStatusLabel(status || "PENDING")}
+        value={i18nT(formatStatusLabel(status || "PENDING"))}
         severity="warning"
         icon="pi pi-clock"
         rounded
@@ -509,11 +514,11 @@ const LeaveManagementTableData = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="truncate text-sm font-medium text-slate-800">
-          {row.employee_name || "Unknown employee"}
+          {row.employee_name || i18nT("static.1drwniz")}
         </span>
 
         <span className="font-mono text-xs text-slate-500">
-          {row.employee_code || "No employee code"}
+          {row.employee_code || i18nT("static.1t8ynib")}
         </span>
       </div>
     );
@@ -527,7 +532,7 @@ const LeaveManagementTableData = () => {
         </span>
 
         <span className="text-xs text-slate-500">
-          Submitted {formatDateTime(row.submitted_at)}
+          {i18nT("static.12at4de")} {formatDateTime(row.submitted_at)}
         </span>
       </div>
     );
@@ -537,12 +542,13 @@ const LeaveManagementTableData = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="whitespace-nowrap text-sm font-medium text-slate-700">
-          {formatDate(row.start_date)} – {formatDate(row.end_date)}
+          {formatDate(row.start_date)} {i18nT("static.hnl64v")}{" "}
+          {formatDate(row.end_date)}
         </span>
 
         <span className="text-xs text-slate-500">
-          {Number(row.total_days ?? 0)} day
-          {Number(row.total_days ?? 0) === 1 ? "" : "s"}
+          {Number(row.total_days ?? 0)} {i18nT("static.1rciku5")}{" "}
+          {Number(row.total_days ?? 0) === 1 ? "" : i18nT("static.1w9pcoy")}
         </span>
       </div>
     );
@@ -552,12 +558,17 @@ const LeaveManagementTableData = () => {
     const count = Number(row.attachment_count ?? 0);
 
     if (count <= 0) {
-      return <span className="text-sm text-slate-400">None</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.deku7v")}</span>
+      );
     }
 
     return (
       <Tag
-        value={`${count} file${count === 1 ? "" : "s"}`}
+        value={i18nT("static.kh1thg", {
+          p0: count,
+          p1: count === 1 ? "" : i18nT("static.1w9pcoy"),
+        })}
         severity="info"
         icon="pi pi-paperclip"
         rounded
@@ -624,7 +635,9 @@ const LeaveManagementTableData = () => {
       !row.submitted_at ||
       (!canApprove && !canReject)
     ) {
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     }
 
     return (
@@ -639,7 +652,7 @@ const LeaveManagementTableData = () => {
             severity="success"
             loading={isCurrentRowProcessing && processingAction === "approve"}
             disabled={isActionRunning}
-            tooltip="Approve"
+            tooltip={i18nT("static.1s2ov2y")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -658,7 +671,7 @@ const LeaveManagementTableData = () => {
             severity="danger"
             loading={isCurrentRowProcessing && processingAction === "reject"}
             disabled={isActionRunning}
-            tooltip="Reject"
+            tooltip={i18nT("static.1kej36u")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -705,19 +718,18 @@ const LeaveManagementTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Leave Management
+                  {i18nT("static.51exaz")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review employee leave requests. Requests with an approval
-                  workflow are processed from Approval Inbox.
+                  {i18nT("static.d80wo2")}{" "}
                 </p>
               </div>
             </div>
 
             <Button
               type="button"
-              label="Refresh"
+              label={i18nT("static.28r6qc")}
               icon="pi pi-refresh"
               severity="secondary"
               outlined
@@ -732,19 +744,23 @@ const LeaveManagementTableData = () => {
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-500">Filtered Requests</p>
+              <p className="m-0 text-xs text-slate-500">
+                {i18nT("static.j9j9tg")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summaryStats.total}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-400">
-                {rows.length} total records
+                {rows.length} {i18nT("static.tmqg87")}{" "}
               </p>
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="m-0 text-xs text-amber-700">Pending</p>
+              <p className="m-0 text-xs text-amber-700">
+                {i18nT("static.e8nfto")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
                 {summaryStats.pending}
@@ -752,7 +768,9 @@ const LeaveManagementTableData = () => {
             </div>
 
             <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-              <p className="m-0 text-xs text-green-700">Approved</p>
+              <p className="m-0 text-xs text-green-700">
+                {i18nT("static.1j3qly2")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
                 {summaryStats.approved}
@@ -760,7 +778,9 @@ const LeaveManagementTableData = () => {
             </div>
 
             <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="m-0 text-xs text-red-700">Rejected</p>
+              <p className="m-0 text-xs text-red-700">
+                {i18nT("static.1uofzaf")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
                 {summaryStats.rejected}
@@ -768,7 +788,9 @@ const LeaveManagementTableData = () => {
             </div>
 
             <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-1">
-              <p className="m-0 text-xs text-slate-600">Cancelled</p>
+              <p className="m-0 text-xs text-slate-600">
+                {i18nT("static.1a3t1vg")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summaryStats.cancelled}
@@ -780,12 +802,11 @@ const LeaveManagementTableData = () => {
           <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Leave Request Filter
+                {i18nT("static.1ctj519")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                The date filter shows leave requests whose periods overlap the
-                selected range.
+                {i18nT("static.11ksx8b")}{" "}
               </p>
             </div>
 
@@ -795,7 +816,7 @@ const LeaveManagementTableData = () => {
 
                 <InputText
                   value={keyword}
-                  placeholder="Search request, employee, leave type, or reason"
+                  placeholder={i18nT("static.19ijljc")}
                   className="w-full"
                   onChange={(event: ChangeEvent<HTMLInputElement>) =>
                     setKeyword(event.target.value)
@@ -807,7 +828,7 @@ const LeaveManagementTableData = () => {
                 appendTo={getBody}
                 value={statusFilter}
                 options={statusOptions}
-                placeholder="All Statuses"
+                placeholder={i18nT("static.18zxnji")}
                 showClear
                 className="w-full"
                 onChange={(event) => setStatusFilter(event.value ?? null)}
@@ -818,7 +839,7 @@ const LeaveManagementTableData = () => {
                 value={dateFrom}
                 dateFormat="dd MM yy"
                 showIcon
-                placeholder="Leave From"
+                placeholder={i18nT("static.mqlz3k")}
                 className="w-full"
                 onChange={(event) =>
                   setDateFrom((event.value as Date | null) ?? null)
@@ -830,7 +851,7 @@ const LeaveManagementTableData = () => {
                 value={dateTo}
                 dateFormat="dd MM yy"
                 showIcon
-                placeholder="Leave To"
+                placeholder={i18nT("static.ccbt")}
                 className="w-full"
                 onChange={(event) =>
                   setDateTo((event.value as Date | null) ?? null)
@@ -842,19 +863,19 @@ const LeaveManagementTableData = () => {
               <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <i className="pi pi-exclamation-circle mt-0.5" />
 
-                <span>Leave From cannot be later than Leave To.</span>
+                <span>{i18nT("static.6ujd33")}</span>
               </div>
             )}
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs text-slate-500">
-                {filteredData.length} matching request
-                {filteredData.length === 1 ? "" : "s"}
+                {filteredData.length} {i18nT("static.giuo2r")}{" "}
+                {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}
               </span>
 
               <Button
                 type="button"
-                label="Reset Filters"
+                label={i18nT("static.1ljj5w3")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -885,8 +906,8 @@ const LeaveManagementTableData = () => {
               tableStyle={{
                 minWidth: "112rem",
               }}
-              emptyMessage="No leave request data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.7u08u")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -902,7 +923,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="request_no"
-                header="Request"
+                header={i18nT("static.1058hua")}
                 sortable
                 body={requestBody}
                 style={{
@@ -912,7 +933,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="employee_name"
-                header="Employee"
+                header={i18nT("static.1fak8xt")}
                 sortable
                 body={employeeBody}
                 style={{
@@ -922,7 +943,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="leave_name"
-                header="Leave Type"
+                header={i18nT("static.se3juw")}
                 sortable
                 style={{
                   minWidth: "14rem",
@@ -936,7 +957,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="start_date"
-                header="Leave Period"
+                header={i18nT("static.1qllmox")}
                 sortable
                 body={leavePeriodBody}
                 style={{
@@ -946,7 +967,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="attachment_count"
-                header="Attachments"
+                header={i18nT("static.8925gh")}
                 body={attachmentBody}
                 style={{
                   minWidth: "11rem",
@@ -955,7 +976,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="status"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusBody}
                 style={{
@@ -965,7 +986,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="reason"
-                header="Reason"
+                header={i18nT("static.i36sl5")}
                 body={reasonBody}
                 style={{
                   minWidth: "20rem",
@@ -974,7 +995,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="rejection_reason"
-                header="Rejection Reason"
+                header={i18nT("static.1ib4ur8")}
                 body={rejectionReasonBody}
                 style={{
                   minWidth: "22rem",
@@ -983,7 +1004,7 @@ const LeaveManagementTableData = () => {
 
               <Column
                 field="approved_by_name"
-                header="Approval"
+                header={i18nT("static.17ztw7a")}
                 body={approvalBody}
                 style={{
                   minWidth: "17rem",
@@ -991,7 +1012,7 @@ const LeaveManagementTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionBody}
                 frozen
                 alignFrozen="right"
@@ -1014,7 +1035,7 @@ const LeaveManagementTableData = () => {
 
       {/* Reject Dialog */}
       <Dialog
-        header="Reject Leave Request"
+        header={i18nT("static.1g09590")}
         visible={rejectDialogVisible}
         style={{
           width: "95vw",
@@ -1033,7 +1054,7 @@ const LeaveManagementTableData = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -1044,7 +1065,7 @@ const LeaveManagementTableData = () => {
 
             <Button
               type="button"
-              label="Reject Request"
+              label={i18nT("static.1khp33z")}
               icon="pi pi-times-circle"
               severity="danger"
               loading={processingAction === "reject"}
@@ -1061,16 +1082,17 @@ const LeaveManagementTableData = () => {
           {selectedData && (
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="m-0 text-sm font-semibold text-slate-800">
-                {selectedData.employee_name || "Unknown employee"}
+                {selectedData.employee_name || i18nT("static.1drwniz")}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                {selectedData.request_no || "No request number"} ·{" "}
-                {selectedData.leave_name || "Unknown leave type"}
+                {selectedData.request_no || i18nT("static.ngaclg")}{" "}
+                {i18nT("static.19xoda3")}{" "}
+                {selectedData.leave_name || i18nT("static.15uhn5m")}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                {formatDate(selectedData.start_date)} –{" "}
+                {formatDate(selectedData.start_date)} {i18nT("static.hnl64v")}{" "}
                 {formatDate(selectedData.end_date)}
               </p>
             </div>
@@ -1081,7 +1103,7 @@ const LeaveManagementTableData = () => {
               htmlFor="rejectNote"
               className="text-sm font-medium text-slate-700"
             >
-              Rejection Reason
+              {i18nT("static.1ib4ur8")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -1092,7 +1114,7 @@ const LeaveManagementTableData = () => {
               autoResize
               maxLength={MAX_REJECTION_NOTE_LENGTH}
               disabled={processingAction === "reject"}
-              placeholder="Explain why this leave request is rejected"
+              placeholder={i18nT("static.1l2r2qq")}
               className={`w-full ${
                 !rejectNote.trim()
                   ? ""
@@ -1105,7 +1127,7 @@ const LeaveManagementTableData = () => {
 
             <div className="flex items-start justify-between gap-3">
               <small className="text-slate-500">
-                This reason will be stored and shown to the employee.
+                {i18nT("static.1nsrprn")}{" "}
               </small>
 
               <small

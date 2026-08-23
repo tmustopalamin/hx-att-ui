@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -80,9 +81,10 @@ function Section({
   );
 }
 function NoAccess() {
+  const { t: i18nT } = useI18n();
   return (
     <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-      You do not have permission to view this employee record.
+      {i18nT("static.jgf376")}{" "}
     </p>
   );
 }
@@ -93,19 +95,20 @@ function Documents({
   data: EmployeeDocument[] | null | undefined;
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   if (data === null)
     return (
       <Section
-        title="Documents"
-        description="Employee document and verification record."
+        title={i18nT("static.oz47lx")}
+        description={i18nT("static.1u0roaf")}
       >
         <NoAccess />
       </Section>
     );
   return (
     <Section
-      title="Documents"
-      description="Employee document and verification record."
+      title={i18nT("static.oz47lx")}
+      description={i18nT("static.1u0roaf")}
     >
       <DataTable
         value={data ?? []}
@@ -118,23 +121,23 @@ function Documents({
         paginator
         rows={10}
         tableStyle={{ minWidth: "44rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No employee document is available."
+        emptyMessage={i18nT("static.e5o444")}
       >
-        <Column field="document_type_name" header="Document Type" />
+        <Column field="document_type_name" header={i18nT("static.1lemy44")} />
         <Column
           field="document_name"
-          header="Name"
+          header={i18nT("static.4el6o6")}
           body={(row: EmployeeDocument) => row.document_name ?? "-"}
         />
         <Column
           field="expired_date"
-          header="Expiry"
+          header={i18nT("static.r38mzi")}
           body={(row: EmployeeDocument) => formatDisplayDate(row.expired_date)}
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: EmployeeDocument) => (
             <Tag
               value={row.verification_status}
@@ -153,14 +156,21 @@ function Assets({
   data: AssetAssignment[] | null | undefined;
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   if (data === null)
     return (
-      <Section title="Assets" description="Assets assigned to this employee.">
+      <Section
+        title={i18nT("static.1shidso")}
+        description={i18nT("static.1qtfvq9")}
+      >
         <NoAccess />
       </Section>
     );
   return (
-    <Section title="Assets" description="Assets assigned to this employee.">
+    <Section
+      title={i18nT("static.1shidso")}
+      description={i18nT("static.1qtfvq9")}
+    >
       <DataTable
         value={data ?? []}
         loading={loading}
@@ -172,26 +182,26 @@ function Assets({
         paginator
         rows={10}
         tableStyle={{ minWidth: "44rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No asset assignment is available."
+        emptyMessage={i18nT("static.1xj446k")}
       >
-        <Column field="asset_tag" header="Asset Tag" />
-        <Column field="asset_name" header="Asset" />
+        <Column field="asset_tag" header={i18nT("static.1h07jp3")} />
+        <Column field="asset_name" header={i18nT("static.108qnnf")} />
         <Column
           field="assigned_at"
-          header="Assigned"
+          header={i18nT("static.c1fxel")}
           body={(row: AssetAssignment) => formatDisplayDate(row.assigned_at)}
         />
         <Column
           field="due_return_date"
-          header="Due Return"
+          header={i18nT("static.hsnk6l")}
           body={(row: AssetAssignment) =>
             formatDisplayDate(row.due_return_date)
           }
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: AssetAssignment) => (
             <Tag value={row.status} severity={tagSeverity(row.status)} />
           )}
@@ -207,19 +217,20 @@ function Lifecycle({
   data: EmployeeLifecycleCase[] | null | undefined;
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   if (data === null)
     return (
       <Section
-        title="Lifecycle"
-        description="Onboarding, employment change, and offboarding history."
+        title={i18nT("static.1nvorn3")}
+        description={i18nT("static.177pkxs")}
       >
         <NoAccess />
       </Section>
     );
   return (
     <Section
-      title="Lifecycle"
-      description="Onboarding, employment change, and offboarding history."
+      title={i18nT("static.1nvorn3")}
+      description={i18nT("static.177pkxs")}
     >
       <DataTable
         value={data ?? []}
@@ -232,25 +243,25 @@ function Lifecycle({
         paginator
         rows={10}
         tableStyle={{ minWidth: "44rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No lifecycle case is available."
+        emptyMessage={i18nT("static.z019l")}
       >
-        <Column field="lifecycle_type" header="Type" />
+        <Column field="lifecycle_type" header={i18nT("static.1m2zofh")} />
         <Column
           field="effective_date"
-          header="Effective Date"
+          header={i18nT("static.dfnnk2")}
           body={(row: EmployeeLifecycleCase) =>
             formatDisplayDate(row.effective_date)
           }
         />
         <Column
           field="reason"
-          header="Reason"
+          header={i18nT("static.i36sl5")}
           body={(row: EmployeeLifecycleCase) => row.reason ?? "-"}
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: EmployeeLifecycleCase) => (
             <Tag value={row.status} severity={tagSeverity(row.status)} />
           )}
@@ -266,19 +277,20 @@ function Performance({
   data: PerformanceReview[] | null | undefined;
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   if (data === null)
     return (
       <Section
-        title="Performance"
-        description="Performance review and KPI history."
+        title={i18nT("static.13rkbwl")}
+        description={i18nT("static.zixyru")}
       >
         <NoAccess />
       </Section>
     );
   return (
     <Section
-      title="Performance"
-      description="Performance review and KPI history."
+      title={i18nT("static.13rkbwl")}
+      description={i18nT("static.zixyru")}
     >
       <DataTable
         value={data ?? []}
@@ -291,20 +303,20 @@ function Performance({
         paginator
         rows={10}
         tableStyle={{ minWidth: "48rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No performance review is available."
+        emptyMessage={i18nT("static.1ag6263")}
       >
-        <Column field="cycle_name" header="Cycle" />
-        <Column field="reviewer_name" header="Reviewer" />
-        <Column field="review_type" header="Type" />
+        <Column field="cycle_name" header={i18nT("static.j0bn2p")} />
+        <Column field="reviewer_name" header={i18nT("static.oz4j0a")} />
+        <Column field="review_type" header={i18nT("static.1m2zofh")} />
         <Column
           field="overall_score"
-          header="Score"
+          header={i18nT("static.x9tsfp")}
           body={(row: PerformanceReview) => row.overall_score ?? "-"}
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: PerformanceReview) => (
             <Tag value={row.status} severity={tagSeverity(row.status)} />
           )}
@@ -322,19 +334,20 @@ function Learning({
   certifications: EmployeeCertification[] | null | undefined;
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   if (enrollments === null || certifications === null)
     return (
       <Section
-        title="Learning & Certification"
-        description="Training enrollment and certification history."
+        title={i18nT("static.16f81rf")}
+        description={i18nT("static.155owss")}
       >
         <NoAccess />
       </Section>
     );
   return (
     <Section
-      title="Learning & Certification"
-      description="Training enrollment and certification history."
+      title={i18nT("static.16f81rf")}
+      description={i18nT("static.155owss")}
     >
       <DataTable
         value={enrollments ?? []}
@@ -347,33 +360,33 @@ function Learning({
         paginator
         rows={10}
         tableStyle={{ minWidth: "44rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No training enrollment is available."
+        emptyMessage={i18nT("static.1qa7ib")}
       >
-        <Column field="course_name" header="Course" />
-        <Column field="session_code" header="Session" />
+        <Column field="course_name" header={i18nT("static.1yoky9k")} />
+        <Column field="session_code" header={i18nT("static.8yh9jr")} />
         <Column
           field="completion_date"
-          header="Completed"
+          header={i18nT("static.1tmo59u")}
           body={(row: TrainingEnrollment) =>
             formatDisplayDate(row.completion_date)
           }
         />
         <Column
           field="score"
-          header="Score"
+          header={i18nT("static.x9tsfp")}
           body={(row: TrainingEnrollment) => row.score ?? "-"}
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: TrainingEnrollment) => (
             <Tag value={row.status} severity={tagSeverity(row.status)} />
           )}
         />
       </DataTable>
       <h2 className="m-0 text-base font-semibold text-slate-800">
-        Certifications
+        {i18nT("static.fhktvu")}{" "}
       </h2>
       <DataTable
         value={certifications ?? []}
@@ -384,23 +397,23 @@ function Learning({
         responsiveLayout="scroll"
         size="small"
         tableStyle={{ minWidth: "44rem" }}
-        emptyMessage="No certification is available."
+        emptyMessage={i18nT("static.aaj8an")}
       >
-        <Column field="certification_name" header="Certification" />
+        <Column field="certification_name" header={i18nT("static.fkzzr1")} />
         <Column
           field="issuing_organization"
-          header="Issuer"
+          header={i18nT("static.1h4z3km")}
           body={(row: EmployeeCertification) => row.issuing_organization ?? "-"}
         />
         <Column
           field="expiry_date"
-          header="Expiry"
+          header={i18nT("static.r38mzi")}
           body={(row: EmployeeCertification) =>
             formatDisplayDate(row.expiry_date)
           }
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: EmployeeCertification) => (
             <Tag value={row.status} severity={tagSeverity(row.status)} />
           )}

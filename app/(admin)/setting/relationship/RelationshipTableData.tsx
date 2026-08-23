@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -59,6 +60,7 @@ const EMPTY_RELATIONSHIP: Relationship = {
 const getBody = () => document.body;
 
 const RelationshipTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -106,7 +108,7 @@ const RelationshipTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -118,7 +120,7 @@ const RelationshipTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -131,7 +133,7 @@ const RelationshipTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -143,8 +145,8 @@ const RelationshipTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -298,12 +300,10 @@ const RelationshipTableData = () => {
 
   const onClickDelete = (data: Relationship) => {
     requestActionConfirmation({
-      header: "Delete Relationship",
+      header: i18nT("static.1gpryi4"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this relationship?
-          </span>
+          <span className="text-slate-600">{i18nT("static.kb9soh")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -316,7 +316,7 @@ const RelationshipTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -325,7 +325,7 @@ const RelationshipTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -337,12 +337,10 @@ const RelationshipTableData = () => {
 
   const onClickRestore = (data: Relationship) => {
     requestActionConfirmation({
-      header: "Restore Relationship",
+      header: i18nT("static.jvf5k1"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this relationship?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1uwzbtg")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -355,7 +353,7 @@ const RelationshipTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -364,7 +362,7 @@ const RelationshipTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -376,12 +374,10 @@ const RelationshipTableData = () => {
 
   const onClickPurge = (data: Relationship) => {
     requestActionConfirmation({
-      header: "Delete Relationship Permanently",
+      header: i18nT("static.1oeie8x"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -394,7 +390,7 @@ const RelationshipTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -403,7 +399,7 @@ const RelationshipTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -416,14 +412,19 @@ const RelationshipTableData = () => {
   const statusColumnBody = (rowData: Relationship) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -433,7 +434,7 @@ const RelationshipTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -448,7 +449,11 @@ const RelationshipTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -461,7 +466,7 @@ const RelationshipTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -478,7 +483,7 @@ const RelationshipTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -499,7 +504,7 @@ const RelationshipTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -514,7 +519,7 @@ const RelationshipTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -529,7 +534,7 @@ const RelationshipTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -541,7 +546,7 @@ const RelationshipTableData = () => {
       <Button
         type="submit"
         form="relationship-form"
-        label={isAddNew ? "Create Relationship" : "Save Changes"}
+        label={isAddNew ? i18nT("static.gjrb65") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -571,11 +576,11 @@ const RelationshipTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Relationship
+                  {i18nT("static.7fp6jf")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage relationship codes, names, and active status.
+                  {i18nT("static.1ooe9n")}{" "}
                 </p>
               </div>
             </div>
@@ -583,7 +588,7 @@ const RelationshipTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -596,7 +601,7 @@ const RelationshipTableData = () => {
 
               <Button
                 type="button"
-                label="New Relationship"
+                label={i18nT("static.4z19cx")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -621,7 +626,7 @@ const RelationshipTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -632,7 +637,7 @@ const RelationshipTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code or relationship name"
+                placeholder={i18nT("static.1sni3by")}
                 className="w-full"
               />
             </IconField>
@@ -658,8 +663,8 @@ const RelationshipTableData = () => {
               tableStyle={{
                 minWidth: "48rem",
               }}
-              emptyMessage="No relationship data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.w9hw02")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -675,7 +680,7 @@ const RelationshipTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -689,7 +694,7 @@ const RelationshipTableData = () => {
 
               <Column
                 field="name"
-                header="Relationship Name"
+                header={i18nT("static.hvywvu")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -703,7 +708,7 @@ const RelationshipTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -712,7 +717,7 @@ const RelationshipTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -767,7 +772,7 @@ const RelationshipTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Relationship Code
+              {i18nT("static.ip20w8")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -775,7 +780,7 @@ const RelationshipTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Relationship code is required.",
+                required: i18nT("static.17sth6d"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) ||
@@ -783,7 +788,7 @@ const RelationshipTableData = () => {
                 },
                 maxLength: {
                   value: 50,
-                  message: "Relationship code cannot exceed 50 characters.",
+                  message: i18nT("static.1z08efc"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -792,7 +797,7 @@ const RelationshipTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: SPOUSE"
+                    placeholder={i18nT("static.1sj1mng")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -804,7 +809,7 @@ const RelationshipTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique relationship code.
+                      {i18nT("static.m47hzu")}{" "}
                     </small>
                   )}
                 </>
@@ -817,7 +822,7 @@ const RelationshipTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Relationship Name
+              {i18nT("static.hvywvu")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -825,10 +830,10 @@ const RelationshipTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Relationship name is required.",
+                required: i18nT("static.de17g3"),
                 maxLength: {
                   value: 50,
-                  message: "Relationship name cannot exceed 50 characters.",
+                  message: i18nT("static.6yl0ci"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -837,7 +842,7 @@ const RelationshipTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Spouse"
+                    placeholder={i18nT("static.1gb6j0")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -865,12 +870,11 @@ const RelationshipTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive relationships remain stored but should not be
-                      available for new family or emergency contact records.
+                      {i18nT("static.13pqfbm")}{" "}
                     </p>
                   </div>
 

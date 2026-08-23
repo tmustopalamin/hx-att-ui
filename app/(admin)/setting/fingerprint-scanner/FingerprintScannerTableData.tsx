@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -59,46 +60,46 @@ type ProcessingAction = "delete" | "restore" | "purge" | null;
 
 const SYNC_INTERVAL_OPTIONS = [
   {
-    label: "Every 1 minute",
+    labelKey: "Every 1 minute",
     value: 1,
   },
   {
-    label: "Every 2 minutes",
+    labelKey: "Every 2 minutes",
     value: 2,
   },
   {
-    label: "Every 5 minutes",
+    labelKey: "Every 5 minutes",
     value: 5,
   },
   {
-    label: "Every 10 minutes",
+    labelKey: "Every 10 minutes",
     value: 10,
   },
   {
-    label: "Every 15 minutes",
+    labelKey: "Every 15 minutes",
     value: 15,
   },
   {
-    label: "Every 30 minutes",
+    labelKey: "Every 30 minutes",
     value: 30,
   },
   {
-    label: "Every 60 minutes",
+    labelKey: "Every 60 minutes",
     value: 60,
   },
 ];
 
 const TIMEZONE_OPTIONS = [
   {
-    label: "WIB (UTC+07:00)",
+    labelKey: "WIB (UTC+07:00)",
     value: 420,
   },
   {
-    label: "WITA (UTC+08:00)",
+    labelKey: "WITA (UTC+08:00)",
     value: 480,
   },
   {
-    label: "WIT (UTC+09:00)",
+    labelKey: "WIT (UTC+09:00)",
     value: 540,
   },
 ];
@@ -221,6 +222,7 @@ const getSyncLabel = (status?: string | null) => {
 };
 
 const FingerprintScannerTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const archivedAccess = useArchivedDataAccess("master-data");
@@ -343,7 +345,7 @@ const FingerprintScannerTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -355,7 +357,7 @@ const FingerprintScannerTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -368,7 +370,7 @@ const FingerprintScannerTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -380,8 +382,8 @@ const FingerprintScannerTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -479,9 +481,7 @@ const FingerprintScannerTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(
-        response.message || "Fingerprint scanner created successfully.",
-      );
+      showSuccess(response.message || i18nT("static.frav8o"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -515,9 +515,7 @@ const FingerprintScannerTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(
-        response.message || "Fingerprint scanner updated successfully.",
-      );
+      showSuccess(response.message || i18nT("static.kp5ktz"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -535,9 +533,7 @@ const FingerprintScannerTableData = () => {
 
       await refreshFingerprintScannerData();
 
-      showSuccess(
-        response.message || "Fingerprint scanner deleted successfully.",
-      );
+      showSuccess(response.message || i18nT("static.z8eerp"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -556,9 +552,7 @@ const FingerprintScannerTableData = () => {
 
       await refreshFingerprintScannerData();
 
-      showSuccess(
-        response.message || "Fingerprint scanner restored successfully.",
-      );
+      showSuccess(response.message || i18nT("static.12uixgo"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -577,9 +571,7 @@ const FingerprintScannerTableData = () => {
 
       await refreshFingerprintScannerData();
 
-      showSuccess(
-        response.message || "Fingerprint scanner permanently deleted.",
-      );
+      showSuccess(response.message || i18nT("static.1gp0ms5"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -595,9 +587,7 @@ const FingerprintScannerTableData = () => {
       const response: ResponseType<ResponseTypeCreateSuccess> =
         await checkConnectionFingerprintScanner(data);
 
-      showSuccess(
-        response.message || "Fingerprint scanner connection is available.",
-      );
+      showSuccess(response.message || i18nT("static.1wzp83o"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -622,9 +612,11 @@ const FingerprintScannerTableData = () => {
           visible: true,
           severity: "info",
           summary: response.data.deduplicated
-            ? "Sync Already Queued"
-            : "Sync Queued",
-          detail: `${response.message || "Attendance log synchronization was queued."} For details, go to Settings → Background Jobs.`,
+            ? i18nT("static.12rl6qf")
+            : i18nT("static.iag0jr"),
+          detail: i18nT("static.1yt8vgf", {
+            p0: response.message || i18nT("static.12wly34"),
+          }),
         }),
       );
     } catch (err: unknown) {
@@ -647,10 +639,7 @@ const FingerprintScannerTableData = () => {
       setUserListSearchValue("");
       setUserListDialog(true);
 
-      showSuccess(
-        response.message ||
-          "Fingerprint scanner user list loaded successfully.",
-      );
+      showSuccess(response.message || i18nT("static.11u9tqw"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -673,12 +662,10 @@ const FingerprintScannerTableData = () => {
 
   const onClickDelete = (data: FingerprintScanner) => {
     requestActionConfirmation({
-      header: "Delete Fingerprint Scanner",
+      header: i18nT("static.udy2sg"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this fingerprint scanner?
-          </span>
+          <span className="text-slate-600">{i18nT("static.de4dmt")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
 
@@ -697,7 +684,7 @@ const FingerprintScannerTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -706,7 +693,7 @@ const FingerprintScannerTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -718,12 +705,10 @@ const FingerprintScannerTableData = () => {
 
   const onClickRestore = (data: FingerprintScanner) => {
     requestActionConfirmation({
-      header: "Restore Fingerprint Scanner",
+      header: i18nT("static.1y43o27"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this fingerprint scanner?
-          </span>
+          <span className="text-slate-600">{i18nT("static.nnox5u")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -738,7 +723,7 @@ const FingerprintScannerTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -747,7 +732,7 @@ const FingerprintScannerTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -759,12 +744,10 @@ const FingerprintScannerTableData = () => {
 
   const onClickPurge = (data: FingerprintScanner) => {
     requestActionConfirmation({
-      header: "Delete Fingerprint Scanner Permanently",
+      header: i18nT("static.nr9qb1"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
 
@@ -783,7 +766,7 @@ const FingerprintScannerTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -792,7 +775,7 @@ const FingerprintScannerTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -804,12 +787,10 @@ const FingerprintScannerTableData = () => {
 
   const onClickSyncScanner = (data: FingerprintScanner) => {
     requestActionConfirmation({
-      header: "Sync Fingerprint Scanner",
+      header: i18nT("static.561ofk"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Pull attendance logs from this fingerprint scanner now?
-          </span>
+          <span className="text-slate-600">{i18nT("static.uuwts7")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
 
@@ -828,7 +809,7 @@ const FingerprintScannerTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -837,7 +818,7 @@ const FingerprintScannerTableData = () => {
 
           <Button
             type="button"
-            label="Start Sync"
+            label={i18nT("static.1wcvyci")}
             icon="pi pi-sync"
             severity="success"
             onClick={options.accept}
@@ -850,14 +831,19 @@ const FingerprintScannerTableData = () => {
   const deviceStatusBodyTemplate = (rowData: FingerprintScanner) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -867,7 +853,7 @@ const FingerprintScannerTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -877,7 +863,9 @@ const FingerprintScannerTableData = () => {
 
   const credentialStatusBodyTemplate = (rowData: FingerprintScanner) => (
     <Tag
-      value={rowData.has_password ? "Configured" : "Missing"}
+      value={
+        rowData.has_password ? i18nT("static.14qo36l") : i18nT("static.h34asn")
+      }
       severity={rowData.has_password ? "success" : "danger"}
       icon={rowData.has_password ? "pi pi-lock" : "pi pi-exclamation-triangle"}
       rounded
@@ -886,10 +874,19 @@ const FingerprintScannerTableData = () => {
 
   const autoSyncBodyTemplate = (rowData: FingerprintScanner) => {
     if (!rowData.auto_sync_enabled) {
-      return <Tag value="Off" severity="secondary" rounded />;
+      return (
+        <Tag value={i18nT("static.3tlu3u")} severity="secondary" rounded />
+      );
     }
 
-    return <Tag value="On" severity="success" icon="pi pi-check" rounded />;
+    return (
+      <Tag
+        value={i18nT("static.qvtz3k")}
+        severity="success"
+        icon="pi pi-check"
+        rounded
+      />
+    );
   };
 
   const syncIntervalBodyTemplate = (rowData: FingerprintScanner) => {
@@ -899,7 +896,8 @@ const FingerprintScannerTableData = () => {
 
     return (
       <span className="whitespace-nowrap text-sm text-slate-700">
-        Every {rowData.sync_interval_minutes ?? 5} min
+        {i18nT("static.1oueaas")} {rowData.sync_interval_minutes ?? 5}{" "}
+        {i18nT("static.1jxbmtz")}{" "}
       </span>
     );
   };
@@ -939,7 +937,7 @@ const FingerprintScannerTableData = () => {
   const syncStatusBodyTemplate = (rowData: FingerprintScanner) => {
     return (
       <Tag
-        value={getSyncLabel(rowData.last_sync_status)}
+        value={i18nT(getSyncLabel(rowData.last_sync_status))}
         severity={getSyncSeverity(rowData.last_sync_status)}
         rounded
       />
@@ -982,7 +980,11 @@ const FingerprintScannerTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -995,7 +997,7 @@ const FingerprintScannerTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -1014,7 +1016,7 @@ const FingerprintScannerTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -1039,7 +1041,7 @@ const FingerprintScannerTableData = () => {
           size="small"
           loading={checkLoadingId === rowData.id}
           disabled={isDeviceActionRunning}
-          tooltip="Check connection"
+          tooltip={i18nT("static.1gkl93t")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -1059,9 +1061,7 @@ const FingerprintScannerTableData = () => {
           loading={syncLoadingId === rowData.id}
           disabled={isDeviceActionRunning || !rowData.is_active}
           tooltip={
-            rowData.is_active
-              ? "Sync attendance logs"
-              : "Activate scanner before syncing"
+            rowData.is_active ? i18nT("static.kvrm78") : i18nT("static.1me7ds8")
           }
           tooltipOptions={{
             appendTo: getBody,
@@ -1081,8 +1081,8 @@ const FingerprintScannerTableData = () => {
           disabled={isDeviceActionRunning || !rowData.is_active}
           tooltip={
             rowData.is_active
-              ? "Get scanner user list"
-              : "Activate scanner before loading users"
+              ? i18nT("static.1jpsxmk")
+              : i18nT("static.11rve41")
           }
           tooltipOptions={{
             appendTo: getBody,
@@ -1101,7 +1101,7 @@ const FingerprintScannerTableData = () => {
           severity="secondary"
           size="small"
           disabled={isDeviceActionRunning}
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -1117,7 +1117,7 @@ const FingerprintScannerTableData = () => {
           severity="danger"
           size="small"
           disabled={isDeviceActionRunning}
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -1131,7 +1131,7 @@ const FingerprintScannerTableData = () => {
   const syncDetailStatusBody = (rowData: AttendanceLogSyncScannerResult) => {
     return (
       <Tag
-        value={getSyncLabel(rowData.status)}
+        value={i18nT(getSyncLabel(rowData.status))}
         severity={getSyncSeverity(rowData.status)}
         rounded
       />
@@ -1171,7 +1171,7 @@ const FingerprintScannerTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -1183,7 +1183,7 @@ const FingerprintScannerTableData = () => {
       <Button
         type="submit"
         form="fingerprint-scanner-form"
-        label={isAddNew ? "Create Scanner" : "Save Changes"}
+        label={isAddNew ? i18nT("static.2spc3r") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -1213,12 +1213,11 @@ const FingerprintScannerTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Fingerprint Scanner
+                  {i18nT("static.1yyp0s1")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage fingerprint devices, connection settings, attendance
-                  log synchronization, and scanner users.
+                  {i18nT("static.j2jerk")}{" "}
                 </p>
               </div>
             </div>
@@ -1226,7 +1225,7 @@ const FingerprintScannerTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1239,7 +1238,7 @@ const FingerprintScannerTableData = () => {
 
               <Button
                 type="button"
-                label="New Scanner"
+                label={i18nT("static.dm47yr")}
                 icon="pi pi-plus"
                 size="small"
                 disabled={isDeviceActionRunning}
@@ -1265,7 +1264,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="showDeletedScanner"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -1276,7 +1275,7 @@ const FingerprintScannerTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search scanner, IP, or sync status"
+                placeholder={i18nT("static.h1ggf4")}
                 className="w-full"
               />
             </IconField>
@@ -1309,8 +1308,8 @@ const FingerprintScannerTableData = () => {
               tableStyle={{
                 minWidth: "126rem",
               }}
-              emptyMessage="No fingerprint scanner data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.bneghi")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -1326,7 +1325,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -1340,7 +1339,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="name"
-                header="Scanner Name"
+                header={i18nT("static.1qgkh8c")}
                 sortable
                 style={{
                   minWidth: "17rem",
@@ -1354,7 +1353,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="ip"
-                header="Connection"
+                header={i18nT("static.2r1h4p")}
                 sortable
                 body={connectionBodyTemplate}
                 style={{
@@ -1364,7 +1363,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="is_active"
-                header="Device Status"
+                header={i18nT("static.jm48qz")}
                 sortable
                 body={deviceStatusBodyTemplate}
                 style={{
@@ -1374,7 +1373,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="has_password"
-                header="Credential"
+                header={i18nT("static.d9rme0")}
                 body={credentialStatusBodyTemplate}
                 style={{
                   minWidth: "11rem",
@@ -1383,7 +1382,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="auto_sync_enabled"
-                header="Auto Sync"
+                header={i18nT("static.9iu02h")}
                 sortable
                 body={autoSyncBodyTemplate}
                 style={{
@@ -1393,7 +1392,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="sync_interval_minutes"
-                header="Sync Interval"
+                header={i18nT("static.3z0sbv")}
                 sortable
                 body={syncIntervalBodyTemplate}
                 style={{
@@ -1403,7 +1402,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="timezone_offset_minutes"
-                header="Timezone"
+                header={i18nT("static.1lch5qa")}
                 sortable
                 body={timezoneBodyTemplate}
                 style={{
@@ -1413,7 +1412,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="last_pull_time"
-                header="Last Pull"
+                header={i18nT("static.1kuqjwk")}
                 sortable
                 body={lastPullBodyTemplate}
                 style={{
@@ -1423,7 +1422,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="last_sync_at"
-                header="Last Sync"
+                header={i18nT("static.1lp0hfw")}
                 sortable
                 body={lastSyncBodyTemplate}
                 style={{
@@ -1433,7 +1432,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="last_successful_sync_at"
-                header="Last Successful Sync"
+                header={i18nT("static.72tj2k")}
                 sortable
                 body={lastSuccessBodyTemplate}
                 style={{
@@ -1443,7 +1442,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="last_sync_status"
-                header="Sync Status"
+                header={i18nT("static.1gys9g0")}
                 sortable
                 body={syncStatusBodyTemplate}
                 style={{
@@ -1453,7 +1452,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="last_sync_error"
-                header="Last Sync Error"
+                header={i18nT("static.bj5c8i")}
                 body={syncErrorBodyTemplate}
                 style={{
                   minWidth: "20rem",
@@ -1461,7 +1460,7 @@ const FingerprintScannerTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionBodyTemplate}
                 frozen
                 alignFrozen="right"
@@ -1516,11 +1515,11 @@ const FingerprintScannerTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Device Information
+                {i18nT("static.1cmppe1")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Configure the scanner identity and network connection.
+                {i18nT("static.st92a1")}{" "}
               </p>
             </div>
 
@@ -1530,7 +1529,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="code"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Scanner Code
+                  {i18nT("static.1sfs6vi")}{" "}
                 </label>
 
                 <Controller
@@ -1539,7 +1538,7 @@ const FingerprintScannerTableData = () => {
                   rules={{
                     maxLength: {
                       value: 50,
-                      message: "Scanner code cannot exceed 50 characters.",
+                      message: i18nT("static.64nkz2"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1549,7 +1548,7 @@ const FingerprintScannerTableData = () => {
                         value={field.value ?? ""}
                         id="code"
                         autoComplete="off"
-                        placeholder="Example: SCN-01"
+                        placeholder={i18nT("static.1ocbwl7")}
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1562,7 +1561,7 @@ const FingerprintScannerTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Optional unique device code.
+                          {i18nT("static.1db577z")}{" "}
                         </small>
                       )}
                     </>
@@ -1575,7 +1574,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="name"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Scanner Name
+                  {i18nT("static.1qgkh8c")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1583,10 +1582,10 @@ const FingerprintScannerTableData = () => {
                   name="name"
                   control={control}
                   rules={{
-                    required: "Scanner name is required.",
+                    required: i18nT("static.7lz8fd"),
                     maxLength: {
                       value: 100,
-                      message: "Scanner name cannot exceed 100 characters.",
+                      message: i18nT("static.1twn1xw"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1596,7 +1595,7 @@ const FingerprintScannerTableData = () => {
                         value={field.value ?? ""}
                         id="name"
                         autoComplete="off"
-                        placeholder="Example: Main Office Scanner"
+                        placeholder={i18nT("static.pesqmw")}
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1618,7 +1617,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="ip"
                   className="text-sm font-medium text-slate-700"
                 >
-                  IP Address
+                  {i18nT("static.1vjcbqs")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1626,7 +1625,7 @@ const FingerprintScannerTableData = () => {
                   name="ip"
                   control={control}
                   rules={{
-                    required: "IP address is required.",
+                    required: i18nT("static.1cryyxt"),
                     validate: {
                       noSpaces: (value) =>
                         !/\s/.test(value) ||
@@ -1634,7 +1633,7 @@ const FingerprintScannerTableData = () => {
                     },
                     maxLength: {
                       value: 255,
-                      message: "IP address cannot exceed 255 characters.",
+                      message: i18nT("static.9hafmz"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1644,7 +1643,7 @@ const FingerprintScannerTableData = () => {
                         value={field.value ?? ""}
                         id="ip"
                         autoComplete="off"
-                        placeholder="Example: 192.168.1.100"
+                        placeholder={i18nT("static.vak9be")}
                         disabled={isSaving}
                         className={`w-full font-mono ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1666,7 +1665,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="port"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Port
+                  {i18nT("static.1qx5adi")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1674,7 +1673,7 @@ const FingerprintScannerTableData = () => {
                   name="port"
                   control={control}
                   rules={{
-                    required: "Port is required.",
+                    required: i18nT("static.asiw5r"),
                     validate: {
                       numeric: (value) =>
                         /^\d+$/.test(String(value)) ||
@@ -1697,7 +1696,7 @@ const FingerprintScannerTableData = () => {
                         id="port"
                         inputMode="numeric"
                         autoComplete="off"
-                        placeholder="Example: 4370"
+                        placeholder={i18nT("static.112fq0d")}
                         disabled={isSaving}
                         className={`w-full font-mono ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1719,7 +1718,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="password"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Communication Key
+                  {i18nT("static.1qfj66o")}{" "}
                   {isAddNew && <span className="ml-1 text-red-500">*</span>}
                 </label>
 
@@ -1727,13 +1726,10 @@ const FingerprintScannerTableData = () => {
                   name="password"
                   control={control}
                   rules={{
-                    required: isAddNew
-                      ? "Communication key is required."
-                      : false,
+                    required: isAddNew ? i18nT("static.gy02wt") : false,
                     maxLength: {
                       value: 100,
-                      message:
-                        "Communication key cannot exceed 100 characters.",
+                      message: i18nT("static.5r9aj4"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1746,8 +1742,8 @@ const FingerprintScannerTableData = () => {
                         autoComplete="off"
                         placeholder={
                           isAddNew
-                            ? "Enter scanner communication key"
-                            : "Leave blank to keep the configured key"
+                            ? i18nT("static.q9t3ds")
+                            : i18nT("static.16mnb42")
                         }
                         disabled={isSaving}
                         inputClassName="w-full"
@@ -1768,8 +1764,8 @@ const FingerprintScannerTableData = () => {
                       {!isAddNew && !fieldState.error && (
                         <small className="text-slate-500">
                           {selectedData?.has_password
-                            ? "Leave blank to keep the configured key."
-                            : "Set a communication key to connect to this scanner."}
+                            ? i18nT("static.296m9w")
+                            : i18nT("static.1oxph5j")}
                         </small>
                       )}
                     </>
@@ -1782,7 +1778,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="timezone_offset_minutes"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Timezone Offset
+                  {i18nT("static.1foh535")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1790,7 +1786,7 @@ const FingerprintScannerTableData = () => {
                   name="timezone_offset_minutes"
                   control={control}
                   rules={{
-                    required: "Timezone offset is required.",
+                    required: i18nT("static.1m5fk16"),
                     validate: (value) =>
                       TIMEZONE_OPTIONS.some(
                         (option) => option.value === Number(value),
@@ -1802,10 +1798,13 @@ const FingerprintScannerTableData = () => {
                         id="timezone_offset_minutes"
                         appendTo={getBody}
                         value={Number(field.value ?? 420)}
-                        options={TIMEZONE_OPTIONS}
+                        options={TIMEZONE_OPTIONS.map((option) => ({
+                          label: i18nT(option.labelKey),
+                          value: option.value,
+                        }))}
                         optionLabel="label"
                         optionValue="value"
-                        placeholder="Select timezone"
+                        placeholder={i18nT("static.12ezvew")}
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1820,7 +1819,7 @@ const FingerprintScannerTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Pilih timezone sesuai lokasi mesin fingerprint.
+                          {i18nT("static.e3b759")}{" "}
                         </small>
                       )}
                     </>
@@ -1834,12 +1833,11 @@ const FingerprintScannerTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Synchronization
+                {i18nT("static.1xikuqj")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Configure automatic attendance log synchronization for this
-                scanner.
+                {i18nT("static.yste4q")}{" "}
               </p>
             </div>
 
@@ -1856,12 +1854,11 @@ const FingerprintScannerTableData = () => {
                           htmlFor="auto_sync_enabled"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Automatic Sync
+                          {i18nT("static.u7pbzj")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Pull attendance logs automatically according to the
-                          configured interval.
+                          {i18nT("static.1li0j1q")}{" "}
                         </p>
                       </div>
 
@@ -1881,7 +1878,7 @@ const FingerprintScannerTableData = () => {
                   htmlFor="sync_interval_minutes"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Sync Interval
+                  {i18nT("static.3z0sbv")}{" "}
                   {watchedAutoSyncEnabled && (
                     <span className="ml-1 text-red-500">*</span>
                   )}
@@ -1910,10 +1907,13 @@ const FingerprintScannerTableData = () => {
                         id="sync_interval_minutes"
                         appendTo={getBody}
                         value={field.value ?? 5}
-                        options={SYNC_INTERVAL_OPTIONS}
+                        options={SYNC_INTERVAL_OPTIONS.map((option) => ({
+                          label: i18nT(option.labelKey),
+                          value: option.value,
+                        }))}
                         optionLabel="label"
                         optionValue="value"
-                        placeholder="Select sync interval"
+                        placeholder={i18nT("static.18tdr49")}
                         disabled={isSaving || !watchedAutoSyncEnabled}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1927,8 +1927,7 @@ const FingerprintScannerTableData = () => {
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          The worker may check frequently, but this scanner only
-                          synchronizes at the selected interval.
+                          {i18nT("static.1sw38fg")}{" "}
                         </small>
                       )}
                     </>
@@ -1951,12 +1950,11 @@ const FingerprintScannerTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Scanner
+                      {i18nT("static.1ogcynh")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive scanners are excluded from manual attendance
-                      synchronization and automatic synchronization.
+                      {i18nT("static.q28oy")}{" "}
                     </p>
                   </div>
 
@@ -1975,7 +1973,7 @@ const FingerprintScannerTableData = () => {
 
       {/* Sync Result Dialog */}
       <Dialog
-        header="Attendance Log Sync Result"
+        header={i18nT("static.jcf2ys")}
         visible={syncResultDialog}
         style={{
           width: "96vw",
@@ -1996,17 +1994,19 @@ const FingerprintScannerTableData = () => {
           <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
             <i className="pi pi-info-circle mt-0.5" />
 
-            <span>No synchronization result is available.</span>
+            <span>{i18nT("static.o3h7wg")}</span>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">Status</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.3pd73")}
+                </p>
 
                 <div className="mt-2">
                   <Tag
-                    value={getSyncLabel(syncResult.status)}
+                    value={i18nT(getSyncLabel(syncResult.status))}
                     severity={getSyncSeverity(syncResult.status)}
                     rounded
                   />
@@ -2014,7 +2014,9 @@ const FingerprintScannerTableData = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">Fetched</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.1k672yq")}
+                </p>
 
                 <p className="m-0 mt-2 text-2xl font-semibold text-slate-800">
                   {syncResult.total_fetched}
@@ -2022,7 +2024,9 @@ const FingerprintScannerTableData = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">Inserted</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.kx1wp5")}
+                </p>
 
                 <p className="m-0 mt-2 text-2xl font-semibold text-slate-800">
                   {syncResult.total_inserted}
@@ -2030,7 +2034,9 @@ const FingerprintScannerTableData = () => {
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">Invalid Mapping</p>
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.jg801q")}
+                </p>
 
                 <p className="m-0 mt-2 text-2xl font-semibold text-slate-800">
                   {syncResult.total_invalid_mapping}
@@ -2058,11 +2064,11 @@ const FingerprintScannerTableData = () => {
                 tableStyle={{
                   minWidth: "88rem",
                 }}
-                emptyMessage="No scanner synchronization details found."
+                emptyMessage={i18nT("static.1mgy3fc")}
               >
                 <Column
                   field="scanner_name"
-                  header="Scanner"
+                  header={i18nT("static.1bz37xh")}
                   style={{
                     minWidth: "16rem",
                   }}
@@ -2070,7 +2076,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="status"
-                  header="Status"
+                  header={i18nT("static.3pd73")}
                   body={syncDetailStatusBody}
                   style={{
                     minWidth: "10rem",
@@ -2079,7 +2085,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="fetched"
-                  header="Fetched"
+                  header={i18nT("static.1k672yq")}
                   style={{
                     minWidth: "8rem",
                   }}
@@ -2087,7 +2093,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="after_filter"
-                  header="After Filter"
+                  header={i18nT("static.m73rp1")}
                   style={{
                     minWidth: "10rem",
                   }}
@@ -2095,7 +2101,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="inserted"
-                  header="Inserted"
+                  header={i18nT("static.kx1wp5")}
                   style={{
                     minWidth: "8rem",
                   }}
@@ -2103,7 +2109,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="duplicate"
-                  header="Duplicate"
+                  header={i18nT("static.1xz5c1i")}
                   style={{
                     minWidth: "9rem",
                   }}
@@ -2111,7 +2117,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="invalid_mapping"
-                  header="Invalid Mapping"
+                  header={i18nT("static.jg801q")}
                   style={{
                     minWidth: "11rem",
                   }}
@@ -2119,7 +2125,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="error_message"
-                  header="Error"
+                  header={i18nT("static.1vks92p")}
                   body={syncDetailErrorBody}
                   style={{
                     minWidth: "20rem",
@@ -2128,7 +2134,7 @@ const FingerprintScannerTableData = () => {
 
                 <Column
                   field="suggestion"
-                  header="Suggestion"
+                  header={i18nT("static.1tam2wd")}
                   body={syncDetailSuggestionBody}
                   style={{
                     minWidth: "24rem",
@@ -2142,7 +2148,7 @@ const FingerprintScannerTableData = () => {
 
       {/* Scanner User List Dialog */}
       <Dialog
-        header={`Scanner Users — ${userListScannerName}`}
+        header={i18nT("static.13ho1nh", { p0: userListScannerName })}
         visible={userListDialog}
         style={{
           width: "96vw",
@@ -2165,12 +2171,12 @@ const FingerprintScannerTableData = () => {
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Registered Scanner Users
+                {i18nT("static.11veemn")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                {filteredUserListData.length} of {userListData.length} user
-                records shown.
+                {filteredUserListData.length} {i18nT("static.t6uqnc")}{" "}
+                {userListData.length} {i18nT("static.19zuxnl")}{" "}
               </p>
             </div>
 
@@ -2179,7 +2185,7 @@ const FingerprintScannerTableData = () => {
 
               <InputText
                 value={userListSearchValue}
-                placeholder="Search PIN, name, card, or group"
+                placeholder={i18nT("static.iyfp05")}
                 className="w-full"
                 onChange={(event) => setUserListSearchValue(event.target.value)}
               />
@@ -2200,13 +2206,13 @@ const FingerprintScannerTableData = () => {
               tableStyle={{
                 minWidth: "82rem",
               }}
-              emptyMessage="No scanner user data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.ssu6wl")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
                 field="pin"
-                header="PIN / PIN1"
+                header={i18nT("static.1sa7xxl")}
                 style={{
                   minWidth: "10rem",
                 }}
@@ -2214,7 +2220,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="pin2"
-                header="PIN2 / User ID"
+                header={i18nT("static.xt8lxj")}
                 style={{
                   minWidth: "12rem",
                 }}
@@ -2222,7 +2228,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="name"
-                header="Name"
+                header={i18nT("static.4el6o6")}
                 style={{
                   minWidth: "17rem",
                 }}
@@ -2230,7 +2236,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="privilege"
-                header="Privilege"
+                header={i18nT("static.1x4yh7w")}
                 style={{
                   minWidth: "10rem",
                 }}
@@ -2238,7 +2244,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="group"
-                header="Group"
+                header={i18nT("static.1ihp9o")}
                 style={{
                   minWidth: "10rem",
                 }}
@@ -2246,7 +2252,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="card"
-                header="Card"
+                header={i18nT("static.2b8ghr")}
                 style={{
                   minWidth: "12rem",
                 }}
@@ -2254,7 +2260,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="tz1"
-                header="TZ1"
+                header={i18nT("static.nz9kgu")}
                 style={{
                   minWidth: "9rem",
                 }}
@@ -2262,7 +2268,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="tz2"
-                header="TZ2"
+                header={i18nT("static.np9yrv")}
                 style={{
                   minWidth: "9rem",
                 }}
@@ -2270,7 +2276,7 @@ const FingerprintScannerTableData = () => {
 
               <Column
                 field="tz3"
-                header="TZ3"
+                header={i18nT("static.nfad2w")}
                 style={{
                   minWidth: "9rem",
                 }}
@@ -2280,7 +2286,7 @@ const FingerprintScannerTableData = () => {
 
           <details className="rounded-xl border border-slate-200 bg-slate-50">
             <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-700">
-              View Raw JSON
+              {i18nT("static.1il9u78")}{" "}
             </summary>
 
             <div className="border-t border-slate-200 p-4">

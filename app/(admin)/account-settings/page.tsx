@@ -1,8 +1,9 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useDispatch } from "react-redux";
 import useSWR from "swr";
@@ -71,6 +72,7 @@ const SectionHeader = ({
 );
 
 const AccountSettingsPage = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
@@ -105,10 +107,6 @@ const AccountSettingsPage = () => {
     mode: "onChange",
   });
 
-  useEffect(() => {
-    document.title = "Account Settings";
-  }, []);
-
   const passwordRules = useMemo(
     () => [
       "12–128 characters",
@@ -138,8 +136,8 @@ const AccountSettingsPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Password changed",
-          detail: "Please sign in again with your new password.",
+          summary: i18nT("static.466mdo"),
+          detail: i18nT("static.17qfdiz"),
         }),
       );
       await redirectToLogin();
@@ -148,12 +146,12 @@ const AccountSettingsPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Unable to change password",
+          summary: i18nT("static.w31is6"),
           detail: isResponseTypeError(error)
             ? getErrorMessage(error, "message")
             : error instanceof Error
               ? error.message
-              : "Unexpected error occurred. Please try again.",
+              : i18nT("static.12ynlbk"),
         }),
       );
     } finally {
@@ -170,11 +168,11 @@ const AccountSettingsPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Sessions secured",
+          summary: i18nT("static.9xg9k3"),
           detail:
             response.data.revoked_count > 0
-              ? `${response.data.revoked_count} other session(s) signed out.`
-              : "There were no other sessions to sign out.",
+              ? i18nT("static.3oggrr", { p0: response.data.revoked_count })
+              : i18nT("static.m5aytg"),
         }),
       );
     } catch (error: unknown) {
@@ -182,10 +180,10 @@ const AccountSettingsPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Unable to sign out sessions",
+          summary: i18nT("static.1k5njcl"),
           detail: isResponseTypeError(error)
             ? getErrorMessage(error, "message")
-            : "Session service is temporarily unavailable.",
+            : i18nT("static.2n6q28"),
         }),
       );
     } finally {
@@ -195,9 +193,8 @@ const AccountSettingsPage = () => {
 
   const askRevokeOthers = () =>
     requestActionConfirmation({
-      header: "Sign out other sessions?",
-      message:
-        "Other browsers and devices will need to sign in again. This session will remain active.",
+      header: i18nT("static.1bhx7a4"),
+      message: i18nT("static.rhjfv3"),
       icon: "pi pi-shield",
       acceptLabel: "Sign Out Others",
       rejectLabel: "Cancel",
@@ -206,21 +203,20 @@ const AccountSettingsPage = () => {
     });
 
   return (
-    <Card title={<CardTitle title="Account Settings" url="" />}>
+    <Card title={<CardTitle title={i18nT("static.10tvoe1")} url="" />}>
       <div className="mb-5 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        Account Settings controls sign-in and account security. Employee
-        information remains available in{" "}
+        {i18nT("static.10sfe8f")}{" "}
         <Link href="/my-profile" className="font-semibold underline">
-          My Profile
+          {i18nT("static.1g5mem2")}{" "}
         </Link>
         .
       </div>
 
       <TabView>
-        <TabPanel header="Account" leftIcon="pi pi-user mr-2">
+        <TabPanel header={i18nT("static.oyp43g")} leftIcon="pi pi-user mr-2">
           <SectionHeader
-            title="Account overview"
-            description="Read-only sign-in identity and access information."
+            title={i18nT("static.1o3ojo7")}
+            description={i18nT("static.1vvc5ie")}
           />
           {accountLoading ? (
             <div className="flex min-h-48 items-center justify-center">
@@ -228,27 +224,33 @@ const AccountSettingsPage = () => {
             </div>
           ) : accountError || !account ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              Account information could not be loaded.
+              {i18nT("static.82ou9y")}{" "}
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <InfoItem label="Full name" value={account.name} />
-              <InfoItem label="Username" value={account.username} />
-              <InfoItem label="Login email" value={account.email} />
-              <InfoItem label="Employee ID" value={account.employee_id} />
-              <InfoItem label="Roles">
+              <InfoItem label={i18nT("static.13z0t9r")} value={account.name} />
+              <InfoItem
+                label={i18nT("static.7s11ax")}
+                value={account.username}
+              />
+              <InfoItem label={i18nT("static.1iypo76")} value={account.email} />
+              <InfoItem
+                label={i18nT("static.1lghzb2")}
+                value={account.employee_id}
+              />
+              <InfoItem label={i18nT("static.hbz43i")}>
                 <div className="flex flex-wrap gap-2">
                   {account.role.map((role) => (
                     <Tag key={role} value={role} severity="info" />
                   ))}
                 </div>
               </InfoItem>
-              <InfoItem label="Security status">
+              <InfoItem label={i18nT("static.evyv6r")}>
                 <Tag
                   value={
                     account.must_change_password
-                      ? "Password change required"
-                      : "Account secured"
+                      ? i18nT("static.q6l6ix")
+                      : i18nT("static.19a55g3")
                   }
                   severity={
                     account.must_change_password ? "warning" : "success"
@@ -256,23 +258,23 @@ const AccountSettingsPage = () => {
                 />
               </InfoItem>
               <InfoItem
-                label="Last login"
+                label={i18nT("static.sz3xrs")}
                 value={formatDateTime(account.last_login_at)}
               />
               <InfoItem
-                label="Password last changed"
+                label={i18nT("static.1225ebg")}
                 value={formatDateTime(account.password_changed_at)}
               />
             </div>
           )}
         </TabPanel>
 
-        <TabPanel header="Security" leftIcon="pi pi-lock mr-2">
+        <TabPanel header={i18nT("static.1i3q76j")} leftIcon="pi pi-lock mr-2">
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,640px)_minmax(260px,1fr)]">
             <div>
               <SectionHeader
-                title="Change password"
-                description="Changing your password signs out existing sessions."
+                title={i18nT("static.11q3s6m")}
+                description={i18nT("static.26sy4o")}
               />
               <form
                 className="space-y-4"
@@ -297,25 +299,27 @@ const AccountSettingsPage = () => {
                       name={name}
                       control={control}
                       rules={{
-                        required: `${label} is required.`,
+                        required: i18nT("static.r4vbwu", { p0: label }),
                         validate: (value) => {
                           if (
                             name === "newPassword" &&
                             value === getValues("currentPassword")
                           ) {
-                            return "New password must be different.";
+                            return i18nT("New password must be different.");
                           }
                           if (
                             name === "newPassword" &&
                             !strongPassword.test(value)
                           ) {
-                            return "Password does not meet the security requirements.";
+                            return i18nT(
+                              "Password does not meet the security requirements.",
+                            );
                           }
                           if (
                             name === "newPasswordRetype" &&
                             value !== getValues("newPassword")
                           ) {
-                            return "Passwords do not match.";
+                            return i18nT("Passwords do not match.");
                           }
                           return true;
                         },
@@ -344,7 +348,11 @@ const AccountSettingsPage = () => {
                 <div className="flex justify-end border-t border-slate-200 pt-4">
                   <Button
                     type="submit"
-                    label={submitting ? "Changing..." : "Change Password"}
+                    label={
+                      submitting
+                        ? i18nT("static.1z0jal0")
+                        : i18nT("static.100ew7i")
+                    }
                     icon={submitting ? "pi pi-spin pi-spinner" : "pi pi-lock"}
                     disabled={!isValid || submitting}
                   />
@@ -354,7 +362,7 @@ const AccountSettingsPage = () => {
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <h3 className="font-semibold text-slate-900">
-                Password requirements
+                {i18nT("static.c4hhxs")}{" "}
               </h3>
               <ul className="mt-4 space-y-3">
                 {passwordRules.map((rule) => (
@@ -371,16 +379,19 @@ const AccountSettingsPage = () => {
           </div>
         </TabPanel>
 
-        <TabPanel header="Sessions" leftIcon="pi pi-desktop mr-2">
+        <TabPanel
+          header={i18nT("static.1enz6jw")}
+          leftIcon="pi pi-desktop mr-2"
+        >
           <SectionHeader
-            title="Active sessions"
-            description="Review and revoke persistent sign-in sessions for your account."
+            title={i18nT("static.e1ej1w")}
+            description={i18nT("static.ujjpvo")}
           />
           {sessionLoading ? (
             <ProgressSpinner style={{ width: 36, height: 36 }} />
           ) : sessionError || !sessionResponse ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              Session information is temporarily unavailable.
+              {i18nT("static.1ofh0b1")}{" "}
             </div>
           ) : (
             <div className="max-w-3xl rounded-2xl border border-slate-200 bg-white p-5">
@@ -389,25 +400,26 @@ const AccountSettingsPage = () => {
                   <div className="flex items-center gap-2">
                     <i className="pi pi-desktop text-blue-600" />
                     <span className="font-semibold text-slate-900">
-                      Current browser
+                      {i18nT("static.wejq2q")}{" "}
                     </span>
-                    <Tag value="Current" severity="success" />
+                    <Tag value={i18nT("static.1dw4k8q")} severity="success" />
                   </div>
                   <p className="mt-2 text-sm text-slate-500">
-                    {sessionResponse.data.active_count} active persistent
-                    session(s), including this browser.
+                    {sessionResponse.data.active_count}{" "}
+                    {i18nT("static.1d6wq4d")}{" "}
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
-                    Revoked devices may retain access for up to 15 minutes until
-                    their short-lived access token expires.
+                    {i18nT("static.1bm5nmg")}{" "}
                   </p>
                 </div>
                 <Button
                   type="button"
                   label={
                     revoking
-                      ? "Signing Out..."
-                      : `Sign Out Other Sessions (${sessionResponse.data.other_count})`
+                      ? i18nT("static.1u04oh2")
+                      : i18nT("static.wmhvt6", {
+                          p0: sessionResponse.data.other_count,
+                        })
                   }
                   icon={revoking ? "pi pi-spin pi-spinner" : "pi pi-sign-out"}
                   severity="danger"

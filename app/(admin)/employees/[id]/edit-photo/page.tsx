@@ -13,8 +13,8 @@ const EditPhotoPage = async ({ params }: EditPhotoPageProps) => {
   return (
     <ChangeProfilePicture
       employeeId={id}
-      title="Edit Employee Photo"
-      description="Upload a new profile picture for this employee."
+      title="static.gcnmfr"
+      description="static.1c3q74x"
       showCurrentPhoto={false}
       showRefreshButton={false}
     />

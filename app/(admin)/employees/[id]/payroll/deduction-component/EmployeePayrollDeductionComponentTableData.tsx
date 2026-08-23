@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
@@ -52,6 +53,7 @@ import {
 } from "@/app/(admin)/employees/[id]/payroll/_components/payroll-display-formatters";
 
 const EmployeePayrollDeductionComponentTableData = () => {
+  const { t: i18nT } = useI18n();
   const params = useParams();
   const id = params.id;
 
@@ -138,7 +140,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -149,7 +151,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
       <Button
         type="submit"
         form="employee-deduction-component-form"
-        label={isAddNew ? "Create Deduction Component" : "Save Changes"}
+        label={isAddNew ? i18nT("static.1q8ufrl") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSubmitting}
         disabled={isSubmitting}
@@ -238,7 +240,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -248,7 +250,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -257,7 +259,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -271,8 +273,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "error",
-          detail: "please select data",
+          summary: i18nT("static.9bb0pd"),
+          detail: i18nT("static.yiy5uj"),
         }),
       );
       return;
@@ -294,7 +296,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -305,7 +307,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -314,7 +316,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -336,7 +338,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -346,7 +348,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -355,7 +357,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -377,7 +379,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -387,7 +389,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -396,7 +398,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -418,7 +420,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
+          summary: i18nT("static.g72xw0"),
           detail: res.message,
         }),
       );
@@ -428,7 +430,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -437,7 +439,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -474,14 +476,14 @@ const EmployeePayrollDeductionComponentTableData = () => {
   const activeColumnBody = (rowData: EmployeeDeductionComponent) => {
     return rowData.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -500,13 +502,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               rounded
               outlined
               severity="danger"
               icon="pi pi-trash"
               size="small"
-              aria-label="Delete deduction component permanently"
+              aria-label={i18nT("static.15v8hdz")}
               onClick={() => {
                 onClickPurge(rowData);
               }}
@@ -520,13 +522,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="restore"
+              tooltip={i18nT("static.1p9rz69")}
               rounded
               outlined
               severity="success"
               icon="pi pi-refresh"
               size="small"
-              aria-label="Restore deduction component"
+              aria-label={i18nT("static.yur91")}
               onClick={() => {
                 onClickRestore(rowData);
               }}
@@ -540,13 +542,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="delete"
+              tooltip={i18nT("static.ssf22y")}
               rounded
               outlined
               severity="danger"
               icon="pi pi-trash"
               size="small"
-              aria-label="Delete deduction component"
+              aria-label={i18nT("static.1rdhys6")}
               onClick={() => {
                 onClickDelete(rowData);
               }}
@@ -560,13 +562,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 appendTo: () => document.body,
                 position: "top",
               }}
-              tooltip="update"
+              tooltip={i18nT("static.b45n5g")}
               rounded
               outlined
               severity="secondary"
               icon="pi pi-pencil"
               size="small"
-              aria-label="Edit deduction component"
+              aria-label={i18nT("static.8rzjp")}
               onClick={() => {
                 onClickUpdate(rowData);
               }}
@@ -579,8 +581,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const onClickDelete = (data: EmployeeDeductionComponent) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.bn1ao7"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -591,13 +593,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-danger"
@@ -609,8 +611,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const onClickRestore = (data: EmployeeDeductionComponent) => {
     requestActionConfirmation({
-      message: "Do you want to restore this record?",
-      header: "Restore Confirmation",
+      message: i18nT("static.c06jc4"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -621,13 +623,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-success"
@@ -639,8 +641,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const onClickPurge = (data: EmployeeDeductionComponent) => {
     requestActionConfirmation({
-      message: "Do you want to delete this record forever?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1umz31y"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       defaultFocus: "accept",
       accept: () => {
@@ -650,13 +652,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
       footer: (options) => (
         <div className="flex gap-3 justify-end">
           <Button
-            label="No"
+            label={i18nT("static.r5wqai")}
             icon="pi pi-times"
             onClick={options.reject}
             className="p-button-text"
           />
           <Button
-            label="Yes"
+            label={i18nT("static.1dudzcg")}
             icon="pi pi-check"
             onClick={options.accept}
             className="p-button-danger"
@@ -679,7 +681,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
       <div className="flex min-w-[15rem] flex-col gap-1">
         <Tag value={methodName} severity="warning" />
         <span className="font-semibold text-slate-800">
-          Amount: {formatPayrollCurrency(Number(row.amount ?? 0))}
+          {i18nT("static.x64815")}{" "}
+          {formatPayrollCurrency(Number(row.amount ?? 0))}
         </span>
       </div>
     );
@@ -687,19 +690,20 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const frequencyBody = (row: EmployeeDeductionComponent) => {
     if (!row.frequency) {
-      return <span className="text-slate-500">Not set</span>;
+      return <span className="text-slate-500">{i18nT("static.1ntesau")}</span>;
     }
 
     const frequency = frequencyData?.find((item) => item.id === row.frequency);
     if (!frequency) {
-      return <span className="text-slate-500">Loading wage basis...</span>;
+      return <span className="text-slate-500">{i18nT("static.1enplif")}</span>;
     }
 
     return (
       <div className="flex min-w-[9rem] flex-col">
         <span className="font-medium text-slate-800">{frequency.name}</span>
         <span className="text-xs text-slate-500">
-          {frequency.code} · rate period: {frequency.days_in_period} day(s)
+          {frequency.code} {i18nT("static.1pteltd")} {frequency.days_in_period}{" "}
+          {i18nT("static.kjdug7")}{" "}
         </span>
       </div>
     );
@@ -711,7 +715,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
         {formatPayrollDate(row.start_date)}
       </span>
       <span className="text-xs text-slate-500">
-        Until {formatPayrollDate(row.end_date)}
+        {i18nT("static.rg2a5r")} {formatPayrollDate(row.end_date)}
       </span>
     </div>
   );
@@ -721,27 +725,27 @@ const EmployeePayrollDeductionComponentTableData = () => {
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
           <EmployeeDetailTableHeader
-            title="Deduction Component"
-            description="Manage recurring and one-time deduction components for this employee."
+            title={i18nT("static.wfytj7")}
+            description={i18nT("static.1bt6l0u")}
             showDeleted={
               archivedAccess.canShowDeleted
                 ? {
                     checked: isShowDeletedDataChecked,
                     onChange: onIngredientsChange,
-                    label: "Show deleted data",
+                    label: i18nT("static.1beum2j"),
                   }
                 : undefined
             }
             search={{
               value: globalFilterValue,
               onChange: onGlobalFilterChange,
-              placeholder: "Search deduction component",
+              placeholder: i18nT("static.r1kuvh"),
             }}
             actions={
               <>
                 <Button
                   type="button"
-                  label="Refresh"
+                  label={i18nT("static.28r6qc")}
                   icon="pi pi-refresh"
                   severity="secondary"
                   outlined
@@ -758,7 +762,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 {canCreate && (
                   <Button
                     type="button"
-                    label="New Deduction Component"
+                    label={i18nT("static.14tpx85")}
                     icon="pi pi-plus"
                     size="small"
                     className="w-full sm:w-auto"
@@ -783,9 +787,9 @@ const EmployeePayrollDeductionComponentTableData = () => {
             rowsPerPageOptions={[10, 25, 50]}
             dataKey="id"
             globalFilterFields={["deduction_component_name", "notes"]}
-            emptyMessage="No data found."
+            emptyMessage={i18nT("static.xtmeag")}
             filters={filters}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
           >
@@ -796,7 +800,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
             <Column
               field="deduction_component_name"
-              header="Component"
+              header={i18nT("static.bvqo3k")}
               sortable
               style={{ minWidth: "16rem" }}
               body={(row: EmployeeDeductionComponent) => {
@@ -807,7 +811,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 return (
                   <div className="flex min-w-[14rem] flex-col">
                     <span className="font-medium text-slate-800">
-                      {row.deduction_component_name ?? "Not configured"}
+                      {row.deduction_component_name ?? i18nT("static.4tqh3i")}
                     </span>
                     <span className="text-xs text-slate-500">
                       {master?.code ?? ""}
@@ -817,25 +821,25 @@ const EmployeePayrollDeductionComponentTableData = () => {
               }}
             />
             <Column
-              header="Calculation"
+              header={i18nT("static.1gig16e")}
               body={componentCalculationBody}
               style={{ minWidth: "17rem" }}
             />
             <Column
-              header="Effective Period"
+              header={i18nT("static.1bwcvhr")}
               body={periodBody}
               style={{ minWidth: "14rem" }}
             />
             <Column
               field="frequency"
-              header="Wage Basis"
+              header={i18nT("static.1m95xl7")}
               sortable
               body={frequencyBody}
               style={{ minWidth: "11rem" }}
             />
             <Column
               field="notes"
-              header="Notes"
+              header={i18nT("static.4f76ga")}
               style={{ minWidth: "14rem" }}
               body={(row: EmployeeDeductionComponent) => (
                 <span
@@ -848,7 +852,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             />
             <Column
               field="is_active"
-              header="Status"
+              header={i18nT("static.3pd73")}
               sortable
               body={activeColumnBody}
               style={{ minWidth: "9rem" }}
@@ -856,7 +860,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
             <Column
               headerClassName="bg-white"
               bodyClassName="bg-white"
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(rowData) => actionColumnBody(rowData)}
               frozen
               alignFrozen="right"
@@ -897,12 +901,12 @@ const EmployeePayrollDeductionComponentTableData = () => {
               htmlFor="employee_id"
               className="text-sm font-medium text-slate-700"
             >
-              Employee
+              {i18nT("static.1fak8xt")}{" "}
             </label>
             <Controller
               name="employee_id"
               control={control}
-              rules={{ required: "Employee is required" }}
+              rules={{ required: i18nT("static.2s9hk0") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -917,8 +921,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     optionValue="id"
                     placeholder={
                       employeeIsLoading
-                        ? "Loading employees..."
-                        : "Select an employee"
+                        ? i18nT("static.151p210")
+                        : i18nT("static.atd8u4")
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -928,9 +932,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     </small>
                   )}
                   {employeeError && (
-                    <small className="p-error">
-                      We couldn’t load the list of employees. Please try again
-                    </small>
+                    <small className="p-error">{i18nT("static.r7jgxj")} </small>
                   )}
                 </>
               )}
@@ -942,13 +944,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
               htmlFor="deduction_component_master_id"
               className="text-sm font-medium text-slate-700"
             >
-              Deduction Component
+              {i18nT("static.wfytj7")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="deduction_component_master_id"
               control={control}
-              rules={{ required: "Deduction Component is required" }}
+              rules={{ required: i18nT("static.1lbe6bq") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -966,8 +968,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     optionValue="id"
                     placeholder={
                       employeeDeductionComponentIsLoading
-                        ? "Loading deduction components..."
-                        : "Select a deduction component"
+                        ? i18nT("static.1f9g9mu")
+                        : i18nT("static.j2clvy")
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
@@ -978,8 +980,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                   )}
                   {employeeDeductionComponentError && (
                     <small className="p-error font-bold">
-                      We couldn’t load the list of Deduction components. Please
-                      try again
+                      {i18nT("static.1n8ef6d")}{" "}
                     </small>
                   )}
                 </>
@@ -992,18 +993,19 @@ const EmployeePayrollDeductionComponentTableData = () => {
               htmlFor="amount"
               className="text-sm font-medium text-slate-700"
             >
-              Amount<span className="ml-1 text-red-500">*</span>
+              {i18nT("static.a2ky21")}
+              <span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="amount"
               control={control}
               defaultValue={0}
-              rules={{ required: "*required" }}
+              rules={{ required: i18nT("static.1lf34iw") }}
               render={({ field, fieldState }) => (
                 <>
                   <InputNumber
                     id="amount"
-                    placeholder="Enter amount"
+                    placeholder={i18nT("static.119fv83")}
                     inputRef={field.ref}
                     mode="currency"
                     currency="IDR"
@@ -1033,12 +1035,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
               htmlFor="frequency"
               className="text-sm font-medium text-slate-700"
             >
-              Wage Basis<span className="ml-1 text-red-500">*</span>
+              {i18nT("static.1m95xl7")}
+              <span className="ml-1 text-red-500">*</span>
             </label>
             <Controller
               name="frequency"
               control={control}
-              rules={{ required: "Wage basis is required" }}
+              rules={{ required: i18nT("static.hva68e") }}
               render={({ field, fieldState }) => (
                 <>
                   <Dropdown
@@ -1051,7 +1054,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     onChange={(event) => field.onChange(event.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select a wage basis"
+                    placeholder={i18nT("static.veufz8")}
                     className={
                       fieldState.invalid ? "p-invalid w-full" : "w-full"
                     }
@@ -1072,12 +1075,13 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 htmlFor="start_date"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
-                Start Date<span className="ml-1 text-red-500">*</span>
+                {i18nT("static.7bl5hd")}
+                <span className="ml-1 text-red-500">*</span>
               </label>
               <Controller
                 name="start_date"
                 control={control}
-                rules={{ required: "*required" }}
+                rules={{ required: i18nT("static.1lf34iw") }}
                 render={({ field, fieldState }) => (
                   <>
                     <Calendar
@@ -1109,7 +1113,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 htmlFor="end_date"
                 className="mb-2 block text-sm font-medium text-slate-700"
               >
-                End Date
+                {i18nT("static.1j4m31m")}{" "}
               </label>
               <Controller
                 name="end_date"
@@ -1146,7 +1150,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
               htmlFor="notes"
               className="text-sm font-medium text-slate-700"
             >
-              Notes
+              {i18nT("static.4f76ga")}{" "}
             </label>
             <Controller
               name="notes"
@@ -1155,7 +1159,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
                 <>
                   <InputTextarea
                     id="notes"
-                    placeholder="Optional notes"
+                    placeholder={i18nT("static.wu0ooo")}
                     {...field}
                     value={field.value ?? ""}
                     rows={3}
@@ -1185,11 +1189,10 @@ const EmployeePayrollDeductionComponentTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active component
+                      {i18nT("static.1uu2ztk")}{" "}
                     </label>
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive components are excluded from new payroll
-                      calculations.
+                      {i18nT("static.148ezbn")}{" "}
                     </p>
                   </div>
                   <InputSwitch

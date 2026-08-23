@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   createEmployeeEducation,
@@ -74,6 +75,7 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 const helperTextClass = "mt-1 text-xs text-slate-500";
 
 const FormalEducation = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -101,7 +103,7 @@ const FormalEducation = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -183,10 +185,8 @@ const FormalEducation = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: isAddMode
-            ? "Formal education created successfully"
-            : "Formal education updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: isAddMode ? i18nT("static.19o7odl") : i18nT("static.1rjyn2w"),
         }),
       );
 
@@ -198,7 +198,7 @@ const FormalEducation = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -207,7 +207,7 @@ const FormalEducation = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -217,8 +217,8 @@ const FormalEducation = () => {
 
   const onDelete = (row: EmployeeEducationRow) => {
     requestActionConfirmation({
-      message: "Do you want to delete this formal education record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.21pz0"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -233,8 +233,8 @@ const FormalEducation = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "Success",
-              detail: "Formal education deleted successfully",
+              summary: i18nT("static.udvru8"),
+              detail: i18nT("static.14szhfu"),
             }),
           );
           await loadData();
@@ -244,7 +244,7 @@ const FormalEducation = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "Error",
+                summary: i18nT("static.1vks92p"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -263,17 +263,17 @@ const FormalEducation = () => {
 
   const certificateBodyTemplate = (row: EmployeeEducationRow) => {
     return row.is_certificate ? (
-      <Tag value="Yes" severity="info" />
+      <Tag value={i18nT("static.1dudzcg")} severity="info" />
     ) : (
-      <Tag value="No" severity="secondary" />
+      <Tag value={i18nT("static.r5wqai")} severity="secondary" />
     );
   };
 
   const activeBodyTemplate = (row: EmployeeEducationRow) => {
     return row.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="secondary" />
+      <Tag value={i18nT("static.13zf5vc")} severity="secondary" />
     );
   };
 
@@ -288,7 +288,7 @@ const FormalEducation = () => {
           icon="pi pi-pencil"
           severity="secondary"
           onClick={() => openEdit(row)}
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ position: "top" }}
         />
         <Button
@@ -299,7 +299,7 @@ const FormalEducation = () => {
           icon="pi pi-trash"
           severity="danger"
           onClick={() => onDelete(row)}
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ position: "top" }}
         />
       </div>
@@ -310,7 +310,7 @@ const FormalEducation = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -319,7 +319,7 @@ const FormalEducation = () => {
       />
       <Button
         type="button"
-        label={isAddMode ? "Create Education" : "Save Changes"}
+        label={isAddMode ? i18nT("static.1dmlj8v") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
@@ -331,12 +331,12 @@ const FormalEducation = () => {
     <>
       <div className="flex flex-col gap-5">
         <EmployeeDetailTableHeader
-          title="Formal Education"
-          description="Manage school, diploma, bachelor, master, and other formal education records."
+          title={i18nT("static.7pr5z0")}
+          description={i18nT("static.mkx26g")}
           actions={
             <Button
               type="button"
-              label="New Education"
+              label={i18nT("static.9pzugj")}
               icon="pi pi-plus"
               size="small"
               className="w-full sm:w-auto"
@@ -357,10 +357,10 @@ const FormalEducation = () => {
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
-          emptyMessage="No formal education found."
+          emptyMessage={i18nT("static.16pb8s3")}
           scrollable
           tableStyle={{ minWidth: "70rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -368,29 +368,29 @@ const FormalEducation = () => {
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "60px" }}
           />
-          <Column field="degree" header="Degree" />
-          <Column field="name" header="Education Name" />
-          <Column field="institution_name" header="Institution" />
-          <Column field="major" header="Major" />
+          <Column field="degree" header={i18nT("static.118dsp5")} />
+          <Column field="name" header={i18nT("static.2gldt8")} />
+          <Column field="institution_name" header={i18nT("static.1a523l1")} />
+          <Column field="major" header={i18nT("static.6zybgi")} />
           <Column
-            header="Period"
+            header={i18nT("static.11hwh7o")}
             body={periodBodyTemplate}
             style={{ minWidth: "180px" }}
           />
-          <Column field="score" header="Score" />
-          <Column field="held_by" header="Held By" />
+          <Column field="score" header={i18nT("static.x9tsfp")} />
+          <Column field="held_by" header={i18nT("static.1h4t9b7")} />
           <Column
-            header="Certificate"
+            header={i18nT("static.l17574")}
             body={certificateBodyTemplate}
             style={{ minWidth: "120px" }}
           />
           <Column
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={activeBodyTemplate}
             style={{ minWidth: "110px" }}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBodyTemplate}
             frozen
             alignFrozen="right"
@@ -402,7 +402,7 @@ const FormalEducation = () => {
       </div>
 
       <Dialog
-        header={isAddMode ? "New Formal Education" : "Update Formal Education"}
+        header={isAddMode ? i18nT("static.fz3zi2") : i18nT("static.175mtet")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "56rem" }}
         onHide={hideDialog}
@@ -416,17 +416,17 @@ const FormalEducation = () => {
           <Controller
             name="degree"
             control={control}
-            rules={{ required: "Degree is required" }}
+            rules={{ required: i18nT("static.pz1vbc") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="formal_degree" className={fieldLabelClass}>
-                  Degree
+                  {i18nT("static.118dsp5")}{" "}
                 </label>
                 <InputText
                   id="formal_degree"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Example: Bachelor, Diploma, Master"
+                  placeholder={i18nT("static.1tt2xtz")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -438,17 +438,17 @@ const FormalEducation = () => {
           <Controller
             name="name"
             control={control}
-            rules={{ required: "Education name is required" }}
+            rules={{ required: i18nT("static.1j30tfx") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="formal_name" className={fieldLabelClass}>
-                  Education Name
+                  {i18nT("static.2gldt8")}{" "}
                 </label>
                 <InputText
                   id="formal_name"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Example: Information Systems"
+                  placeholder={i18nT("static.ajv9m5")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -460,17 +460,17 @@ const FormalEducation = () => {
           <Controller
             name="institution_name"
             control={control}
-            rules={{ required: "Institution is required" }}
+            rules={{ required: i18nT("static.15ixj50") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="formal_institution" className={fieldLabelClass}>
-                  Institution
+                  {i18nT("static.1a523l1")}{" "}
                 </label>
                 <InputText
                   id="formal_institution"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter institution name"
+                  placeholder={i18nT("static.s0mghu")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -482,17 +482,17 @@ const FormalEducation = () => {
           <Controller
             name="major"
             control={control}
-            rules={{ required: "Major is required" }}
+            rules={{ required: i18nT("static.du3hh3") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="formal_major" className={fieldLabelClass}>
-                  Major
+                  {i18nT("static.6zybgi")}{" "}
                 </label>
                 <InputText
                   id="formal_major"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter major"
+                  placeholder={i18nT("static.k0dhbo")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -504,11 +504,11 @@ const FormalEducation = () => {
           <Controller
             name="start_date"
             control={control}
-            rules={{ required: "Start date is required" }}
+            rules={{ required: i18nT("static.oz4lds") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="formal_start_date" className={fieldLabelClass}>
-                  Start Date
+                  {i18nT("static.7bl5hd")}{" "}
                 </label>
                 <Calendar
                   id="formal_start_date"
@@ -532,7 +532,7 @@ const FormalEducation = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="formal_end_date" className={fieldLabelClass}>
-                  End Date
+                  {i18nT("static.1j4m31m")}{" "}
                 </label>
                 <Calendar
                   id="formal_end_date"
@@ -553,13 +553,13 @@ const FormalEducation = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="formal_score" className={fieldLabelClass}>
-                  Score
+                  {i18nT("static.x9tsfp")}{" "}
                 </label>
                 <InputText
                   id="formal_score"
                   {...field}
                   className="w-full"
-                  placeholder="Example: 3.80 / A / Excellent"
+                  placeholder={i18nT("static.3gvmpz")}
                 />
               </div>
             )}
@@ -571,13 +571,13 @@ const FormalEducation = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="formal_held_by" className={fieldLabelClass}>
-                  Held By
+                  {i18nT("static.1h4t9b7")}{" "}
                 </label>
                 <InputText
                   id="formal_held_by"
                   {...field}
                   className="w-full"
-                  placeholder="Example: University / Institution"
+                  placeholder={i18nT("static.a08j3c")}
                 />
               </div>
             )}
@@ -592,11 +592,10 @@ const FormalEducation = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Certificate Available
+                        {i18nT("static.l9hrkr")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Enable this if certificate or supporting document is
-                        available.
+                        {i18nT("static.aowj0e")}{" "}
                       </p>
                     </div>
                     <InputSwitch
@@ -614,10 +613,10 @@ const FormalEducation = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Active
+                        {i18nT("static.8qzyhb")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Control whether this education record is still active.
+                        {i18nT("static.10uo91a")}{" "}
                       </p>
                     </div>
                     <InputSwitch

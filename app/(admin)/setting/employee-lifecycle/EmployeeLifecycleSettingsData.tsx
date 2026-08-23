@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -40,20 +41,21 @@ import type {
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 
 const typeOptions: {
-  label: string;
+  labelKey: string;
   value: EmployeeLifecycleChecklistTemplateInput["lifecycle_type"];
 }[] = [
-  { label: "Onboarding", value: "ONBOARDING" },
-  { label: "Employment Change", value: "EMPLOYMENT_CHANGE" },
-  { label: "Offboarding", value: "OFFBOARDING" },
+  { labelKey: "Onboarding", value: "ONBOARDING" },
+  { labelKey: "Employment Change", value: "EMPLOYMENT_CHANGE" },
+  { labelKey: "Offboarding", value: "OFFBOARDING" },
 ];
 
-const sourceOptions: { label: string; value: LifecycleAssignmentSource }[] = [
-  { label: "Employee", value: "EMPLOYEE" },
-  { label: "Supervisor / Manager", value: "SUPERVISOR" },
-  { label: "Existing Role", value: "ROLE" },
-  { label: "Manual Assignment", value: "MANUAL" },
-];
+const sourceOptions: { labelKey: string; value: LifecycleAssignmentSource }[] =
+  [
+    { labelKey: "Employee", value: "EMPLOYEE" },
+    { labelKey: "Supervisor / Manager", value: "SUPERVISOR" },
+    { labelKey: "Existing Role", value: "ROLE" },
+    { labelKey: "Manual Assignment", value: "MANUAL" },
+  ];
 
 const emptyItem = (): EmployeeLifecycleChecklistItemInput => ({
   code: "",
@@ -112,6 +114,7 @@ const cloneTemplate = (
 const formatDate = (value: string | null) => formatDisplayDate(value);
 
 export default function EmployeeLifecycleSettingsData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -148,7 +151,10 @@ export default function EmployeeLifecycleSettingsData() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -181,14 +187,14 @@ export default function EmployeeLifecycleSettingsData() {
 
   const saveItem = () => {
     if (!itemDraft.code.trim() || !itemDraft.name.trim()) {
-      notify("error", "Task code and name are required.");
+      notify("error", i18nT("static.1yphguc"));
       return;
     }
     if (
       itemDraft.assignment_source === "ROLE" &&
       !itemDraft.assignment_role_code
     ) {
-      notify("error", "Select a role for role-based assignment.");
+      notify("error", i18nT("static.op3h0g"));
       return;
     }
     const normalizedItem: EmployeeLifecycleChecklistItemInput =
@@ -221,10 +227,7 @@ export default function EmployeeLifecycleSettingsData() {
 
   const saveTemplate = async () => {
     if (!draft.code.trim() || !draft.name.trim() || draft.items.length === 0) {
-      notify(
-        "error",
-        "Template code, name, and at least one task are required.",
-      );
+      notify("error", i18nT("static.j7vx3u"));
       return;
     }
     setSaving(true);
@@ -236,7 +239,7 @@ export default function EmployeeLifecycleSettingsData() {
       });
       setTemplateDialog(false);
       await mutate();
-      notify("success", "Lifecycle template version created.");
+      notify("success", i18nT("static.1e15m2j"));
     } catch (caught: unknown) {
       notify(
         "error",
@@ -244,7 +247,7 @@ export default function EmployeeLifecycleSettingsData() {
           ? getErrorMessage(caught, "message")
           : caught instanceof Error
             ? caught.message
-            : "Unable to save lifecycle template.",
+            : i18nT("static.1sennu8"),
       );
     } finally {
       setSaving(false);
@@ -262,13 +265,13 @@ export default function EmployeeLifecycleSettingsData() {
         !template.is_active,
       );
       await mutate();
-      notify("success", "Lifecycle template status updated.");
+      notify("success", i18nT("static.1lnj0qu"));
     } catch (caught: unknown) {
       notify(
         "error",
         isResponseTypeError(caught)
           ? getErrorMessage(caught, "message")
-          : "Unable to update lifecycle template status.",
+          : i18nT("static.1y9o6sa"),
       );
     } finally {
       setSaving(false);
@@ -278,9 +281,7 @@ export default function EmployeeLifecycleSettingsData() {
   if (error) {
     return (
       <Card className="border border-red-200">
-        <p className="m-0 text-sm text-red-600">
-          Unable to load employee lifecycle configuration.
-        </p>
+        <p className="m-0 text-sm text-red-600">{i18nT("static.193pf8h")} </p>
       </Card>
     );
   }
@@ -291,16 +292,15 @@ export default function EmployeeLifecycleSettingsData() {
         <div className="flex flex-col gap-4 p-3 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-              Employee Lifecycle Configuration
+              {i18nT("static.qa7z2n")}{" "}
             </h1>
             <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-              Configure versioned checklist templates, task owners, due dates,
-              and reminders.
+              {i18nT("static.dcx3dr")}{" "}
             </p>
           </div>
           {canManage && (
             <Button
-              label="New Template Version"
+              label={i18nT("static.18a68vx")}
               icon="pi pi-plus"
               size="small"
               onClick={() => openNewTemplate()}
@@ -310,7 +310,7 @@ export default function EmployeeLifecycleSettingsData() {
       </Card>
 
       <Card
-        title="Lifecycle Types"
+        title={i18nT("static.tsjm4y")}
         className="border border-slate-200 shadow-sm"
       >
         <DataTable
@@ -319,18 +319,22 @@ export default function EmployeeLifecycleSettingsData() {
           size="small"
           stripedRows
         >
-          <Column field="name" header="Lifecycle Type" />
-          <Column field="lifecycle_type" header="Code" />
+          <Column field="name" header={i18nT("static.1cozql1")} />
+          <Column field="lifecycle_type" header={i18nT("static.xoaiok")} />
           <Column
             field="description"
-            header="Description"
+            header={i18nT("static.sjj37t")}
             body={(row) => row.description || "-"}
           />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row) => (
               <Tag
-                value={row.is_active ? "ACTIVE" : "INACTIVE"}
+                value={
+                  row.is_active
+                    ? i18nT("static.dokrfz")
+                    : i18nT("static.dt0j4o")
+                }
                 severity={row.is_active ? "success" : "secondary"}
               />
             )}
@@ -339,7 +343,7 @@ export default function EmployeeLifecycleSettingsData() {
       </Card>
 
       <Card
-        title="Checklist Templates"
+        title={i18nT("static.ic24fk")}
         className="border border-slate-200 shadow-sm"
       >
         <DataTable
@@ -349,30 +353,37 @@ export default function EmployeeLifecycleSettingsData() {
           size="small"
           stripedRows
           rowHover
-          emptyMessage="No lifecycle template found."
+          emptyMessage={i18nT("static.cdz91i")}
         >
-          <Column field="lifecycle_type" header="Type" />
-          <Column field="code" header="Code" />
-          <Column field="name" header="Name" />
-          <Column field="version_no" header="Version" />
+          <Column field="lifecycle_type" header={i18nT("static.1m2zofh")} />
+          <Column field="code" header={i18nT("static.xoaiok")} />
+          <Column field="name" header={i18nT("static.4el6o6")} />
+          <Column field="version_no" header={i18nT("static.q0zd4n")} />
           <Column
-            header="Effective"
+            header={i18nT("static.1r1sas2")}
             body={(row) =>
               `${formatDate(row.effective_from)} - ${formatDate(row.effective_to)}`
             }
           />
-          <Column header="Tasks" body={(row) => row.items.length} />
           <Column
-            header="Status"
+            header={i18nT("static.fzjmnh")}
+            body={(row) => row.items.length}
+          />
+          <Column
+            header={i18nT("static.3pd73")}
             body={(row) => (
               <Tag
-                value={row.is_active ? "ACTIVE" : "INACTIVE"}
+                value={
+                  row.is_active
+                    ? i18nT("static.dokrfz")
+                    : i18nT("static.dt0j4o")
+                }
                 severity={row.is_active ? "success" : "secondary"}
               />
             )}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={(row: EmployeeLifecycleChecklistTemplateSetting) => (
               <div className="flex justify-end gap-1">
                 {canManage && (
@@ -381,8 +392,8 @@ export default function EmployeeLifecycleSettingsData() {
                       icon="pi pi-copy"
                       text
                       rounded
-                      aria-label="New version"
-                      tooltip="New version"
+                      aria-label={i18nT("static.n7wr4t")}
+                      tooltip={i18nT("static.n7wr4t")}
                       onClick={() => openNewTemplate(row)}
                     />
                     <Button
@@ -390,8 +401,16 @@ export default function EmployeeLifecycleSettingsData() {
                       text
                       rounded
                       severity={row.is_active ? "warning" : "success"}
-                      aria-label={row.is_active ? "Deactivate" : "Activate"}
-                      tooltip={row.is_active ? "Deactivate" : "Activate"}
+                      aria-label={
+                        row.is_active
+                          ? i18nT("static.zgo73n")
+                          : i18nT("static.giwx3k")
+                      }
+                      tooltip={
+                        row.is_active
+                          ? i18nT("static.zgo73n")
+                          : i18nT("static.giwx3k")
+                      }
                       disabled={saving}
                       onClick={() => void toggleTemplate(row)}
                     />
@@ -404,7 +423,7 @@ export default function EmployeeLifecycleSettingsData() {
       </Card>
 
       <Dialog
-        header="New Lifecycle Template Version"
+        header={i18nT("static.vaftc9")}
         visible={templateDialog}
         modal
         draggable={false}
@@ -414,14 +433,14 @@ export default function EmployeeLifecycleSettingsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               disabled={saving}
               onClick={() => setTemplateDialog(false)}
             />
             <Button
-              label="Save Version"
+              label={i18nT("static.1851gbo")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void saveTemplate()}
@@ -432,10 +451,13 @@ export default function EmployeeLifecycleSettingsData() {
         <div className="grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Lifecycle Type
+              {i18nT("static.1cozql1")}{" "}
               <Dropdown
                 value={draft.lifecycle_type}
-                options={typeOptions}
+                options={typeOptions.map((option) => ({
+                  label: i18nT(option.labelKey),
+                  value: option.value,
+                }))}
                 className="w-full"
                 onChange={(event) =>
                   setDraft({ ...draft, lifecycle_type: event.value })
@@ -443,7 +465,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Template Code
+              {i18nT("static.1jff9a0")}{" "}
               <InputText
                 value={draft.code}
                 className="w-full"
@@ -453,7 +475,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Template Name
+              {i18nT("static.12sfbca")}{" "}
               <InputText
                 value={draft.name}
                 className="w-full"
@@ -463,7 +485,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective From
+              {i18nT("static.ypbwia")}{" "}
               <PrimeDatePicker
                 value={draft.effective_from}
                 className="w-full"
@@ -473,8 +495,10 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective To{" "}
-              <span className="font-normal text-slate-400">(optional)</span>
+              {i18nT("static.mtbgcr")}{" "}
+              <span className="font-normal text-slate-400">
+                {i18nT("static.6pi6gi")}
+              </span>
               <PrimeDatePicker
                 value={draft.effective_to}
                 className="w-full"
@@ -484,7 +508,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="flex items-center gap-3 pt-7 text-sm font-medium text-slate-700">
-              Active for new cases
+              {i18nT("static.1mtvhqf")}{" "}
               <InputSwitch
                 checked={draft.is_active}
                 onChange={(event) =>
@@ -494,7 +518,7 @@ export default function EmployeeLifecycleSettingsData() {
             </label>
           </div>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Description
+            {i18nT("static.sjj37t")}{" "}
             <InputTextarea
               value={draft.description ?? ""}
               rows={2}
@@ -507,10 +531,10 @@ export default function EmployeeLifecycleSettingsData() {
           <div className="rounded-lg border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
               <span className="text-sm font-semibold text-slate-700">
-                Checklist Items
+                {i18nT("static.1suo1ef")}{" "}
               </span>
               <Button
-                label="Add Task"
+                label={i18nT("static.z83ert")}
                 icon="pi pi-plus"
                 size="small"
                 outlined
@@ -522,21 +546,24 @@ export default function EmployeeLifecycleSettingsData() {
                 (a, b) => a.sequence_no - b.sequence_no,
               )}
               size="small"
-              emptyMessage="Add at least one checklist task."
+              emptyMessage={i18nT("static.708fc9")}
             >
               <Column field="sequence_no" header="#" />
-              <Column field="name" header="Task" />
-              <Column field="assignment_source" header="Owner Policy" />
+              <Column field="name" header={i18nT("static.x0051o")} />
               <Column
-                header="Role"
+                field="assignment_source"
+                header={i18nT("static.q3tmuu")}
+              />
+              <Column
+                header={i18nT("static.1402mgp")}
                 body={(row) => row.assignment_role_code || "-"}
               />
               <Column
-                header="Required"
+                header={i18nT("static.mq0cow")}
                 body={(row) => (row.is_required ? "Yes" : "No")}
               />
               <Column
-                header="Due"
+                header={i18nT("static.lfawnp")}
                 body={(row) =>
                   row.due_offset_days === null
                     ? "-"
@@ -544,16 +571,20 @@ export default function EmployeeLifecycleSettingsData() {
                 }
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row) => (
                   <Tag
-                    value={row.is_active ? "ACTIVE" : "INACTIVE"}
+                    value={
+                      row.is_active
+                        ? i18nT("static.dokrfz")
+                        : i18nT("static.dt0j4o")
+                    }
                     severity={row.is_active ? "success" : "secondary"}
                   />
                 )}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={(row: EmployeeLifecycleChecklistItemInput) => {
                   const index = draft.items.indexOf(row);
                   return (
@@ -562,8 +593,8 @@ export default function EmployeeLifecycleSettingsData() {
                         icon="pi pi-pencil"
                         text
                         rounded
-                        aria-label="Edit task"
-                        tooltip="Edit task"
+                        aria-label={i18nT("static.at0yqq")}
+                        tooltip={i18nT("static.at0yqq")}
                         onClick={() => openEditItem(row, index)}
                       />
                       <Button
@@ -571,8 +602,8 @@ export default function EmployeeLifecycleSettingsData() {
                         text
                         rounded
                         severity="danger"
-                        aria-label="Delete task"
-                        tooltip="Delete task"
+                        aria-label={i18nT("static.myktnn")}
+                        tooltip={i18nT("static.myktnn")}
                         onClick={() => removeItem(index)}
                       />
                     </div>
@@ -587,8 +618,8 @@ export default function EmployeeLifecycleSettingsData() {
       <Dialog
         header={
           editingItemIndex === null
-            ? "Add Checklist Task"
-            : "Edit Checklist Task"
+            ? i18nT("static.1dkmwc1")
+            : i18nT("static.183knbm")
         }
         visible={itemDialog}
         modal
@@ -599,19 +630,23 @@ export default function EmployeeLifecycleSettingsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setItemDialog(false)}
             />
-            <Button label="Save Task" icon="pi pi-check" onClick={saveItem} />
+            <Button
+              label={i18nT("static.7t7ri5")}
+              icon="pi pi-check"
+              onClick={saveItem}
+            />
           </div>
         }
       >
         <div className="grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Task Code
+              {i18nT("static.v9enxt")}{" "}
               <InputText
                 value={itemDraft.code}
                 onChange={(event) =>
@@ -620,7 +655,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Task Name
+              {i18nT("static.184t3j3")}{" "}
               <InputText
                 value={itemDraft.name}
                 onChange={(event) =>
@@ -629,7 +664,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Sequence
+              {i18nT("static.ryxthk")}{" "}
               <InputNumber
                 value={itemDraft.sequence_no}
                 min={1}
@@ -639,10 +674,13 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Assignment Source
+              {i18nT("static.1at1efp")}{" "}
               <Dropdown
                 value={itemDraft.assignment_source}
-                options={sourceOptions}
+                options={sourceOptions.map((option) => ({
+                  label: i18nT(option.labelKey),
+                  value: option.value,
+                }))}
                 className="w-full"
                 onChange={(event) =>
                   setItemDraft({
@@ -662,7 +700,7 @@ export default function EmployeeLifecycleSettingsData() {
             </label>
             {itemDraft.assignment_source === "ROLE" && (
               <label className="grid gap-2 text-sm font-medium text-slate-700">
-                Role
+                {i18nT("static.1402mgp")}{" "}
                 <Dropdown
                   value={itemDraft.assignment_role_code}
                   options={roleOptions}
@@ -682,7 +720,7 @@ export default function EmployeeLifecycleSettingsData() {
             {itemDraft.assignment_source === "ROLE" &&
               itemDraft.assignment_role_code && (
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
-                  Primary Assignee
+                  {i18nT("static.1xh9qg0")}{" "}
                   <Dropdown
                     value={itemDraft.primary_assignee_employee_id}
                     options={assignees
@@ -692,7 +730,10 @@ export default function EmployeeLifecycleSettingsData() {
                           itemDraft.assignment_role_code?.toLowerCase(),
                       )
                       .map((item) => ({
-                        label: `${item.name} (${item.username})`,
+                        label: i18nT("static.14r9r1n", {
+                          p0: item.name,
+                          p1: item.username,
+                        }),
                         value: item.employee_id,
                       }))}
                     showClear
@@ -708,7 +749,7 @@ export default function EmployeeLifecycleSettingsData() {
                 </label>
               )}
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Due Offset (days)
+              {i18nT("static.l9pwyq")}{" "}
               <InputNumber
                 value={itemDraft.due_offset_days}
                 min={0}
@@ -723,7 +764,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Reminder Before (days)
+              {i18nT("static.27t6ak")}{" "}
               <InputNumber
                 value={itemDraft.reminder_days_before}
                 min={0}
@@ -738,7 +779,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="flex items-center gap-3 pt-7 text-sm font-medium text-slate-700">
-              Required
+              {i18nT("static.mq0cow")}{" "}
               <InputSwitch
                 checked={itemDraft.is_required}
                 onChange={(event) =>
@@ -747,7 +788,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="flex items-center gap-3 pt-7 text-sm font-medium text-slate-700">
-              Notify on activation
+              {i18nT("static.egtamv")}{" "}
               <InputSwitch
                 checked={itemDraft.notify_on_activation}
                 onChange={(event) =>
@@ -759,7 +800,7 @@ export default function EmployeeLifecycleSettingsData() {
               />
             </label>
             <label className="flex items-center gap-3 pt-7 text-sm font-medium text-slate-700">
-              Active task
+              {i18nT("static.pt59w4")}{" "}
               <InputSwitch
                 checked={itemDraft.is_active}
                 onChange={(event) =>
@@ -769,7 +810,7 @@ export default function EmployeeLifecycleSettingsData() {
             </label>
           </div>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Description
+            {i18nT("static.sjj37t")}{" "}
             <InputTextarea
               value={itemDraft.description ?? ""}
               rows={3}

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
@@ -50,6 +51,7 @@ const emptyForm = (): BankForm => ({
 });
 
 export default function EmployeeBankAccountPanel() {
+  const { t: i18nT } = useI18n();
   const params = useParams<{ id: string }>();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
@@ -78,7 +80,10 @@ export default function EmployeeBankAccountPanel() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -170,7 +175,7 @@ export default function EmployeeBankAccountPanel() {
           form.row_version ?? -1,
           payload,
         );
-        notify("success", "Bank account updated.");
+        notify("success", i18nT("static.rqikhz"));
       } else {
         const payload: NewEmployeeBankAccount = {
           bank_id: form.bank_id,
@@ -180,7 +185,7 @@ export default function EmployeeBankAccountPanel() {
           is_active: form.is_active,
         };
         await createEmployeeBankAccount(employeeId, payload);
-        notify("success", "Bank account added.");
+        notify("success", i18nT("static.1it6y4w"));
       }
       setFormTouched(false);
       setVisible(false);
@@ -193,12 +198,12 @@ export default function EmployeeBankAccountPanel() {
   };
   const remove = (account: EmployeeBankAccount) => {
     requestActionConfirmation({
-      action: "Remove bank account",
+      action: i18nT("static.99c55m"),
       target: account.account_number_masked,
       severity: "danger",
-      confirmLabel: "Remove",
+      confirmLabel: i18nT("static.9c35st"),
       confirmIcon: "pi pi-trash",
-      description: "Remove this payroll bank account?",
+      description: i18nT("static.1nswnw8"),
       onAccept: async () => {
         setDeletingId(account.id);
         try {
@@ -208,7 +213,7 @@ export default function EmployeeBankAccountPanel() {
             account.id,
             account.row_version,
           );
-          notify("success", "Bank account removed.");
+          notify("success", i18nT("static.trq4gq"));
           await mutate();
         } catch (error: unknown) {
           notify("error", message(error));
@@ -223,13 +228,13 @@ export default function EmployeeBankAccountPanel() {
     <Card className="border border-slate-200 shadow-sm">
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
         <EmployeeDetailTableHeader
-          title="Bank Accounts"
-          description="Manage payroll settlement accounts. Account numbers are encrypted and shown masked."
+          title={i18nT("static.ezavjh")}
+          description={i18nT("static.6fwwfy")}
           actions={
             <>
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -242,7 +247,7 @@ export default function EmployeeBankAccountPanel() {
               {canCreate && (
                 <Button
                   type="button"
-                  label="Add Bank Account"
+                  label={i18nT("static.4le62h")}
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -266,52 +271,63 @@ export default function EmployeeBankAccountPanel() {
           scrollable
           size="small"
           tableStyle={{ minWidth: "56rem" }}
-          emptyMessage="No bank account has been added."
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          emptyMessage={i18nT("static.1ikpo61")}
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
             field="bank_name"
-            header="Bank"
+            header={i18nT("static.192q8xj")}
             sortable
             style={{ minWidth: "15rem" }}
             body={(row: EmployeeBankAccount) => (
               <span className="font-medium text-slate-800">
                 {row.bank_code
-                  ? `${row.bank_name} (${row.bank_code})`
+                  ? i18nT("static.14r9r1n", {
+                      p0: row.bank_name,
+                      p1: row.bank_code,
+                    })
                   : row.bank_name}
               </span>
             )}
           />
           <Column
             field="account_number_masked"
-            header="Account Number"
+            header={i18nT("static.1aqdbdx")}
             sortable
             style={{ minWidth: "13rem" }}
           />
           <Column
             field="account_holder_name"
-            header="Account Holder"
+            header={i18nT("static.17ajpb6")}
             sortable
             style={{ minWidth: "15rem" }}
           />
           <Column
-            header="Primary"
+            header={i18nT("static.1jcui61")}
             style={{ minWidth: "9rem" }}
             body={(row: EmployeeBankAccount) => (
               <Tag
-                value={row.is_primary ? "Primary" : "Secondary"}
+                value={
+                  row.is_primary
+                    ? i18nT("static.1jcui61")
+                    : i18nT("static.75qooh")
+                }
                 severity={row.is_primary ? "success" : "secondary"}
                 rounded
               />
             )}
           />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             style={{ minWidth: "9rem" }}
             body={(row: EmployeeBankAccount) => (
               <Tag
-                value={row.is_active ? "Active" : "Inactive"}
+                value={
+                  row.is_active
+                    ? i18nT("static.8qzyhb")
+                    : i18nT("static.13zf5vc")
+                }
                 severity={row.is_active ? "success" : "secondary"}
                 rounded
               />
@@ -319,7 +335,7 @@ export default function EmployeeBankAccountPanel() {
           />
           {(canUpdate || canDelete) && (
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               frozen
               alignFrozen="right"
               headerClassName="bg-white"
@@ -343,8 +359,8 @@ export default function EmployeeBankAccountPanel() {
                       outlined
                       severity="secondary"
                       size="small"
-                      tooltip="Edit"
-                      aria-label="Edit bank account"
+                      tooltip={i18nT("static.1i1lcq9")}
+                      aria-label={i18nT("static.14czhri")}
                       onClick={() => openEdit(row)}
                     />
                   )}
@@ -356,8 +372,8 @@ export default function EmployeeBankAccountPanel() {
                       outlined
                       severity="danger"
                       size="small"
-                      tooltip="Remove"
-                      aria-label="Remove bank account"
+                      tooltip={i18nT("static.9c35st")}
+                      aria-label={i18nT("static.99c55m")}
                       loading={deletingId === row.id}
                       disabled={deletingId !== null}
                       onClick={() => remove(row)}
@@ -370,7 +386,7 @@ export default function EmployeeBankAccountPanel() {
         </DataTable>
       </div>
       <Dialog
-        header={form.id ? "Update Bank Account" : "New Bank Account"}
+        header={form.id ? i18nT("static.sx66rd") : i18nT("static.1o9mtgu")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "42rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -378,7 +394,7 @@ export default function EmployeeBankAccountPanel() {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -389,7 +405,7 @@ export default function EmployeeBankAccountPanel() {
             <Button
               type="submit"
               form="employee-bank-account-form"
-              label={form.id ? "Save Changes" : "Add Account"}
+              label={form.id ? i18nT("static.6gmm1l") : i18nT("static.79psmr")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -414,7 +430,7 @@ export default function EmployeeBankAccountPanel() {
         >
           <Field
             id="employee-bank-account-bank"
-            label="Bank"
+            label={i18nT("static.192q8xj")}
             required
             error={formErrors.bank_id}
           >
@@ -426,7 +442,7 @@ export default function EmployeeBankAccountPanel() {
               optionValue="id"
               filter
               showClear
-              placeholder="Select bank"
+              placeholder={i18nT("static.nfjo79")}
               className={`w-full ${formErrors.bank_id ? "p-invalid" : ""}`}
               onChange={(event) => {
                 setFormTouched(true);
@@ -444,13 +460,9 @@ export default function EmployeeBankAccountPanel() {
 
           <Field
             id="employee-bank-account-number"
-            label="Account Number"
+            label={i18nT("static.1aqdbdx")}
             required={!form.id}
-            hint={
-              form.id
-                ? "Leave empty to keep the current number."
-                : "Use digits only."
-            }
+            hint={form.id ? i18nT("static.qunaqk") : i18nT("static.1xr57dq")}
             error={formErrors.account_number}
           >
             <InputText
@@ -459,7 +471,9 @@ export default function EmployeeBankAccountPanel() {
               inputMode="numeric"
               autoComplete="off"
               className={`w-full ${formErrors.account_number ? "p-invalid" : ""}`}
-              placeholder={form.id ? "Optional" : "Digits only"}
+              placeholder={
+                form.id ? i18nT("static.1yfbac9") : i18nT("static.1bndnwf")
+              }
               onChange={(event) => {
                 setFormTouched(true);
                 setFormErrors((current) => ({
@@ -476,7 +490,7 @@ export default function EmployeeBankAccountPanel() {
 
           <Field
             id="employee-bank-account-holder"
-            label="Account Holder"
+            label={i18nT("static.17ajpb6")}
             required
             error={formErrors.account_holder_name}
           >
@@ -502,8 +516,8 @@ export default function EmployeeBankAccountPanel() {
           <div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-2">
             <StatusOption
               inputId="employee-bank-account-active"
-              label="Active"
-              description="Available for payroll settlement."
+              label={i18nT("static.8qzyhb")}
+              description={i18nT("static.5a4onp")}
               checked={form.is_active}
               onChange={(checked) => {
                 setFormTouched(true);
@@ -517,8 +531,8 @@ export default function EmployeeBankAccountPanel() {
 
             <StatusOption
               inputId="employee-bank-account-primary"
-              label="Primary account"
-              description="Used as the default payroll account."
+              label={i18nT("static.1izp2jy")}
+              description={i18nT("static.mk1phm")}
               checked={form.is_primary}
               disabled={!form.is_active}
               onChange={(checked) => {

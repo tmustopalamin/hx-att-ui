@@ -1,3 +1,6 @@
+"use client";
+
+import { useI18n } from "@/app/i18n";
 import { Card } from "primereact/card";
 
 export interface EmployeeSummary {
@@ -14,7 +17,7 @@ interface EmployeeSummaryCardsProps {
 const items = [
   {
     key: "total",
-    label: "Total Employees",
+    labelKey: "Total Employees",
     borderClass: "border-slate-200",
     labelClass: "text-slate-500",
     valueClass: "text-slate-800",
@@ -23,7 +26,7 @@ const items = [
   },
   {
     key: "active",
-    label: "Active Records",
+    labelKey: "Active Records",
     borderClass: "border-green-200",
     labelClass: "text-green-700",
     valueClass: "text-green-800",
@@ -32,7 +35,7 @@ const items = [
   },
   {
     key: "deleted",
-    label: "Deleted Records",
+    labelKey: "Deleted Records",
     borderClass: "border-red-200",
     labelClass: "text-red-700",
     valueClass: "text-red-800",
@@ -41,7 +44,7 @@ const items = [
   },
   {
     key: "noOrganization",
-    label: "Need Org Update",
+    labelKey: "Need Org Update",
     borderClass: "border-amber-200",
     labelClass: "text-amber-700",
     valueClass: "text-amber-800",
@@ -53,13 +56,17 @@ const items = [
 export default function EmployeeSummaryCards({
   summary,
 }: EmployeeSummaryCardsProps) {
+  const { t: i18nT } = useI18n();
+
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {items.map((item) => (
         <Card key={item.key} className={`border shadow-sm ${item.borderClass}`}>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className={`m-0 text-xs ${item.labelClass}`}>{item.label}</p>
+              <p className={`m-0 text-xs ${item.labelClass}`}>
+                {i18nT(item.labelKey)}
+              </p>
               <p
                 className={`m-0 mt-2 text-2xl font-semibold ${item.valueClass}`}
               >

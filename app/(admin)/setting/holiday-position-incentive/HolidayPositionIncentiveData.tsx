@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -71,6 +72,7 @@ const formatCurrency = (value: string | number) => {
 };
 
 export default function HolidayPositionIncentiveData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -108,7 +110,7 @@ export default function HolidayPositionIncentiveData() {
         .filter((position) => position.is_active && !position.deleted_at)
         .map((position) => ({
           label: position.code
-            ? `${position.code} — ${position.name}`
+            ? i18nT("static.1v0umq8", { p0: position.code, p1: position.name })
             : position.name,
           value: position.id,
         })),
@@ -124,7 +126,10 @@ export default function HolidayPositionIncentiveData() {
             component.assignment_mode === "EMPLOYEE",
         )
         .map((component) => ({
-          label: `${component.code ?? "-"} — ${component.name}`,
+          label: i18nT("static.1v0umq8", {
+            p0: component.code ?? "-",
+            p1: component.name,
+          }),
           value: component.id,
         })),
     [incomeComponents],
@@ -141,12 +146,12 @@ export default function HolidayPositionIncentiveData() {
   const showError = (requestError: unknown) => {
     notify(
       "error",
-      "Unable to save",
+      i18nT("static.rulhkg"),
       isResponseTypeError(requestError)
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   };
 
@@ -190,11 +195,7 @@ export default function HolidayPositionIncentiveData() {
       (form.effective_to && form.effective_to < form.effective_from) ||
       form.position_ids.length === 0
     ) {
-      notify(
-        "error",
-        "Validation",
-        "Code, name, component, daily amount, effective dates, and at least one position are required.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.1f8yofc"));
       return;
     }
     const payload: HolidayPositionIncentivePolicyPayload = {
@@ -222,8 +223,10 @@ export default function HolidayPositionIncentiveData() {
       closeDialog();
       notify(
         "success",
-        "Saved",
-        `Holiday position incentive ${selected ? "updated" : "created"}.`,
+        i18nT("static.12ek4is"),
+        i18nT("static.14zkfct", {
+          p0: selected ? i18nT("static.90vcj4") : i18nT("static.dupnej"),
+        }),
       );
     } catch (requestError) {
       showError(requestError);
@@ -246,19 +249,17 @@ export default function HolidayPositionIncentiveData() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Holiday Position Incentive
+                  {i18nT("static.1j8t3bn")}{" "}
                 </h1>
                 <p className="m-0 mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-                  One daily incentive is generated when an employee has actual
-                  attendance on a Holiday Master date and approved overtime,
-                  based on the position effective on that date.
+                  {i18nT("static.1j4jfku")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full gap-2 sm:w-auto">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -269,7 +270,7 @@ export default function HolidayPositionIncentiveData() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Policy"
+                  label={i18nT("static.19n8kxx")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={openNew}
@@ -283,7 +284,7 @@ export default function HolidayPositionIncentiveData() {
               checked={includeInactive}
               onChange={(event) => setIncludeInactive(Boolean(event.value))}
             />
-            Show inactive policies
+            {i18nT("static.a23f7x")}{" "}
           </div>
 
           <DataTable
@@ -298,19 +299,19 @@ export default function HolidayPositionIncentiveData() {
             size="small"
             loading={isValidating}
             tableStyle={{ minWidth: "68rem" }}
-            emptyMessage="No holiday position incentive policy found."
+            emptyMessage={i18nT("static.5s9jqo")}
           >
-            <Column field="code" header="Code" sortable />
-            <Column field="name" header="Policy" sortable />
+            <Column field="code" header={i18nT("static.xoaiok")} sortable />
+            <Column field="name" header={i18nT("static.1g6zau7")} sortable />
             <Column
-              header="Positions"
+              header={i18nT("static.1s5v9qz")}
               body={(row: HolidayPositionIncentivePolicy) =>
                 row.positions.map((position) => position.name).join(", ")
               }
               style={{ minWidth: "18rem" }}
             />
             <Column
-              header="Income Component"
+              header={i18nT("static.14pnb2x")}
               body={(row: HolidayPositionIncentivePolicy) =>
                 row.income_component_code
                   ? `${row.income_component_code} — ${row.income_component_name}`
@@ -319,33 +320,37 @@ export default function HolidayPositionIncentiveData() {
               style={{ minWidth: "18rem" }}
             />
             <Column
-              header="Daily Amount"
+              header={i18nT("static.18m2ufq")}
               body={(row: HolidayPositionIncentivePolicy) =>
                 formatCurrency(row.daily_amount)
               }
             />
             <Column
-              header="Effective"
+              header={i18nT("static.1r1sas2")}
               body={(row: HolidayPositionIncentivePolicy) =>
                 `${row.effective_from} — ${row.effective_to ?? "Open"}`
               }
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: HolidayPositionIncentivePolicy) => (
                 <Tag
-                  value={row.is_active ? "Active" : "Inactive"}
+                  value={
+                    row.is_active
+                      ? i18nT("static.8qzyhb")
+                      : i18nT("static.13zf5vc")
+                  }
                   severity={row.is_active ? "success" : "warning"}
                 />
               )}
             />
             {canManage && (
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={(row: HolidayPositionIncentivePolicy) => (
                   <Button
                     type="button"
-                    label="Edit"
+                    label={i18nT("static.1i1lcq9")}
                     icon="pi pi-pencil"
                     outlined
                     size="small"
@@ -359,11 +364,7 @@ export default function HolidayPositionIncentiveData() {
       </Card>
 
       <Dialog
-        header={
-          selected
-            ? "Edit Holiday Position Incentive"
-            : "New Holiday Position Incentive"
-        }
+        header={selected ? i18nT("static.l7of6l") : i18nT("static.1nwqo65")}
         visible={dialogVisible}
         modal
         draggable={false}
@@ -374,14 +375,14 @@ export default function HolidayPositionIncentiveData() {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               onClick={closeDialog}
             />
             <Button
               type="button"
-              label="Save"
+              label={i18nT("static.lewgh4")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void save()}
@@ -392,7 +393,7 @@ export default function HolidayPositionIncentiveData() {
         <div className="grid gap-4 py-2">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Policy Code
+              {i18nT("static.yyofws")}{" "}
               <InputText
                 value={form.code}
                 onChange={(event) =>
@@ -401,11 +402,11 @@ export default function HolidayPositionIncentiveData() {
                     code: event.target.value,
                   }))
                 }
-                placeholder="HOLIDAY_POS_TECH"
+                placeholder={i18nT("static.1fwiiy3")}
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Policy Name
+              {i18nT("static.c1t4lq")}{" "}
               <InputText
                 value={form.name}
                 onChange={(event) =>
@@ -414,19 +415,19 @@ export default function HolidayPositionIncentiveData() {
                     name: event.target.value,
                   }))
                 }
-                placeholder="Holiday Position Incentive"
+                placeholder={i18nT("static.1j8t3bn")}
               />
             </label>
           </div>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Eligible Positions
+            {i18nT("static.io9v8g")}{" "}
             <MultiSelect
               value={form.position_ids}
               options={positionOptions}
               filter
               display="chip"
               className="w-full"
-              placeholder="Select one or more positions"
+              placeholder={i18nT("static.9isl27")}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -437,13 +438,13 @@ export default function HolidayPositionIncentiveData() {
           </label>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Income Component
+              {i18nT("static.14pnb2x")}{" "}
               <Dropdown
                 value={form.income_component_id}
                 options={incomeOptions}
                 filter
                 className="w-full"
-                placeholder="Select existing income component"
+                placeholder={i18nT("static.nccmmq")}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -453,7 +454,7 @@ export default function HolidayPositionIncentiveData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Incentive per Day
+              {i18nT("static.va0bu3")}{" "}
               <InputNumber
                 value={form.daily_amount}
                 mode="currency"
@@ -472,7 +473,7 @@ export default function HolidayPositionIncentiveData() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective From
+              {i18nT("static.ypbwia")}{" "}
               <PrimeDatePicker
                 value={form.effective_from}
                 onValueChange={(value) =>
@@ -481,7 +482,7 @@ export default function HolidayPositionIncentiveData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective To
+              {i18nT("static.mtbgcr")}{" "}
               <PrimeDatePicker
                 value={form.effective_to}
                 onValueChange={(value) =>
@@ -500,12 +501,10 @@ export default function HolidayPositionIncentiveData() {
                 }))
               }
             />
-            Active policy
+            {i18nT("static.1wicliv")}{" "}
           </label>
           <p className="m-0 text-xs leading-5 text-slate-500">
-            The component is added as a separate payroll adjustment. Do not
-            assign the same component as a recurring employee income for the
-            same period, or it may be paid twice.
+            {i18nT("static.1iqxkm8")}{" "}
           </p>
         </div>
       </Dialog>

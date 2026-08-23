@@ -11,6 +11,7 @@ import BProgressProvider from "../utils/providers/BProgressProvider";
 import AvatarWithSidebar from "./AvatarWithSidebar";
 import SidebarMenu from "./SidebarMenu";
 import NotificationBell from "../_components/NotificationBell";
+import LanguageSwitcher from "../_components/LanguageSwitcher";
 import { GlobalActionConfirmDialog } from "../_components/ActionConfirmDialog";
 import { isUnauthorizedError, redirectToLogin } from "../utils/api-client";
 
@@ -88,6 +89,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                  <LanguageSwitcher compact />
                   <NotificationBell />
                   <AvatarWithSidebar />
                 </div>

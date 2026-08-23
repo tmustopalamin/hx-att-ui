@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/app/i18n";
+import { routeTranslationKeys } from "@/app/i18n/routes";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,6 +17,7 @@ const Breadcrumb = ({
   onClickSidebar: onClickSidebar,
 }: ChildProps) => {
   const pathname = usePathname();
+  const { t, tText } = useI18n();
   const segments = pathname
     .split("/")
     .filter(Boolean)
@@ -27,20 +30,25 @@ const Breadcrumb = ({
       .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
       .join(" ");
 
+  const translateSegment = (segment: string) => {
+    const translationKey = routeTranslationKeys[segment];
+    return translationKey ? t(translationKey) : tText(format(segment));
+  };
+
   return (
     <nav className="flex column items-center gap-5 text-sm text-gray-600">
       <Button
         icon="pi pi-bars"
         rounded
         text
-        aria-label="Toggle sidebar"
-        tooltip="Toggle sidebar"
+        aria-label={t("common.navigation.toggleSidebar")}
+        tooltip={t("common.navigation.toggleSidebar")}
         onClick={() => onClickSidebar(!sidebarVisible)}
       />
       <ol className="flex gap-2">
         <li>
           <Link href="/" className="hover:underline">
-            Home
+            {t("common.navigation.home")}
           </Link>
         </li>
         {segments.map((seg, idx) => {
@@ -50,7 +58,7 @@ const Breadcrumb = ({
             <li key={href} className="flex gap-2">
               <span>/</span>
               <Link href={href} className="hover:underline">
-                {format(seg)}
+                {translateSegment(seg)}
               </Link>
             </li>
           );

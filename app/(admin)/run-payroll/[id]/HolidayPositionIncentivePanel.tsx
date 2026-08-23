@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
@@ -37,6 +38,7 @@ export default function HolidayPositionIncentivePanel({
   batchId: number;
   batchStatus: string;
 }) {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const { mutate: mutateKey } = useSWRConfig();
   const permissions = useSelector(
@@ -67,8 +69,8 @@ export default function HolidayPositionIncentivePanel({
         showToast({
           visible: true,
           severity: "success",
-          summary: "Holiday incentive generated",
-          detail: `${result.created.length} adjustment(s) created. Submit them for maker-checker approval.`,
+          summary: i18nT("static.156nwqb"),
+          detail: i18nT("static.1xuavz6", { p0: result.created.length }),
         }),
       );
     } catch {
@@ -76,9 +78,8 @@ export default function HolidayPositionIncentivePanel({
         showToast({
           visible: true,
           severity: "error",
-          summary: "Unable to generate",
-          detail:
-            "The batch must be READY and eligible holiday attendance must have approved overtime and an active position policy.",
+          summary: i18nT("static.14ftm3u"),
+          detail: i18nT("static.vil9jw"),
         }),
       );
     } finally {
@@ -88,13 +89,12 @@ export default function HolidayPositionIncentivePanel({
 
   const confirmGenerate = () => {
     requestActionConfirmation({
-      action: "Generate holiday position incentives",
+      action: i18nT("static.1sqqbzh"),
       target: `Payroll batch #${batchId}`,
       severity: "warning",
-      confirmLabel: "Generate",
+      confirmLabel: i18nT("static.1jb34xe"),
       confirmIcon: "pi pi-bolt",
-      description:
-        "Create one daily incentive per eligible holiday date and employee-policy pair?",
+      description: i18nT("static.88veug"),
       onAccept: () => generate(),
     });
   };
@@ -109,7 +109,7 @@ export default function HolidayPositionIncentivePanel({
         >
           <div>
             <h2 className="m-0 text-base font-semibold">
-              Unable to load holiday incentive preview
+              {i18nT("static.1xkod0g")}{" "}
             </h2>
             <p className="m-0 mt-1 text-sm text-red-700">
               {getErrorMessage(error, "code")}
@@ -117,7 +117,7 @@ export default function HolidayPositionIncentivePanel({
           </div>
           <Button
             type="button"
-            label="Try again"
+            label={i18nT("static.982hh6")}
             icon="pi pi-refresh"
             severity="secondary"
             outlined
@@ -134,15 +134,14 @@ export default function HolidayPositionIncentivePanel({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="m-0 text-base font-semibold text-slate-800">
-              Holiday Position Incentive
+              {i18nT("static.1j8t3bn")}{" "}
             </h2>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Actual attendance on Holiday Master dates + approved overtime +
-              effective position policy. Weekend/day-off dates are excluded.
+              {i18nT("static.4nyibb")}{" "}
             </p>
           </div>
           <Button
-            label="Generate adjustments"
+            label={i18nT("static.82anqq")}
             icon="pi pi-bolt"
             size="small"
             loading={isLoading || isValidating || generating}
@@ -162,51 +161,50 @@ export default function HolidayPositionIncentivePanel({
           scrollable
           responsiveLayout="scroll"
           loading={isLoading || isValidating}
-          emptyMessage="No eligible holiday position incentive found for this batch."
+          emptyMessage={i18nT("static.1lzvvxi")}
         >
-          <Column field="employee_code" header="Employee ID" />
-          <Column field="employee_name" header="Employee" />
+          <Column field="employee_code" header={i18nT("static.1lghzb2")} />
+          <Column field="employee_name" header={i18nT("static.1fak8xt")} />
           <Column
-            header="Policy / Position"
+            header={i18nT("static.t0y6r1")}
             body={(row: PayrollHolidayPositionIncentivePreview) =>
               `${row.policy_code} — ${row.policy_name}`
             }
           />
           <Column
-            header="Eligible Dates"
+            header={i18nT("static.1spgcl1")}
             body={(row: PayrollHolidayPositionIncentivePreview) =>
               row.eligible_dates.join(", ")
             }
             style={{ minWidth: "16rem" }}
           />
           <Column
-            header="Days"
+            header={i18nT("static.pxfr8q")}
             body={(row: PayrollHolidayPositionIncentivePreview) =>
               row.eligible_day_count
             }
           />
           <Column
-            header="Amount"
+            header={i18nT("static.a2ky21")}
             body={(row: PayrollHolidayPositionIncentivePreview) =>
               `${currency(row.daily_amount)} × ${row.eligible_day_count} = ${currency(row.amount)}`
             }
             style={{ minWidth: "16rem" }}
           />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: PayrollHolidayPositionIncentivePreview) =>
               row.reason ? (
                 <Tag value={row.reason} severity="warning" />
               ) : (
-                <Tag value="Eligible" severity="success" />
+                <Tag value={i18nT("static.ile4gg")} severity="success" />
               )
             }
           />
         </DataTable>
         {batchStatus !== "READY" && (
           <p className="m-0 text-xs text-slate-500">
-            Generation is available only while the payroll batch is READY.
-            Generated adjustments follow the existing submit/approve workflow.
+            {i18nT("static.1j2sq29")}{" "}
           </p>
         )}
       </div>

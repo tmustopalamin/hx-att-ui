@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -86,6 +87,7 @@ const getDefaultWeekRange = (): [Date, Date] => {
 };
 
 const EmployeeShiftAssignmentListPage = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const router = useRouter();
 
@@ -136,7 +138,7 @@ const EmployeeShiftAssignmentListPage = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -148,7 +150,7 @@ const EmployeeShiftAssignmentListPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -161,7 +163,7 @@ const EmployeeShiftAssignmentListPage = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -173,8 +175,8 @@ const EmployeeShiftAssignmentListPage = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -421,7 +423,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
       await refreshEmployeeShiftAssignmentData();
 
-      showSuccess(response.message || "Schedule deleted successfully.");
+      showSuccess(response.message || i18nT("static.mw4wpo"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -440,7 +442,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
       await refreshEmployeeShiftAssignmentData();
 
-      showSuccess(response.message || "Schedule restored successfully.");
+      showSuccess(response.message || i18nT("static.l805sb"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -459,7 +461,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
       await refreshEmployeeShiftAssignmentData();
 
-      showSuccess(response.message || "Schedule permanently deleted.");
+      showSuccess(response.message || i18nT("static.1n4pzva"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -470,20 +472,20 @@ const EmployeeShiftAssignmentListPage = () => {
 
   const onClickDelete = (row: EmployeeShiftAssignmentRow) => {
     requestActionConfirmation({
-      header: "Delete Schedule",
+      header: i18nT("static.ltdhu3"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this daily schedule?
-          </span>
+          <span className="text-slate-600">{i18nT("static.hkeit")} </span>
 
           <span className="font-semibold text-slate-800">
-            {row.employee_name || "Unknown employee"}
+            {row.employee_name || i18nT("static.1drwniz")}
           </span>
 
           <span className="text-sm text-slate-500">
-            {row.shift_name || "Unknown shift"} ·{" "}
-            {row.shift_date ? formatDisplayDate(row.shift_date) : "No date"}
+            {row.shift_name || i18nT("static.jp1eqx")} {i18nT("static.19xoda3")}{" "}
+            {row.shift_date
+              ? formatDisplayDate(row.shift_date)
+              : i18nT("static.z5wi6y")}
           </span>
         </div>
       ),
@@ -497,7 +499,7 @@ const EmployeeShiftAssignmentListPage = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -506,7 +508,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -518,20 +520,20 @@ const EmployeeShiftAssignmentListPage = () => {
 
   const onClickRestore = (row: EmployeeShiftAssignmentRow) => {
     requestActionConfirmation({
-      header: "Restore Schedule",
+      header: i18nT("static.1lmr4cq"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this daily schedule?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1x63uk8")} </span>
 
           <span className="font-semibold text-slate-800">
-            {row.employee_name || "Unknown employee"}
+            {row.employee_name || i18nT("static.1drwniz")}
           </span>
 
           <span className="text-sm text-slate-500">
-            {row.shift_name || "Unknown shift"} ·{" "}
-            {row.shift_date ? formatDisplayDate(row.shift_date) : "No date"}
+            {row.shift_name || i18nT("static.jp1eqx")} {i18nT("static.19xoda3")}{" "}
+            {row.shift_date
+              ? formatDisplayDate(row.shift_date)
+              : i18nT("static.z5wi6y")}
           </span>
         </div>
       ),
@@ -545,7 +547,7 @@ const EmployeeShiftAssignmentListPage = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -554,7 +556,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -566,20 +568,20 @@ const EmployeeShiftAssignmentListPage = () => {
 
   const onClickPurge = (row: EmployeeShiftAssignmentRow) => {
     requestActionConfirmation({
-      header: "Delete Schedule Permanently",
+      header: i18nT("static.1ookh6q"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">
-            {row.employee_name || "Unknown employee"}
+            {row.employee_name || i18nT("static.1drwniz")}
           </span>
 
           <span className="text-sm text-slate-500">
-            {row.shift_name || "Unknown shift"} ·{" "}
-            {row.shift_date ? formatDisplayDate(row.shift_date) : "No date"}
+            {row.shift_name || i18nT("static.jp1eqx")} {i18nT("static.19xoda3")}{" "}
+            {row.shift_date
+              ? formatDisplayDate(row.shift_date)
+              : i18nT("static.z5wi6y")}
           </span>
         </div>
       ),
@@ -593,7 +595,7 @@ const EmployeeShiftAssignmentListPage = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -602,7 +604,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -615,13 +617,18 @@ const EmployeeShiftAssignmentListPage = () => {
   const renderStatusTag = (row: EmployeeShiftAssignmentRow) => {
     if (row.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     return (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
@@ -654,7 +661,11 @@ const EmployeeShiftAssignmentListPage = () => {
 
     if (row.deleted_at) {
       if (!archivedAccess.canRestore && !archivedAccess.canPurge) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -667,7 +678,7 @@ const EmployeeShiftAssignmentListPage = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -686,7 +697,7 @@ const EmployeeShiftAssignmentListPage = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -708,7 +719,7 @@ const EmployeeShiftAssignmentListPage = () => {
         outlined
         severity="danger"
         size="small"
-        tooltip="Delete"
+        tooltip={i18nT("static.oay2cq")}
         tooltipOptions={{
           appendTo: getBody,
           position: "top",
@@ -741,11 +752,11 @@ const EmployeeShiftAssignmentListPage = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Employee Shift Assignment
+                  {i18nT("static.1c6l4uy")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Review daily employee schedules in a calendar-style matrix.
+                  {i18nT("static.xzgpeh")}{" "}
                 </p>
               </div>
             </div>
@@ -753,7 +764,7 @@ const EmployeeShiftAssignmentListPage = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -767,7 +778,7 @@ const EmployeeShiftAssignmentListPage = () => {
               <Can allOf={MASS_SCHEDULE_CHANGE_PERMISSIONS}>
                 <Button
                   type="button"
-                  label="Mass Schedule Change"
+                  label={i18nT("static.15ge9fu")}
                   icon="pi pi-sliders-h"
                   severity="secondary"
                   outlined
@@ -782,7 +793,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
               <Button
                 type="button"
-                label="Generate Schedule"
+                label={i18nT("static.a0nkg3")}
                 icon="pi pi-plus"
                 size="small"
                 disabled={isProcessing}
@@ -798,19 +809,18 @@ const EmployeeShiftAssignmentListPage = () => {
           <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Schedule Filter
+                {i18nT("static.lm70ue")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Choose a period and search by employee, shift, holiday, or day
-                off.
+                {i18nT("static.10pe6ec")}{" "}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                label="Today"
+                label={i18nT("static.1sawk0u")}
                 size="small"
                 severity={quickRange === "today" ? "info" : "secondary"}
                 outlined={quickRange !== "today"}
@@ -819,7 +829,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
               <Button
                 type="button"
-                label="This Week"
+                label={i18nT("static.he9t3n")}
                 size="small"
                 severity={quickRange === "this_week" ? "info" : "secondary"}
                 outlined={quickRange !== "this_week"}
@@ -828,7 +838,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
               <Button
                 type="button"
-                label="This Month"
+                label={i18nT("static.usin9z")}
                 size="small"
                 severity={quickRange === "this_month" ? "info" : "secondary"}
                 outlined={quickRange !== "this_month"}
@@ -842,7 +852,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   htmlFor="date_from"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Date From
+                  {i18nT("static.pkgk6v")}{" "}
                 </label>
 
                 <Calendar
@@ -851,7 +861,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   value={dateFrom}
                   dateFormat="dd MM yy"
                   showIcon
-                  placeholder="Select start date"
+                  placeholder={i18nT("static.h39lib")}
                   className="w-full"
                   onChange={(event) =>
                     onDateFromChange((event.value as Date | null) ?? null)
@@ -864,7 +874,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   htmlFor="date_to"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Date To
+                  {i18nT("static.1iqht4m")}{" "}
                 </label>
 
                 <Calendar
@@ -873,7 +883,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   value={dateTo}
                   dateFormat="dd MM yy"
                   showIcon
-                  placeholder="Select end date"
+                  placeholder={i18nT("static.12xc3jc")}
                   className="w-full"
                   onChange={(event) =>
                     onDateToChange((event.value as Date | null) ?? null)
@@ -886,7 +896,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   htmlFor="schedule_search"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Search
+                  {i18nT("static.1j0itop")}{" "}
                 </label>
 
                 <IconField iconPosition="left" className="w-full">
@@ -895,7 +905,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   <InputText
                     id="schedule_search"
                     value={search}
-                    placeholder="Search employee, shift, holiday, or day off"
+                    placeholder={i18nT("static.1ij9t")}
                     className="w-full"
                     onChange={(event: ChangeEvent<HTMLInputElement>) =>
                       setSearch(event.target.value)
@@ -906,7 +916,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
               <Button
                 type="button"
-                label="Reset Filters"
+                label={i18nT("static.1ljj5w3")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -920,7 +930,7 @@ const EmployeeShiftAssignmentListPage = () => {
               <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                 <i className="pi pi-exclamation-circle mt-0.5" />
 
-                <span>Date From cannot be later than Date To.</span>
+                <span>{i18nT("static.1k8q7ax")}</span>
               </div>
             )}
 
@@ -941,7 +951,7 @@ const EmployeeShiftAssignmentListPage = () => {
                     htmlFor="showDeletedData"
                     className="cursor-pointer select-none text-sm text-slate-600"
                   >
-                    Show deleted records
+                    {i18nT("static.1kk3in7")}{" "}
                   </label>
                 </div>
               )}
@@ -956,10 +966,11 @@ const EmployeeShiftAssignmentListPage = () => {
                   />
 
                   <span className="text-xs text-slate-500">
-                    {filteredData.length} schedule
-                    {filteredData.length === 1 ? "" : "s"} ·{" "}
-                    {employeeRows.length} employee
-                    {employeeRows.length === 1 ? "" : "s"}
+                    {filteredData.length} {i18nT("static.1b7lhos")}{" "}
+                    {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}{" "}
+                    {i18nT("static.19xoda3")} {employeeRows.length}{" "}
+                    {i18nT("static.5gxg69")}{" "}
+                    {employeeRows.length === 1 ? "" : i18nT("static.1w9pcoy")}
                   </span>
                 </div>
               )}
@@ -969,17 +980,21 @@ const EmployeeShiftAssignmentListPage = () => {
           {/* Legend */}
           <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center">
             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Legend
+              {i18nT("static.k0ttac")}{" "}
             </span>
 
             <div className="flex flex-wrap gap-2">
-              <Tag value="Workday" severity="info" rounded />
+              <Tag value={i18nT("static.1bsrn9m")} severity="info" rounded />
 
-              <Tag value="Holiday" severity="warning" rounded />
+              <Tag value={i18nT("static.ih7a2j")} severity="warning" rounded />
 
-              <Tag value="Day Off" severity="secondary" rounded />
+              <Tag
+                value={i18nT("static.776hx0")}
+                severity="secondary"
+                rounded
+              />
 
-              <Tag value="Deleted" severity="danger" rounded />
+              <Tag value={i18nT("static.1v6qcju")} severity="danger" rounded />
             </div>
           </div>
 
@@ -990,11 +1005,11 @@ const EmployeeShiftAssignmentListPage = () => {
                 <i className="pi pi-calendar-times mb-3 text-3xl text-slate-400" />
 
                 <p className="m-0 text-sm font-semibold text-slate-700">
-                  No schedules found
+                  {i18nT("static.t3al4s")}{" "}
                 </p>
 
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  Change the search keyword or selected date range.
+                  {i18nT("static.s6qfyi")}{" "}
                 </p>
               </div>
             ) : (
@@ -1004,7 +1019,7 @@ const EmployeeShiftAssignmentListPage = () => {
                     <tr>
                       <th className="sticky left-0 z-30 min-w-[16rem] border-b border-r border-slate-200 bg-slate-50 px-4 py-4 text-left">
                         <span className="text-sm font-semibold text-slate-800">
-                          Employee
+                          {i18nT("static.1fak8xt")}{" "}
                         </span>
                       </th>
 
@@ -1048,11 +1063,11 @@ const EmployeeShiftAssignmentListPage = () => {
                       <tr key={employee.employeeId}>
                         <td className="sticky left-0 z-10 min-w-[16rem] border-b border-r border-slate-200 bg-white px-4 py-4 align-top shadow-[6px_0_10px_-10px_rgba(0,0,0,0.2)]">
                           <div className="truncate text-sm font-semibold text-slate-800">
-                            {employee.employeeName || "Unknown employee"}
+                            {employee.employeeName || i18nT("static.1drwniz")}
                           </div>
 
                           <div className="mt-1 font-mono text-xs text-slate-500">
-                            ID: {employee.employeeId}
+                            {i18nT("static.bu6fn2")} {employee.employeeId}
                           </div>
                         </td>
 
@@ -1091,7 +1106,7 @@ const EmployeeShiftAssignmentListPage = () => {
                               >
                                 {entries.length === 0 ? (
                                   <div className="flex min-h-[6rem] items-center justify-center text-xs text-slate-300">
-                                    —
+                                    {i18nT("static.112tcox")}{" "}
                                   </div>
                                 ) : (
                                   <div className="flex flex-col gap-1.5">
@@ -1099,13 +1114,15 @@ const EmployeeShiftAssignmentListPage = () => {
                                       <div
                                         key={entry.id}
                                         title={
-                                          entry.shift_name || "Unknown shift"
+                                          entry.shift_name ||
+                                          i18nT("static.jp1eqx")
                                         }
                                         className={`truncate rounded-lg border px-2 py-1.5 text-xs font-medium ${getEntryClass(
                                           entry,
                                         )}`}
                                       >
-                                        {entry.shift_name || "Unknown shift"}
+                                        {entry.shift_name ||
+                                          i18nT("static.jp1eqx")}
                                       </div>
                                     ))}
 
@@ -1113,7 +1130,7 @@ const EmployeeShiftAssignmentListPage = () => {
                                       (entry) => entry.is_holiday,
                                     ) && (
                                       <span className="text-[11px] font-medium text-amber-700">
-                                        Holiday
+                                        {i18nT("static.ih7a2j")}{" "}
                                       </span>
                                     )}
 
@@ -1121,13 +1138,14 @@ const EmployeeShiftAssignmentListPage = () => {
                                       (entry) => entry.is_day_off,
                                     ) && (
                                       <span className="text-[11px] font-medium text-sky-700">
-                                        Day Off
+                                        {i18nT("static.776hx0")}{" "}
                                       </span>
                                     )}
 
                                     {entries.length > 2 && (
                                       <span className="text-[11px] text-slate-500">
-                                        +{entries.length - 2} more
+                                        +{entries.length - 2}{" "}
+                                        {i18nT("static.1sgpk2o")}{" "}
                                       </span>
                                     )}
                                   </div>
@@ -1150,11 +1168,12 @@ const EmployeeShiftAssignmentListPage = () => {
               <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                 <div>
                   <h2 className="m-0 text-sm font-semibold text-slate-800">
-                    Schedule Detail
+                    {i18nT("static.1h1hbdh")}{" "}
                   </h2>
 
                   <p className="m-0 mt-1 text-xs text-slate-500">
-                    {selectedCell.employeeName || "Unknown employee"} ·{" "}
+                    {selectedCell.employeeName || i18nT("static.1drwniz")}{" "}
+                    {i18nT("static.19xoda3")}{" "}
                     {formatWeekdayDate(selectedCell.dateKey)}
                   </p>
                 </div>
@@ -1165,7 +1184,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   text
                   rounded
                   severity="secondary"
-                  tooltip="Close detail"
+                  tooltip={i18nT("static.1w9iyg8")}
                   tooltipOptions={{
                     appendTo: getBody,
                     position: "top",
@@ -1179,7 +1198,7 @@ const EmployeeShiftAssignmentListPage = () => {
                   <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                     <i className="pi pi-info-circle mt-0.5 text-slate-400" />
 
-                    <span>No schedule is assigned on this date.</span>
+                    <span>{i18nT("static.1bckc26")}</span>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
@@ -1190,22 +1209,30 @@ const EmployeeShiftAssignmentListPage = () => {
                       >
                         <div className="min-w-0">
                           <h3 className="m-0 truncate text-sm font-semibold text-slate-800">
-                            {entry.shift_name || "Unknown shift"}
+                            {entry.shift_name || i18nT("static.jp1eqx")}
                           </h3>
 
                           <p className="m-0 mt-1 font-mono text-xs text-slate-500">
-                            Schedule ID: {entry.id}
+                            {i18nT("static.1w91hwp")} {entry.id}
                           </p>
 
                           <div className="mt-3 flex flex-wrap gap-2">
                             {renderStatusTag(entry)}
 
                             {entry.is_holiday && (
-                              <Tag value="Holiday" severity="warning" rounded />
+                              <Tag
+                                value={i18nT("static.ih7a2j")}
+                                severity="warning"
+                                rounded
+                              />
                             )}
 
                             {entry.is_day_off && (
-                              <Tag value="Day Off" severity="info" rounded />
+                              <Tag
+                                value={i18nT("static.776hx0")}
+                                severity="info"
+                                rounded
+                              />
                             )}
                           </div>
                         </div>

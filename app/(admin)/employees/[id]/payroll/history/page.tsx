@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -24,7 +25,19 @@ const currency = (value: string) =>
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(Number(value));
+
+const formatStatusLabel = (status?: string | null) => {
+  const normalized = String(status ?? "")
+    .trim()
+    .toUpperCase();
+  if (!normalized) return "Unknown";
+  return normalized
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+};
 export default function EmployeePayrollHistoryPage() {
+  const { t: i18nT } = useI18n();
   const params = useParams<{ id: string }>();
   const employeeId = Number(params.id);
   const { data, isLoading } = useSWR<EmployeePayrollHistory>(
@@ -36,8 +49,8 @@ export default function EmployeePayrollHistoryPage() {
   return (
     <div className="flex flex-col gap-5">
       <Panel
-        title="Payroll Result History"
-        description="Historical payroll results are snapshots and do not change when master data changes."
+        title={i18nT("static.1t8hpz3")}
+        description={i18nT("static.298bx7")}
       >
         <DataTable
           value={data?.results ?? []}
@@ -50,46 +63,46 @@ export default function EmployeePayrollHistoryPage() {
           paginator
           rows={10}
           tableStyle={{ minWidth: "60rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-          emptyMessage="No payroll result is available."
+          emptyMessage={i18nT("static.i44hrj")}
         >
-          <Column field="batch_no" header="Payroll Batch" />
+          <Column field="batch_no" header={i18nT("static.1cwdnlm")} />
           <Column
-            header="Period"
+            header={i18nT("static.11hwh7o")}
             body={(row: EmployeePayrollResultHistory) =>
               `${formatDisplayDate(row.period_start)} – ${formatDisplayDate(row.period_end)}`
             }
           />
           <Column
-            header="Gross Income"
+            header={i18nT("static.awjta6")}
             body={(row: EmployeePayrollResultHistory) =>
               currency(row.gross_income)
             }
           />
           <Column
-            header="Deduction"
+            header={i18nT("static.1lt98r0")}
             body={(row: EmployeePayrollResultHistory) =>
               currency(row.employee_deduction)
             }
           />
           <Column
-            header="PPh 21"
+            header={i18nT("static.mlv85w")}
             body={(row: EmployeePayrollResultHistory) =>
               currency(row.pph21_amount)
             }
           />
           <Column
-            header="Take Home Pay"
+            header={i18nT("static.1brz9dr")}
             body={(row: EmployeePayrollResultHistory) =>
               currency(row.take_home_pay)
             }
           />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: EmployeePayrollResultHistory) => (
               <Tag
-                value={row.status}
+                value={i18nT(formatStatusLabel(row.status))}
                 severity={row.status === "CALCULATED" ? "success" : "warning"}
               />
             )}
@@ -97,8 +110,8 @@ export default function EmployeePayrollHistoryPage() {
         </DataTable>
       </Panel>
       <Panel
-        title="Payslip History"
-        description="Only published payslips are available to employees."
+        title={i18nT("static.773khb")}
+        description={i18nT("static.s10nzx")}
       >
         <DataTable
           value={data?.payslips ?? []}
@@ -109,27 +122,30 @@ export default function EmployeePayrollHistoryPage() {
           responsiveLayout="scroll"
           size="small"
           tableStyle={{ minWidth: "32rem" }}
-          emptyMessage="No published payslip is available."
+          emptyMessage={i18nT("static.185vufn")}
         >
-          <Column field="payslip_no" header="Payslip No." />
+          <Column field="payslip_no" header={i18nT("static.7ovzpo")} />
           <Column
             field="published_at"
-            header="Published"
+            header={i18nT("static.75k7c9")}
             body={(row: { published_at: string | null }) =>
               formatDisplayDateTime(row.published_at)
             }
           />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: { status: string }) => (
-              <Tag value={row.status} severity="success" />
+              <Tag
+                value={i18nT(formatStatusLabel(row.status))}
+                severity="success"
+              />
             )}
           />
         </DataTable>
       </Panel>
       <Panel
-        title="Payroll Adjustments"
-        description="Adjustment workflow and approval status for this employee."
+        title={i18nT("static.6lzle2")}
+        description={i18nT("static.1455i0s")}
       >
         <DataTable
           value={data?.adjustments ?? []}
@@ -140,20 +156,20 @@ export default function EmployeePayrollHistoryPage() {
           responsiveLayout="scroll"
           size="small"
           tableStyle={{ minWidth: "36rem" }}
-          emptyMessage="No payroll adjustment is available."
+          emptyMessage={i18nT("static.t3lwe1")}
         >
-          <Column field="component_type" header="Type" />
+          <Column field="component_type" header={i18nT("static.1m2zofh")} />
           <Column
             field="amount"
-            header="Amount"
+            header={i18nT("static.a2ky21")}
             body={(row: { amount: string }) => currency(row.amount)}
           />
-          <Column field="reason" header="Reason" />
+          <Column field="reason" header={i18nT("static.i36sl5")} />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: { status: string }) => (
               <Tag
-                value={row.status}
+                value={i18nT(formatStatusLabel(row.status))}
                 severity={row.status === "APPLIED" ? "success" : "warning"}
               />
             )}

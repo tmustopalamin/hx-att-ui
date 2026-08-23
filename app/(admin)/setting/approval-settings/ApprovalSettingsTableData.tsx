@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -118,6 +119,7 @@ const getModuleSeverity = (moduleCode?: string | null): TagSeverity => {
 };
 
 const ApprovalSettingsTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   // Archived workflow settings are opt-in; this table has no deleted-data
   // toggle, so keep the normal list scoped to active records.
@@ -165,30 +167,30 @@ const ApprovalSettingsTableData = () => {
 
     return [
       {
-        label: "All Modules",
+        label: i18nT("static.d85uc5"),
         value: "ALL",
       },
       ...modules.map((moduleCode) => ({
-        label: formatLabel(moduleCode),
+        label: i18nT(formatLabel(moduleCode)),
         value: moduleCode,
       })),
     ];
-  }, [rows]);
+  }, [i18nT, rows]);
 
   const activeOptions: {
     label: string;
     value: ActiveFilter;
   }[] = [
     {
-      label: "All Statuses",
+      label: i18nT("static.18zxnji"),
       value: "ALL",
     },
     {
-      label: "Active",
+      label: i18nT("static.8qzyhb"),
       value: "ACTIVE",
     },
     {
-      label: "Inactive",
+      label: i18nT("static.13zf5vc"),
       value: "INACTIVE",
     },
   ];
@@ -252,7 +254,7 @@ const ApprovalSettingsTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -264,7 +266,7 @@ const ApprovalSettingsTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -277,7 +279,7 @@ const ApprovalSettingsTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -289,8 +291,8 @@ const ApprovalSettingsTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -377,9 +379,7 @@ const ApprovalSettingsTableData = () => {
 
       await refreshApprovalSettingsData();
 
-      showSuccess(
-        response.message || "Approval workflow setting updated successfully.",
-      );
+      showSuccess(response.message || i18nT("static.119kzuh"));
 
       /*
        * Jangan memanggil
@@ -399,7 +399,7 @@ const ApprovalSettingsTableData = () => {
   const moduleBody = (rowData: ApprovalWorkflowSetting) => {
     return (
       <Tag
-        value={formatLabel(rowData.module_code)}
+        value={i18nT(formatLabel(rowData.module_code))}
         severity={getModuleSeverity(rowData.module_code)}
         rounded
       />
@@ -411,7 +411,7 @@ const ApprovalSettingsTableData = () => {
 
     return (
       <Tag
-        value={formatLabel(normalizedMode)}
+        value={i18nT(formatLabel(normalizedMode))}
         severity={normalizedMode === "AUTO" ? "success" : "info"}
         rounded
       />
@@ -424,7 +424,7 @@ const ApprovalSettingsTableData = () => {
     if (requiredSteps === 0) {
       return (
         <Tag
-          value="Auto Approve"
+          value={i18nT("static.syc023")}
           severity="success"
           icon="pi pi-bolt"
           rounded
@@ -434,9 +434,10 @@ const ApprovalSettingsTableData = () => {
 
     return (
       <Tag
-        value={`${requiredSteps} approval step${
-          requiredSteps === 1 ? "" : "s"
-        }`}
+        value={i18nT("static.i1y09f", {
+          p0: requiredSteps,
+          p1: requiredSteps === 1 ? "" : i18nT("static.1w9pcoy"),
+        })}
         severity="warning"
         icon="pi pi-sitemap"
         rounded
@@ -447,13 +448,18 @@ const ApprovalSettingsTableData = () => {
   const activeBody = (rowData: ApprovalWorkflowSetting) => {
     return rowData.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
-      <Tag value="Inactive" severity="secondary" icon="pi pi-ban" rounded />
+      <Tag
+        value={i18nT("static.13zf5vc")}
+        severity="secondary"
+        icon="pi pi-ban"
+        rounded
+      />
     );
   };
 
@@ -476,7 +482,7 @@ const ApprovalSettingsTableData = () => {
           severity="help"
           size="small"
           disabled={isSaving}
-          tooltip="Update setting"
+          tooltip={i18nT("static.244mtk")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -491,7 +497,7 @@ const ApprovalSettingsTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -503,7 +509,7 @@ const ApprovalSettingsTableData = () => {
       <Button
         type="submit"
         form="approval-workflow-setting-form"
-        label="Save Changes"
+        label={i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -533,19 +539,18 @@ const ApprovalSettingsTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Approval Settings
+                  {i18nT("static.ezgzrr")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Configure approval workflow names, required approval steps,
-                  and workflow availability.
+                  {i18nT("static.35fxa3")}{" "}
                 </p>
               </div>
             </div>
 
             <Button
               type="button"
-              label="Refresh"
+              label={i18nT("static.28r6qc")}
               icon="pi pi-refresh"
               severity="secondary"
               outlined
@@ -560,7 +565,9 @@ const ApprovalSettingsTableData = () => {
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="m-0 text-xs text-slate-500">Total Workflows</p>
+              <p className="m-0 text-xs text-slate-500">
+                {i18nT("static.1jyuv7r")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
                 {summary.total}
@@ -568,7 +575,9 @@ const ApprovalSettingsTableData = () => {
             </div>
 
             <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-              <p className="m-0 text-xs text-green-700">Active</p>
+              <p className="m-0 text-xs text-green-700">
+                {i18nT("static.8qzyhb")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
                 {summary.active}
@@ -576,7 +585,9 @@ const ApprovalSettingsTableData = () => {
             </div>
 
             <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-              <p className="m-0 text-xs text-blue-700">Auto Approve</p>
+              <p className="m-0 text-xs text-blue-700">
+                {i18nT("static.syc023")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
                 {summary.autoApprove}
@@ -584,7 +595,9 @@ const ApprovalSettingsTableData = () => {
             </div>
 
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="m-0 text-xs text-amber-700">Approval Required</p>
+              <p className="m-0 text-xs text-amber-700">
+                {i18nT("static.vid1ez")}
+              </p>
 
               <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
                 {summary.approvalRequired}
@@ -598,13 +611,13 @@ const ApprovalSettingsTableData = () => {
 
             <div>
               <p className="m-0">
-                <strong>Required Steps = 0</strong> means the request is
-                configured for automatic approval.
+                <strong>{i18nT("static.1igq47w")}</strong>{" "}
+                {i18nT("static.12e5kpw")}{" "}
               </p>
 
               <p className="m-0 mt-1">
-                <strong>Required Steps &gt; 0</strong> means the request must
-                pass through the configured number of approval steps.
+                <strong>{i18nT("static.1moeolj")}</strong>{" "}
+                {i18nT("static.1k6vpsp")}{" "}
               </p>
             </div>
           </div>
@@ -618,7 +631,7 @@ const ApprovalSettingsTableData = () => {
                 <InputText
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Search code, name, module, or mode"
+                  placeholder={i18nT("static.1k8uj4f")}
                   className="w-full"
                 />
               </IconField>
@@ -629,7 +642,7 @@ const ApprovalSettingsTableData = () => {
                 options={moduleOptions}
                 optionLabel="label"
                 optionValue="value"
-                placeholder="All Modules"
+                placeholder={i18nT("static.d85uc5")}
                 className="w-full"
                 onChange={(event) =>
                   setModuleFilter(String(event.value ?? "ALL"))
@@ -642,7 +655,7 @@ const ApprovalSettingsTableData = () => {
                 options={activeOptions}
                 optionLabel="label"
                 optionValue="value"
-                placeholder="All Statuses"
+                placeholder={i18nT("static.18zxnji")}
                 className="w-full"
                 onChange={(event) =>
                   setActiveFilter((event.value ?? "ALL") as ActiveFilter)
@@ -651,7 +664,7 @@ const ApprovalSettingsTableData = () => {
 
               <Button
                 type="button"
-                label="Reset"
+                label={i18nT("static.2zps2o")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
@@ -662,8 +675,8 @@ const ApprovalSettingsTableData = () => {
             </div>
 
             <span className="text-xs text-slate-500">
-              {filteredRows.length} matching workflow
-              {filteredRows.length === 1 ? "" : "s"}
+              {filteredRows.length} {i18nT("static.1r1t0nj")}{" "}
+              {filteredRows.length === 1 ? "" : i18nT("static.1w9pcoy")}
             </span>
           </section>
 
@@ -685,8 +698,8 @@ const ApprovalSettingsTableData = () => {
               tableStyle={{
                 minWidth: "90rem",
               }}
-              emptyMessage="No approval workflow setting found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1dkj160")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -702,7 +715,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 body={(rowData: ApprovalWorkflowSetting) => (
                   <span className="font-mono text-sm font-medium text-slate-700">
@@ -716,7 +729,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="name"
-                header="Workflow Name"
+                header={i18nT("static.qdmiyj")}
                 sortable
                 body={(rowData: ApprovalWorkflowSetting) => (
                   <span className="text-sm font-medium text-slate-800">
@@ -730,7 +743,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="module_code"
-                header="Module"
+                header={i18nT("static.1inmx8d")}
                 sortable
                 body={moduleBody}
                 style={{
@@ -740,7 +753,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="approval_mode"
-                header="Mode"
+                header={i18nT("static.n44ilu")}
                 sortable
                 body={approvalModeBody}
                 style={{
@@ -750,7 +763,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="required_steps"
-                header="Required Steps"
+                header={i18nT("static.1gubov7")}
                 sortable
                 body={requiredStepBody}
                 style={{
@@ -760,7 +773,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={activeBody}
                 style={{
@@ -770,7 +783,7 @@ const ApprovalSettingsTableData = () => {
 
               <Column
                 field="updated_at"
-                header="Updated At"
+                header={i18nT("static.1wy0gb9")}
                 sortable
                 body={updatedAtBody}
                 style={{
@@ -779,7 +792,7 @@ const ApprovalSettingsTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionBody}
                 frozen
                 alignFrozen="right"
@@ -802,7 +815,7 @@ const ApprovalSettingsTableData = () => {
 
       {/* Update Dialog */}
       <Dialog
-        header="Update Approval Setting"
+        header={i18nT("static.f0ubq3")}
         visible={dialogVisible}
         style={{
           width: "95vw",
@@ -833,13 +846,13 @@ const ApprovalSettingsTableData = () => {
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-wrap gap-2">
                 <Tag
-                  value={formatLabel(selectedData.module_code)}
+                  value={i18nT(formatLabel(selectedData.module_code))}
                   severity={getModuleSeverity(selectedData.module_code)}
                   rounded
                 />
 
                 <Tag
-                  value={formatLabel(selectedData.approval_mode)}
+                  value={i18nT(formatLabel(selectedData.approval_mode))}
                   severity="info"
                   rounded
                 />
@@ -852,8 +865,7 @@ const ApprovalSettingsTableData = () => {
               </div>
 
               <p className="m-0 mt-3 text-xs leading-5 text-slate-500">
-                Module, code, and approval mode are workflow identity fields and
-                cannot be changed from this form.
+                {i18nT("static.18b54r4")}{" "}
               </p>
             </section>
           )}
@@ -861,12 +873,11 @@ const ApprovalSettingsTableData = () => {
           <section className="flex flex-col gap-4">
             <div>
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Workflow Configuration
+                {i18nT("static.1owvn3u")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                Update the display name, required approval steps, and active
-                status.
+                {i18nT("static.1dnbete")}{" "}
               </p>
             </div>
 
@@ -875,7 +886,7 @@ const ApprovalSettingsTableData = () => {
                 htmlFor="workflow_name"
                 className="text-sm font-medium text-slate-700"
               >
-                Workflow Name
+                {i18nT("static.qdmiyj")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -883,11 +894,13 @@ const ApprovalSettingsTableData = () => {
                 name="name"
                 control={control}
                 rules={{
-                  required: "Workflow name is required.",
+                  required: i18nT("static.12wyua8"),
 
                   maxLength: {
                     value: MAX_WORKFLOW_NAME_LENGTH,
-                    message: `Workflow name cannot exceed ${MAX_WORKFLOW_NAME_LENGTH} characters.`,
+                    message: i18nT("static.1dunyv0", {
+                      p0: MAX_WORKFLOW_NAME_LENGTH,
+                    }),
                   },
 
                   validate: (value) =>
@@ -901,7 +914,7 @@ const ApprovalSettingsTableData = () => {
                       value={field.value ?? ""}
                       maxLength={MAX_WORKFLOW_NAME_LENGTH}
                       disabled={isSaving}
-                      placeholder="Enter workflow name"
+                      placeholder={i18nT("static.y07ls1")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -922,7 +935,7 @@ const ApprovalSettingsTableData = () => {
                 htmlFor="required_steps"
                 className="text-sm font-medium text-slate-700"
               >
-                Required Approval Steps
+                {i18nT("static.1wofnb4")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -930,17 +943,17 @@ const ApprovalSettingsTableData = () => {
                 name="required_steps"
                 control={control}
                 rules={{
-                  required: "Required steps is required.",
+                  required: i18nT("static.1ic0o54"),
 
                   validate: (value) => {
                     const parsed = Number(value);
 
                     if (!Number.isInteger(parsed)) {
-                      return "Required steps must be a whole number.";
+                      return i18nT("Required steps must be a whole number.");
                     }
 
                     if (parsed < 0) {
-                      return "Required steps cannot be negative.";
+                      return i18nT("Required steps cannot be negative.");
                     }
 
                     if (parsed > MAX_REQUIRED_STEPS) {
@@ -974,9 +987,8 @@ const ApprovalSettingsTableData = () => {
                     />
 
                     <small className="text-slate-500">
-                      0 means automatic approval. Values from 1 to{" "}
-                      {MAX_REQUIRED_STEPS} require that number of approval
-                      steps.
+                      {i18nT("static.1ko50fp")} {MAX_REQUIRED_STEPS}{" "}
+                      {i18nT("static.32d2ix")}{" "}
                     </small>
 
                     {fieldState.error && (
@@ -1000,11 +1012,11 @@ const ApprovalSettingsTableData = () => {
                         htmlFor="workflow_is_active"
                         className="cursor-pointer text-sm font-medium text-slate-700"
                       >
-                        Active Workflow
+                        {i18nT("static.1dhaym8")}{" "}
                       </label>
 
                       <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                        Controls whether this workflow configuration is enabled.
+                        {i18nT("static.rotia4")}{" "}
                       </p>
                     </div>
 

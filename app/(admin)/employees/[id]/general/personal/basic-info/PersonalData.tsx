@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   getCountryOptions,
@@ -45,6 +46,7 @@ type FormData = {
 const getBody = () => document.body;
 
 const PersonalData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -118,7 +120,7 @@ const PersonalData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -158,8 +160,8 @@ const PersonalData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
-          detail: "Personal data updated successfully",
+          summary: i18nT("static.g72xw0"),
+          detail: i18nT("static.ywmzj1"),
         }),
       );
       setIsPageEdit(false);
@@ -170,7 +172,7 @@ const PersonalData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -179,7 +181,7 @@ const PersonalData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -190,7 +192,7 @@ const PersonalData = () => {
   if (loading) {
     return (
       <div className="py-8 text-sm text-slate-500">
-        Loading personal data...
+        {i18nT("static.s0hc4r")}{" "}
       </div>
     );
   }
@@ -200,15 +202,15 @@ const PersonalData = () => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-6">
           <EmployeeDetailTableHeader
-            title="Personal Data"
-            description="Basic employee identity, contacts, and nationality."
+            title={i18nT("static.16u7g4f")}
+            description={i18nT("static.1fgsvc1")}
             actions={
               <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
                 {isPageEdit ? (
                   <>
                     <Button
                       type="button"
-                      label="Cancel"
+                      label={i18nT("static.ew9em3")}
                       icon="pi pi-times"
                       text
                       severity="secondary"
@@ -221,7 +223,7 @@ const PersonalData = () => {
                     />
                     <Button
                       type="submit"
-                      label="Save Changes"
+                      label={i18nT("static.6gmm1l")}
                       icon="pi pi-check"
                       size="small"
                       className="w-full sm:w-auto"
@@ -231,7 +233,7 @@ const PersonalData = () => {
                   <Button
                     type="button"
                     icon="pi pi-pencil"
-                    label="Edit"
+                    label={i18nT("static.1i1lcq9")}
                     severity="secondary"
                     outlined
                     size="small"
@@ -247,10 +249,10 @@ const PersonalData = () => {
             <Controller
               name="first_name"
               control={control}
-              rules={{ required: "First name is required" }}
+              rules={{ required: i18nT("static.18zbxl5") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="first_name">First Name</label>
+                  <label htmlFor="first_name">{i18nT("static.6yjm7s")}</label>
                   <InputText
                     id="first_name"
                     {...field}
@@ -271,7 +273,7 @@ const PersonalData = () => {
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="middle_name">Middle Name</label>
+                  <label htmlFor="middle_name">{i18nT("static.1i6ktxn")}</label>
                   <InputText
                     id="middle_name"
                     {...field}
@@ -284,10 +286,10 @@ const PersonalData = () => {
             <Controller
               name="last_name"
               control={control}
-              rules={{ required: "Last name is required" }}
+              rules={{ required: i18nT("static.1vflgoh") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="last_name">Last Name</label>
+                  <label htmlFor="last_name">{i18nT("static.16p3u1s")}</label>
                   <InputText
                     id="last_name"
                     {...field}
@@ -308,7 +310,9 @@ const PersonalData = () => {
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="preferred_name">Preferred Name</label>
+                  <label htmlFor="preferred_name">
+                    {i18nT("static.f7e5k1")}
+                  </label>
                   <InputText
                     id="preferred_name"
                     {...field}
@@ -321,10 +325,10 @@ const PersonalData = () => {
             <Controller
               name="birth_place"
               control={control}
-              rules={{ required: "Birth place is required" }}
+              rules={{ required: i18nT("static.134zo") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="birth_place">Place of Birth</label>
+                  <label htmlFor="birth_place">{i18nT("static.t87wj8")}</label>
                   <InputText
                     id="birth_place"
                     {...field}
@@ -343,10 +347,10 @@ const PersonalData = () => {
             <Controller
               name="dob"
               control={control}
-              rules={{ required: "Birth date is required" }}
+              rules={{ required: i18nT("static.1tvgdpv") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="dob">Birth Date</label>
+                  <label htmlFor="dob">{i18nT("static.1m101fi")}</label>
                   <Calendar
                     id="dob"
                     appendTo={getBody}
@@ -371,10 +375,10 @@ const PersonalData = () => {
             <Controller
               name="gender_id"
               control={control}
-              rules={{ required: "Gender is required" }}
+              rules={{ required: i18nT("static.15jbp1t") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="gender_id">Gender</label>
+                  <label htmlFor="gender_id">{i18nT("static.1adu274")}</label>
                   <Dropdown
                     id="gender_id"
                     appendTo={getBody}
@@ -384,7 +388,7 @@ const PersonalData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select gender"
+                    placeholder={i18nT("static.rtoq86")}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
@@ -399,10 +403,10 @@ const PersonalData = () => {
             <Controller
               name="religion_id"
               control={control}
-              rules={{ required: "Religion is required" }}
+              rules={{ required: i18nT("static.hpe9yz") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="religion_id">Religion</label>
+                  <label htmlFor="religion_id">{i18nT("static.1y626di")}</label>
                   <Dropdown
                     id="religion_id"
                     appendTo={getBody}
@@ -412,7 +416,7 @@ const PersonalData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select religion"
+                    placeholder={i18nT("static.d04w6o")}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
@@ -427,10 +431,12 @@ const PersonalData = () => {
             <Controller
               name="marital_status_id"
               control={control}
-              rules={{ required: "Marital status is required" }}
+              rules={{ required: i18nT("static.14zb8qu") }}
               render={({ field, fieldState }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="marital_status_id">Marital Status</label>
+                  <label htmlFor="marital_status_id">
+                    {i18nT("static.s7ogwz")}
+                  </label>
                   <Dropdown
                     id="marital_status_id"
                     appendTo={getBody}
@@ -440,7 +446,7 @@ const PersonalData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select marital status"
+                    placeholder={i18nT("static.r2t1q1")}
                     className={fieldState.invalid ? "p-invalid" : ""}
                   />
                   {fieldState.error && (
@@ -457,7 +463,9 @@ const PersonalData = () => {
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="phone_number">Phone Number</label>
+                  <label htmlFor="phone_number">
+                    {i18nT("static.1v8ev2w")}
+                  </label>
                   <InputText
                     id="phone_number"
                     {...field}
@@ -472,7 +480,9 @@ const PersonalData = () => {
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="personal_email">Personal Email</label>
+                  <label htmlFor="personal_email">
+                    {i18nT("static.1kdz0sl")}
+                  </label>
                   <InputText
                     id="personal_email"
                     {...field}
@@ -487,7 +497,7 @@ const PersonalData = () => {
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="work_email">Work Email</label>
+                  <label htmlFor="work_email">{i18nT("static.3ewaq0")}</label>
                   <InputText
                     id="work_email"
                     {...field}
@@ -502,7 +512,9 @@ const PersonalData = () => {
               control={control}
               render={({ field }) => (
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="nationality_country_id">Nationality</label>
+                  <label htmlFor="nationality_country_id">
+                    {i18nT("static.jvv0p5")}
+                  </label>
                   <Dropdown
                     id="nationality_country_id"
                     appendTo={getBody}
@@ -512,7 +524,7 @@ const PersonalData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select nationality"
+                    placeholder={i18nT("static.m0lwb7")}
                   />
                 </div>
               )}

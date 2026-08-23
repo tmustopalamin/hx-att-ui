@@ -24,7 +24,7 @@ jest.mock("primereact/calendar", () => ({
 }));
 
 describe("PrimeDatePicker", () => {
-  it("uses the Indonesian date-picker display format and preserves date payloads", () => {
+  it("uses the English default date-picker format and preserves date payloads", () => {
     const onValueChange = jest.fn();
 
     render(
@@ -32,12 +32,27 @@ describe("PrimeDatePicker", () => {
     );
 
     const calendar = screen.getByTestId("calendar");
-    expect(calendar.getAttribute("data-date-format")).toBe("dd MM yy");
-    expect(calendar.getAttribute("data-locale")).toBe("id");
+    expect(calendar.getAttribute("data-date-format")).toBe("mm/dd/yy");
+    expect(calendar.getAttribute("data-locale")).toBe("en");
     expect(calendar.getAttribute("data-show-time")).toBe("false");
 
     fireEvent.click(calendar);
     expect(onValueChange).toHaveBeenCalledWith("2026-08-18");
+  });
+
+  it("keeps an explicit locale for legacy callers", () => {
+    const onValueChange = jest.fn();
+    render(
+      <PrimeDatePicker
+        value="2026-08-18"
+        locale="id"
+        onValueChange={onValueChange}
+      />,
+    );
+
+    const calendar = screen.getByTestId("calendar");
+    expect(calendar.getAttribute("data-date-format")).toBe("dd MM yy");
+    expect(calendar.getAttribute("data-locale")).toBe("id");
   });
 
   it("keeps the existing datetime payload contract when time is enabled", () => {

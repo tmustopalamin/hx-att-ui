@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/app/i18n";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -35,27 +37,27 @@ const POLICY_KEY = "/api/attendance-settings/submission-policy";
 const PHOTO_BYTES_PER_MB = 1_048_576;
 
 const intervalOptions = [
-  { label: "Every 1 minute", value: 1 },
-  { label: "Every 2 minutes", value: 2 },
-  { label: "Every 5 minutes", value: 5 },
-  { label: "Every 10 minutes", value: 10 },
-  { label: "Every 15 minutes", value: 15 },
-  { label: "Every 30 minutes", value: 30 },
-  { label: "Every 60 minutes", value: 60 },
+  { labelKey: "Every 1 minute", value: 1 },
+  { labelKey: "Every 2 minutes", value: 2 },
+  { labelKey: "Every 5 minutes", value: 5 },
+  { labelKey: "Every 10 minutes", value: 10 },
+  { labelKey: "Every 15 minutes", value: 15 },
+  { labelKey: "Every 30 minutes", value: 30 },
+  { labelKey: "Every 60 minutes", value: 60 },
 ];
 
 const lookbackOptions = [
-  { label: "Today only", value: 0 },
-  { label: "Today + 1 day back", value: 1 },
-  { label: "Today + 2 days back", value: 2 },
-  { label: "Today + 3 days back", value: 3 },
-  { label: "Today + 7 days back", value: 7 },
+  { labelKey: "Today only", value: 0 },
+  { labelKey: "Today + 1 day back", value: 1 },
+  { labelKey: "Today + 2 days back", value: 2 },
+  { labelKey: "Today + 3 days back", value: 3 },
+  { labelKey: "Today + 7 days back", value: 7 },
 ];
 
 const gpsPresets = [
-  { label: "Strict 50 m", value: 50 },
-  { label: "Standard 100 m", value: 100 },
-  { label: "Tolerant 200 m", value: 200 },
+  { labelKey: "Strict 50 m", value: 50 },
+  { labelKey: "Standard 100 m", value: 100 },
+  { labelKey: "Tolerant 200 m", value: 200 },
 ];
 
 const defaultProcessing: UpdateAttendanceProcessingSetting = {
@@ -149,24 +151,29 @@ const GpsPresetPicker = ({
   value: number;
   disabled?: boolean;
   onChange: (value: number) => void;
-}) => (
-  <div className="flex flex-wrap gap-2">
-    {gpsPresets.map((preset) => (
-      <Button
-        key={preset.value}
-        type="button"
-        label={preset.label}
-        size="small"
-        outlined={value !== preset.value}
-        severity={value === preset.value ? "info" : "secondary"}
-        disabled={disabled}
-        onClick={() => onChange(preset.value)}
-      />
-    ))}
-  </div>
-);
+}) => {
+  const { t: i18nT } = useI18n();
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {gpsPresets.map((preset) => (
+        <Button
+          key={preset.value}
+          type="button"
+          label={i18nT(preset.labelKey)}
+          size="small"
+          outlined={value !== preset.value}
+          severity={value === preset.value ? "info" : "secondary"}
+          disabled={disabled}
+          onClick={() => onChange(preset.value)}
+        />
+      ))}
+    </div>
+  );
+};
 
 const AttendanceSettingsPage = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const [processingForm, setProcessingForm] =
     useState<UpdateAttendanceProcessingSetting>(defaultProcessing);
@@ -237,7 +244,7 @@ const AttendanceSettingsPage = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
+        summary: i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -258,8 +265,8 @@ const AttendanceSettingsPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Saved",
-          detail: "Attendance processing settings updated.",
+          summary: i18nT("static.12ek4is"),
+          detail: i18nT("static.bsgen9"),
         }),
       );
     } catch (error: unknown) {
@@ -284,8 +291,8 @@ const AttendanceSettingsPage = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Saved",
-          detail: "Attendance submission policy updated.",
+          summary: i18nT("static.12ek4is"),
+          detail: i18nT("static.11iptt7"),
         }),
       );
     } catch (error: unknown) {
@@ -313,11 +320,10 @@ const AttendanceSettingsPage = () => {
     <div className="space-y-5">
       <div className="flex flex-col gap-2">
         <h1 className="m-0 text-2xl font-semibold text-slate-900">
-          Attendance Settings
+          {i18nT("static.w5cg4z")}{" "}
         </h1>
         <p className="m-0 max-w-3xl text-sm leading-6 text-slate-500">
-          Kelola proses perhitungan attendance dan aturan submit attendance Web
-          atau Mobile App dari satu tempat.
+          {i18nT("static.1v31jbs")}{" "}
         </p>
       </div>
 
@@ -330,21 +336,25 @@ const AttendanceSettingsPage = () => {
       {loading && !processingSetting && !submissionPolicy ? (
         <Card>
           <div className="py-8 text-center text-sm text-slate-500">
-            Loading attendance settings...
+            {i18nT("static.mmm7u7")}{" "}
           </div>
         </Card>
       ) : (
         <TabView>
-          <TabPanel header="Attendance Processing" leftIcon="pi pi-cog mr-2">
+          <TabPanel header={i18nT("static.1rpvzkt")} leftIcon="pi pi-cog mr-2">
             {processingSetting && (
               <div className="space-y-5 pt-3">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs text-slate-500">Auto process</div>
+                    <div className="text-xs text-slate-500">
+                      {i18nT("static.1nm96jz")}
+                    </div>
                     <Tag
                       className="mt-2"
                       value={
-                        processingSetting.auto_process_enabled ? "ON" : "OFF"
+                        processingSetting.auto_process_enabled
+                          ? i18nT("static.zrh9ao")
+                          : i18nT("static.csaup6")
                       }
                       severity={
                         processingSetting.auto_process_enabled
@@ -354,11 +364,19 @@ const AttendanceSettingsPage = () => {
                     />
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs text-slate-500">Last status</div>
+                    <div className="text-xs text-slate-500">
+                      {i18nT("static.t89x4d")}
+                    </div>
                     <Tag
                       className="mt-2"
                       value={
-                        processingSetting.last_process_status || "Never Run"
+                        processingSetting.last_process_status
+                          ? i18nT(
+                              formatStatusLabel(
+                                processingSetting.last_process_status,
+                              ),
+                            )
+                          : i18nT("static.fwk86k")
                       }
                       severity={statusSeverity(
                         processingSetting.last_process_status,
@@ -366,13 +384,17 @@ const AttendanceSettingsPage = () => {
                     />
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs text-slate-500">Last process</div>
+                    <div className="text-xs text-slate-500">
+                      {i18nT("static.1hd6y0g")}
+                    </div>
                     <div className="mt-2 text-sm font-medium text-slate-900">
-                      {formatDateTime(processingSetting.last_process_at)}
+                      {i18nT(formatDateTime(processingSetting.last_process_at))}
                     </div>
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="text-xs text-slate-500">Processed rows</div>
+                    <div className="text-xs text-slate-500">
+                      {i18nT("static.45omj8")}
+                    </div>
                     <div className="mt-2 text-sm font-medium text-slate-900">
                       {processingSetting.last_processed_count}
                     </div>
@@ -381,8 +403,8 @@ const AttendanceSettingsPage = () => {
 
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                   <ToggleRow
-                    title="Enable automatic processing"
-                    description="Run attendance summary processing in the background."
+                    title={i18nT("static.1ojjy7o")}
+                    description={i18nT("static.184goka")}
                     checked={processingForm.auto_process_enabled}
                     onChange={(value) =>
                       setProcessingForm((current) => ({
@@ -394,12 +416,15 @@ const AttendanceSettingsPage = () => {
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Process interval
+                      {i18nT("static.7lmpuz")}{" "}
                     </label>
                     <Dropdown
                       className="w-full"
                       value={processingForm.process_interval_minutes}
-                      options={intervalOptions}
+                      options={intervalOptions.map((option) => ({
+                        label: i18nT(option.labelKey),
+                        value: option.value,
+                      }))}
                       optionLabel="label"
                       optionValue="value"
                       disabled={!processingForm.auto_process_enabled}
@@ -414,12 +439,15 @@ const AttendanceSettingsPage = () => {
 
                   <div>
                     <label className="mb-2 block text-sm font-medium text-slate-700">
-                      Reprocess previous days
+                      {i18nT("static.12suj7h")}{" "}
                     </label>
                     <Dropdown
                       className="w-full"
                       value={processingForm.lookback_days}
-                      options={lookbackOptions}
+                      options={lookbackOptions.map((option) => ({
+                        label: i18nT(option.labelKey),
+                        value: option.value,
+                      }))}
                       optionLabel="label"
                       optionValue="value"
                       disabled={!processingForm.auto_process_enabled}
@@ -431,8 +459,7 @@ const AttendanceSettingsPage = () => {
                       }
                     />
                     <small className="mt-1 block text-xs text-slate-500">
-                      Useful when late attendance logs arrive after the first
-                      processing run.
+                      {i18nT("static.17jzlqf")}{" "}
                     </small>
                   </div>
                 </div>
@@ -440,7 +467,7 @@ const AttendanceSettingsPage = () => {
                 <div className="flex justify-end border-t border-slate-200 pt-4">
                   <Button
                     type="button"
-                    label="Save processing settings"
+                    label={i18nT("static.nz9f4s")}
                     icon="pi pi-check"
                     loading={saving === "processing"}
                     onClick={saveProcessing}
@@ -451,26 +478,23 @@ const AttendanceSettingsPage = () => {
           </TabPanel>
 
           <TabPanel
-            header="Attendance Submission Policy"
+            header={i18nT("static.1hgu5bc")}
             leftIcon="pi pi-map-marker mr-2"
           >
             {submissionPolicy && (
               <div className="space-y-5 pt-3">
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-                  Aturan ini berlaku saat employee mengirim attendance. Nilai
-                  GPS yang lebih kecil berarti pemeriksaan lebih ketat. Aturan
-                  Web dan Mobile App dapat berbeda karena kemampuan lokasi
-                  perangkat tidak selalu sama.
+                  {i18nT("static.qxc3km")}{" "}
                 </div>
 
                 <div>
                   <div className="mb-3 text-sm font-semibold text-slate-900">
-                    Aturan bersama
+                    {i18nT("static.1jkk67b")}{" "}
                   </div>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <ToggleRow
-                      title="Require photo"
-                      description="Employee must submit a valid attendance photo."
+                      title={i18nT("static.mg2j1c")}
+                      description={i18nT("static.7b1iq0")}
                       checked={policyForm.common.require_photo}
                       onChange={(value) =>
                         setPolicyForm((current) => ({
@@ -480,8 +504,8 @@ const AttendanceSettingsPage = () => {
                       }
                     />
                     <ToggleRow
-                      title="Require location"
-                      description="Employee must submit a valid GPS location."
+                      title={i18nT("static.emel8r")}
+                      description={i18nT("static.18eqzv0")}
                       checked={policyForm.common.require_location}
                       onChange={(value) =>
                         setPolicyForm((current) => ({
@@ -501,10 +525,10 @@ const AttendanceSettingsPage = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h2 className="m-0 text-base font-semibold text-slate-900">
-                          Web Attendance
+                          {i18nT("static.1sb2mmk")}{" "}
                         </h2>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Attendance submitted from the browser page.
+                          {i18nT("static.5gzind")}{" "}
                         </p>
                       </div>
                       <InputSwitch
@@ -522,8 +546,8 @@ const AttendanceSettingsPage = () => {
                     </div>
                     <div className="mt-5 space-y-3">
                       <ToggleRow
-                        title="Enforce GPS accuracy"
-                        description="Reject submissions when the browser reports accuracy above the configured limit."
+                        title={i18nT("static.m2y13q")}
+                        description={i18nT("static.2in41f")}
                         checked={policyForm.web.enforce_gps_accuracy}
                         disabled={!policyForm.web.enabled}
                         onChange={(value) =>
@@ -537,7 +561,7 @@ const AttendanceSettingsPage = () => {
                         }
                       />
                       <label className="block text-sm font-medium text-slate-700">
-                        GPS tolerance
+                        {i18nT("static.4kfsxg")}{" "}
                       </label>
                       <GpsPresetPicker
                         value={policyForm.web.max_gps_accuracy_meters}
@@ -552,7 +576,7 @@ const AttendanceSettingsPage = () => {
                         value={policyForm.web.max_gps_accuracy_meters}
                         min={5}
                         max={1000}
-                        suffix=" m"
+                        suffix={i18nT("static.1sduwzc")}
                         disabled={
                           !policyForm.web.enabled ||
                           !policyForm.web.enforce_gps_accuracy
@@ -563,8 +587,8 @@ const AttendanceSettingsPage = () => {
                       />
                       <small className="block text-xs leading-5 text-slate-500">
                         {policyForm.web.enforce_gps_accuracy
-                          ? "Submit ditolak jika browser melaporkan akurasi lebih besar dari nilai ini."
-                          : "Batas akurasi tidak diberlakukan. Lokasi dan geofence tetap diproses."}
+                          ? i18nT("static.78ewww")
+                          : i18nT("static.5oo0w3")}
                       </small>
                     </div>
                   </Card>
@@ -573,10 +597,10 @@ const AttendanceSettingsPage = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h2 className="m-0 text-base font-semibold text-slate-900">
-                          Mobile App (Android)
+                          {i18nT("static.170ydlq")}{" "}
                         </h2>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Attendance submitted from the official Android app.
+                          {i18nT("static.2rbls3")}{" "}
                         </p>
                       </div>
                       <InputSwitch
@@ -594,8 +618,8 @@ const AttendanceSettingsPage = () => {
                     </div>
                     <div className="mt-5 space-y-3">
                       <ToggleRow
-                        title="Enforce GPS accuracy"
-                        description="Reject submissions when the Android app reports accuracy above the configured limit."
+                        title={i18nT("static.m2y13q")}
+                        description={i18nT("static.19v29t7")}
                         checked={policyForm.android.enforce_gps_accuracy}
                         disabled={!policyForm.android.enabled}
                         onChange={(value) =>
@@ -609,7 +633,7 @@ const AttendanceSettingsPage = () => {
                         }
                       />
                       <label className="block text-sm font-medium text-slate-700">
-                        GPS tolerance
+                        {i18nT("static.4kfsxg")}{" "}
                       </label>
                       <GpsPresetPicker
                         value={policyForm.android.max_gps_accuracy_meters}
@@ -624,7 +648,7 @@ const AttendanceSettingsPage = () => {
                         value={policyForm.android.max_gps_accuracy_meters}
                         min={5}
                         max={1000}
-                        suffix=" m"
+                        suffix={i18nT("static.1sduwzc")}
                         disabled={
                           !policyForm.android.enabled ||
                           !policyForm.android.enforce_gps_accuracy
@@ -635,8 +659,8 @@ const AttendanceSettingsPage = () => {
                       />
                       <small className="block text-xs leading-5 text-slate-500">
                         {policyForm.android.enforce_gps_accuracy
-                          ? "Nilai aplikasi Android dibaca dari sensor lokasi perangkat."
-                          : "Batas akurasi tidak diberlakukan. Lokasi, geofence, dan integrity tetap diproses."}
+                          ? i18nT("static.1phcj7b")
+                          : i18nT("static.dg20q")}
                       </small>
                     </div>
                   </Card>
@@ -650,14 +674,14 @@ const AttendanceSettingsPage = () => {
                   className="rounded-xl border border-slate-200 p-4"
                 >
                   <summary className="cursor-pointer text-sm font-semibold text-slate-900">
-                    Pengaturan lanjutan
+                    {i18nT("static.1gagz3d")}{" "}
                   </summary>
 
                   <div className="mt-4 space-y-5">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                       <div>
                         <label className="mb-2 block text-sm font-medium text-slate-700">
-                          Maximum photo size
+                          {i18nT("static.e4j5f2")}{" "}
                         </label>
                         <InputNumber
                           className="w-full"
@@ -669,7 +693,7 @@ const AttendanceSettingsPage = () => {
                           max={10}
                           minFractionDigits={2}
                           maxFractionDigits={2}
-                          suffix=" MB"
+                          suffix={i18nT("static.j3ysoe")}
                           onValueChange={(event) =>
                             setPolicyForm((current) => ({
                               ...current,
@@ -685,7 +709,7 @@ const AttendanceSettingsPage = () => {
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-medium text-slate-700">
-                          Maximum event age
+                          {i18nT("static.148042")}{" "}
                         </label>
                         <InputNumber
                           className="w-full"
@@ -694,7 +718,7 @@ const AttendanceSettingsPage = () => {
                           max={60}
                           minFractionDigits={0}
                           maxFractionDigits={1}
-                          suffix=" min"
+                          suffix={i18nT("static.1jxbmtz")}
                           onValueChange={(event) =>
                             setPolicyForm((current) => ({
                               ...current,
@@ -710,7 +734,7 @@ const AttendanceSettingsPage = () => {
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-medium text-slate-700">
-                          Minimum submit interval
+                          {i18nT("static.nfo172")}{" "}
                         </label>
                         <InputNumber
                           className="w-full"
@@ -719,7 +743,7 @@ const AttendanceSettingsPage = () => {
                           }
                           min={10}
                           max={3600}
-                          suffix=" sec"
+                          suffix={i18nT("static.1fxesoi")}
                           onValueChange={(event) =>
                             setPolicyForm((current) => ({
                               ...current,
@@ -735,8 +759,8 @@ const AttendanceSettingsPage = () => {
                     </div>
 
                     <ToggleRow
-                      title="Enforce Android Play Integrity"
-                      description="Check official app and device integrity evidence before accepting Android attendance."
+                      title={i18nT("static.1xjv5yn")}
+                      description={i18nT("static.1iy5cib")}
                       checked={policyForm.android.integrity_enabled}
                       disabled={!policyForm.android.enabled}
                       onChange={(value) =>
@@ -750,8 +774,8 @@ const AttendanceSettingsPage = () => {
                       }
                     />
                     <ToggleRow
-                      title="Allow unlicensed/internal Android app"
-                      description="Allow configured company-distributed APKs when Android integrity is enabled."
+                      title={i18nT("static.s74644")}
+                      description={i18nT("static.1ibdii1")}
                       checked={policyForm.android.allow_unlicensed}
                       disabled={
                         !policyForm.android.enabled ||
@@ -770,16 +794,15 @@ const AttendanceSettingsPage = () => {
 
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                       <div className="text-sm font-semibold text-slate-900">
-                        Attendance area
+                        {i18nT("static.jlkv6r")}{" "}
                       </div>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Kosongkan semua field untuk mengizinkan attendance dari
-                        lokasi mana pun. Isi ketiganya untuk membatasi area.
+                        {i18nT("static.z3yk3c")}{" "}
                       </p>
                       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
                         <InputNumber
                           className="w-full"
-                          placeholder="Latitude"
+                          placeholder={i18nT("static.udp36t")}
                           value={policyForm.common.geofence_latitude}
                           minFractionDigits={6}
                           maxFractionDigits={7}
@@ -795,7 +818,7 @@ const AttendanceSettingsPage = () => {
                         />
                         <InputNumber
                           className="w-full"
-                          placeholder="Longitude"
+                          placeholder={i18nT("static.sltujy")}
                           value={policyForm.common.geofence_longitude}
                           minFractionDigits={6}
                           maxFractionDigits={7}
@@ -811,11 +834,11 @@ const AttendanceSettingsPage = () => {
                         />
                         <InputNumber
                           className="w-full"
-                          placeholder="Radius"
+                          placeholder={i18nT("static.g8dqz7")}
                           value={policyForm.common.geofence_radius_meters}
                           min={10}
                           max={100000}
-                          suffix=" m"
+                          suffix={i18nT("static.1sduwzc")}
                           onValueChange={(event) =>
                             setPolicyForm((current) => ({
                               ...current,
@@ -833,11 +856,12 @@ const AttendanceSettingsPage = () => {
 
                 <div className="flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="text-xs text-slate-500">
-                    Last updated: {formatDateTime(submissionPolicy.updated_at)}
+                    {i18nT("static.mgay80")}{" "}
+                    {i18nT(formatDateTime(submissionPolicy.updated_at))}
                   </div>
                   <Button
                     type="button"
-                    label="Save submission policy"
+                    label={i18nT("static.nn49ha")}
                     icon="pi pi-check"
                     loading={saving === "policy"}
                     onClick={savePolicy}

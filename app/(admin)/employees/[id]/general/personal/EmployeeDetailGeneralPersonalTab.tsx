@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import { TabView, TabPanel, TabViewTabChangeEvent } from "primereact/tabview";
@@ -16,6 +17,7 @@ const EmployeeEmergencyContactDataTable = lazy(
 );
 
 const EmployeeDetailGeneralPersonalTab = () => {
+  const { t: i18nT } = useI18n();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const handleTabChange = (e: TabViewTabChangeEvent) => {
@@ -60,9 +62,13 @@ const EmployeeDetailGeneralPersonalTab = () => {
         onTabChange={handleTabChange}
         renderActiveOnly={false}
       >
-        <TabPanel header="Basic Info">{renderBasicInfo()}</TabPanel>
-        <TabPanel header="Family">{renderFamilyInfo()}</TabPanel>
-        <TabPanel header="Emergency Contact">
+        <TabPanel header={i18nT("static.1ljy29v")}>
+          {renderBasicInfo()}
+        </TabPanel>
+        <TabPanel header={i18nT("static.1ii54cp")}>
+          {renderFamilyInfo()}
+        </TabPanel>
+        <TabPanel header={i18nT("static.682t3a")}>
           {renderEmergencyContact()}
         </TabPanel>
       </TabView>

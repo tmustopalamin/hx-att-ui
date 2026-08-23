@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { type ChangeEvent, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -46,9 +47,9 @@ const getBody = () => document.body;
 const listUrl = (showDeleted: boolean) =>
   `/api/component-category?show_all=${showDeleted}`;
 const categoryTypeOptions = [
-  { label: "Earning", value: "EARNING" },
-  { label: "Deduction", value: "DEDUCTION" },
-  { label: "Employer Contribution", value: "EMPLOYER_CONTRIBUTION" },
+  { labelKey: "Earning", value: "EARNING" },
+  { labelKey: "Deduction", value: "DEDUCTION" },
+  { labelKey: "Employer Contribution", value: "EMPLOYER_CONTRIBUTION" },
 ];
 const emptyPayload = (): ComponentCategoryPayload => ({
   code: "",
@@ -62,6 +63,7 @@ const emptyPayload = (): ComponentCategoryPayload => ({
 });
 
 export default function ComponentCategoryDataTable() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll-config");
@@ -86,7 +88,10 @@ export default function ComponentCategoryDataTable() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -98,7 +103,7 @@ export default function ComponentCategoryDataTable() {
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   };
   const closeDialog = () => {
@@ -133,14 +138,11 @@ export default function ComponentCategoryDataTable() {
     const code = form.code?.trim().toUpperCase() ?? "";
     const name = form.name.trim();
     if (!code || !name || !form.category_type) {
-      notify("error", "Code, name, and component type are required.");
+      notify("error", i18nT("static.1ebicea"));
       return;
     }
     if (!/^[A-Z0-9_]+$/.test(code)) {
-      notify(
-        "error",
-        "Code may contain only uppercase letters, numbers, and underscores.",
-      );
+      notify("error", i18nT("static.1bzmybo"));
       return;
     }
 
@@ -150,10 +152,7 @@ export default function ComponentCategoryDataTable() {
       !isFixedAllowance &&
       (form.include_in_bpjs_health || form.include_in_bpjs_employment)
     ) {
-      notify(
-        "error",
-        "Only the FIXED_ALLOWANCE category can be included in a BPJS wage base.",
-      );
+      notify("error", i18nT("static.1m9z4zi"));
       return;
     }
 
@@ -182,7 +181,7 @@ export default function ComponentCategoryDataTable() {
       }
       await mutate();
       closeDialog();
-      notify("success", "Component category saved successfully.");
+      notify("success", i18nT("static.g5upbm"));
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -193,7 +192,7 @@ export default function ComponentCategoryDataTable() {
     try {
       await deleteComponentCategory(row.id, row.row_version);
       await mutate();
-      notify("success", "Component category deleted successfully.");
+      notify("success", i18nT("static.254y6g"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -202,7 +201,7 @@ export default function ComponentCategoryDataTable() {
     try {
       await restoreComponentCategory(row.id, row.row_version);
       await mutate();
-      notify("success", "Component category restored successfully.");
+      notify("success", i18nT("static.1fauv2n"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -211,7 +210,7 @@ export default function ComponentCategoryDataTable() {
     try {
       await purgeComponentCategory(row.id);
       await mutate();
-      notify("success", "Component category permanently deleted.");
+      notify("success", i18nT("static.10evi6a"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -233,7 +232,7 @@ export default function ComponentCategoryDataTable() {
           ? "This category will be available again."
           : "This action cannot be undone.";
     requestActionConfirmation({
-      header: `${label} Component Category`,
+      header: i18nT("static.1pxnyra", { p0: label }),
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">{message}</span>
@@ -255,18 +254,23 @@ export default function ComponentCategoryDataTable() {
   const status = (row: ComponentCategory) => {
     if (row.deleted_at)
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     return row.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -275,7 +279,9 @@ export default function ComponentCategoryDataTable() {
   };
   const actions = (row: ComponentCategory) => {
     if (!canManage)
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     if (row.deleted_at) {
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
@@ -287,7 +293,7 @@ export default function ComponentCategoryDataTable() {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "restore")}
             />
@@ -300,14 +306,14 @@ export default function ComponentCategoryDataTable() {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "purge")}
             />
           )}
         </div>
       ) : (
-        <span className="text-sm text-slate-400">No action</span>
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
       );
     }
     return (
@@ -319,7 +325,7 @@ export default function ComponentCategoryDataTable() {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => openEdit(row)}
         />
@@ -330,7 +336,7 @@ export default function ComponentCategoryDataTable() {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => ask(row, "delete")}
         />
@@ -357,18 +363,17 @@ export default function ComponentCategoryDataTable() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Component Category
+                  {i18nT("static.coj8d4")}{" "}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Classify payroll components and configure inherited BPJS wage
-                  treatment.
+                  {i18nT("static.1v081qw")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -380,7 +385,7 @@ export default function ComponentCategoryDataTable() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Component Category"
+                  label={i18nT("static.4k56k2")}
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -401,7 +406,7 @@ export default function ComponentCategoryDataTable() {
                   htmlFor="category-show-deleted"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -410,7 +415,7 @@ export default function ComponentCategoryDataTable() {
               <InputText
                 value={search}
                 onChange={onSearch}
-                placeholder="Search code, name, or type"
+                placeholder={i18nT("static.1g9d44o")}
                 className="w-full"
               />
             </IconField>
@@ -437,8 +442,8 @@ export default function ComponentCategoryDataTable() {
               size="small"
               loading={isValidating}
               tableStyle={{ minWidth: "65rem" }}
-              emptyMessage="No component category found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.11gydr3")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -449,7 +454,7 @@ export default function ComponentCategoryDataTable() {
               />
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 body={(row: ComponentCategory) => (
                   <span className="font-mono text-sm font-semibold text-slate-700">
@@ -460,7 +465,7 @@ export default function ComponentCategoryDataTable() {
               />
               <Column
                 field="name"
-                header="Category Name"
+                header={i18nT("static.izdfpk")}
                 sortable
                 body={(row: ComponentCategory) => (
                   <span className="font-medium text-slate-800">{row.name}</span>
@@ -469,7 +474,7 @@ export default function ComponentCategoryDataTable() {
               />
               <Column
                 field="category_type"
-                header="Type"
+                header={i18nT("static.1m2zofh")}
                 sortable
                 body={(row: ComponentCategory) => (
                   <Tag
@@ -487,18 +492,23 @@ export default function ComponentCategoryDataTable() {
               />
               <Column
                 field="display_order"
-                header="Order"
+                header={i18nT("static.6wrg3b")}
                 sortable
                 style={{ minWidth: "7rem" }}
               />
               <Column
-                header="BPJS Wage Base"
+                header={i18nT("static.1rexqhx")}
                 body={(row: ComponentCategory) => {
                   if (
                     row.code?.toUpperCase() !== "FIXED_ALLOWANCE" ||
                     row.category_type !== "EARNING"
                   ) {
-                    return <Tag value="Not applicable" severity="secondary" />;
+                    return (
+                      <Tag
+                        value={i18nT("static.18967bv")}
+                        severity="secondary"
+                      />
+                    );
                   }
                   const programs = [
                     row.include_in_bpjs_health ? "Health" : null,
@@ -507,7 +517,9 @@ export default function ComponentCategoryDataTable() {
                   return (
                     <Tag
                       value={
-                        programs.length ? programs.join(" + ") : "Excluded"
+                        programs.length
+                          ? programs.join(" + ")
+                          : i18nT("static.tio6hj")
                       }
                       severity={programs.length ? "success" : "secondary"}
                     />
@@ -516,12 +528,12 @@ export default function ComponentCategoryDataTable() {
                 style={{ minWidth: "14rem" }}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={status}
                 style={{ minWidth: "10rem" }}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actions}
                 frozen
                 alignFrozen="right"
@@ -540,7 +552,7 @@ export default function ComponentCategoryDataTable() {
       </Card>
 
       <Dialog
-        header={selected ? "Edit Component Category" : "New Component Category"}
+        header={selected ? i18nT("static.1aahy7m") : i18nT("static.4k56k2")}
         visible={dialogVisible}
         style={{ width: "95vw", maxWidth: "42rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -554,7 +566,7 @@ export default function ComponentCategoryDataTable() {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -565,7 +577,7 @@ export default function ComponentCategoryDataTable() {
             <Button
               type="submit"
               form="component-category-form"
-              label={selected ? "Save Changes" : "Create Component Category"}
+              label={selected ? i18nT("static.6gmm1l") : i18nT("static.8b3o0u")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -583,13 +595,13 @@ export default function ComponentCategoryDataTable() {
           }}
         >
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Field label="Code" required>
+            <Field label={i18nT("static.xoaiok")} required>
               <InputText
                 value={form.code ?? ""}
                 maxLength={50}
                 autoComplete="off"
                 className="w-full"
-                placeholder="e.g. FIXED_ALLOWANCE"
+                placeholder={i18nT("static.1r8v4xo")}
                 onChange={(event) => {
                   const code = event.target.value;
                   updateForm("code", code);
@@ -603,23 +615,26 @@ export default function ComponentCategoryDataTable() {
                 }}
               />
               <small className="text-slate-500">
-                Uppercase letters, numbers, and underscores only.
+                {i18nT("static.1v8tb1w")}{" "}
               </small>
             </Field>
-            <Field label="Name" required>
+            <Field label={i18nT("static.4el6o6")} required>
               <InputText
                 value={form.name}
                 maxLength={100}
                 autoComplete="off"
                 className="w-full"
-                placeholder="e.g. Fixed Allowance"
+                placeholder={i18nT("static.ftk5rn")}
                 onChange={(event) => updateForm("name", event.target.value)}
               />
             </Field>
-            <Field label="Component Type" required>
+            <Field label={i18nT("static.c0we20")} required>
               <Dropdown
                 value={form.category_type}
-                options={categoryTypeOptions}
+                options={categoryTypeOptions.map((option) => ({
+                  label: i18nT(option.labelKey),
+                  value: option.value,
+                }))}
                 optionLabel="label"
                 optionValue="value"
                 appendTo={getBody}
@@ -636,11 +651,11 @@ export default function ComponentCategoryDataTable() {
               />
               {selected && (
                 <small className="text-slate-500">
-                  The type cannot change after a category is created.
+                  {i18nT("static.193np76")}{" "}
                 </small>
               )}
             </Field>
-            <Field label="Display Order" required>
+            <Field label={i18nT("static.rz5u01")} required>
               <InputNumber
                 value={form.display_order}
                 useGrouping={false}
@@ -653,18 +668,18 @@ export default function ComponentCategoryDataTable() {
                 }
               />
               <small className="text-slate-500">
-                Lower numbers are shown first.
+                {i18nT("static.9ureql")}{" "}
               </small>
             </Field>
           </div>
-          <Field label="Description">
+          <Field label={i18nT("static.sjj37t")}>
             <InputTextarea
               value={form.description ?? ""}
               rows={3}
               autoResize
               maxLength={500}
               className="w-full"
-              placeholder="Optional description"
+              placeholder={i18nT("static.154ro8v")}
               onChange={(event) =>
                 updateForm("description", event.target.value)
               }
@@ -673,11 +688,10 @@ export default function ComponentCategoryDataTable() {
           <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
             <div>
               <p className="m-0 text-sm font-semibold text-slate-800">
-                BPJS wage-base treatment
+                {i18nT("static.frzx9y")}{" "}
               </p>
               <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
-                Income components inherit this category setting. Only the
-                FIXED_ALLOWANCE category can be included in the BPJS wage base.
+                {i18nT("static.1uuvll0")}{" "}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -699,7 +713,7 @@ export default function ComponentCategoryDataTable() {
                   htmlFor="category-bpjs-health"
                   className="cursor-pointer text-sm font-medium text-slate-700"
                 >
-                  Include BPJS Kesehatan
+                  {i18nT("static.s2o1i2")}{" "}
                 </label>
               </div>
               <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-white px-3 py-3">
@@ -723,7 +737,7 @@ export default function ComponentCategoryDataTable() {
                   htmlFor="category-bpjs-employment"
                   className="cursor-pointer text-sm font-medium text-slate-700"
                 >
-                  Include BPJS Ketenagakerjaan
+                  {i18nT("static.1h89vja")}{" "}
                 </label>
               </div>
             </div>
@@ -733,7 +747,7 @@ export default function ComponentCategoryDataTable() {
               htmlFor="category-active"
               className="cursor-pointer text-sm font-medium text-slate-700"
             >
-              Active
+              {i18nT("static.8qzyhb")}{" "}
             </label>
             <InputSwitch
               inputId="category-active"

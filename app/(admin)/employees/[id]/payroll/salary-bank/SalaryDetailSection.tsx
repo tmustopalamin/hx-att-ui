@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
@@ -25,6 +26,7 @@ type FormData = {
 const getBody = () => document.body;
 
 const SalaryDetailSection = () => {
+  const { t: i18nT } = useI18n();
   const params = useParams();
   const id = params.id;
 
@@ -89,20 +91,24 @@ const SalaryDetailSection = () => {
           <div className="flex flex-col gap-5">
             <div className="header flex justify-between">
               <div className="title flex flex-col">
-                <h5 className="text-xl">Personal Data</h5>
-                <h5 className="text-sm">Your personal data information</h5>
+                <h5 className="text-xl">{i18nT("static.16u7g4f")}</h5>
+                <h5 className="text-sm">{i18nT("static.jdw0hs")}</h5>
               </div>
 
               {isPageEdit && (
                 <>
                   <div className="m-0 flex flex-row gap-2 items-center justify-end">
                     <Button
-                      label="Cancel"
+                      label={i18nT("static.ew9em3")}
                       icon="pi pi-times"
                       className="p-button-text"
                       onClick={() => setIsPageEdit(false)}
                     />
-                    <Button label="Save" icon="pi pi-check" type="submit" />
+                    <Button
+                      label={i18nT("static.lewgh4")}
+                      icon="pi pi-check"
+                      type="submit"
+                    />
                   </div>
                 </>
               )}
@@ -111,7 +117,7 @@ const SalaryDetailSection = () => {
                 <>
                   <Button
                     icon="pi pi-pencil"
-                    label=" Edit"
+                    label={i18nT("static.1i1lcq9")}
                     severity="help"
                     text
                     onClick={() => setIsPageEdit(true)}
@@ -123,7 +129,7 @@ const SalaryDetailSection = () => {
               <div className="flex flex-col gap-5">
                 <div className="m-0 flex flex-row gap-2 items-center">
                   <div className="w-1/5">
-                    <label htmlFor="name">Full Name</label>
+                    <label htmlFor="name">{i18nT("static.4eocnj")}</label>
                   </div>
                   <div className="w-4/5 flex flex-row gap-5">
                     <Controller
@@ -131,10 +137,10 @@ const SalaryDetailSection = () => {
                       defaultValue=""
                       control={control}
                       rules={{
-                        required: "name is required",
+                        required: i18nT("static.1jojti3"),
                         maxLength: {
                           value: 50,
-                          message: "maximum 50 character",
+                          message: i18nT("static.qf28bp"),
                         },
                       }}
                       render={({ field, fieldState }) => (
@@ -144,7 +150,7 @@ const SalaryDetailSection = () => {
                               disabled={!isPageEdit}
                               id="firstName"
                               {...field}
-                              placeholder="First Name"
+                              placeholder={i18nT("static.6yjm7s")}
                               className={
                                 fieldState.invalid
                                   ? "p-invalid w-full"
@@ -166,10 +172,10 @@ const SalaryDetailSection = () => {
                       defaultValue=""
                       control={control}
                       rules={{
-                        required: "last name is required",
+                        required: i18nT("static.1tqg5ch"),
                         maxLength: {
                           value: 50,
-                          message: "maximum 50 character",
+                          message: i18nT("static.qf28bp"),
                         },
                       }}
                       render={({ field, fieldState }) => (
@@ -179,7 +185,7 @@ const SalaryDetailSection = () => {
                               disabled={!isPageEdit}
                               id="lastName"
                               {...field}
-                              placeholder="Last Name"
+                              placeholder={i18nT("static.16p3u1s")}
                               className={
                                 fieldState.invalid
                                   ? "p-invalid w-full"
@@ -200,7 +206,9 @@ const SalaryDetailSection = () => {
 
                 <div className="m-0 flex flex-row gap-2 items-center">
                   <div className="w-1/5">
-                    <label htmlFor="birthplace">Place Of Birth</label>
+                    <label htmlFor="birthplace">
+                      {i18nT("static.1fejy8k")}
+                    </label>
                   </div>
                   <div className="w-4/5">
                     <Controller
@@ -208,10 +216,10 @@ const SalaryDetailSection = () => {
                       defaultValue=""
                       control={control}
                       rules={{
-                        required: "place of birth is required",
+                        required: i18nT("static.xnq8qd"),
                         maxLength: {
                           value: 50,
-                          message: "maximum 50 character",
+                          message: i18nT("static.qf28bp"),
                         },
                       }}
                       render={({ field, fieldState }) => (
@@ -237,13 +245,13 @@ const SalaryDetailSection = () => {
 
                 <div className="m-0 flex flex-row gap-2 items-center">
                   <div className="w-1/5">
-                    <label htmlFor="dob">Birth Date</label>
+                    <label htmlFor="dob">{i18nT("static.1m101fi")}</label>
                   </div>
                   <div className="w-4/5">
                     <Controller
                       name="dob"
                       control={control}
-                      rules={{ required: "birth date is required" }}
+                      rules={{ required: i18nT("static.h0kbf7") }}
                       render={({ field, fieldState }) => (
                         <>
                           <Calendar
@@ -276,13 +284,13 @@ const SalaryDetailSection = () => {
 
                 <div className="m-0 flex flex-row gap-2 items-center">
                   <div className="w-1/5">
-                    <label htmlFor="gender">Gender</label>
+                    <label htmlFor="gender">{i18nT("static.1adu274")}</label>
                   </div>
                   <div className="w-4/5">
                     <Controller
                       name="gender"
                       control={control}
-                      rules={{ required: "gender is required" }}
+                      rules={{ required: i18nT("static.td9j75") }}
                       render={({ field, fieldState }) => (
                         <>
                           <Dropdown
@@ -294,7 +302,7 @@ const SalaryDetailSection = () => {
                             onChange={(e) => field.onChange(e.value)}
                             optionLabel="name"
                             optionValue="id"
-                            placeholder="Select a Gender"
+                            placeholder={i18nT("static.144ms0n")}
                             className={
                               fieldState.invalid ? "p-invalid w-full" : "w-full"
                             }
@@ -312,13 +320,13 @@ const SalaryDetailSection = () => {
 
                 <div className="m-0 flex flex-row gap-2 items-center">
                   <div className="w-1/5">
-                    <label htmlFor="religion">Religion</label>
+                    <label htmlFor="religion">{i18nT("static.1y626di")}</label>
                   </div>
                   <div className="w-4/5">
                     <Controller
                       name="religion"
                       control={control}
-                      rules={{ required: "religion is required" }}
+                      rules={{ required: i18nT("static.ps9i3f") }}
                       render={({ field, fieldState }) => (
                         <>
                           <Dropdown
@@ -330,7 +338,7 @@ const SalaryDetailSection = () => {
                             onChange={(e) => field.onChange(e.value)}
                             optionLabel="name"
                             optionValue="id"
-                            placeholder="Select a Religion"
+                            placeholder={i18nT("static.15wg4q1")}
                             className={
                               fieldState.invalid ? "p-invalid w-full" : "w-full"
                             }
@@ -348,13 +356,13 @@ const SalaryDetailSection = () => {
 
                 <div className="m-0 flex flex-row gap-2 items-center">
                   <div className="w-1/5">
-                    <label htmlFor="marital">Marital Status</label>
+                    <label htmlFor="marital">{i18nT("static.s7ogwz")}</label>
                   </div>
                   <div className="w-4/5">
                     <Controller
                       name="marital"
                       control={control}
-                      rules={{ required: "marital status is required" }}
+                      rules={{ required: i18nT("static.1cyi5t2") }}
                       render={({ field, fieldState }) => (
                         <>
                           <Dropdown
@@ -366,7 +374,7 @@ const SalaryDetailSection = () => {
                             onChange={(e) => field.onChange(e.value)}
                             optionLabel="name"
                             optionValue="id"
-                            placeholder="Select a Marital Status"
+                            placeholder={i18nT("static.6jx6rw")}
                             className={
                               fieldState.invalid ? "p-invalid w-full" : "w-full"
                             }

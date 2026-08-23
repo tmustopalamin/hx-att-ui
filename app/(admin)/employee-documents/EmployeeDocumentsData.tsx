@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -54,6 +55,7 @@ const getBody = () => document.body;
 const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
 
 export default function EmployeeDocumentsData() {
+  const { t: i18nT } = useI18n();
   const searchParams = useSearchParams();
   const dispatch = useDispatch();
   const permissions = useSelector(
@@ -120,7 +122,11 @@ export default function EmployeeDocumentsData() {
     () =>
       employees.map((employee) => ({
         label:
-          employee.full_name || `${employee.first_name} ${employee.last_name}`,
+          employee.full_name ||
+          i18nT("static.y7k7q", {
+            p0: employee.first_name,
+            p1: employee.last_name,
+          }),
         value: employee.id,
       })),
     [employees],
@@ -144,7 +150,7 @@ export default function EmployeeDocumentsData() {
 
   const createType = async () => {
     if (!documentType.code.trim() || !documentType.name.trim()) {
-      toast("error", "Validation", "Code and name are required.");
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.u9zubr"));
       return;
     }
     setSaving(true);
@@ -164,24 +170,20 @@ export default function EmployeeDocumentsData() {
         is_required_on_onboarding: false,
       });
       await reloadTypes();
-      toast("success", "Saved", "Employee document type created.");
+      toast("success", i18nT("static.12ek4is"), i18nT("static.1mau0hg"));
     } catch {
-      toast("error", "Unable to save", "Document type could not be created.");
+      toast("error", i18nT("static.rulhkg"), i18nT("static.xbdvzh"));
     } finally {
       setSaving(false);
     }
   };
   const create = async () => {
     if (!document.employee_id || !document.employee_document_type_id || !file) {
-      toast(
-        "error",
-        "Validation",
-        "Employee, document type, and file are required.",
-      );
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.lsnzjm"));
       return;
     }
     if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
-      toast("error", "Unable to upload", "Maximum document size is 10 MB.");
+      toast("error", i18nT("static.d2bjes"), i18nT("static.1r1nbzp"));
       return;
     }
     setSaving(true);
@@ -199,13 +201,9 @@ export default function EmployeeDocumentsData() {
       setDocument(emptyDocument());
       setFile(null);
       await reloadDocuments();
-      toast("success", "Uploaded", "Document is ready for verification.");
+      toast("success", i18nT("static.g8anu5"), i18nT("static.17av8xn"));
     } catch {
-      toast(
-        "error",
-        "Unable to upload",
-        "Use a valid PDF, PNG, or JPEG file up to 10 MB.",
-      );
+      toast("error", i18nT("static.d2bjes"), i18nT("static.1sj31zd"));
     } finally {
       setSaving(false);
     }
@@ -228,11 +226,13 @@ export default function EmployeeDocumentsData() {
       await reloadDocuments();
       toast(
         "success",
-        "Updated",
-        status === "VERIFIED" ? "Document verified." : "Document rejected.",
+        i18nT("static.miz9ao"),
+        status === "VERIFIED"
+          ? i18nT("static.1e7evya")
+          : i18nT("static.1t4bhg8"),
       );
     } catch {
-      toast("error", "Unable to update", "Refresh the document and try again.");
+      toast("error", i18nT("static.1yhx6qk"), i18nT("static.ris6s6"));
     } finally {
       setSaving(false);
     }
@@ -274,17 +274,9 @@ export default function EmployeeDocumentsData() {
       setEditing(null);
       setReplacementFile(null);
       await reloadDocuments();
-      toast(
-        "success",
-        "Updated",
-        "Document metadata and verification status were updated.",
-      );
+      toast("success", i18nT("static.miz9ao"), i18nT("static.67u8jr"));
     } catch {
-      toast(
-        "error",
-        "Unable to update",
-        "Refresh the document and verify dates or file format.",
-      );
+      toast("error", i18nT("static.1yhx6qk"), i18nT("static.agc08d"));
     } finally {
       setSaving(false);
     }
@@ -296,25 +288,19 @@ export default function EmployeeDocumentsData() {
       await reloadDocuments();
       toast(
         "success",
-        "Updated",
-        isActive ? "Document activated." : "Document deactivated.",
+        i18nT("static.miz9ao"),
+        isActive ? i18nT("static.146ifvz") : i18nT("static.8vt6c"),
       );
     } catch {
-      toast(
-        "error",
-        "Unable to update",
-        "Document changed. Refresh and try again.",
-      );
+      toast("error", i18nT("static.1yhx6qk"), i18nT("static.8ktbql"));
     } finally {
       setSaving(false);
     }
   };
   const confirmActive = (row: EmployeeDocument, isActive: boolean) =>
     requestActionConfirmation({
-      header: isActive ? "Activate Document" : "Deactivate Document",
-      message: isActive
-        ? "Activate this document?"
-        : "Deactivate this document? It will no longer satisfy onboarding requirements.",
+      header: isActive ? i18nT("static.1q4oec9") : i18nT("static.16fzu8g"),
+      message: isActive ? i18nT("static.1uz36yu") : i18nT("static.zm5qco"),
       icon: "pi pi-exclamation-triangle",
       acceptLabel: isActive ? "Activate" : "Deactivate",
       rejectLabel: "Cancel",
@@ -323,12 +309,12 @@ export default function EmployeeDocumentsData() {
     });
   const confirmVerify = (row: EmployeeDocument) =>
     requestActionConfirmation({
-      action: "Verify document",
+      action: i18nT("static.11ruj3x"),
       target: `${row.employee_name} · ${row.document_name || "Document"}`,
       severity: "warning",
-      confirmLabel: "Verify",
+      confirmLabel: i18nT("static.cl30w4"),
       confirmIcon: "pi pi-check-circle",
-      description: "Verify this employee document?",
+      description: i18nT("static.nf1kgq"),
       onAccept: () => verify(row, "VERIFIED"),
     });
 
@@ -339,15 +325,15 @@ export default function EmployeeDocumentsData() {
           <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-                Employee Documents
+                {i18nT("static.1mmoilr")}{" "}
               </h1>
               <p className="m-0 mt-1 text-sm text-slate-500">
-                Securely store, verify, and monitor employee documents.
+                {i18nT("static.1s05gvy")}{" "}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 outlined
                 severity="secondary"
@@ -357,7 +343,7 @@ export default function EmployeeDocumentsData() {
               />
               {canUpdate && (
                 <Button
-                  label="Document Type"
+                  label={i18nT("static.1lemy44")}
                   icon="pi pi-tags"
                   outlined
                   size="small"
@@ -366,7 +352,7 @@ export default function EmployeeDocumentsData() {
               )}
               {canCreate && (
                 <Button
-                  label="Upload Document"
+                  label={i18nT("static.8iwjhx")}
                   icon="pi pi-upload"
                   size="small"
                   onClick={openUpload}
@@ -382,27 +368,34 @@ export default function EmployeeDocumentsData() {
             stripedRows
             rowHover
             size="small"
-            emptyMessage="No employee document found."
+            emptyMessage={i18nT("static.1jpzkfb")}
           >
-            <Column field="employee_name" header="Employee" />
-            <Column field="document_type_name" header="Type" />
+            <Column field="employee_name" header={i18nT("static.1fak8xt")} />
             <Column
-              header="Document"
+              field="document_type_name"
+              header={i18nT("static.1m2zofh")}
+            />
+            <Column
+              header={i18nT("static.1wvusj8")}
               body={(row: EmployeeDocument) =>
                 row.document_name || row.original_file_name || "-"
               }
             />
             <Column
-              header="Expiry"
+              header={i18nT("static.r38mzi")}
               body={(row: EmployeeDocument) =>
                 formatDisplayDate(row.expired_date)
               }
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: EmployeeDocument) => (
                 <Tag
-                  value={row.is_active ? row.verification_status : "INACTIVE"}
+                  value={
+                    row.is_active
+                      ? row.verification_status
+                      : i18nT("static.dt0j4o")
+                  }
                   severity={
                     !row.is_active
                       ? "secondary"
@@ -416,7 +409,7 @@ export default function EmployeeDocumentsData() {
               )}
             />
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(row: EmployeeDocument) => (
                 <div className="flex gap-1">
                   <Button
@@ -424,8 +417,8 @@ export default function EmployeeDocumentsData() {
                     text
                     rounded
                     severity="secondary"
-                    aria-label="Download"
-                    tooltip="Download"
+                    aria-label={i18nT("static.t8quxl")}
+                    tooltip={i18nT("static.t8quxl")}
                     tooltipOptions={{ appendTo: getBody, position: "top" }}
                     disabled={!row.original_file_name}
                     onClick={() =>
@@ -441,8 +434,8 @@ export default function EmployeeDocumentsData() {
                     text
                     rounded
                     severity="secondary"
-                    aria-label="File version history"
-                    tooltip="File version history"
+                    aria-label={i18nT("static.8kz60b")}
+                    tooltip={i18nT("static.8kz60b")}
                     tooltipOptions={{ appendTo: getBody, position: "top" }}
                     onClick={() => setVersionDocument(row)}
                   />
@@ -452,8 +445,8 @@ export default function EmployeeDocumentsData() {
                       text
                       rounded
                       severity="secondary"
-                      aria-label="Edit or replace file"
-                      tooltip="Edit or replace file"
+                      aria-label={i18nT("static.1jfjx2o")}
+                      tooltip={i18nT("static.1jfjx2o")}
                       tooltipOptions={{ appendTo: getBody, position: "top" }}
                       onClick={() => openEdit(row)}
                     />
@@ -465,8 +458,8 @@ export default function EmployeeDocumentsData() {
                         icon="pi pi-check"
                         text
                         rounded
-                        aria-label="Verify"
-                        tooltip="Verify"
+                        aria-label={i18nT("static.cl30w4")}
+                        tooltip={i18nT("static.cl30w4")}
                         tooltipOptions={{ appendTo: getBody, position: "top" }}
                         onClick={() => confirmVerify(row)}
                       />
@@ -479,8 +472,8 @@ export default function EmployeeDocumentsData() {
                         text
                         rounded
                         severity="danger"
-                        aria-label="Reject"
-                        tooltip="Reject"
+                        aria-label={i18nT("static.1kej36u")}
+                        tooltip={i18nT("static.1kej36u")}
                         tooltipOptions={{ appendTo: getBody, position: "top" }}
                         onClick={() => setRejecting(row)}
                       />
@@ -491,8 +484,16 @@ export default function EmployeeDocumentsData() {
                       text
                       rounded
                       severity={row.is_active ? "danger" : "success"}
-                      aria-label={row.is_active ? "Deactivate" : "Activate"}
-                      tooltip={row.is_active ? "Deactivate" : "Activate"}
+                      aria-label={
+                        row.is_active
+                          ? i18nT("static.zgo73n")
+                          : i18nT("static.giwx3k")
+                      }
+                      tooltip={
+                        row.is_active
+                          ? i18nT("static.zgo73n")
+                          : i18nT("static.giwx3k")
+                      }
                       tooltipOptions={{ appendTo: getBody, position: "top" }}
                       onClick={() => confirmActive(row, !row.is_active)}
                     />
@@ -504,7 +505,7 @@ export default function EmployeeDocumentsData() {
         </div>
       </Card>
       <Dialog
-        header="Upload Employee Document"
+        header={i18nT("static.1bi7d3x")}
         visible={visible}
         modal
         draggable={false}
@@ -514,13 +515,13 @@ export default function EmployeeDocumentsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setVisible(false)}
             />
             <Button
-              label="Upload"
+              label={i18nT("static.106vtz0")}
               icon="pi pi-upload"
               loading={saving}
               onClick={() => void create()}
@@ -530,13 +531,13 @@ export default function EmployeeDocumentsData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee
+            {i18nT("static.1fak8xt")}{" "}
             <Dropdown
               value={document.employee_id || null}
               options={employeeOptions}
               filter
               disabled={employeeScoped}
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               className="w-full"
               onChange={(event) =>
                 setDocument({ ...document, employee_id: event.value as number })
@@ -544,13 +545,13 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Document Type
+            {i18nT("static.1lemy44")}{" "}
             <Dropdown
               value={document.employee_document_type_id || null}
               options={types.filter((item) => item.is_active)}
               optionLabel="name"
               optionValue="id"
-              placeholder="Select document type"
+              placeholder={i18nT("static.17xxjdy")}
               className="w-full"
               onChange={(event) =>
                 setDocument({
@@ -562,8 +563,10 @@ export default function EmployeeDocumentsData() {
           </label>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Document Number{" "}
-              <span className="font-normal text-slate-400">(optional)</span>
+              {i18nT("static.1tnb5t9")}{" "}
+              <span className="font-normal text-slate-400">
+                {i18nT("static.6pi6gi")}
+              </span>
               <InputText
                 value={document.document_number}
                 onChange={(event) =>
@@ -575,8 +578,10 @@ export default function EmployeeDocumentsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Document Name{" "}
-              <span className="font-normal text-slate-400">(optional)</span>
+              {i18nT("static.1eyzwyf")}{" "}
+              <span className="font-normal text-slate-400">
+                {i18nT("static.6pi6gi")}
+              </span>
               <InputText
                 value={document.document_name}
                 onChange={(event) =>
@@ -588,7 +593,7 @@ export default function EmployeeDocumentsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Issued Date{" "}
+              {i18nT("static.16dnelc")}{" "}
               <PrimeDatePicker
                 value={document.issued_date}
                 onValueChange={(value) =>
@@ -597,7 +602,7 @@ export default function EmployeeDocumentsData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Expiry Date{" "}
+              {i18nT("static.1hrwgce")}{" "}
               <PrimeDatePicker
                 value={document.expired_date}
                 onValueChange={(value) =>
@@ -607,9 +612,9 @@ export default function EmployeeDocumentsData() {
             </label>
           </div>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            File{" "}
+            {i18nT("static.bygjtv")}{" "}
             <span className="font-normal text-slate-400">
-              (PDF, PNG, JPEG; max 10 MB)
+              {i18nT("static.18vc2s2")}{" "}
             </span>
             <input
               type="file"
@@ -619,7 +624,7 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Notes{" "}
+            {i18nT("static.4f76ga")}{" "}
             <InputTextarea
               value={document.notes}
               rows={3}
@@ -632,7 +637,7 @@ export default function EmployeeDocumentsData() {
         </div>
       </Dialog>
       <Dialog
-        header="Employee Document Type"
+        header={i18nT("static.hkphuq")}
         visible={typeVisible}
         modal
         draggable={false}
@@ -642,13 +647,13 @@ export default function EmployeeDocumentsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setTypeVisible(false)}
             />
             <Button
-              label="Save"
+              label={i18nT("static.lewgh4")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void createType()}
@@ -658,7 +663,7 @@ export default function EmployeeDocumentsData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Code
+            {i18nT("static.xoaiok")}{" "}
             <InputText
               value={documentType.code}
               onChange={(event) =>
@@ -667,7 +672,7 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Name
+            {i18nT("static.4el6o6")}{" "}
             <InputText
               value={documentType.name}
               onChange={(event) =>
@@ -686,11 +691,11 @@ export default function EmployeeDocumentsData() {
                 })
               }
             />{" "}
-            Requires expiry date
+            {i18nT("static.c53usg")}{" "}
           </label>
           {documentType.requires_expiry && (
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Reminder Days
+              {i18nT("static.1o13bgy")}{" "}
               <InputText
                 type="number"
                 min="1"
@@ -716,15 +721,19 @@ export default function EmployeeDocumentsData() {
                 })
               }
             />{" "}
-            Required on onboarding
+            {i18nT("static.13lxp8y")}{" "}
           </label>
         </div>
       </Dialog>
       <Dialog
         header={
           versionDocument
-            ? `File Versions — ${versionDocument.document_name || versionDocument.document_type_name}`
-            : "File Versions"
+            ? i18nT("static.w9pi8", {
+                p0:
+                  versionDocument.document_name ||
+                  versionDocument.document_type_name,
+              })
+            : i18nT("static.14qh7ow")
         }
         visible={versionDocument !== null}
         modal
@@ -735,7 +744,7 @@ export default function EmployeeDocumentsData() {
         footer={
           <div className="flex justify-end">
             <Button
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               text
               severity="secondary"
               onClick={() => setVersionDocument(null)}
@@ -749,38 +758,38 @@ export default function EmployeeDocumentsData() {
           size="small"
           stripedRows
           loading={versionsLoading}
-          emptyMessage="No archived file version found."
+          emptyMessage={i18nT("static.nxqsxc")}
         >
           <Column
             field="version_number"
-            header="Version"
+            header={i18nT("static.q0zd4n")}
             body={(row: EmployeeDocumentFileVersion) =>
               `v${row.version_number}`
             }
           />
-          <Column field="original_file_name" header="File" />
+          <Column field="original_file_name" header={i18nT("static.bygjtv")} />
           <Column
-            header="Size"
+            header={i18nT("static.1a4x3zw")}
             body={(row: EmployeeDocumentFileVersion) =>
               `${Math.ceil(row.size_bytes / 1024)} KB`
             }
           />
           <Column
-            header="Archived"
+            header={i18nT("static.1cnmmj7")}
             body={(row: EmployeeDocumentFileVersion) =>
               formatDisplayDateTime(row.archived_at)
             }
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={(row: EmployeeDocumentFileVersion) => (
               <Button
                 icon="pi pi-download"
                 text
                 rounded
                 severity="secondary"
-                aria-label="Download archived version"
-                tooltip="Download archived version"
+                aria-label={i18nT("static.10ja9dt")}
+                tooltip={i18nT("static.10ja9dt")}
                 tooltipOptions={{ appendTo: getBody, position: "top" }}
                 onClick={() =>
                   versionDocument &&
@@ -796,7 +805,7 @@ export default function EmployeeDocumentsData() {
         </DataTable>
       </Dialog>
       <Dialog
-        header="Edit Employee Document"
+        header={i18nT("static.1lq5zhc")}
         visible={editing !== null}
         modal
         draggable={false}
@@ -806,13 +815,13 @@ export default function EmployeeDocumentsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setEditing(null)}
             />
             <Button
-              label="Save"
+              label={i18nT("static.lewgh4")}
               icon="pi pi-check"
               loading={saving}
               onClick={() => void saveEdit()}
@@ -822,8 +831,10 @@ export default function EmployeeDocumentsData() {
       >
         <div className="grid gap-4 py-2 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Document Number{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.1tnb5t9")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               value={editForm.document_number}
               onChange={(event) =>
@@ -835,8 +846,10 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Document Name{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.1eyzwyf")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               value={editForm.document_name}
               onChange={(event) =>
@@ -845,8 +858,10 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Issued Date{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.16dnelc")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={editForm.issued_date}
               onValueChange={(value) =>
@@ -855,8 +870,10 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Expiry Date{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.1hrwgce")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <PrimeDatePicker
               value={editForm.expired_date}
               onValueChange={(value) =>
@@ -865,9 +882,9 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
-            Replacement File{" "}
+            {i18nT("static.1pqoa5f")}{" "}
             <span className="font-normal text-slate-400">
-              (optional; PDF, PNG, JPEG; max 10 MB)
+              {i18nT("static.47is3d")}{" "}
             </span>
             <input
               type="file"
@@ -879,7 +896,10 @@ export default function EmployeeDocumentsData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700 md:col-span-2">
-            Notes <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.4f76ga")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={3}
               autoResize
@@ -897,12 +917,12 @@ export default function EmployeeDocumentsData() {
                 setEditForm({ ...editForm, is_primary: event.target.checked })
               }
             />{" "}
-            Primary document
+            {i18nT("static.hb0fa6")}{" "}
           </label>
         </div>
       </Dialog>
       <Dialog
-        header="Reject Document"
+        header={i18nT("static.8n2nin")}
         visible={rejecting !== null}
         modal
         draggable={false}
@@ -912,13 +932,13 @@ export default function EmployeeDocumentsData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               onClick={() => setRejecting(null)}
             />
             <Button
-              label="Reject"
+              label={i18nT("static.1kej36u")}
               icon="pi pi-times"
               severity="danger"
               loading={saving}
@@ -930,7 +950,7 @@ export default function EmployeeDocumentsData() {
         }
       >
         <label className="grid gap-2 py-2 text-sm font-medium text-slate-700">
-          Reason
+          {i18nT("static.i36sl5")}{" "}
           <InputTextarea
             value={reason}
             rows={3}

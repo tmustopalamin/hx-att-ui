@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -79,6 +80,7 @@ const getEmployeeCode = (employee: EmployeeListRow) => {
 };
 
 const EmployeeShiftAssignmentGenerateForm = () => {
+  const { t: i18nT } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -244,9 +246,11 @@ const EmployeeShiftAssignmentGenerateForm = () => {
       from: formatDate(periodFrom),
       to: formatDate(actualPeriodTo),
       days: numberOfDays,
-      text: `${formatDate(periodFrom)} – ${formatDate(
-        actualPeriodTo,
-      )} (${numberOfDays} days)`,
+      text: i18nT("static.c2j5a2", {
+        p0: formatDate(periodFrom),
+        p1: formatDate(actualPeriodTo),
+        p2: numberOfDays,
+      }),
       usesDefaultEndDate: periodTo === null,
     };
   }, [periodFrom, periodTo]);
@@ -259,7 +263,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -270,7 +274,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Validation",
+        summary: i18nT("static.gy1qqi"),
         detail: message,
       }),
     );
@@ -282,7 +286,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -295,7 +299,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -307,8 +311,8 @@ const EmployeeShiftAssignmentGenerateForm = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -432,19 +436,19 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
   const validateGeneration = () => {
     if (selectedIds.size === 0) {
-      showWarning("Select at least one employee.");
+      showWarning(i18nT("static.rlgmd1"));
 
       return false;
     }
 
     if (!periodFrom) {
-      showWarning("Period From is required.");
+      showWarning(i18nT("static.1aqzawx"));
 
       return false;
     }
 
     if (hasInvalidDateRange) {
-      showWarning("Period From cannot be later than Period To.");
+      showWarning(i18nT("static.oeewdr"));
 
       return false;
     }
@@ -481,7 +485,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
       const response: ResponseType<ResponseTypeCreateSuccess> =
         await createEmployeeShiftAssignment(payload);
 
-      showSuccess(response.message || "Schedule generated successfully.");
+      showSuccess(response.message || i18nT("static.1fw4b2w"));
 
       resetPage();
     } catch (err: unknown) {
@@ -497,47 +501,42 @@ const EmployeeShiftAssignmentGenerateForm = () => {
     }
 
     requestActionConfirmation({
-      header: "Generate Employee Schedule",
+      header: i18nT("static.qnqnib"),
 
       message: (
         <div className="flex flex-col gap-3">
-          <span className="text-slate-600">
-            Generate shift assignments using each employee&apos;s active shift
-            rule?
-          </span>
+          <span className="text-slate-600">{i18nT("static.ckd1lf")} </span>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-              <span className="text-slate-500">Employees</span>
+              <span className="text-slate-500">{i18nT("static.f4bo3a")}</span>
 
               <span className="font-semibold text-slate-800">
                 {selectedIds.size}
               </span>
 
-              <span className="text-slate-500">Period</span>
+              <span className="text-slate-500">{i18nT("static.11hwh7o")}</span>
 
               <span className="font-semibold text-slate-800">
                 {periodPreview.from}
-                {" – "}
+                {i18nT("static.hnl64v")}
                 {periodPreview.to}
               </span>
 
-              <span className="text-slate-500">Total Days</span>
+              <span className="text-slate-500">{i18nT("static.141yy28")}</span>
 
               <span className="font-semibold text-slate-800">
                 {periodPreview.days}
               </span>
 
-              <span className="text-slate-500">Mode</span>
+              <span className="text-slate-500">{i18nT("static.n44ilu")}</span>
 
               <span
                 className={`font-semibold ${
                   overwrite ? "text-amber-700" : "text-green-700"
                 }`}
               >
-                {overwrite
-                  ? "Regenerate unlocked RULE assignments"
-                  : "Generate missing dates only"}
+                {overwrite ? i18nT("static.rywwgw") : i18nT("static.1wavinv")}
               </span>
             </div>
           </div>
@@ -547,8 +546,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
               <i className="pi pi-info-circle mt-0.5" />
 
               <span>
-                Period To was left empty, so generation will continue until the
-                end of {dayjs(periodFrom).format("YYYY")}.
+                {i18nT("static.16f0ick")} {dayjs(periodFrom).format("YYYY")}.
               </span>
             </div>
           )}
@@ -557,10 +555,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
               <i className="pi pi-exclamation-triangle mt-0.5" />
 
-              <span>
-                Unlocked assignments whose source is RULE may be regenerated.
-                MANUAL and locked assignments remain protected.
-              </span>
+              <span>{i18nT("static.14n9ty6")} </span>
             </div>
           )}
         </div>
@@ -580,7 +575,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -589,7 +584,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
           <Button
             type="button"
-            label="Generate"
+            label={i18nT("static.1jb34xe")}
             icon="pi pi-calendar-plus"
             severity={overwrite ? "warning" : "success"}
             onClick={options.accept}
@@ -658,11 +653,11 @@ const EmployeeShiftAssignmentGenerateForm = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="truncate text-sm font-medium text-slate-700">
-          {row.department_name || "No department"}
+          {row.department_name || i18nT("static.1nlh2ss")}
         </span>
 
         <span className="truncate text-xs text-slate-500">
-          {row.position_name || "No position"}
+          {row.position_name || i18nT("static.1hijdjd")}
         </span>
       </div>
     );
@@ -680,9 +675,14 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
   const selectedBody = (row: EmployeeListRow) => {
     return selectedIds.has(row.id) ? (
-      <Tag value="Selected" severity="success" icon="pi pi-check" rounded />
+      <Tag
+        value={i18nT("static.1ucoec4")}
+        severity="success"
+        icon="pi pi-check"
+        rounded
+      />
     ) : (
-      <span className="text-sm text-slate-400">Not selected</span>
+      <span className="text-sm text-slate-400">{i18nT("static.8frm9z")}</span>
     );
   };
 
@@ -712,8 +712,8 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   rounded
                   text
                   severity="secondary"
-                  aria-label="Back"
-                  tooltip="Back to Employee Shift Assignment"
+                  aria-label={i18nT("static.1hzmxtu")}
+                  tooltip={i18nT("static.1jxuf26")}
                   tooltipOptions={{
                     appendTo: getBody,
                     position: "top",
@@ -729,29 +729,28 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
                 <div className="min-w-0">
                   <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                    Generate Schedule
+                    {i18nT("static.a0nkg3")}{" "}
                   </h1>
 
                   <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                    Generate daily employee shift assignments from active
-                    employee shift rules.
+                    {i18nT("static.1ac34xy")}{" "}
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Tag
-                      value="Uses Employee Shift Rule"
+                      value={i18nT("static.c53qx7")}
                       severity="info"
                       rounded
                     />
 
                     <Tag
-                      value="Manual assignments protected"
+                      value={i18nT("static.imihkv")}
                       severity="secondary"
                       rounded
                     />
 
                     <Tag
-                      value="Locked assignments protected"
+                      value={i18nT("static.1g5ja9b")}
                       severity="success"
                       rounded
                     />
@@ -761,7 +760,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -777,15 +776,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
               <i className="pi pi-info-circle mt-1 shrink-0" />
 
               <div>
-                <p className="m-0 font-semibold">
-                  Generated from Employee Shift Rule
-                </p>
+                <p className="m-0 font-semibold">{i18nT("static.lbs1r8")} </p>
 
-                <p className="m-0 mt-1">
-                  The system checks each employee&apos;s active shift rule for
-                  every date in the selected period, then creates daily shift
-                  assignments used by attendance processing.
-                </p>
+                <p className="m-0 mt-1">{i18nT("static.1fdehkf")} </p>
               </div>
             </div>
           </div>
@@ -794,7 +787,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
         {/* Summary */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="m-0 text-xs text-slate-500">Available Employees</p>
+            <p className="m-0 text-xs text-slate-500">
+              {i18nT("static.1bufc81")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
               {employees.length}
@@ -802,7 +797,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
           </div>
 
           <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <p className="m-0 text-xs text-blue-700">Selected Employees</p>
+            <p className="m-0 text-xs text-blue-700">
+              {i18nT("static.tzr2gd")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
               {selectedIds.size}
@@ -810,7 +807,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
           </div>
 
           <div className="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm">
-            <p className="m-0 text-xs text-green-700">Selected Departments</p>
+            <p className="m-0 text-xs text-green-700">
+              {i18nT("static.i9hyff")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
               {selectedDepartmentCount}
@@ -818,7 +817,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
           </div>
 
           <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
-            <p className="m-0 text-xs text-indigo-700">Selected Positions</p>
+            <p className="m-0 text-xs text-indigo-700">
+              {i18nT("static.tv5ef8")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-indigo-800">
               {selectedPositionCount}
@@ -826,7 +827,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
           </div>
 
           <div className="col-span-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:col-span-1">
-            <p className="m-0 text-xs text-slate-500">Filtered Employees</p>
+            <p className="m-0 text-xs text-slate-500">
+              {i18nT("static.z2jt2v")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
               {filteredEmployees.length}
@@ -840,17 +843,16 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Employee Selection
+                  {i18nT("static.sadvsn")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Search employees, select by department or position, then
-                  adjust individual selections manually.
+                  {i18nT("static.1ujugvi")}{" "}
                 </p>
               </div>
 
               <Tag
-                value={`${selectedIds.size} selected`}
+                value={i18nT("static.fkvuu6", { p0: selectedIds.size })}
                 severity={selectedIds.size > 0 ? "success" : "secondary"}
                 rounded
               />
@@ -862,7 +864,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
               <InputText
                 value={search}
                 autoFocus
-                placeholder="Search employee, code, department, position, branch, or agency"
+                placeholder={i18nT("static.1wi6rlh")}
                 className="w-full"
                 disabled={isGenerating}
                 onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -875,18 +877,17 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
-                  Select by Department
+                  {i18nT("static.1tmn1k4")}{" "}
                 </h3>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Select all employees in a department. Position and manual
-                  selections remain synchronized.
+                  {i18nT("static.7qazp4")}{" "}
                 </p>
               </div>
 
               {departments.length === 0 ? (
                 <p className="m-0 text-sm text-slate-500">
-                  No department data is available.
+                  {i18nT("static.cr7i5n")}{" "}
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -942,18 +943,17 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
-                  Select by Position
+                  {i18nT("static.1ybw07l")}{" "}
                 </h3>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Select all employees assigned to the same position across all
-                  departments.
+                  {i18nT("static.9v8att")}{" "}
                 </p>
               </div>
 
               {positions.length === 0 ? (
                 <p className="m-0 text-sm text-slate-500">
-                  No position data is available.
+                  {i18nT("static.i3hc9w")}{" "}
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -1007,7 +1007,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
-                label="Select Filtered"
+                label={i18nT("static.9fc2ug")}
                 icon="pi pi-check-square"
                 severity="secondary"
                 outlined
@@ -1018,7 +1018,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
               <Button
                 type="button"
-                label="Clear Filtered"
+                label={i18nT("static.1qfq1up")}
                 icon="pi pi-minus-circle"
                 severity="secondary"
                 outlined
@@ -1029,7 +1029,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
               <Button
                 type="button"
-                label="Clear All"
+                label={i18nT("static.1pqh2hx")}
                 icon="pi pi-filter-slash"
                 severity="danger"
                 text
@@ -1056,8 +1056,8 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                 tableStyle={{
                   minWidth: "76rem",
                 }}
-                emptyMessage="No employee data found."
-                currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                emptyMessage={i18nT("static.1l60s88")}
+                currentPageReportTemplate={i18nT("static.1kqh8lr")}
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 onRowClick={(event) =>
                   toggleEmployee((event.data as EmployeeListRow).id)
@@ -1076,7 +1076,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
                 <Column
                   field="full_name"
-                  header="Employee"
+                  header={i18nT("static.1fak8xt")}
                   sortable
                   body={employeeBody}
                   style={{
@@ -1086,7 +1086,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
                 <Column
                   field="department_name"
-                  header="Organization"
+                  header={i18nT("static.725tl6")}
                   sortable
                   body={organizationBody}
                   style={{
@@ -1096,7 +1096,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
                 <Column
                   field="agency_name"
-                  header="Branch / Agency"
+                  header={i18nT("static.v94987")}
                   sortable
                   body={locationBody}
                   style={{
@@ -1105,7 +1105,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                 />
 
                 <Column
-                  header="Selection"
+                  header={i18nT("static.1gp08mt")}
                   body={selectedBody}
                   style={{
                     minWidth: "12rem",
@@ -1122,17 +1122,18 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Generate Configuration
+                  {i18nT("static.1iwxp24")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Select the schedule period and determine how existing daily
-                  assignments should be handled.
+                  {i18nT("static.5ip8l8")}{" "}
                 </p>
               </div>
 
               <Tag
-                value={overwrite ? "Overwrite Mode" : "Missing Only"}
+                value={
+                  overwrite ? i18nT("static.mdw3vh") : i18nT("static.lk89j")
+                }
                 severity={overwrite ? "warning" : "success"}
                 icon={
                   overwrite
@@ -1149,7 +1150,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   htmlFor="period_from"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Period From
+                  {i18nT("static.ihiofo")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1161,7 +1162,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   showIcon
                   maxDate={periodTo ?? undefined}
                   disabled={isGenerating}
-                  placeholder="Select start date"
+                  placeholder={i18nT("static.h39lib")}
                   className="w-full"
                   onChange={(event) => {
                     const newDate = (event.value as Date | null) ?? null;
@@ -1184,7 +1185,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   htmlFor="period_to"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Period To
+                  {i18nT("static.1oihrl1")}{" "}
                 </label>
 
                 <Calendar
@@ -1195,7 +1196,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   showIcon
                   minDate={periodFrom ?? undefined}
                   disabled={isGenerating}
-                  placeholder="End of year"
+                  placeholder={i18nT("static.1q7tkxg")}
                   className="w-full"
                   onChange={(event) =>
                     setPeriodTo((event.value as Date | null) ?? null)
@@ -1203,8 +1204,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                 />
 
                 <small className="text-slate-500">
-                  Leave empty to generate through the end of the Period From
-                  year.
+                  {i18nT("static.1lahcpe")}{" "}
                 </small>
               </div>
             </div>
@@ -1213,14 +1213,14 @@ const EmployeeShiftAssignmentGenerateForm = () => {
               <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 <i className="pi pi-exclamation-circle mt-0.5" />
 
-                <span>Period From cannot be later than Period To.</span>
+                <span>{i18nT("static.oeewdr")}</span>
               </div>
             )}
 
             {periodPreview && (
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
                 <p className="m-0 text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                  Generation Preview
+                  {i18nT("static.11qmfzb")}{" "}
                 </p>
 
                 <p className="m-0 mt-2 text-sm font-semibold text-indigo-900">
@@ -1228,10 +1228,11 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                 </p>
 
                 <p className="m-0 mt-1 text-xs text-indigo-700">
-                  {selectedIds.size} employee
-                  {selectedIds.size === 1 ? "" : "s"} selected
+                  {selectedIds.size} {i18nT("static.5gxg69")}{" "}
+                  {selectedIds.size === 1 ? "" : i18nT("static.1w9pcoy")}{" "}
+                  {i18nT("static.lnii5w")}{" "}
                   {periodPreview.usesDefaultEndDate
-                    ? " • End date defaults to year end"
+                    ? i18nT("static.4jp1tg")
                     : ""}
                 </p>
               </div>
@@ -1252,12 +1253,11 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                     htmlFor="overwrite"
                     className="cursor-pointer text-sm font-semibold text-slate-800"
                   >
-                    Overwrite Existing Assignments
+                    {i18nT("static.3iik9l")}{" "}
                   </label>
 
                   <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                    Enable this to regenerate unlocked RULE assignments using
-                    the latest employee shift rule.
+                    {i18nT("static.19ovegu")}{" "}
                   </p>
                 </div>
               </div>
@@ -1286,8 +1286,8 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                         }`}
                       >
                         {overwrite
-                          ? "Regenerate unlocked RULE assignments"
-                          : "Generate missing dates only"}
+                          ? i18nT("static.rywwgw")
+                          : i18nT("static.1wavinv")}
                       </p>
 
                       <p
@@ -1296,15 +1296,19 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                         }`}
                       >
                         {overwrite
-                          ? "Existing unlocked assignments with source RULE may be updated using the latest employee shift rule."
-                          : "Existing assignments remain unchanged. Only dates without an assignment will be generated."}
+                          ? i18nT("static.ban6zr")
+                          : i18nT("static.1yfr730")}
                       </p>
                     </div>
                   </div>
 
                   <Button
                     type="button"
-                    label={showOverwriteInfo ? "Hide Info" : "More Info"}
+                    label={
+                      showOverwriteInfo
+                        ? i18nT("static.1fuqufn")
+                        : i18nT("static.1x2sh5o")
+                    }
                     icon={
                       showOverwriteInfo
                         ? "pi pi-chevron-up"
@@ -1325,18 +1329,12 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   <div className="mt-4 border-t border-green-200 pt-4">
                     <div className="rounded-xl border border-green-100 bg-white p-4 text-xs leading-6 text-slate-700">
                       <p className="m-0 font-semibold text-slate-900">
-                        Missing Only Mode
+                        {i18nT("static.10n7mma")}{" "}
                       </p>
 
-                      <p className="m-0 mt-2">
-                        If a date already has any assignment, generation skips
-                        that date.
-                      </p>
+                      <p className="m-0 mt-2">{i18nT("static.w2h98n")} </p>
 
-                      <p className="m-0">
-                        Use this mode for initial schedule generation or filling
-                        schedule gaps.
-                      </p>
+                      <p className="m-0">{i18nT("static.1xz4tyn")} </p>
                     </div>
                   </div>
                 )}
@@ -1345,25 +1343,17 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                   <div className="mt-4 border-t border-amber-200 pt-4">
                     <div className="rounded-xl border border-amber-100 bg-white p-4 text-xs leading-6 text-slate-700">
                       <p className="m-0 font-semibold text-slate-900">
-                        Overwrite Mode
+                        {i18nT("static.mdw3vh")}{" "}
                       </p>
 
-                      <p className="m-0 mt-2">
-                        Existing assignments whose source is RULE and whose
-                        locked status is false may be regenerated.
-                      </p>
+                      <p className="m-0 mt-2">{i18nT("static.1yhlwzl")} </p>
 
-                      <p className="m-0">
-                        Assignments with source MANUAL remain unchanged.
-                      </p>
+                      <p className="m-0">{i18nT("static.1ut89wf")} </p>
 
-                      <p className="m-0">
-                        Locked assignments also remain unchanged.
-                      </p>
+                      <p className="m-0">{i18nT("static.193tx")} </p>
 
                       <p className="m-0 mt-2 font-medium text-amber-700">
-                        Use this mode after changing employee shift rules that
-                        should affect an already generated period.
+                        {i18nT("static.y533gr")}{" "}
                       </p>
                     </div>
                   </div>
@@ -1381,8 +1371,9 @@ const EmployeeShiftAssignmentGenerateForm = () => {
                 <span className="font-semibold text-slate-900">
                   {selectedIds.size}
                 </span>{" "}
-                employee
-                {selectedIds.size === 1 ? "" : "s"} selected
+                {i18nT("static.5gxg69")}{" "}
+                {selectedIds.size === 1 ? "" : i18nT("static.1w9pcoy")}{" "}
+                {i18nT("static.lnii5w")}{" "}
               </p>
 
               {periodPreview && (
@@ -1392,28 +1383,26 @@ const EmployeeShiftAssignmentGenerateForm = () => {
               )}
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Fully selected groups:{" "}
+                {i18nT("static.12rbvs2")}{" "}
                 <span className="font-semibold text-slate-700">
-                  {selectedDepartmentCount} department
-                  {selectedDepartmentCount === 1 ? "" : "s"}
+                  {selectedDepartmentCount} {i18nT("static.1li2jif")}{" "}
+                  {selectedDepartmentCount === 1 ? "" : i18nT("static.1w9pcoy")}
                 </span>
-                {" • "}
+                {i18nT("static.syyan8")}
                 <span className="font-semibold text-slate-700">
-                  {selectedPositionCount} position
-                  {selectedPositionCount === 1 ? "" : "s"}
+                  {selectedPositionCount} {i18nT("static.14vfpje")}{" "}
+                  {selectedPositionCount === 1 ? "" : i18nT("static.1w9pcoy")}
                 </span>
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Mode:{" "}
+                {i18nT("static.ccphnc")}{" "}
                 <span
                   className={`font-semibold ${
                     overwrite ? "text-amber-700" : "text-green-700"
                   }`}
                 >
-                  {overwrite
-                    ? "Regenerate unlocked RULE assignments"
-                    : "Generate missing dates only"}
+                  {overwrite ? i18nT("static.rywwgw") : i18nT("static.1wavinv")}
                 </span>
               </p>
             </div>
@@ -1421,7 +1410,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
-                label="Reset"
+                label={i18nT("static.2zps2o")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1432,7 +1421,7 @@ const EmployeeShiftAssignmentGenerateForm = () => {
 
               <Button
                 type="button"
-                label="Generate Schedule"
+                label={i18nT("static.a0nkg3")}
                 icon="pi pi-calendar-plus"
                 severity={overwrite ? "warning" : "success"}
                 loading={isGenerating}

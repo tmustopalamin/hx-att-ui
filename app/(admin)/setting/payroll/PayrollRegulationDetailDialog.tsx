@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
@@ -170,6 +171,7 @@ export default function PayrollRegulationDetailDialog({
   onSuccess,
   onError,
 }: Props) {
+  const { t: i18nT } = useI18n();
   const detailUrl = regulation
     ? `/api/payroll-regulations/${regulation.id}/detail`
     : null;
@@ -450,8 +452,11 @@ export default function PayrollRegulationDetailDialog({
     <Dialog
       header={
         regulation
-          ? `Configure ${regulation.code} · ${regulation.version}`
-          : "Configure Regulation"
+          ? i18nT("static.19gk9r6", {
+              p0: regulation.code,
+              p1: regulation.version,
+            })
+          : i18nT("static.1prsb9")
       }
       visible={regulation !== null}
       onHide={onHide}
@@ -463,21 +468,21 @@ export default function PayrollRegulationDetailDialog({
     >
       {!editable && (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          This package is {regulation?.status}. Published history is read-only.
+          {i18nT("static.gvhss7")} {regulation?.status}
+          {i18nT("static.g9vfsy")}{" "}
         </div>
       )}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
         <div>
           <div className="text-sm font-semibold text-slate-700">
-            Mode sederhana
+            {i18nT("static.gm2srv")}{" "}
           </div>
           <div className="text-xs leading-5 text-slate-500">
-            Tampilkan nama bisnis dan upload tabel tarif. Kode internal tersedia
-            di Advanced.
+            {i18nT("static.1k3si3x")}{" "}
           </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-600">
-          <span>Advanced</span>
+          <span>{i18nT("static.qwfkor")}</span>
           <InputSwitch
             checked={advanced}
             onChange={(event) => setAdvanced(Boolean(event.value))}
@@ -486,11 +491,14 @@ export default function PayrollRegulationDetailDialog({
       </div>
       <TabView>
         <TabPanel
-          header={`${advanced ? "Parameters" : "Tax settings"} (${data?.parameters.length ?? 0})`}
+          header={i18nT("static.14r9r1n", {
+            p0: advanced ? i18nT("static.1yc4h6h") : i18nT("static.s0ct7f"),
+            p1: data?.parameters.length ?? 0,
+          })}
         >
           {editable && advanced && (
             <div className="mb-5 grid grid-cols-1 gap-3 rounded-lg border border-slate-200 p-4 md:grid-cols-4">
-              <Field label="Program">
+              <Field label={i18nT("static.1if8prf")}>
                 <InputText
                   value={parameter.program_code}
                   onChange={(event) =>
@@ -501,7 +509,7 @@ export default function PayrollRegulationDetailDialog({
                   }
                 />
               </Field>
-              <Field label="Parameter">
+              <Field label={i18nT("static.6qkf5c")}>
                 <InputText
                   value={parameter.parameter_code}
                   onChange={(event) =>
@@ -512,7 +520,7 @@ export default function PayrollRegulationDetailDialog({
                   }
                 />
               </Field>
-              <Field label="Value Type">
+              <Field label={i18nT("static.1nx8gbi")}>
                 <Dropdown
                   value={parameter.value_type}
                   options={
@@ -537,7 +545,7 @@ export default function PayrollRegulationDetailDialog({
               />
               <div className="md:col-span-4 flex justify-end">
                 <Button
-                  label="Save Parameter"
+                  label={i18nT("static.jc883r")}
                   icon="pi pi-check"
                   size="small"
                   loading={saving}
@@ -552,19 +560,25 @@ export default function PayrollRegulationDetailDialog({
             size="small"
             stripedRows
           >
-            {advanced && <Column field="program_code" header="Program" />}
+            {advanced && (
+              <Column field="program_code" header={i18nT("static.1if8prf")} />
+            )}
             <Column
               field="parameter_code"
-              header={advanced ? "Parameter" : "Pengaturan"}
+              header={
+                advanced ? i18nT("static.6qkf5c") : i18nT("static.1lp52qk")
+              }
               body={(row) =>
                 advanced
                   ? row.parameter_code
                   : (parameterLabels[row.parameter_code] ?? row.parameter_code)
               }
             />
-            {advanced && <Column field="value_type" header="Type" />}
+            {advanced && (
+              <Column field="value_type" header={i18nT("static.1m2zofh")} />
+            )}
             <Column
-              header="Value"
+              header={i18nT("static.1m2g8kq")}
               body={(row) =>
                 advanced ? (
                   row.value_type === "DATE" ? (
@@ -588,23 +602,27 @@ export default function PayrollRegulationDetailDialog({
                 )
               }
             />
-            <Column field="unit" header="Unit" />
-            {!advanced && <Column field="description" header="Keterangan" />}
+            <Column field="unit" header={i18nT("static.t3mdrb")} />
+            {!advanced && (
+              <Column field="description" header={i18nT("static.1uvl8yn")} />
+            )}
           </DataTable>
         </TabPanel>
 
         <TabPanel
-          header={`${advanced ? "Rate Brackets" : "Tariff tables"} (${data?.rate_brackets.length ?? 0})`}
+          header={i18nT("static.14r9r1n", {
+            p0: advanced ? i18nT("static.r72qkg") : i18nT("static.1t92np0"),
+            p1: data?.rate_brackets.length ?? 0,
+          })}
         >
           {editable && (
             <div className="mb-5 flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-4">
               <div>
                 <div className="text-sm font-semibold text-slate-700">
-                  Update tabel tarif
+                  {i18nT("static.6dync6")}{" "}
                 </div>
                 <div className="text-xs leading-5 text-slate-500">
-                  Download template, ubah kolom bisnisnya, lalu upload untuk
-                  melihat penambahan, perubahan, dan penghapusan sebelum save.
+                  {i18nT("static.17ucfwz")}{" "}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -639,7 +657,7 @@ export default function PayrollRegulationDetailDialog({
                   </div>
                 )}
                 <Button
-                  label="Download template"
+                  label={i18nT("static.1gi3eax")}
                   icon="pi pi-download"
                   size="small"
                   severity="secondary"
@@ -647,7 +665,7 @@ export default function PayrollRegulationDetailDialog({
                   onClick={downloadBracketTemplate}
                 />
                 <Button
-                  label="Upload rate table"
+                  label={i18nT("static.t5uxra")}
                   icon="pi pi-upload"
                   size="small"
                   onClick={() => fileInputRef.current?.click()}
@@ -665,7 +683,7 @@ export default function PayrollRegulationDetailDialog({
                 />
                 {advanced && (
                   <Button
-                    label="Save one bracket"
+                    label={i18nT("static.cnw5go")}
                     icon="pi pi-plus"
                     size="small"
                     severity="secondary"
@@ -679,34 +697,35 @@ export default function PayrollRegulationDetailDialog({
                 <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3 text-sm">
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-600">
                     <span>
-                      Tambah: <b>{importPreview.additions}</b>
+                      {i18nT("static.1qys2u6")} <b>{importPreview.additions}</b>
                     </span>
                     <span>
-                      Ubah: <b>{importPreview.changes}</b>
+                      {i18nT("static.14n9vnr")} <b>{importPreview.changes}</b>
                     </span>
                     <span>
-                      Hapus: <b>{importPreview.deletions}</b>
+                      {i18nT("static.11bkrvw")} <b>{importPreview.deletions}</b>
                     </span>
                   </div>
                   {importPreview.errors.length > 0 ? (
                     <div className="text-xs leading-5 text-red-600">
                       {importPreview.errors.slice(0, 8).map((error) => (
-                        <div key={error}>• {error}</div>
+                        <div key={error}>
+                          {i18nT("static.syyan8")} {error}
+                        </div>
                       ))}
                       {importPreview.errors.length > 8 && (
                         <div>
-                          • dan {importPreview.errors.length - 8} error lain.
+                          {i18nT("static.119x31m")}{" "}
+                          {importPreview.errors.length - 8}{" "}
+                          {i18nT("static.1l8ucpr")}{" "}
                         </div>
                       )}
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-3 text-xs text-emerald-700">
-                      <span>
-                        Preview valid. Lower bound dihitung dari upper limit
-                        sebelumnya.
-                      </span>
+                      <span>{i18nT("static.1v2d0a2")} </span>
                       <Button
-                        label="Terapkan tabel"
+                        label={i18nT("static.1iyrnnn")}
                         icon="pi pi-check"
                         size="small"
                         loading={saving}
@@ -724,10 +743,12 @@ export default function PayrollRegulationDetailDialog({
             size="small"
             stripedRows
           >
-            {advanced && <Column field="table_code" header="Table" />}
+            {advanced && (
+              <Column field="table_code" header={i18nT("static.1no2um7")} />
+            )}
             <Column
               field="category_code"
-              header="Kategori"
+              header={i18nT("static.101orop")}
               body={(row) =>
                 advanced
                   ? row.category_code
@@ -736,30 +757,42 @@ export default function PayrollRegulationDetailDialog({
                     : `Kategori ${row.category_code}`
               }
             />
-            {advanced && <Column field="sequence_no" header="Seq." />}
+            {advanced && (
+              <Column field="sequence_no" header={i18nT("static.g9r8fq")} />
+            )}
             <Column
-              header={advanced ? "Lower" : "Mulai"}
+              header={
+                advanced ? i18nT("static.i6s4m2") : i18nT("static.1uofg23")
+              }
               body={(row) => row.lower_bound}
             />
             <Column
-              header={advanced ? "Upper" : "Sampai"}
+              header={
+                advanced ? i18nT("static.1dlklwn") : i18nT("static.1paw5c2")
+              }
               body={(row) => row.upper_bound ?? "Tidak terbatas"}
             />
             <Column
-              header="Tarif"
+              header={i18nT("static.1fpn4rv")}
               body={(row) =>
                 `${(Number(row.rate) * 100).toLocaleString("id-ID")} %`
               }
             />
-            {advanced && <Column field="fixed_amount" header="Fixed Amount" />}
+            {advanced && (
+              <Column field="fixed_amount" header={i18nT("static.1n6jfv3")} />
+            )}
           </DataTable>
         </TabPanel>
 
         {advanced && (
-          <TabPanel header={`Test Cases (${data?.test_cases.length ?? 0})`}>
+          <TabPanel
+            header={i18nT("static.1p27x87", {
+              p0: data?.test_cases.length ?? 0,
+            })}
+          >
             {editable && (
               <div className="mb-5 grid grid-cols-1 gap-3 rounded-lg border border-slate-200 p-4 md:grid-cols-3">
-                <Field label="Code">
+                <Field label={i18nT("static.xoaiok")}>
                   <InputText
                     value={testCase.code}
                     onChange={(event) =>
@@ -770,7 +803,7 @@ export default function PayrollRegulationDetailDialog({
                     }
                   />
                 </Field>
-                <Field label="Name">
+                <Field label={i18nT("static.4el6o6")}>
                   <InputText
                     value={testCase.name}
                     onChange={(event) =>
@@ -781,7 +814,7 @@ export default function PayrollRegulationDetailDialog({
                     }
                   />
                 </Field>
-                <Field label="Calculator">
+                <Field label={i18nT("static.o6bvql")}>
                   <InputText
                     value={testCase.calculator_code}
                     onChange={(event) =>
@@ -792,19 +825,19 @@ export default function PayrollRegulationDetailDialog({
                     }
                   />
                 </Field>
-                <Field label="Input JSON">
+                <Field label={i18nT("static.1tpnjsv")}>
                   <InputText
                     value={inputJson}
                     onChange={(event) => setInputJson(event.target.value)}
                   />
                 </Field>
-                <Field label="Expected JSON">
+                <Field label={i18nT("static.axisex")}>
                   <InputText
                     value={expectedJson}
                     onChange={(event) => setExpectedJson(event.target.value)}
                   />
                 </Field>
-                <Field label="Tolerance">
+                <Field label={i18nT("static.1llx3uw")}>
                   <InputText
                     value={testCase.tolerance}
                     onChange={(event) =>
@@ -817,7 +850,7 @@ export default function PayrollRegulationDetailDialog({
                 </Field>
                 <div className="md:col-span-3 flex justify-end">
                   <Button
-                    label="Save Test Case"
+                    label={i18nT("static.sqhdrc")}
                     icon="pi pi-check"
                     size="small"
                     loading={saving}
@@ -832,13 +865,13 @@ export default function PayrollRegulationDetailDialog({
               size="small"
               stripedRows
             >
-              <Column field="code" header="Code" />
-              <Column field="name" header="Name" />
-              <Column field="calculator_code" header="Calculator" />
-              <Column field="tolerance" header="Tolerance" />
+              <Column field="code" header={i18nT("static.xoaiok")} />
+              <Column field="name" header={i18nT("static.4el6o6")} />
+              <Column field="calculator_code" header={i18nT("static.o6bvql")} />
+              <Column field="tolerance" header={i18nT("static.1llx3uw")} />
               <Column
                 field="is_active"
-                header="Active"
+                header={i18nT("static.8qzyhb")}
                 body={(row) => (row.is_active ? "Yes" : "No")}
               />
             </DataTable>
@@ -873,9 +906,10 @@ function ParameterValue({
     React.SetStateAction<SavePayrollRegulationParameter>
   >;
 }) {
+  const { t: i18nT } = useI18n();
   if (parameter.value_type === "BOOLEAN") {
     return (
-      <Field label="Value">
+      <Field label={i18nT("static.1m2g8kq")}>
         <InputSwitch
           checked={parameter.boolean_value ?? false}
           onChange={(event) =>
@@ -895,7 +929,7 @@ function ParameterValue({
         ? "date_value"
         : "text_value";
   return (
-    <Field label="Value">
+    <Field label={i18nT("static.1m2g8kq")}>
       <InputText
         type={parameter.value_type === "DATE" ? "date" : "text"}
         value={parameter[key] ?? ""}
@@ -918,6 +952,7 @@ function SimpleParameterEditor({
   saving: boolean;
   onSave: (value: SavePayrollRegulationParameter) => void;
 }) {
+  const { t: i18nT } = useI18n();
   const [value, setValue] = useState(
     parameter.value_type === "NUMERIC"
       ? (parameter.numeric_value ?? "")
@@ -984,7 +1019,7 @@ function SimpleParameterEditor({
         rounded
         text
         size="small"
-        tooltip="Simpan nilai"
+        tooltip={i18nT("static.1pbdmce")}
         loading={saving}
         disabled={saving}
         onClick={() => onSave(payload)}

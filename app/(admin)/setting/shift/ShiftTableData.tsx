@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -109,6 +110,7 @@ const formatTimeRange = (
 };
 
 const ShiftTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -164,7 +166,7 @@ const ShiftTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -176,7 +178,7 @@ const ShiftTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -189,7 +191,7 @@ const ShiftTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -201,8 +203,8 @@ const ShiftTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -422,12 +424,10 @@ const ShiftTableData = () => {
 
   const onClickDelete = (data: Shift) => {
     requestActionConfirmation({
-      header: "Delete Shift",
+      header: i18nT("static.1uupmvy"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this shift?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1f2z57")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -440,7 +440,7 @@ const ShiftTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -449,7 +449,7 @@ const ShiftTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -461,12 +461,10 @@ const ShiftTableData = () => {
 
   const onClickRestore = (data: Shift) => {
     requestActionConfirmation({
-      header: "Restore Shift",
+      header: i18nT("static.1qad1nl"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this shift?
-          </span>
+          <span className="text-slate-600">{i18nT("static.v3b39c")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -479,7 +477,7 @@ const ShiftTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -488,7 +486,7 @@ const ShiftTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -500,12 +498,10 @@ const ShiftTableData = () => {
 
   const onClickPurge = (data: Shift) => {
     requestActionConfirmation({
-      header: "Delete Shift Permanently",
+      header: i18nT("static.1hgebz3"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -518,7 +514,7 @@ const ShiftTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -527,7 +523,7 @@ const ShiftTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -541,7 +537,7 @@ const ShiftTableData = () => {
     if (rowData.is_day_off) {
       return (
         <Tag
-          value="Day Off"
+          value={i18nT("static.776hx0")}
           severity="warning"
           icon="pi pi-calendar-times"
           rounded
@@ -551,13 +547,18 @@ const ShiftTableData = () => {
 
     if (rowData.is_night_shift) {
       return (
-        <Tag value="Night Shift" severity="info" icon="pi pi-moon" rounded />
+        <Tag
+          value={i18nT("static.1mbhmep")}
+          severity="info"
+          icon="pi pi-moon"
+          rounded
+        />
       );
     }
 
     return (
       <Tag
-        value="Regular Shift"
+        value={i18nT("static.jjdwfr")}
         severity="secondary"
         icon="pi pi-sun"
         rounded
@@ -568,14 +569,19 @@ const ShiftTableData = () => {
   const statusColumnBody = (rowData: Shift) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -585,7 +591,7 @@ const ShiftTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -654,7 +660,8 @@ const ShiftTableData = () => {
 
     return (
       <span className="whitespace-nowrap text-sm text-slate-700">
-        {Number(rowData.grace_period_minutes ?? 0)} min
+        {Number(rowData.grace_period_minutes ?? 0)}{" "}
+        {i18nT("static.1jxbmtz")}{" "}
       </span>
     );
   };
@@ -666,7 +673,11 @@ const ShiftTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -679,7 +690,7 @@ const ShiftTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -696,7 +707,7 @@ const ShiftTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -717,7 +728,7 @@ const ShiftTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -732,7 +743,7 @@ const ShiftTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -747,7 +758,7 @@ const ShiftTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -759,7 +770,7 @@ const ShiftTableData = () => {
       <Button
         type="submit"
         form="shift-form"
-        label={isAddNew ? "Create Shift" : "Save Changes"}
+        label={isAddNew ? i18nT("static.10q24r1") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -789,12 +800,11 @@ const ShiftTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Shift
+                  {i18nT("static.1xakelj")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage work schedules, attendance windows, grace periods,
-                  night shifts, and day-off shifts.
+                  {i18nT("static.11hu17m")}{" "}
                 </p>
               </div>
             </div>
@@ -802,7 +812,7 @@ const ShiftTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -815,7 +825,7 @@ const ShiftTableData = () => {
 
               <Button
                 type="button"
-                label="New Shift"
+                label={i18nT("static.s51mxt")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -840,7 +850,7 @@ const ShiftTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -851,7 +861,7 @@ const ShiftTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search shift name"
+                placeholder={i18nT("static.1iyt8ps")}
                 className="w-full"
               />
             </IconField>
@@ -877,8 +887,8 @@ const ShiftTableData = () => {
               tableStyle={{
                 minWidth: "96rem",
               }}
-              emptyMessage="No shift data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.fliz4c")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -894,7 +904,7 @@ const ShiftTableData = () => {
 
               <Column
                 field="name"
-                header="Shift Name"
+                header={i18nT("static.1vjd9xi")}
                 sortable
                 style={{
                   minWidth: "17rem",
@@ -907,7 +917,7 @@ const ShiftTableData = () => {
               />
 
               <Column
-                header="Shift Type"
+                header={i18nT("static.1e6nppp")}
                 body={shiftTypeColumnBody}
                 style={{
                   minWidth: "13rem",
@@ -915,7 +925,7 @@ const ShiftTableData = () => {
               />
 
               <Column
-                header="Work Time"
+                header={i18nT("static.q52jcp")}
                 body={workTimeColumnBody}
                 style={{
                   minWidth: "13rem",
@@ -923,7 +933,7 @@ const ShiftTableData = () => {
               />
 
               <Column
-                header="Break Time"
+                header={i18nT("static.1jrsz41")}
                 body={breakTimeColumnBody}
                 style={{
                   minWidth: "13rem",
@@ -931,7 +941,7 @@ const ShiftTableData = () => {
               />
 
               <Column
-                header="Check-In Window"
+                header={i18nT("static.z8wtwr")}
                 body={checkinWindowColumnBody}
                 style={{
                   minWidth: "15rem",
@@ -939,7 +949,7 @@ const ShiftTableData = () => {
               />
 
               <Column
-                header="Check-Out Window"
+                header={i18nT("static.1fg3fay")}
                 body={checkoutWindowColumnBody}
                 style={{
                   minWidth: "15rem",
@@ -948,7 +958,7 @@ const ShiftTableData = () => {
 
               <Column
                 field="grace_period_minutes"
-                header="Grace Period"
+                header={i18nT("static.fzlj6w")}
                 sortable
                 body={gracePeriodColumnBody}
                 style={{
@@ -958,7 +968,7 @@ const ShiftTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -967,7 +977,7 @@ const ShiftTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -1022,11 +1032,11 @@ const ShiftTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                General Information
+                {i18nT("static.1ywaoj5")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Define the shift name and operational characteristics.
+                {i18nT("static.1xl1mv")}{" "}
               </p>
             </div>
 
@@ -1035,7 +1045,7 @@ const ShiftTableData = () => {
                 htmlFor="name"
                 className="text-sm font-medium text-slate-700"
               >
-                Shift Name
+                {i18nT("static.1vjd9xi")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -1043,10 +1053,10 @@ const ShiftTableData = () => {
                 name="name"
                 control={control}
                 rules={{
-                  required: "Shift name is required.",
+                  required: i18nT("static.9jgttb"),
                   maxLength: {
                     value: 50,
-                    message: "Shift name cannot exceed 50 characters.",
+                    message: i18nT("static.1kbqnzq"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -1055,7 +1065,7 @@ const ShiftTableData = () => {
                       {...field}
                       id="name"
                       autoComplete="off"
-                      placeholder="Example: Morning Shift"
+                      placeholder={i18nT("static.1106r19")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -1084,12 +1094,11 @@ const ShiftTableData = () => {
                           htmlFor="is_day_off"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Day-Off Shift
+                          {i18nT("static.aa1ntx")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Use this shift for scheduled days without working
-                          hours.
+                          {i18nT("static.nxxn6v")}{" "}
                         </p>
                       </div>
 
@@ -1127,12 +1136,11 @@ const ShiftTableData = () => {
                           htmlFor="is_night_shift"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Night Shift
+                          {i18nT("static.1mbhmep")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Enable when the shift crosses midnight into the next
-                          day.
+                          {i18nT("static.2ofcij")}{" "}
                         </p>
                       </div>
 
@@ -1152,10 +1160,7 @@ const ShiftTableData = () => {
               <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                 <i className="pi pi-info-circle mt-0.5" />
 
-                <span>
-                  Day-off shifts do not use work time, break time, attendance
-                  windows, grace periods, or night-shift settings.
-                </span>
+                <span>{i18nT("static.czv5y")} </span>
               </div>
             )}
           </section>
@@ -1166,11 +1171,11 @@ const ShiftTableData = () => {
               <section className="flex flex-col gap-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h2 className="m-0 text-sm font-semibold text-slate-800">
-                    Work Schedule
+                    {i18nT("static.ge9dm5")}{" "}
                   </h2>
 
                   <p className="m-0 mt-1 text-xs text-slate-500">
-                    Configure working and break hours for this shift.
+                    {i18nT("static.lqkxfw")}{" "}
                   </p>
                 </div>
 
@@ -1180,7 +1185,7 @@ const ShiftTableData = () => {
                       htmlFor="work_start"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Work Start
+                      {i18nT("static.14ba43g")}{" "}
                     </label>
 
                     <Controller
@@ -1197,7 +1202,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select start time"
+                            placeholder={i18nT("static.1upncpi")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1223,7 +1228,7 @@ const ShiftTableData = () => {
                       htmlFor="work_end"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Work End
+                      {i18nT("static.1ucn5et")}{" "}
                     </label>
 
                     <Controller
@@ -1240,7 +1245,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select end time"
+                            placeholder={i18nT("static.om6tn1")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1266,7 +1271,7 @@ const ShiftTableData = () => {
                       htmlFor="break_start"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Break Start
+                      {i18nT("static.149t0qc")}{" "}
                     </label>
 
                     <Controller
@@ -1283,7 +1288,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select break start"
+                            placeholder={i18nT("static.l1a9se")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1309,7 +1314,7 @@ const ShiftTableData = () => {
                       htmlFor="break_end"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Break End
+                      {i18nT("static.sviki5")}{" "}
                     </label>
 
                     <Controller
@@ -1326,7 +1331,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select break end"
+                            placeholder={i18nT("static.j5fnrv")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1353,11 +1358,11 @@ const ShiftTableData = () => {
               <section className="flex flex-col gap-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h2 className="m-0 text-sm font-semibold text-slate-800">
-                    Attendance Windows
+                    {i18nT("static.728zhn")}{" "}
                   </h2>
 
                   <p className="m-0 mt-1 text-xs text-slate-500">
-                    Define the valid check-in and check-out time ranges.
+                    {i18nT("static.p6kg6a")}{" "}
                   </p>
                 </div>
 
@@ -1367,7 +1372,7 @@ const ShiftTableData = () => {
                       htmlFor="checkin_start"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Check-In Start
+                      {i18nT("static.1umycld")}{" "}
                     </label>
 
                     <Controller
@@ -1384,7 +1389,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select check-in start"
+                            placeholder={i18nT("static.p76yq3")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1410,7 +1415,7 @@ const ShiftTableData = () => {
                       htmlFor="checkin_end"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Check-In End
+                      {i18nT("static.5anwg")}{" "}
                     </label>
 
                     <Controller
@@ -1427,7 +1432,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select check-in end"
+                            placeholder={i18nT("static.12koi6m")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1453,7 +1458,7 @@ const ShiftTableData = () => {
                       htmlFor="checkout_start"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Check-Out Start
+                      {i18nT("static.ed0bk6")}{" "}
                     </label>
 
                     <Controller
@@ -1470,7 +1475,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select check-out start"
+                            placeholder={i18nT("static.21p7to")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1496,7 +1501,7 @@ const ShiftTableData = () => {
                       htmlFor="checkout_end"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Check-Out End
+                      {i18nT("static.1wr8e03")}{" "}
                     </label>
 
                     <Controller
@@ -1513,7 +1518,7 @@ const ShiftTableData = () => {
                             showSeconds
                             hourFormat="24"
                             readOnlyInput
-                            placeholder="Select check-out end"
+                            placeholder={i18nT("static.3ke405")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1540,11 +1545,11 @@ const ShiftTableData = () => {
               <section className="flex flex-col gap-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h2 className="m-0 text-sm font-semibold text-slate-800">
-                    Grace Period
+                    {i18nT("static.fzlj6w")}{" "}
                   </h2>
 
                   <p className="m-0 mt-1 text-xs text-slate-500">
-                    Configure the permitted lateness tolerance.
+                    {i18nT("static.a2q49a")}{" "}
                   </p>
                 </div>
 
@@ -1553,7 +1558,7 @@ const ShiftTableData = () => {
                     htmlFor="grace_period_minutes"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Grace Period (minutes)
+                    {i18nT("static.1lbusmw")}{" "}
                   </label>
 
                   <Controller
@@ -1563,7 +1568,7 @@ const ShiftTableData = () => {
                     rules={{
                       min: {
                         value: 0,
-                        message: "Grace period cannot be negative.",
+                        message: i18nT("static.1umvldv"),
                       },
                     }}
                     render={({ field, fieldState }) => (
@@ -1574,8 +1579,8 @@ const ShiftTableData = () => {
                           value={Number(field.value ?? 0)}
                           min={0}
                           useGrouping={false}
-                          suffix=" min"
-                          placeholder="Example: 15"
+                          suffix={i18nT("static.1jxbmtz")}
+                          placeholder={i18nT("static.1hjxadl")}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
                           }`}
@@ -1591,8 +1596,7 @@ const ShiftTableData = () => {
                           </small>
                         ) : (
                           <small className="text-slate-500">
-                            Employees checking in within this period are not
-                            considered late.
+                            {i18nT("static.1faj37u")}{" "}
                           </small>
                         )}
                       </>
@@ -1616,12 +1620,11 @@ const ShiftTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive shifts remain stored but should not be available
-                      for new employee shift assignments.
+                      {i18nT("static.switng")}{" "}
                     </p>
                   </div>
 

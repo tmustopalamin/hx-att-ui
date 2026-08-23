@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -62,36 +63,42 @@ const EMPTY_HOLIDAY: HolidayForm = {
 
 const HOLIDAY_TYPE_OPTIONS = [
   {
-    label: "National Holiday",
+    labelKey: "National Holiday",
     value: "NATIONAL_HOLIDAY",
   },
   {
-    label: "Company Holiday",
+    labelKey: "Company Holiday",
     value: "COMPANY_HOLIDAY",
   },
   {
-    label: "Joint Leave",
+    labelKey: "Joint Leave",
     value: "JOINT_LEAVE",
   },
   {
-    label: "Special Day",
+    labelKey: "Special Day",
     value: "SPECIAL_DAY",
   },
 ];
 
 const getBody = () => document.body;
 
-const getHolidayTypeLabel = (value?: string | null) => {
+const getHolidayTypeLabel = (
+  value: string | null | undefined,
+  translate: (source: string) => string = (source) => source,
+) => {
   if (!value) {
     return "-";
   }
 
   const option = HOLIDAY_TYPE_OPTIONS.find((item) => item.value === value);
 
-  return option?.label ?? value.replaceAll("_", " ");
+  return option
+    ? translate(option.labelKey)
+    : translate(value.replaceAll("_", " "));
 };
 
 const HolidayTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -140,7 +147,7 @@ const HolidayTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -152,7 +159,7 @@ const HolidayTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -165,7 +172,7 @@ const HolidayTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -177,8 +184,8 @@ const HolidayTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -268,7 +275,7 @@ const HolidayTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message ?? "Holiday created successfully.");
+      showSuccess(response.message ?? i18nT("static.hoyqx2"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -296,7 +303,7 @@ const HolidayTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message ?? "Holiday updated successfully.");
+      showSuccess(response.message ?? i18nT("static.81g11h"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -310,7 +317,7 @@ const HolidayTableData = () => {
 
       await refreshHolidayData();
 
-      showSuccess(response.message ?? "Holiday deleted successfully.");
+      showSuccess(response.message ?? i18nT("static.1fk1js3"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -322,7 +329,7 @@ const HolidayTableData = () => {
 
       await refreshHolidayData();
 
-      showSuccess(response.message ?? "Holiday restored successfully.");
+      showSuccess(response.message ?? i18nT("static.6lt1e"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -334,7 +341,7 @@ const HolidayTableData = () => {
 
       await refreshHolidayData();
 
-      showSuccess(response.message ?? "Holiday permanently deleted.");
+      showSuccess(response.message ?? i18nT("static.td2gk3"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -355,12 +362,10 @@ const HolidayTableData = () => {
 
   const onClickDelete = (data: Holiday) => {
     requestActionConfirmation({
-      header: "Delete Holiday",
+      header: i18nT("static.lhczpe"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this holiday?
-          </span>
+          <span className="text-slate-600">{i18nT("static.owb5an")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -373,7 +378,7 @@ const HolidayTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -382,7 +387,7 @@ const HolidayTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -394,12 +399,10 @@ const HolidayTableData = () => {
 
   const onClickRestore = (data: Holiday) => {
     requestActionConfirmation({
-      header: "Restore Holiday",
+      header: i18nT("static.1ea5hd5"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this holiday?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1hjk4k4")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -412,7 +415,7 @@ const HolidayTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -421,7 +424,7 @@ const HolidayTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -433,12 +436,10 @@ const HolidayTableData = () => {
 
   const onClickPurge = (data: Holiday) => {
     requestActionConfirmation({
-      header: "Delete Holiday Permanently",
+      header: i18nT("static.1pevlwr"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -451,7 +452,7 @@ const HolidayTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -460,7 +461,7 @@ const HolidayTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -489,7 +490,7 @@ const HolidayTableData = () => {
   const typeColumnBody = (rowData: Holiday) => {
     return (
       <Tag
-        value={getHolidayTypeLabel(rowData.holiday_type)}
+        value={getHolidayTypeLabel(rowData.holiday_type, i18nT)}
         severity="info"
         rounded
       />
@@ -498,7 +499,11 @@ const HolidayTableData = () => {
 
   const descriptionColumnBody = (rowData: Holiday) => {
     if (!rowData.description) {
-      return <span className="text-sm text-slate-400">No description</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.17eujsg")}
+        </span>
+      );
     }
 
     return (
@@ -514,14 +519,19 @@ const HolidayTableData = () => {
   const statusColumnBody = (rowData: Holiday) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -531,7 +541,7 @@ const HolidayTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -546,7 +556,11 @@ const HolidayTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -559,7 +573,7 @@ const HolidayTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -576,7 +590,7 @@ const HolidayTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -597,7 +611,7 @@ const HolidayTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -612,7 +626,7 @@ const HolidayTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -627,7 +641,7 @@ const HolidayTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -639,7 +653,7 @@ const HolidayTableData = () => {
       <Button
         type="submit"
         form="holiday-form"
-        label={isAddNew ? "Create Holiday" : "Save Changes"}
+        label={isAddNew ? i18nT("static.xjxyfx") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -669,12 +683,11 @@ const HolidayTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Holiday
+                  {i18nT("static.ih7a2j")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage national holidays, company holidays, joint leave, and
-                  special days.
+                  {i18nT("static.pln1bx")}{" "}
                 </p>
               </div>
             </div>
@@ -682,7 +695,7 @@ const HolidayTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -695,7 +708,7 @@ const HolidayTableData = () => {
 
               <Button
                 type="button"
-                label="New Holiday"
+                label={i18nT("static.1teke09")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -720,7 +733,7 @@ const HolidayTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -731,7 +744,7 @@ const HolidayTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search holiday, type, or date"
+                placeholder={i18nT("static.1mbcbdg")}
                 className="w-full"
               />
             </IconField>
@@ -763,8 +776,8 @@ const HolidayTableData = () => {
               tableStyle={{
                 minWidth: "78rem",
               }}
-              emptyMessage="No holiday data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.unryn4")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -780,7 +793,7 @@ const HolidayTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "11rem",
@@ -794,7 +807,7 @@ const HolidayTableData = () => {
 
               <Column
                 field="name"
-                header="Holiday Name"
+                header={i18nT("static.1au2s9m")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -808,7 +821,7 @@ const HolidayTableData = () => {
 
               <Column
                 field="holiday_date"
-                header="Holiday Date"
+                header={i18nT("static.1eqo6cd")}
                 sortable
                 body={dateColumnBody}
                 style={{
@@ -818,7 +831,7 @@ const HolidayTableData = () => {
 
               <Column
                 field="holiday_type"
-                header="Holiday Type"
+                header={i18nT("static.qd0acp")}
                 sortable
                 body={typeColumnBody}
                 style={{
@@ -828,7 +841,7 @@ const HolidayTableData = () => {
 
               <Column
                 field="description"
-                header="Description"
+                header={i18nT("static.sjj37t")}
                 sortable
                 body={descriptionColumnBody}
                 style={{
@@ -838,7 +851,7 @@ const HolidayTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -847,7 +860,7 @@ const HolidayTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -903,7 +916,7 @@ const HolidayTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Holiday Code
+              {i18nT("static.1bn5wa0")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -911,7 +924,7 @@ const HolidayTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Holiday code is required.",
+                required: i18nT("static.60qm8l"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) ||
@@ -919,7 +932,7 @@ const HolidayTableData = () => {
                 },
                 maxLength: {
                   value: 50,
-                  message: "Holiday code cannot exceed 50 characters.",
+                  message: i18nT("static.mjc2g8"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -929,7 +942,7 @@ const HolidayTableData = () => {
                     value={field.value ?? ""}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: NEW_YEAR"
+                    placeholder={i18nT("static.1tu8zp")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -941,7 +954,7 @@ const HolidayTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique holiday code.
+                      {i18nT("static.ovnj2y")}{" "}
                     </small>
                   )}
                 </>
@@ -954,7 +967,7 @@ const HolidayTableData = () => {
               htmlFor="holiday_type"
               className="text-sm font-medium text-slate-700"
             >
-              Holiday Type
+              {i18nT("static.qd0acp")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -962,7 +975,7 @@ const HolidayTableData = () => {
               name="holiday_type"
               control={control}
               rules={{
-                required: "Holiday type is required.",
+                required: i18nT("static.14m7osy"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -970,10 +983,13 @@ const HolidayTableData = () => {
                     id="holiday_type"
                     appendTo={getBody}
                     value={field.value}
-                    options={HOLIDAY_TYPE_OPTIONS}
+                    options={HOLIDAY_TYPE_OPTIONS.map((option) => ({
+                      label: i18nT(option.labelKey),
+                      value: option.value,
+                    }))}
                     optionLabel="label"
                     optionValue="value"
-                    placeholder="Select holiday type"
+                    placeholder={i18nT("static.qmsrhr")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -995,7 +1011,7 @@ const HolidayTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Holiday Name
+              {i18nT("static.1au2s9m")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -1003,10 +1019,10 @@ const HolidayTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Holiday name is required.",
+                required: i18nT("static.1u2x8sz"),
                 maxLength: {
                   value: 100,
-                  message: "Holiday name cannot exceed 100 characters.",
+                  message: i18nT("static.1hewgdy"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -1016,7 +1032,7 @@ const HolidayTableData = () => {
                     value={field.value ?? ""}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: New Year Holiday"
+                    placeholder={i18nT("static.lv4bjg")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -1037,7 +1053,7 @@ const HolidayTableData = () => {
               htmlFor="holiday_date"
               className="text-sm font-medium text-slate-700"
             >
-              Holiday Date
+              {i18nT("static.1eqo6cd")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -1045,7 +1061,7 @@ const HolidayTableData = () => {
               name="holiday_date"
               control={control}
               rules={{
-                required: "Holiday date is required.",
+                required: i18nT("static.1ippwhi"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -1056,7 +1072,7 @@ const HolidayTableData = () => {
                     dateFormat="dd MM yy"
                     showIcon
                     readOnlyInput
-                    placeholder="Select holiday date"
+                    placeholder={i18nT("static.1a24dgz")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -1080,7 +1096,7 @@ const HolidayTableData = () => {
               htmlFor="description"
               className="text-sm font-medium text-slate-700"
             >
-              Description
+              {i18nT("static.sjj37t")}{" "}
             </label>
 
             <Controller
@@ -1093,13 +1109,13 @@ const HolidayTableData = () => {
                     value={field.value ?? ""}
                     rows={4}
                     autoResize
-                    placeholder="Optional holiday description"
+                    placeholder={i18nT("static.1uo8wsn")}
                     className="w-full"
                     onChange={(event) => field.onChange(event.target.value)}
                   />
 
                   <small className="text-slate-500">
-                    Optional information about this holiday or special day.
+                    {i18nT("static.o9vnfk")}{" "}
                   </small>
                 </>
               )}
@@ -1118,12 +1134,11 @@ const HolidayTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive holidays remain stored but should not affect
-                      attendance, leave, or work schedule processing.
+                      {i18nT("static.q9rrck")}{" "}
                     </p>
                   </div>
 

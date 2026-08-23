@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -69,6 +70,7 @@ const DEFAULT_FORM_VALUE: LeaveType = {
 const getBody = () => document.body;
 
 const LeaveTypeTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -117,7 +119,7 @@ const LeaveTypeTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -129,7 +131,7 @@ const LeaveTypeTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -142,7 +144,7 @@ const LeaveTypeTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -154,8 +156,8 @@ const LeaveTypeTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -259,7 +261,7 @@ const LeaveTypeTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message || "Leave type created successfully.");
+      showSuccess(response.message || i18nT("static.3trgtl"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -288,7 +290,7 @@ const LeaveTypeTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message || "Leave type updated successfully.");
+      showSuccess(response.message || i18nT("static.1l77bge"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -303,7 +305,7 @@ const LeaveTypeTableData = () => {
 
       await refreshLeaveTypeData();
 
-      showSuccess(response.message || "Leave type deleted successfully.");
+      showSuccess(response.message || i18nT("static.1l7mzo8"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -316,7 +318,7 @@ const LeaveTypeTableData = () => {
 
       await refreshLeaveTypeData();
 
-      showSuccess(response.message || "Leave type restored successfully.");
+      showSuccess(response.message || i18nT("static.1k7xefz"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -329,7 +331,7 @@ const LeaveTypeTableData = () => {
 
       await refreshLeaveTypeData();
 
-      showSuccess(response.message || "Leave type permanently deleted.");
+      showSuccess(response.message || i18nT("static.y75lo2"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -350,12 +352,10 @@ const LeaveTypeTableData = () => {
 
   const onClickDelete = (data: LeaveType) => {
     requestActionConfirmation({
-      header: "Delete Leave Type",
+      header: i18nT("static.14u8n7j"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this leave type?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1ahc83s")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -368,7 +368,7 @@ const LeaveTypeTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -377,7 +377,7 @@ const LeaveTypeTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -389,12 +389,10 @@ const LeaveTypeTableData = () => {
 
   const onClickRestore = (data: LeaveType) => {
     requestActionConfirmation({
-      header: "Restore Leave Type",
+      header: i18nT("static.bosate"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this leave type?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1867ahp")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -407,7 +405,7 @@ const LeaveTypeTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -416,7 +414,7 @@ const LeaveTypeTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -428,12 +426,10 @@ const LeaveTypeTableData = () => {
 
   const onClickPurge = (data: LeaveType) => {
     requestActionConfirmation({
-      header: "Delete Leave Type Permanently",
+      header: i18nT("static.1i8xg72"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -446,7 +442,7 @@ const LeaveTypeTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -455,7 +451,7 @@ const LeaveTypeTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -468,14 +464,19 @@ const LeaveTypeTableData = () => {
   const statusColumnBody = (rowData: LeaveType) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -485,7 +486,7 @@ const LeaveTypeTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -511,7 +512,11 @@ const LeaveTypeTableData = () => {
 
   const descriptionColumnBody = (rowData: LeaveType) => {
     if (!rowData.description) {
-      return <span className="text-sm text-slate-400">No description</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.17eujsg")}
+        </span>
+      );
     }
 
     return (
@@ -526,12 +531,14 @@ const LeaveTypeTableData = () => {
 
   const maxDaysColumnBody = (rowData: LeaveType) => {
     if (rowData.max_days === null || rowData.max_days === undefined) {
-      return <span className="text-sm text-slate-400">No limit</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.uhtk71")}</span>
+      );
     }
 
     return (
       <span className="whitespace-nowrap text-sm font-medium text-slate-700">
-        {rowData.max_days} day(s)
+        {rowData.max_days} {i18nT("static.kjdug7")}{" "}
       </span>
     );
   };
@@ -543,7 +550,11 @@ const LeaveTypeTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -556,7 +567,7 @@ const LeaveTypeTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -573,7 +584,7 @@ const LeaveTypeTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -594,7 +605,7 @@ const LeaveTypeTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -609,7 +620,7 @@ const LeaveTypeTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -624,7 +635,7 @@ const LeaveTypeTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -636,7 +647,7 @@ const LeaveTypeTableData = () => {
       <Button
         type="submit"
         form="leave-type-form"
-        label={isAddNew ? "Create Leave Type" : "Save Changes"}
+        label={isAddNew ? i18nT("static.1p7h0m") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -666,12 +677,11 @@ const LeaveTypeTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Leave Type
+                  {i18nT("static.se3juw")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage leave categories, balance rules, payment behavior, and
-                  request requirements.
+                  {i18nT("static.rokiq4")}{" "}
                 </p>
               </div>
             </div>
@@ -679,7 +689,7 @@ const LeaveTypeTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -692,7 +702,7 @@ const LeaveTypeTableData = () => {
 
               <Button
                 type="button"
-                label="New Leave Type"
+                label={i18nT("static.108r01u")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -717,7 +727,7 @@ const LeaveTypeTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -728,7 +738,7 @@ const LeaveTypeTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code, name, or description"
+                placeholder={i18nT("static.41pktm")}
                 className="w-full"
               />
             </IconField>
@@ -754,8 +764,8 @@ const LeaveTypeTableData = () => {
               tableStyle={{
                 minWidth: "112rem",
               }}
-              emptyMessage="No leave type data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1mzpm6t")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -771,7 +781,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -785,7 +795,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="name"
-                header="Leave Type"
+                header={i18nT("static.se3juw")}
                 sortable
                 style={{
                   minWidth: "17rem",
@@ -799,7 +809,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="description"
-                header="Description"
+                header={i18nT("static.sjj37t")}
                 sortable
                 body={descriptionColumnBody}
                 style={{
@@ -809,7 +819,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="is_paid"
-                header="Paid"
+                header={i18nT("static.1w0n607")}
                 sortable
                 body={(rowData: LeaveType) =>
                   booleanColumnBody(rowData.is_paid)
@@ -821,7 +831,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="is_deductible"
-                header="Deduct Balance"
+                header={i18nT("static.lcvvne")}
                 sortable
                 body={(rowData: LeaveType) =>
                   booleanColumnBody(rowData.is_deductible)
@@ -833,7 +843,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="max_days"
-                header="Maximum Days"
+                header={i18nT("static.ew8z44")}
                 sortable
                 body={maxDaysColumnBody}
                 style={{
@@ -843,7 +853,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="carry_forward"
-                header="Carry Forward"
+                header={i18nT("static.1mlpjp9")}
                 sortable
                 body={(rowData: LeaveType) =>
                   booleanColumnBody(rowData.carry_forward)
@@ -855,7 +865,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="requires_attachment"
-                header="Attachment"
+                header={i18nT("static.1417wqw")}
                 sortable
                 body={(rowData: LeaveType) =>
                   booleanColumnBody(
@@ -871,7 +881,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="requires_reason"
-                header="Reason"
+                header={i18nT("static.i36sl5")}
                 sortable
                 body={(rowData: LeaveType) =>
                   booleanColumnBody(
@@ -887,7 +897,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="requires_approval"
-                header="Approval"
+                header={i18nT("static.17ztw7a")}
                 sortable
                 body={(rowData: LeaveType) =>
                   booleanColumnBody(
@@ -903,7 +913,7 @@ const LeaveTypeTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -912,7 +922,7 @@ const LeaveTypeTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -967,11 +977,11 @@ const LeaveTypeTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Basic Information
+                {i18nT("static.20pywr")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Define the identity and purpose of this leave type.
+                {i18nT("static.mgsibw")}{" "}
               </p>
             </div>
 
@@ -981,7 +991,7 @@ const LeaveTypeTableData = () => {
                   htmlFor="code"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Leave Type Code
+                  {i18nT("static.jt0izh")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -989,7 +999,7 @@ const LeaveTypeTableData = () => {
                   name="code"
                   control={control}
                   rules={{
-                    required: "Leave type code is required.",
+                    required: i18nT("static.1a11k5y"),
                     validate: {
                       noSpaces: (value) =>
                         !/\s/.test(value) ||
@@ -997,7 +1007,7 @@ const LeaveTypeTableData = () => {
                     },
                     maxLength: {
                       value: 50,
-                      message: "Leave type code cannot exceed 50 characters.",
+                      message: i18nT("static.1p3oogb"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1006,7 +1016,7 @@ const LeaveTypeTableData = () => {
                         {...field}
                         id="code"
                         autoComplete="off"
-                        placeholder="Example: ANNUAL"
+                        placeholder={i18nT("static.ls1gww")}
                         disabled={isSaving || !isAddNew}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1019,11 +1029,11 @@ const LeaveTypeTableData = () => {
                         </small>
                       ) : !isAddNew ? (
                         <small className="text-slate-500">
-                          Code cannot be changed after creation.
+                          {i18nT("static.ym8qu3")}{" "}
                         </small>
                       ) : (
                         <small className="text-slate-500">
-                          Use a short and unique leave type code.
+                          {i18nT("static.10j4t4h")}{" "}
                         </small>
                       )}
                     </>
@@ -1036,7 +1046,7 @@ const LeaveTypeTableData = () => {
                   htmlFor="name"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Leave Type Name
+                  {i18nT("static.uam9kr")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1044,10 +1054,10 @@ const LeaveTypeTableData = () => {
                   name="name"
                   control={control}
                   rules={{
-                    required: "Leave type name is required.",
+                    required: i18nT("static.18ea7jk"),
                     maxLength: {
                       value: 100,
-                      message: "Leave type name cannot exceed 100 characters.",
+                      message: i18nT("static.1374yb7"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1056,7 +1066,7 @@ const LeaveTypeTableData = () => {
                         {...field}
                         id="name"
                         autoComplete="off"
-                        placeholder="Example: Annual Leave"
+                        placeholder={i18nT("static.18yckin")}
                         disabled={isSaving}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1078,7 +1088,7 @@ const LeaveTypeTableData = () => {
                   htmlFor="description"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Description
+                  {i18nT("static.sjj37t")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1086,10 +1096,10 @@ const LeaveTypeTableData = () => {
                   name="description"
                   control={control}
                   rules={{
-                    required: "Description is required.",
+                    required: i18nT("static.12dxhua"),
                     maxLength: {
                       value: 500,
-                      message: "Description cannot exceed 500 characters.",
+                      message: i18nT("static.4zg2m9"),
                     },
                   }}
                   render={({ field, fieldState }) => (
@@ -1101,7 +1111,7 @@ const LeaveTypeTableData = () => {
                         rows={4}
                         autoResize
                         disabled={isSaving}
-                        placeholder="Explain the purpose and rules of this leave type"
+                        placeholder={i18nT("static.tmbed1")}
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
                         }`}
@@ -1123,12 +1133,11 @@ const LeaveTypeTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Leave Configuration
+                {i18nT("static.1ukckmq")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Configure limits, payment behavior, balance deduction, and
-                carry-forward rules.
+                {i18nT("static.7umin5")}{" "}
               </p>
             </div>
 
@@ -1137,7 +1146,7 @@ const LeaveTypeTableData = () => {
                 htmlFor="max_days"
                 className="text-sm font-medium text-slate-700"
               >
-                Maximum Days
+                {i18nT("static.ew8z44")}{" "}
               </label>
 
               <Controller
@@ -1146,7 +1155,7 @@ const LeaveTypeTableData = () => {
                 rules={{
                   min: {
                     value: 0,
-                    message: "Maximum days cannot be negative.",
+                    message: i18nT("static.bd9db3"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -1157,9 +1166,9 @@ const LeaveTypeTableData = () => {
                       value={field.value ?? null}
                       min={0}
                       useGrouping={false}
-                      suffix=" day(s)"
+                      suffix={i18nT("static.kjdug7")}
                       disabled={isSaving}
-                      placeholder="Leave empty if there is no limit"
+                      placeholder={i18nT("static.1wb3wnm")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -1175,7 +1184,7 @@ const LeaveTypeTableData = () => {
                       </small>
                     ) : (
                       <small className="text-slate-500">
-                        Leave empty when this leave type has no fixed maximum.
+                        {i18nT("static.99c88d")}{" "}
                       </small>
                     )}
                   </>
@@ -1196,12 +1205,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="is_paid"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Paid Leave
+                          {i18nT("static.1pi9rxc")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Employees continue receiving normal pay while using
-                          this leave.
+                          {i18nT("static.4c3298")}{" "}
                         </p>
                       </div>
 
@@ -1228,11 +1236,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="is_deductible"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Deduct from Balance
+                          {i18nT("static.15abcey")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Approved leave reduces the employee leave balance.
+                          {i18nT("static.1gsap96")}{" "}
                         </p>
                       </div>
 
@@ -1259,12 +1267,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="carry_forward"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Carry Forward
+                          {i18nT("static.1mlpjp9")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Unused leave balance may be carried into the next
-                          period.
+                          {i18nT("static.1te4niz")}{" "}
                         </p>
                       </div>
 
@@ -1291,12 +1298,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="is_active"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Active Status
+                          {i18nT("static.almk4n")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Inactive leave types cannot be selected in new leave
-                          requests.
+                          {i18nT("static.1izjmsv")}{" "}
                         </p>
                       </div>
 
@@ -1317,12 +1323,11 @@ const LeaveTypeTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                Request Requirements
+                {i18nT("static.mqzyem")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Define the information and workflow required when employees
-                request this leave type.
+                {i18nT("static.18z3kih")}{" "}
               </p>
             </div>
 
@@ -1339,11 +1344,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="requires_attachment"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Requires Attachment
+                          {i18nT("static.pw17m2")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Supporting documents must be included in the request.
+                          {i18nT("static.hetzpd")}{" "}
                         </p>
                       </div>
 
@@ -1370,11 +1375,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="requires_reason"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Requires Reason
+                          {i18nT("static.wnfz97")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          Employees must provide a reason before submitting.
+                          {i18nT("static.1n56rfk")}{" "}
                         </p>
                       </div>
 
@@ -1401,12 +1406,11 @@ const LeaveTypeTableData = () => {
                           htmlFor="requires_approval"
                           className="cursor-pointer text-sm font-medium text-slate-700"
                         >
-                          Requires Approval
+                          {i18nT("static.1g9bz8s")}{" "}
                         </label>
 
                         <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                          The request must complete an approval flow before
-                          becoming final.
+                          {i18nT("static.iz98x8")}{" "}
                         </p>
                       </div>
 

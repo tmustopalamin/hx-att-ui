@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { type ChangeEvent, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -95,6 +96,7 @@ export default function PayrollComponentMasterTable({
 }: {
   kind: ComponentKind;
 }) {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll-config");
@@ -167,7 +169,10 @@ export default function PayrollComponentMasterTable({
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -179,7 +184,7 @@ export default function PayrollComponentMasterTable({
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   };
   const closeDialog = () => {
@@ -194,7 +199,7 @@ export default function PayrollComponentMasterTable({
   };
   const openEdit = (row: PayrollComponent) => {
     if (row.assignment_mode === "SYSTEM") {
-      notify("error", "System-managed components cannot be edited here.");
+      notify("error", i18nT("static.12zsb8x"));
       return;
     }
     setSelected(row);
@@ -229,18 +234,15 @@ export default function PayrollComponentMasterTable({
     const code = form.code.trim().toUpperCase();
     const name = form.name.trim();
     if (!code || !name || !form.category || !form.calculation_method) {
-      notify(
-        "error",
-        "Code, name, category, and calculation method are required.",
-      );
+      notify("error", i18nT("static.1tbgkp9"));
       return;
     }
     if (/\s/.test(code)) {
-      notify("error", "Component code must not contain spaces.");
+      notify("error", i18nT("static.23gzo8"));
       return;
     }
     if (requiresFormula && !form.formula_id) {
-      notify("error", "Select a formula for this calculation method.");
+      notify("error", i18nT("static.cnn8w5"));
       return;
     }
     const workingPeriodTiers = [...form.working_period_tiers].sort(
@@ -248,14 +250,11 @@ export default function PayrollComponentMasterTable({
     );
     if (isWorkingPeriod) {
       if (!selectedCategoryIsFixed) {
-        notify(
-          "error",
-          "Working-period components must use the FIXED_ALLOWANCE earning category.",
-        );
+        notify("error", i18nT("static.1a0u9o4"));
         return;
       }
       if (!workingPeriodTiers.length) {
-        notify("error", "Add at least one working-period tier.");
+        notify("error", i18nT("static.1q0msbd"));
         return;
       }
       for (let index = 0; index < workingPeriodTiers.length; index += 1) {
@@ -277,10 +276,7 @@ export default function PayrollComponentMasterTable({
             tier.minimum_months !==
               (workingPeriodTiers[index - 1].maximum_months ?? -1) + 1)
         ) {
-          notify(
-            "error",
-            "Working-period tiers must be contiguous from 0 months, with only the last tier open-ended.",
-          );
+          notify("error", i18nT("static.1rmzyk0"));
           return;
         }
       }
@@ -319,7 +315,7 @@ export default function PayrollComponentMasterTable({
       }
       await mutate();
       closeDialog();
-      notify("success", `${title} saved successfully.`);
+      notify("success", i18nT("static.1rkm9pb", { p0: title }));
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -332,7 +328,7 @@ export default function PayrollComponentMasterTable({
         await deleteIncomeComponent(row.id, row.row_version);
       else await deleteDeductionComponent(row.id, row.row_version);
       await mutate();
-      notify("success", `${title} deleted successfully.`);
+      notify("success", i18nT("static.10bigux", { p0: title }));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -343,7 +339,7 @@ export default function PayrollComponentMasterTable({
         await restoreIncomeComponent(row.id, row.row_version);
       else await restoreDeductionComponent(row.id, row.row_version);
       await mutate();
-      notify("success", `${title} restored successfully.`);
+      notify("success", i18nT("static.1y3p2b8", { p0: title }));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -353,7 +349,7 @@ export default function PayrollComponentMasterTable({
       if (kind === "income") await purgeIncomeComponent(row.id);
       else await purgeDeductionComponent(row.id);
       await mutate();
-      notify("success", `${title} permanently deleted.`);
+      notify("success", i18nT("static.6ygui1", { p0: title }));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -363,7 +359,7 @@ export default function PayrollComponentMasterTable({
     action: "delete" | "restore" | "purge",
   ) => {
     if (row.assignment_mode === "SYSTEM") {
-      notify("error", "System-managed components cannot be deleted.");
+      notify("error", i18nT("static.8jsqt1"));
       return;
     }
     const labels =
@@ -376,7 +372,7 @@ export default function PayrollComponentMasterTable({
           ? ["Restore", "This component will be available again."]
           : ["Delete Permanently", "This cannot be undone."];
     requestActionConfirmation({
-      header: `${labels[0]} ${title}`,
+      header: i18nT("static.y7k7q", { p0: labels[0], p1: title }),
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">{labels[1]}</span>
@@ -397,7 +393,7 @@ export default function PayrollComponentMasterTable({
         <div className="flex flex-wrap justify-end gap-2">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -417,18 +413,23 @@ export default function PayrollComponentMasterTable({
   const status = (row: PayrollComponent) => {
     if (row.deleted_at)
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     return row.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -437,7 +438,9 @@ export default function PayrollComponentMasterTable({
   };
   const actions = (row: PayrollComponent) => {
     if (!canManage)
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     if (row.deleted_at)
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
@@ -449,7 +452,7 @@ export default function PayrollComponentMasterTable({
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "restore")}
             />
@@ -462,18 +465,23 @@ export default function PayrollComponentMasterTable({
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "purge")}
             />
           )}
         </div>
       ) : (
-        <span className="text-sm text-slate-400">No action</span>
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
       );
     if (row.assignment_mode === "SYSTEM")
       return (
-        <Tag value="System managed" severity="info" icon="pi pi-lock" rounded />
+        <Tag
+          value={i18nT("static.17he831")}
+          severity="info"
+          icon="pi pi-lock"
+          rounded
+        />
       );
     return (
       <div className="flex justify-end gap-2">
@@ -484,7 +492,7 @@ export default function PayrollComponentMasterTable({
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => openEdit(row)}
         />
@@ -495,7 +503,7 @@ export default function PayrollComponentMasterTable({
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => ask(row, "delete")}
         />
@@ -527,15 +535,14 @@ export default function PayrollComponentMasterTable({
                   {title}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Configure payroll components; BPJS wage treatment is inherited
-                  from Component Category.
+                  {i18nT("static.wu7z4r")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -547,7 +554,7 @@ export default function PayrollComponentMasterTable({
               {canManage && (
                 <Button
                   type="button"
-                  label={`New ${title}`}
+                  label={i18nT("static.37xc9b", { p0: title })}
                   icon="pi pi-plus"
                   size="small"
                   onClick={openNew}
@@ -568,7 +575,7 @@ export default function PayrollComponentMasterTable({
                   htmlFor={`${kind}-show-deleted`}
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -577,7 +584,7 @@ export default function PayrollComponentMasterTable({
               <InputText
                 value={search}
                 onChange={onSearch}
-                placeholder="Search code, name, or method"
+                placeholder={i18nT("static.1j0t5hd")}
                 className="w-full"
               />
             </IconField>
@@ -604,8 +611,10 @@ export default function PayrollComponentMasterTable({
               size="small"
               loading={isValidating}
               tableStyle={{ minWidth: "62rem" }}
-              emptyMessage={`No ${title.toLowerCase()} found.`}
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.195usew", {
+                p0: title.toLowerCase(),
+              })}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -616,7 +625,7 @@ export default function PayrollComponentMasterTable({
               />
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 body={(row: PayrollComponent) => (
                   <span className="font-mono text-sm font-semibold text-slate-700">
@@ -627,7 +636,7 @@ export default function PayrollComponentMasterTable({
               />
               <Column
                 field="name"
-                header="Component Name"
+                header={i18nT("static.1fkuszn")}
                 sortable
                 body={(row: PayrollComponent) => (
                   <span className="font-medium text-slate-800">{row.name}</span>
@@ -635,7 +644,7 @@ export default function PayrollComponentMasterTable({
                 style={{ minWidth: "16rem" }}
               />
               <Column
-                header="Calculation Method"
+                header={i18nT("static.16vvan3")}
                 sortable
                 sortField="calculation_method_name"
                 body={(row: PayrollComponent) =>
@@ -648,7 +657,7 @@ export default function PayrollComponentMasterTable({
                 style={{ minWidth: "13rem" }}
               />
               <Column
-                header="Category"
+                header={i18nT("static.1cr1mz5")}
                 body={(row: PayrollComponent) => {
                   const category = availableCategories.find(
                     (item) => item.id === row.category,
@@ -662,23 +671,28 @@ export default function PayrollComponentMasterTable({
                 style={{ minWidth: "14rem" }}
               />
               <Column
-                header="Taxable"
+                header={i18nT("static.vgbaji")}
                 body={(row: PayrollComponent) =>
                   row.is_taxable ? (
-                    <Tag value="Yes" severity="info" />
+                    <Tag value={i18nT("static.1dudzcg")} severity="info" />
                   ) : (
-                    <Tag value="No" severity="secondary" />
+                    <Tag value={i18nT("static.r5wqai")} severity="secondary" />
                   )
                 }
                 style={{ minWidth: "8rem" }}
               />
               {kind === "income" && (
                 <Column
-                  header="Statutory Base"
+                  header={i18nT("static.uzmksf")}
                   body={(row: PayrollComponent) => {
                     const income = row as IncomeComponent;
                     if (!income.is_fixed_allowance)
-                      return <Tag value="Variable" severity="secondary" />;
+                      return (
+                        <Tag
+                          value={i18nT("static.ye709x")}
+                          severity="secondary"
+                        />
+                      );
                     const programs = [
                       income.include_in_bpjs_health ? "Health" : null,
                       income.include_in_bpjs_employment ? "Employment" : null,
@@ -686,7 +700,9 @@ export default function PayrollComponentMasterTable({
                     return (
                       <Tag
                         value={
-                          programs.length ? programs.join(" + ") : "Excluded"
+                          programs.length
+                            ? programs.join(" + ")
+                            : i18nT("static.tio6hj")
                         }
                         severity={programs.length ? "success" : "secondary"}
                       />
@@ -697,14 +713,16 @@ export default function PayrollComponentMasterTable({
               )}
               {kind === "income" && (
                 <Column
-                  header="Working Period"
+                  header={i18nT("static.18pqnh5")}
                   body={(row: PayrollComponent) => {
                     const income = row as IncomeComponent;
                     const methodCode =
                       income.calculation_method_code?.toUpperCase();
                     return methodCode === "WORKING_PERIOD" ? (
                       <Tag
-                        value={`${income.working_period_tiers?.length ?? 0} tier(s)`}
+                        value={i18nT("static.ui2e5t", {
+                          p0: income.working_period_tiers?.length ?? 0,
+                        })}
                         severity="info"
                       />
                     ) : (
@@ -715,23 +733,27 @@ export default function PayrollComponentMasterTable({
                 />
               )}
               <Column
-                header="Assignment"
+                header={i18nT("static.10eds7k")}
                 body={(row: PayrollComponent) =>
                   row.assignment_mode === "SYSTEM" ? (
-                    <Tag value="System" severity="info" icon="pi pi-lock" />
+                    <Tag
+                      value={i18nT("static.13qbhrw")}
+                      severity="info"
+                      icon="pi pi-lock"
+                    />
                   ) : (
-                    <Tag value="Employee" severity="secondary" />
+                    <Tag value={i18nT("static.1fak8xt")} severity="secondary" />
                   )
                 }
                 style={{ minWidth: "10rem" }}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={status}
                 style={{ minWidth: "10rem" }}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actions}
                 frozen
                 alignFrozen="right"
@@ -749,7 +771,11 @@ export default function PayrollComponentMasterTable({
         </div>
       </Card>
       <Dialog
-        header={selected ? `Edit ${title}` : `New ${title}`}
+        header={
+          selected
+            ? i18nT("static.1kpycen", { p0: title })
+            : i18nT("static.37xc9b", { p0: title })
+        }
         visible={dialogVisible}
         style={{ width: "95vw", maxWidth: "42rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -763,7 +789,7 @@ export default function PayrollComponentMasterTable({
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -774,7 +800,11 @@ export default function PayrollComponentMasterTable({
             <Button
               type="submit"
               form={`${kind}-component-form`}
-              label={selected ? "Save Changes" : `Create ${title}`}
+              label={
+                selected
+                  ? i18nT("static.6gmm1l")
+                  : i18nT("static.ww9hjf", { p0: title })
+              }
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -792,30 +822,30 @@ export default function PayrollComponentMasterTable({
           }}
         >
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <Field label="Code" required>
+            <Field label={i18nT("static.xoaiok")} required>
               <InputText
                 value={form.code}
                 maxLength={50}
                 className="w-full"
                 autoComplete="off"
-                placeholder="e.g. BASIC_SALARY"
+                placeholder={i18nT("static.1qbwxkk")}
                 onChange={(event) => updateForm("code", event.target.value)}
               />
               <small className="text-slate-500">
-                Use a unique code without spaces.
+                {i18nT("static.18donso")}{" "}
               </small>
             </Field>
-            <Field label="Name" required>
+            <Field label={i18nT("static.4el6o6")} required>
               <InputText
                 value={form.name}
                 maxLength={100}
                 className="w-full"
                 autoComplete="off"
-                placeholder="e.g. Basic Salary"
+                placeholder={i18nT("static.fepvq9")}
                 onChange={(event) => updateForm("name", event.target.value)}
               />
             </Field>
-            <Field label="Category" required>
+            <Field label={i18nT("static.1cr1mz5")} required>
               <Dropdown
                 value={form.category}
                 options={availableCategories}
@@ -825,13 +855,13 @@ export default function PayrollComponentMasterTable({
                 showClear
                 appendTo={getBody}
                 className="w-full"
-                placeholder="Select category"
+                placeholder={i18nT("static.1fq1nm3")}
                 onChange={(event) =>
                   updateForm("category", event.value as number | null)
                 }
               />
             </Field>
-            <Field label="Calculation Method" required>
+            <Field label={i18nT("static.16vvan3")} required>
               <Dropdown
                 value={form.calculation_method}
                 options={activeMethods}
@@ -841,7 +871,7 @@ export default function PayrollComponentMasterTable({
                 showClear
                 appendTo={getBody}
                 className="w-full"
-                placeholder="Select calculation method"
+                placeholder={i18nT("static.47cgl1")}
                 onChange={(event) => {
                   const methodId = event.value as number | null;
                   const method = activeMethods.find(
@@ -875,7 +905,7 @@ export default function PayrollComponentMasterTable({
               />
             </Field>
             {requiresFormula && (
-              <Field label="Formula" required>
+              <Field label={i18nT("static.1b8agvx")} required>
                 <Dropdown
                   value={form.formula_id}
                   options={activeFormulas}
@@ -885,22 +915,22 @@ export default function PayrollComponentMasterTable({
                   showClear
                   appendTo={getBody}
                   className="w-full"
-                  placeholder="Select formula"
+                  placeholder={i18nT("static.1xwuo87")}
                   onChange={(event) =>
                     updateForm("formula_id", event.value as number | null)
                   }
                 />
                 <small className="text-slate-500">
-                  Only active formulas can be used.
+                  {i18nT("static.10cebxk")}{" "}
                 </small>
               </Field>
             )}
-            <Field label="Calculation Display">
+            <Field label={i18nT("static.4if2iw")}>
               <InputText
                 value={form.calculation_display}
                 maxLength={100}
                 className="w-full"
-                placeholder="Optional display label"
+                placeholder={i18nT("static.1q2x43d")}
                 onChange={(event) =>
                   updateForm("calculation_display", event.target.value)
                 }
@@ -910,11 +940,10 @@ export default function PayrollComponentMasterTable({
               <div className="flex flex-col gap-3 sm:col-span-2">
                 <div>
                   <p className="m-0 text-sm font-semibold text-slate-800">
-                    Working-period tiers
+                    {i18nT("static.fof64j")}{" "}
                   </p>
                   <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
-                    Percentage of the employee&apos;s contractual basic salary,
-                    selected by completed calendar months as of payroll date.
+                    {i18nT("static.1l5x89m")}{" "}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -923,7 +952,7 @@ export default function PayrollComponentMasterTable({
                       key={`${index}-${tier.minimum_months}`}
                       className="grid grid-cols-1 items-end gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_1fr_1fr_auto]"
                     >
-                      <Field label="Minimum months" required>
+                      <Field label={i18nT("static.g5qlua")} required>
                         <InputNumber
                           value={tier.minimum_months}
                           min={0}
@@ -950,8 +979,8 @@ export default function PayrollComponentMasterTable({
                       <Field
                         label={
                           index === form.working_period_tiers.length - 1
-                            ? "Maximum months (blank = open-ended)"
-                            : "Maximum months"
+                            ? i18nT("static.x3qc69")
+                            : i18nT("static.1cxy1ho")
                         }
                         required={
                           index !== form.working_period_tiers.length - 1
@@ -980,7 +1009,7 @@ export default function PayrollComponentMasterTable({
                           }
                         />
                       </Field>
-                      <Field label="Percentage" required>
+                      <Field label={i18nT("static.wa149h")} required>
                         <InputNumber
                           value={tier.percentage}
                           min={0}
@@ -1011,7 +1040,7 @@ export default function PayrollComponentMasterTable({
                         icon="pi pi-trash"
                         severity="danger"
                         outlined
-                        aria-label="Remove working-period tier"
+                        aria-label={i18nT("static.jzkt10")}
                         disabled={form.working_period_tiers.length === 1}
                         onClick={() =>
                           setForm((current) => ({
@@ -1028,7 +1057,7 @@ export default function PayrollComponentMasterTable({
                 </div>
                 <Button
                   type="button"
-                  label="Add tier"
+                  label={i18nT("static.1672au8")}
                   icon="pi pi-plus"
                   outlined
                   className="w-full sm:w-fit"
@@ -1079,7 +1108,7 @@ export default function PayrollComponentMasterTable({
                 htmlFor={`${kind}-taxable`}
                 className="cursor-pointer text-sm font-medium text-slate-700"
               >
-                Taxable component
+                {i18nT("static.1q8sxw9")}{" "}
               </label>
             </div>
             <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
@@ -1087,7 +1116,7 @@ export default function PayrollComponentMasterTable({
                 htmlFor={`${kind}-active`}
                 className="cursor-pointer text-sm font-medium text-slate-700"
               >
-                Active
+                {i18nT("static.8qzyhb")}{" "}
               </label>
               <InputSwitch
                 inputId={`${kind}-active`}
@@ -1100,42 +1129,39 @@ export default function PayrollComponentMasterTable({
             <div className="flex flex-col gap-3 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
               <div>
                 <p className="m-0 text-sm font-semibold text-slate-800">
-                  BPJS wage-base treatment
+                  {i18nT("static.frzx9y")}{" "}
                 </p>
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-600">
-                  This component inherits the BPJS treatment from its category.
-                  Configure it in Component Category; it is not entered per
-                  income component.
+                  {i18nT("static.6qmtok")}{" "}
                 </p>
               </div>
               {selectedCategory ? (
                 <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                   <Tag
                     value={
-                      selectedCategoryIsFixed ? "Fixed allowance" : "Variable"
+                      selectedCategoryIsFixed
+                        ? i18nT("static.h66zc7")
+                        : i18nT("static.ye709x")
                     }
                     severity={selectedCategoryIsFixed ? "info" : "secondary"}
                   />
                   {selectedCategoryIsFixed &&
                     selectedCategory.include_in_bpjs_health && (
-                      <Tag value="BPJS Kesehatan" severity="success" />
+                      <Tag value={i18nT("static.fkawu2")} severity="success" />
                     )}
                   {selectedCategoryIsFixed &&
                     selectedCategory.include_in_bpjs_employment && (
-                      <Tag value="BPJS Ketenagakerjaan" severity="success" />
+                      <Tag value={i18nT("static.13ljj7q")} severity="success" />
                     )}
                   {(!selectedCategoryIsFixed ||
                     (!selectedCategory.include_in_bpjs_health &&
                       !selectedCategory.include_in_bpjs_employment)) && (
-                    <Tag
-                      value="Excluded from BPJS wage base"
-                      severity="secondary"
-                    />
+                    <Tag value={i18nT("static.1iijn1f")} severity="secondary" />
                   )}
                 </div>
               ) : (
                 <span className="text-sm text-slate-500">
-                  Select a category to preview the inherited treatment.
+                  {i18nT("static.fi7wrw")}{" "}
                 </span>
               )}
             </div>

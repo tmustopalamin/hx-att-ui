@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -53,42 +54,42 @@ import { showToast } from "@/store/ToastSlice";
 
 const ROTATION_MODE_OPTIONS = [
   {
-    label: "Rolling",
+    labelKey: "Rolling",
     value: "ROLLING",
   },
   {
-    label: "Change on Specific Day",
+    labelKey: "Change on Specific Day",
     value: "CHANGE_ON_DAY",
   },
 ];
 
 const CHANGE_DAY_OPTIONS = [
   {
-    label: "Monday",
+    labelKey: "Monday",
     value: "MONDAY",
   },
   {
-    label: "Tuesday",
+    labelKey: "Tuesday",
     value: "TUESDAY",
   },
   {
-    label: "Wednesday",
+    labelKey: "Wednesday",
     value: "WEDNESDAY",
   },
   {
-    label: "Thursday",
+    labelKey: "Thursday",
     value: "THURSDAY",
   },
   {
-    label: "Friday",
+    labelKey: "Friday",
     value: "FRIDAY",
   },
   {
-    label: "Saturday",
+    labelKey: "Saturday",
     value: "SATURDAY",
   },
   {
-    label: "Sunday",
+    labelKey: "Sunday",
     value: "SUNDAY",
   },
 ];
@@ -109,6 +110,7 @@ const EMPTY_SHIFT_RULE = {
 const getBody = () => document.body;
 
 const ShiftRuleTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -241,7 +243,7 @@ const ShiftRuleTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -253,7 +255,7 @@ const ShiftRuleTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(errorData, "message"),
         }),
       );
@@ -266,7 +268,7 @@ const ShiftRuleTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: errorData.message,
         }),
       );
@@ -278,8 +280,8 @@ const ShiftRuleTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -289,7 +291,7 @@ const ShiftRuleTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Validation Error",
+        summary: i18nT("static.1x6kst4"),
         detail: message,
       }),
     );
@@ -623,12 +625,10 @@ const ShiftRuleTableData = () => {
 
   const onClickDelete = (rowData: ShiftRule) => {
     requestActionConfirmation({
-      header: "Delete Shift Rule",
+      header: i18nT("static.w2rhsc"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this shift rule?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1ktu6sh")} </span>
 
           <span className="font-semibold text-slate-800">{rowData.name}</span>
         </div>
@@ -641,7 +641,7 @@ const ShiftRuleTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -650,7 +650,7 @@ const ShiftRuleTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -662,12 +662,10 @@ const ShiftRuleTableData = () => {
 
   const onClickRestore = (rowData: ShiftRule) => {
     requestActionConfirmation({
-      header: "Restore Shift Rule",
+      header: i18nT("static.3j8u7h"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this shift rule?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1n8nayk")} </span>
 
           <span className="font-semibold text-slate-800">{rowData.name}</span>
         </div>
@@ -680,7 +678,7 @@ const ShiftRuleTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -689,7 +687,7 @@ const ShiftRuleTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -701,12 +699,10 @@ const ShiftRuleTableData = () => {
 
   const onClickPurge = (rowData: ShiftRule) => {
     requestActionConfirmation({
-      header: "Delete Shift Rule Permanently",
+      header: i18nT("static.1cipgld"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{rowData.name}</span>
         </div>
@@ -719,7 +715,7 @@ const ShiftRuleTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -728,7 +724,7 @@ const ShiftRuleTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -740,29 +736,46 @@ const ShiftRuleTableData = () => {
 
   const scheduleTypeColumnBody = (rowData: ShiftRule) => {
     if (rowData.schedule_type === "FIXED") {
-      return <Tag value="Fixed" severity="info" icon="pi pi-lock" rounded />;
+      return (
+        <Tag
+          value={i18nT("static.pkncex")}
+          severity="info"
+          icon="pi pi-lock"
+          rounded
+        />
+      );
     }
 
     if (rowData.schedule_type === "ROTATION") {
       return (
-        <Tag value="Rotation" severity="warning" icon="pi pi-refresh" rounded />
+        <Tag
+          value={i18nT("static.ly2rj")}
+          severity="warning"
+          icon="pi pi-refresh"
+          rounded
+        />
       );
     }
 
-    return <Tag value="Unknown" severity="secondary" rounded />;
+    return <Tag value={i18nT("static.1kmy72x")} severity="secondary" rounded />;
   };
 
   const statusColumnBody = (rowData: ShiftRule) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -772,7 +785,7 @@ const ShiftRuleTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -790,7 +803,7 @@ const ShiftRuleTableData = () => {
     if (!shiftName) {
       return (
         <span className="text-sm text-slate-500">
-          Shift {rowData.base_shift_id ?? "-"}
+          {i18nT("static.1xakelj")} {rowData.base_shift_id ?? "-"}
         </span>
       );
     }
@@ -809,7 +822,7 @@ const ShiftRuleTableData = () => {
 
     return (
       <span className="text-sm text-slate-700">
-        {option?.label ?? rowData.rotation_mode ?? "-"}
+        {option ? i18nT(option.labelKey) : (rowData.rotation_mode ?? "-")}
       </span>
     );
   };
@@ -828,7 +841,7 @@ const ShiftRuleTableData = () => {
 
     return (
       <span className="text-sm text-slate-700">
-        {option?.label ?? rowData.change_day ?? "-"}
+        {option ? i18nT(option.labelKey) : (rowData.change_day ?? "-")}
       </span>
     );
   };
@@ -859,7 +872,11 @@ const ShiftRuleTableData = () => {
             <span
               key={`${rule.sequence_no}-${rule.shift_id}-${index}`}
               className="truncate text-sm text-slate-700"
-              title={`${rule.sequence_no}. ${shiftName}${durationText}`}
+              title={i18nT("static.72rmto", {
+                p0: rule.sequence_no,
+                p1: shiftName,
+                p2: durationText,
+              })}
             >
               {rule.sequence_no}. {shiftName}
               {durationText}
@@ -869,7 +886,7 @@ const ShiftRuleTableData = () => {
 
         {orderedRules.length > 3 && (
           <span className="text-xs text-slate-500">
-            +{orderedRules.length - 3} more pattern(s)
+            +{orderedRules.length - 3} {i18nT("static.mfchoi")}{" "}
           </span>
         )}
       </div>
@@ -883,7 +900,11 @@ const ShiftRuleTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -896,7 +917,7 @@ const ShiftRuleTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -913,7 +934,7 @@ const ShiftRuleTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -934,7 +955,7 @@ const ShiftRuleTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -949,7 +970,7 @@ const ShiftRuleTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -966,7 +987,7 @@ const ShiftRuleTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -978,7 +999,7 @@ const ShiftRuleTableData = () => {
       <Button
         type="submit"
         form="shift-rule-form"
-        label={isAddNew ? "Create Shift Rule" : "Save Changes"}
+        label={isAddNew ? i18nT("static.u0p089") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving || shiftIsLoading || Boolean(shiftError)}
@@ -1008,12 +1029,11 @@ const ShiftRuleTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Shift Rule
+                  {i18nT("static.qlsvoz")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage fixed schedules, rotation patterns, and shift-change
-                  policies.
+                  {i18nT("static.12u4q4r")}{" "}
                 </p>
               </div>
             </div>
@@ -1021,7 +1041,7 @@ const ShiftRuleTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1034,7 +1054,7 @@ const ShiftRuleTableData = () => {
 
               <Button
                 type="button"
-                label="New Shift Rule"
+                label={i18nT("static.1c346jx")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -1059,7 +1079,7 @@ const ShiftRuleTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -1070,7 +1090,7 @@ const ShiftRuleTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search shift rule name"
+                placeholder={i18nT("static.8eakfw")}
                 className="w-full"
               />
             </IconField>
@@ -1101,8 +1121,8 @@ const ShiftRuleTableData = () => {
               tableStyle={{
                 minWidth: "90rem",
               }}
-              emptyMessage="No shift rule data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.bufn9e")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -1118,7 +1138,7 @@ const ShiftRuleTableData = () => {
 
               <Column
                 field="name"
-                header="Rule Name"
+                header={i18nT("static.dcyrxe")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -1132,7 +1152,7 @@ const ShiftRuleTableData = () => {
 
               <Column
                 field="schedule_type"
-                header="Schedule Type"
+                header={i18nT("static.1jtkgss")}
                 sortable
                 body={scheduleTypeColumnBody}
                 style={{
@@ -1142,7 +1162,7 @@ const ShiftRuleTableData = () => {
 
               <Column
                 field="rotation_mode"
-                header="Rotation Mode"
+                header={i18nT("static.ozg84a")}
                 sortable
                 body={rotationModeColumnBody}
                 style={{
@@ -1152,7 +1172,7 @@ const ShiftRuleTableData = () => {
 
               <Column
                 field="change_day"
-                header="Shift Change"
+                header={i18nT("static.1u6hzdp")}
                 sortable
                 body={shiftChangeColumnBody}
                 style={{
@@ -1162,7 +1182,7 @@ const ShiftRuleTableData = () => {
 
               <Column
                 field="base_shift_id"
-                header="Base Shift"
+                header={i18nT("static.1knd5a4")}
                 sortable
                 body={baseShiftColumnBody}
                 style={{
@@ -1171,7 +1191,7 @@ const ShiftRuleTableData = () => {
               />
 
               <Column
-                header="Rotation Pattern"
+                header={i18nT("static.5i2vn5")}
                 body={patternSummaryColumnBody}
                 style={{
                   minWidth: "23rem",
@@ -1180,7 +1200,7 @@ const ShiftRuleTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -1189,7 +1209,7 @@ const ShiftRuleTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -1244,11 +1264,11 @@ const ShiftRuleTableData = () => {
           <section className="flex flex-col gap-4">
             <div className="border-b border-slate-200 pb-2">
               <h2 className="m-0 text-sm font-semibold text-slate-800">
-                General Information
+                {i18nT("static.1ywaoj5")}{" "}
               </h2>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Define the rule name, schedule type, and active status.
+                {i18nT("static.5ct4eq")}{" "}
               </p>
             </div>
 
@@ -1257,7 +1277,7 @@ const ShiftRuleTableData = () => {
                 htmlFor="name"
                 className="text-sm font-medium text-slate-700"
               >
-                Rule Name
+                {i18nT("static.dcyrxe")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -1265,10 +1285,10 @@ const ShiftRuleTableData = () => {
                 name="name"
                 control={control}
                 rules={{
-                  required: "Shift rule name is required.",
+                  required: i18nT("static.1jkn7ln"),
                   maxLength: {
                     value: 50,
-                    message: "Shift rule name cannot exceed 50 characters.",
+                    message: i18nT("static.1cz5ct6"),
                   },
                 }}
                 render={({ field, fieldState }) => (
@@ -1277,7 +1297,7 @@ const ShiftRuleTableData = () => {
                       {...field}
                       id="name"
                       autoComplete="off"
-                      placeholder="Example: Security Weekly Rotation"
+                      placeholder={i18nT("static.1ej1sum")}
                       className={`w-full ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -1295,7 +1315,7 @@ const ShiftRuleTableData = () => {
 
             <div className="flex flex-col gap-3">
               <label className="text-sm font-medium text-slate-700">
-                Schedule Type
+                {i18nT("static.1jtkgss")}{" "}
                 <span className="ml-1 text-red-500">*</span>
               </label>
 
@@ -1303,7 +1323,7 @@ const ShiftRuleTableData = () => {
                 name="schedule_type"
                 control={control}
                 rules={{
-                  required: "Schedule type is required.",
+                  required: i18nT("static.3g6nuh"),
                 }}
                 render={({ field, fieldState }) => (
                   <>
@@ -1337,11 +1357,11 @@ const ShiftRuleTableData = () => {
 
                         <div>
                           <p className="m-0 text-sm font-semibold text-slate-800">
-                            Fixed Schedule
+                            {i18nT("static.1kvt8ci")}{" "}
                           </p>
 
                           <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                            Employees use one base shift continuously.
+                            {i18nT("static.p33mxs")}{" "}
                           </p>
                         </div>
                       </label>
@@ -1382,12 +1402,11 @@ const ShiftRuleTableData = () => {
 
                         <div>
                           <p className="m-0 text-sm font-semibold text-slate-800">
-                            Rotation Schedule
+                            {i18nT("static.1dgc7hw")}{" "}
                           </p>
 
                           <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                            Employees move through multiple shifts in a defined
-                            order.
+                            {i18nT("static.d7sl46")}{" "}
                           </p>
                         </div>
                       </label>
@@ -1409,11 +1428,11 @@ const ShiftRuleTableData = () => {
             <section className="flex flex-col gap-4">
               <div className="border-b border-slate-200 pb-2">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Fixed Schedule
+                  {i18nT("static.1kvt8ci")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  Select the single shift used by this rule.
+                  {i18nT("static.yp0p4w")}{" "}
                 </p>
               </div>
 
@@ -1422,7 +1441,7 @@ const ShiftRuleTableData = () => {
                   htmlFor="base_shift_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Base Shift
+                  {i18nT("static.1knd5a4")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1451,8 +1470,8 @@ const ShiftRuleTableData = () => {
                         disabled={shiftIsLoading || Boolean(shiftError)}
                         placeholder={
                           shiftIsLoading
-                            ? "Loading shifts..."
-                            : "Select a base shift"
+                            ? i18nT("static.1hx14de")
+                            : i18nT("static.1jbtyhn")
                         }
                         className={`w-full ${
                           fieldState.invalid ? "p-invalid" : ""
@@ -1468,15 +1487,13 @@ const ShiftRuleTableData = () => {
 
                       {!fieldState.error && !shiftError && (
                         <small className="text-slate-500">
-                          This shift is assigned continuously while the rule is
-                          active.
+                          {i18nT("static.1bvtx17")}{" "}
                         </small>
                       )}
 
                       {shiftError && (
                         <small className="p-error">
-                          Shifts could not be loaded. Refresh the page and try
-                          again.
+                          {i18nT("static.1oynmij")}{" "}
                         </small>
                       )}
                     </>
@@ -1491,12 +1508,11 @@ const ShiftRuleTableData = () => {
             <section className="flex flex-col gap-5">
               <div className="border-b border-slate-200 pb-2">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Rotation Configuration
+                  {i18nT("static.1etmrn5")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  Configure when shifts change and the sequence used by the
-                  rotation.
+                  {i18nT("static.1xomo6c")}{" "}
                 </p>
               </div>
 
@@ -1506,7 +1522,7 @@ const ShiftRuleTableData = () => {
                     htmlFor="rotation_mode"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Rotation Mode
+                    {i18nT("static.ozg84a")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1525,10 +1541,13 @@ const ShiftRuleTableData = () => {
                           id="rotation_mode"
                           appendTo={getBody}
                           value={field.value ?? null}
-                          options={ROTATION_MODE_OPTIONS}
+                          options={ROTATION_MODE_OPTIONS.map((option) => ({
+                            label: i18nT(option.labelKey),
+                            value: option.value,
+                          }))}
                           optionLabel="label"
                           optionValue="value"
-                          placeholder="Select rotation mode"
+                          placeholder={i18nT("static.18i1ouc")}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
                           }`}
@@ -1571,7 +1590,7 @@ const ShiftRuleTableData = () => {
                       htmlFor="change_day"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Change Shift On
+                      {i18nT("static.1ydvwaa")}{" "}
                       <span className="ml-1 text-red-500">*</span>
                     </label>
 
@@ -1590,10 +1609,13 @@ const ShiftRuleTableData = () => {
                             id="change_day"
                             appendTo={getBody}
                             value={field.value ?? null}
-                            options={CHANGE_DAY_OPTIONS}
+                            options={CHANGE_DAY_OPTIONS.map((option) => ({
+                              label: i18nT(option.labelKey),
+                              value: option.value,
+                            }))}
                             optionLabel="label"
                             optionValue="value"
-                            placeholder="Select a day"
+                            placeholder={i18nT("static.1rzjqs4")}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
                             }`}
@@ -1617,8 +1639,8 @@ const ShiftRuleTableData = () => {
 
                 <span>
                   {watchedRotationMode === "CHANGE_ON_DAY"
-                    ? "The next pattern begins whenever the selected weekday is reached. Each row therefore uses one rotation step."
-                    : "Rolling rotation follows the duration configured for each pattern row before moving to the next shift."}
+                    ? i18nT("static.1aft3ns")
+                    : i18nT("static.7pdcdd")}
                 </span>
               </div>
 
@@ -1627,17 +1649,17 @@ const ShiftRuleTableData = () => {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="m-0 text-sm font-semibold text-slate-800">
-                      Rotation Pattern
+                      {i18nT("static.5i2vn5")}{" "}
                     </h3>
 
                     <p className="m-0 mt-1 text-xs text-slate-500">
-                      Define the ordered shifts used by this rotation rule.
+                      {i18nT("static.59mpah")}{" "}
                     </p>
                   </div>
 
                   <Button
                     type="button"
-                    label="Add Pattern"
+                    label={i18nT("static.64c8q6")}
                     icon="pi pi-plus"
                     outlined
                     size="small"
@@ -1651,11 +1673,11 @@ const ShiftRuleTableData = () => {
                     <i className="pi pi-refresh mb-3 text-2xl text-slate-400" />
 
                     <p className="m-0 text-sm font-medium text-slate-700">
-                      No rotation pattern
+                      {i18nT("static.r808mm")}{" "}
                     </p>
 
                     <p className="m-0 mt-1 text-xs text-slate-500">
-                      Add at least one shift to create a rotation schedule.
+                      {i18nT("static.1ijqhy7")}{" "}
                     </p>
                   </div>
                 ) : (
@@ -1672,7 +1694,7 @@ const ShiftRuleTableData = () => {
                             </div>
 
                             <span className="text-sm font-semibold text-slate-700">
-                              Pattern {index + 1}
+                              {i18nT("static.1vuws7d")} {index + 1}
                             </span>
                           </div>
 
@@ -1682,7 +1704,7 @@ const ShiftRuleTableData = () => {
                             rounded
                             text
                             severity="danger"
-                            tooltip="Remove pattern"
+                            tooltip={i18nT("static.egtfc7")}
                             tooltipOptions={{
                               appendTo: getBody,
                               position: "top",
@@ -1703,17 +1725,17 @@ const ShiftRuleTableData = () => {
                               htmlFor={`rules-${index}-sequence`}
                               className="text-sm font-medium text-slate-700"
                             >
-                              Sequence
+                              {i18nT("static.ryxthk")}{" "}
                             </label>
 
                             <Controller
                               name={`rules.${index}.sequence_no`}
                               control={control}
                               rules={{
-                                required: "Required.",
+                                required: i18nT("static.op6q7e"),
                                 min: {
                                   value: 1,
-                                  message: "Minimum 1.",
+                                  message: i18nT("static.10w4o12"),
                                 },
                               }}
                               render={({ field, fieldState }) => (
@@ -1748,7 +1770,7 @@ const ShiftRuleTableData = () => {
                               htmlFor={`rules-${index}-shift`}
                               className="text-sm font-medium text-slate-700"
                             >
-                              Shift
+                              {i18nT("static.1xakelj")}{" "}
                               <span className="ml-1 text-red-500">*</span>
                             </label>
 
@@ -1776,7 +1798,7 @@ const ShiftRuleTableData = () => {
                                     disabled={
                                       shiftIsLoading || Boolean(shiftError)
                                     }
-                                    placeholder="Select shift"
+                                    placeholder={i18nT("static.ch2a7x")}
                                     className={`w-full ${
                                       fieldState.invalid ? "p-invalid" : ""
                                     }`}
@@ -1803,17 +1825,17 @@ const ShiftRuleTableData = () => {
                                 htmlFor={`rules-${index}-duration`}
                                 className="text-sm font-medium text-slate-700"
                               >
-                                Duration
+                                {i18nT("static.1n1dulp")}{" "}
                               </label>
 
                               <Controller
                                 name={`rules.${index}.duration_days`}
                                 control={control}
                                 rules={{
-                                  required: "Required.",
+                                  required: i18nT("static.op6q7e"),
                                   min: {
                                     value: 1,
-                                    message: "Minimum 1 day.",
+                                    message: i18nT("static.nuf3ao"),
                                   },
                                 }}
                                 render={({ field, fieldState }) => (
@@ -1824,7 +1846,7 @@ const ShiftRuleTableData = () => {
                                       value={Number(field.value ?? 1)}
                                       min={1}
                                       useGrouping={false}
-                                      suffix=" day(s)"
+                                      suffix={i18nT("static.kjdug7")}
                                       className={`w-full ${
                                         fieldState.invalid ? "p-invalid" : ""
                                       }`}
@@ -1851,9 +1873,7 @@ const ShiftRuleTableData = () => {
                 )}
 
                 {shiftError && (
-                  <small className="p-error">
-                    Shifts could not be loaded. Refresh the page and try again.
-                  </small>
+                  <small className="p-error">{i18nT("static.1oynmij")} </small>
                 )}
               </div>
             </section>
@@ -1872,12 +1892,11 @@ const ShiftRuleTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive shift rules remain stored but should not be
-                      available for new employee shift assignments.
+                      {i18nT("static.1uc0zeq")}{" "}
                     </p>
                   </div>
 

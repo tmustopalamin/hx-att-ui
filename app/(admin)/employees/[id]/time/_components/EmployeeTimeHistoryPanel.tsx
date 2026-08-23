@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useParams } from "next/navigation";
 import type { ReactNode } from "react";
@@ -92,10 +93,11 @@ function AttendanceHistory({
   data: EmployeeAttendanceSummary[];
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   return (
     <Panel
-      title="Attendance History"
-      description="Processed daily attendance used by reporting and payroll validation."
+      title={i18nT("static.16ukhgu")}
+      description={i18nT("static.15r85c2")}
     >
       <DataTable
         value={data}
@@ -108,46 +110,46 @@ function AttendanceHistory({
         paginator
         rows={15}
         tableStyle={{ minWidth: "56rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No attendance summary is available."
+        emptyMessage={i18nT("static.cqawmy")}
       >
         <Column
           field="summary_date"
-          header="Date"
+          header={i18nT("static.ggjuyh")}
           body={(row: EmployeeAttendanceSummary) =>
             formatDisplayDate(row.summary_date)
           }
         />
         <Column
           field="shift_name"
-          header="Shift"
+          header={i18nT("static.1xakelj")}
           body={(row: EmployeeAttendanceSummary) =>
             row.shift_name ?? "Unscheduled"
           }
         />
         <Column
-          header="Check In"
+          header={i18nT("static.2m3vb2")}
           body={(row: EmployeeAttendanceSummary) => dateTime(row.check_in_time)}
         />
         <Column
-          header="Check Out"
+          header={i18nT("static.efitfj")}
           body={(row: EmployeeAttendanceSummary) =>
             dateTime(row.check_out_time)
           }
         />
         <Column
-          header="Work"
+          header={i18nT("static.1oz7yps")}
           body={(row: EmployeeAttendanceSummary) => duration(row.work_seconds)}
         />
         <Column
-          header="Late / Early"
+          header={i18nT("static.sw56zn")}
           body={(row: EmployeeAttendanceSummary) =>
             `${duration(row.late_seconds)} / ${duration(row.early_out_seconds)}`
           }
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: EmployeeAttendanceSummary) => (
             <Tag value={row.status} severity={severity(row.status)} />
           )}
@@ -164,11 +166,9 @@ function OvertimeHistory({
   data: EmployeeOvertimeRequestHistory[];
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   return (
-    <Panel
-      title="Overtime History"
-      description="Approved overtime is used as payroll input according to the payroll period."
-    >
+    <Panel title={i18nT("static.ni16")} description={i18nT("static.1c3fn7p")}>
       <DataTable
         value={data}
         loading={loading}
@@ -180,42 +180,42 @@ function OvertimeHistory({
         paginator
         rows={15}
         tableStyle={{ minWidth: "58rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No overtime request is available."
+        emptyMessage={i18nT("static.srq52f")}
       >
         <Column
           field="overtime_date"
-          header="Date"
+          header={i18nT("static.ggjuyh")}
           body={(row: EmployeeOvertimeRequestHistory) =>
             formatDisplayDate(row.overtime_date)
           }
         />
         <Column
-          header="Requested Time"
+          header={i18nT("static.s5z0w")}
           body={(row: EmployeeOvertimeRequestHistory) =>
             `${dateTime(row.requested_start_at)} – ${dateTime(row.requested_end_at)}`
           }
         />
         <Column
-          header="Duration"
+          header={i18nT("static.1n1dulp")}
           body={(row: EmployeeOvertimeRequestHistory) =>
             duration(row.requested_seconds)
           }
         />
         <Column
           field="reason"
-          header="Reason"
+          header={i18nT("static.i36sl5")}
           body={(row: EmployeeOvertimeRequestHistory) => row.reason ?? "-"}
         />
         <Column
-          header="Approver"
+          header={i18nT("static.1czzcoo")}
           body={(row: EmployeeOvertimeRequestHistory) =>
             row.approved_by_name ?? "-"
           }
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: EmployeeOvertimeRequestHistory) => (
             <Tag value={row.status} severity={severity(row.status)} />
           )}
@@ -232,11 +232,9 @@ function LeaveHistory({
   data: EmployeeLeaveRequestHistory[];
   loading: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   return (
-    <Panel
-      title="Leave Request History"
-      description="Approved leave is reconciled with attendance and leave balance."
-    >
+    <Panel title={i18nT("static.3ntzyl")} description={i18nT("static.5w2tqu")}>
       <DataTable
         value={data}
         loading={loading}
@@ -248,33 +246,33 @@ function LeaveHistory({
         paginator
         rows={15}
         tableStyle={{ minWidth: "50rem" }}
-        currentPageReportTemplate="{first} to {last} of {totalRecords}"
+        currentPageReportTemplate={i18nT("static.1kqh8lr")}
         paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-        emptyMessage="No leave request is available."
+        emptyMessage={i18nT("static.ajp1f3")}
       >
-        <Column field="leave_type_name" header="Leave Type" />
+        <Column field="leave_type_name" header={i18nT("static.se3juw")} />
         <Column
           field="start_date"
-          header="Start"
+          header={i18nT("static.30xvgf")}
           body={(row: EmployeeLeaveRequestHistory) =>
             formatDisplayDate(row.start_date)
           }
         />
         <Column
           field="end_date"
-          header="End"
+          header={i18nT("static.1llf32i")}
           body={(row: EmployeeLeaveRequestHistory) =>
             formatDisplayDate(row.end_date)
           }
         />
-        <Column field="total_days" header="Days" />
+        <Column field="total_days" header={i18nT("static.pxfr8q")} />
         <Column
           field="reason"
-          header="Reason"
+          header={i18nT("static.i36sl5")}
           body={(row: EmployeeLeaveRequestHistory) => row.reason ?? "-"}
         />
         <Column
-          header="Status"
+          header={i18nT("static.3pd73")}
           body={(row: EmployeeLeaveRequestHistory) => (
             <Tag value={row.status} severity={severity(row.status)} />
           )}

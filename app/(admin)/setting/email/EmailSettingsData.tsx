@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/app/i18n";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 import { useEffect, useState } from "react";
 import useSWR from "swr";
@@ -55,38 +57,38 @@ type EmailTab = "overview" | "rules" | "templates" | "history";
 const metricToneClasses = {
   amber: {
     card: "border-amber-200 bg-amber-50",
-    label: "text-amber-700",
+    labelClass: "text-amber-700",
     value: "text-amber-800",
   },
   blue: {
     card: "border-blue-200 bg-blue-50",
-    label: "text-blue-700",
+    labelClass: "text-blue-700",
     value: "text-blue-800",
   },
   rose: {
     card: "border-rose-200 bg-rose-50",
-    label: "text-rose-700",
+    labelClass: "text-rose-700",
     value: "text-rose-800",
   },
   emerald: {
     card: "border-emerald-200 bg-emerald-50",
-    label: "text-emerald-700",
+    labelClass: "text-emerald-700",
     value: "text-emerald-800",
   },
   slate: {
     card: "border-slate-200 bg-slate-50",
-    label: "text-slate-700",
+    labelClass: "text-slate-700",
     value: "text-slate-800",
   },
 } as const;
 
 const historyStatusOptions = [
-  { label: "All statuses", value: undefined },
-  { label: "Pending", value: "PENDING" },
-  { label: "Processing", value: "PROCESSING" },
-  { label: "Sent", value: "SENT" },
-  { label: "Failed", value: "FAILED" },
-  { label: "Cancelled", value: "CANCELLED" },
+  { labelKey: "All statuses", value: undefined },
+  { labelKey: "Pending", value: "PENDING" },
+  { labelKey: "Processing", value: "PROCESSING" },
+  { labelKey: "Sent", value: "SENT" },
+  { labelKey: "Failed", value: "FAILED" },
+  { labelKey: "Cancelled", value: "CANCELLED" },
 ];
 
 const DEFAULT_SETTINGS: EmailSettingsInput = {
@@ -134,6 +136,7 @@ const renderTemplatePreview = (
   );
 
 const EmailSettingsData = () => {
+  const { t: i18nT, tText } = useI18n();
   const dispatch = useDispatch();
   const profilePermissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -266,7 +269,7 @@ const EmailSettingsData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail,
       }),
     );
@@ -277,7 +280,7 @@ const EmailSettingsData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Email configuration",
+        summary: i18nT("static.1ixu3ll"),
         detail: getErrorMessage(errorValue, "message"),
       }),
     );
@@ -296,9 +299,7 @@ const EmailSettingsData = () => {
         smtp_tls_mode: settingsDraft.smtp_tls_mode?.toUpperCase() || null,
       });
       await Promise.all([refreshSettings(), refreshHealth()]);
-      showSuccess(
-        "Email settings updated. New sends use the saved non-secret configuration.",
-      );
+      showSuccess(i18nT("static.1a8nyr"));
     } catch (errorValue) {
       showError(errorValue);
     } finally {
@@ -311,7 +312,7 @@ const EmailSettingsData = () => {
     try {
       setIsTesting(true);
       await sendEmailTest(testEmail.trim());
-      showSuccess("Test email sent successfully.");
+      showSuccess(i18nT("static.gj2cc"));
     } catch (errorValue) {
       showError(errorValue);
     } finally {
@@ -331,7 +332,7 @@ const EmailSettingsData = () => {
         [field]: value,
       });
       await Promise.all([refreshRules(), refreshHealth()]);
-      showSuccess(`${row.name} updated.`);
+      showSuccess(i18nT("static.19fi0ww", { p0: row.name }));
     } catch (errorValue) {
       showError(errorValue);
     } finally {
@@ -382,7 +383,7 @@ const EmailSettingsData = () => {
       }
       await refreshTemplates();
       setTemplateDialogVisible(false);
-      showSuccess("Email template saved.");
+      showSuccess(i18nT("static.y1icqy"));
     } catch (errorValue) {
       showError(errorValue);
     } finally {
@@ -434,9 +435,7 @@ const EmailSettingsData = () => {
       setResendingId(row.id);
       await resendEmail(row.id);
       await Promise.all([refreshHistory(), refreshHealth()]);
-      showSuccess(
-        "A new email attempt was queued. The original history row was preserved.",
-      );
+      showSuccess(i18nT("static.7d5w48"));
     } catch (errorValue) {
       showError(errorValue);
     } finally {
@@ -449,19 +448,17 @@ const EmailSettingsData = () => {
 
     const beforeDays = cleanupDays;
     requestActionConfirmation({
-      action: "Purge email content",
+      action: i18nT("static.y3j0c9"),
       target: `Eligible records older than ${beforeDays} days`,
-      description: `This permanently removes recipient addresses and message content from sent, failed, and cancelled outbox records older than ${beforeDays} days. Delivery status and audit metadata remain. Continue?`,
+      description: i18nT("static.1d3egak", { p0: beforeDays }),
       severity: "danger",
-      confirmLabel: "Purge content",
+      confirmLabel: i18nT("static.1w72z95"),
       onAccept: async () => {
         try {
           setIsCleaning(true);
           const result = await cleanupEmailHistory(beforeDays);
           await Promise.all([refreshHistory(), refreshHealth()]);
-          showSuccess(
-            `${result.redacted} email content record(s) purged; audit metadata remains.`,
-          );
+          showSuccess(i18nT("static.1c1uc74", { p0: result.redacted }));
         } catch (errorValue) {
           showError(errorValue);
         } finally {
@@ -472,10 +469,10 @@ const EmailSettingsData = () => {
   };
 
   const tabs: { key: EmailTab; label: string; icon: string }[] = [
-    { key: "overview", label: "Overview", icon: "pi-chart-bar" },
-    { key: "rules", label: "Notification Rules", icon: "pi-sliders-h" },
-    { key: "templates", label: "Templates", icon: "pi-file-edit" },
-    { key: "history", label: "History & Retry", icon: "pi-history" },
+    { key: "overview", label: i18nT("static.thnxru"), icon: "pi-chart-bar" },
+    { key: "rules", label: i18nT("static.1lyg0n9"), icon: "pi-sliders-h" },
+    { key: "templates", label: i18nT("static.it5x1k"), icon: "pi-file-edit" },
+    { key: "history", label: i18nT("static.13e6esb"), icon: "pi-history" },
   ];
 
   const statusSeverity = (status: string) => {
@@ -495,18 +492,22 @@ const EmailSettingsData = () => {
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
-          ["Pending", health?.outbox.pending_count ?? 0, "amber"],
-          ["Processing", health?.outbox.processing_count ?? 0, "blue"],
-          ["Failed", health?.outbox.failed_count ?? 0, "rose"],
-          ["Sent / 24h", health?.outbox.sent_last_24h_count ?? 0, "emerald"],
-          ["Concurrency", settings?.max_concurrency ?? 0, "slate"],
+          [tText("Pending"), health?.outbox.pending_count ?? 0, "amber"],
+          [tText("Processing"), health?.outbox.processing_count ?? 0, "blue"],
+          [tText("Failed"), health?.outbox.failed_count ?? 0, "rose"],
+          [
+            tText("Sent / 24h"),
+            health?.outbox.sent_last_24h_count ?? 0,
+            "emerald",
+          ],
+          [tText("Concurrency"), settings?.max_concurrency ?? 0, "slate"],
         ].map(([label, value, tone]) => (
           <div
             key={String(label)}
             className={`rounded-xl border p-4 ${metricToneClasses[tone as keyof typeof metricToneClasses].card}`}
           >
             <p
-              className={`m-0 text-xs ${metricToneClasses[tone as keyof typeof metricToneClasses].label}`}
+              className={`m-0 text-xs ${metricToneClasses[tone as keyof typeof metricToneClasses].labelClass}`}
             >
               {label}
             </p>
@@ -523,10 +524,9 @@ const EmailSettingsData = () => {
         <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
           <i className="pi pi-exclamation-triangle mt-0.5 text-rose-600" />
           <div>
-            <p className="m-0 font-semibold">Email delivery needs attention</p>
+            <p className="m-0 font-semibold">{i18nT("static.1bnm64m")}</p>
             <p className="m-0 mt-1 text-sm text-rose-800">
-              Failed email count has reached the configured alert threshold.
-              Review the history and retry eligible messages.
+              {i18nT("static.1og0adg")}{" "}
             </p>
           </div>
         </div>
@@ -538,11 +538,10 @@ const EmailSettingsData = () => {
             <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
                 <h2 className="m-0 text-lg font-semibold text-slate-800">
-                  Delivery configuration
+                  {i18nT("static.rw93ov")}{" "}
                 </h2>
                 <p className="m-0 mt-1 text-sm text-slate-500">
-                  SMTP credentials stay in deployment secrets. These fields are
-                  safe operational settings.
+                  {i18nT("static.1u24ne9")}{" "}
                 </p>
               </div>
               <InputSwitch
@@ -558,7 +557,7 @@ const EmailSettingsData = () => {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm text-slate-600">
-                SMTP host
+                {i18nT("static.1l3bsu5")}{" "}
                 <InputText
                   value={settingsDraft.smtp_host ?? ""}
                   disabled={!canUpdateEmailSettings}
@@ -569,11 +568,11 @@ const EmailSettingsData = () => {
                     }))
                   }
                   className="mt-1 w-full"
-                  placeholder="smtp.gmail.com"
+                  placeholder={i18nT("static.ge5bi2")}
                 />
               </label>
               <label className="text-sm text-slate-600">
-                SMTP port
+                {i18nT("static.g62h3g")}{" "}
                 <InputNumber
                   value={settingsDraft.smtp_port}
                   disabled={!canUpdateEmailSettings}
@@ -590,7 +589,7 @@ const EmailSettingsData = () => {
                 />
               </label>
               <label className="text-sm text-slate-600">
-                TLS mode
+                {i18nT("static.m5yhph")}{" "}
                 <Dropdown
                   value={settingsDraft.smtp_tls_mode}
                   disabled={!canUpdateEmailSettings}
@@ -605,7 +604,7 @@ const EmailSettingsData = () => {
                 />
               </label>
               <label className="text-sm text-slate-600">
-                From name
+                {i18nT("static.avniek")}{" "}
                 <InputText
                   value={settingsDraft.from_name ?? ""}
                   disabled={!canUpdateEmailSettings}
@@ -619,7 +618,7 @@ const EmailSettingsData = () => {
                 />
               </label>
               <label className="text-sm text-slate-600">
-                Reply-to
+                {i18nT("static.1ouj3z7")}{" "}
                 <InputText
                   value={settingsDraft.reply_to ?? ""}
                   disabled={!canUpdateEmailSettings}
@@ -630,11 +629,11 @@ const EmailSettingsData = () => {
                     }))
                   }
                   className="mt-1 w-full"
-                  placeholder="Optional"
+                  placeholder={i18nT("static.1yfbac9")}
                 />
               </label>
               <label className="text-sm text-slate-600">
-                Subject suffix
+                {i18nT("static.1ufu41w")}{" "}
                 <InputText
                   value={settingsDraft.subject_suffix ?? ""}
                   disabled={!canUpdateEmailSettings}
@@ -648,7 +647,7 @@ const EmailSettingsData = () => {
                 />
               </label>
               <label className="text-sm text-slate-600">
-                Max concurrent sends
+                {i18nT("static.z9imip")}{" "}
                 <InputNumber
                   value={settingsDraft.max_concurrency}
                   disabled={!canUpdateEmailSettings}
@@ -665,7 +664,7 @@ const EmailSettingsData = () => {
                 />
               </label>
               <label className="text-sm text-slate-600">
-                Worker interval (seconds)
+                {i18nT("static.yjerf0")}{" "}
                 <InputNumber
                   value={settingsDraft.worker_interval_seconds}
                   disabled={!canUpdateEmailSettings}
@@ -682,7 +681,7 @@ const EmailSettingsData = () => {
                 />
               </label>
               <label className="text-sm text-slate-600">
-                Failure alert threshold
+                {i18nT("static.1aiqyfs")}{" "}
                 <InputNumber
                   value={settingsDraft.failure_alert_threshold}
                   disabled={!canUpdateEmailSettings}
@@ -701,12 +700,14 @@ const EmailSettingsData = () => {
             </div>
             <div className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 sm:flex-row sm:items-center sm:justify-between">
               <span>
-                Deployment secret:{" "}
-                {settings?.secret_configured ? "configured" : "not detected"}
+                {i18nT("static.1n1vb00")}{" "}
+                {settings?.secret_configured
+                  ? i18nT("static.1apj0fx")
+                  : i18nT("static.prih68")}
               </span>
               {canUpdateEmailSettings && (
                 <Button
-                  label="Save settings"
+                  label={i18nT("static.qh1tut")}
                   icon="pi pi-check"
                   loading={isSavingSettings}
                   disabled={!settings || isSavingSettings}
@@ -723,22 +724,21 @@ const EmailSettingsData = () => {
             <div className="space-y-4 p-1">
               <div>
                 <h2 className="m-0 text-lg font-semibold text-slate-800">
-                  Test delivery
+                  {i18nT("static.gnhm2n")}{" "}
                 </h2>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Sends one diagnostic message using the current secret and
-                  non-secret settings.
+                  {i18nT("static.ubn6g6")}{" "}
                 </p>
               </div>
               <InputText
                 value={testEmail}
                 onChange={(event) => setTestEmail(event.target.value)}
                 className="w-full"
-                placeholder="recipient@example.com"
+                placeholder={i18nT("static.vv3jad")}
                 type="email"
               />
               <Button
-                label="Send test email"
+                label={i18nT("static.8snnv9")}
                 icon="pi pi-send"
                 outlined
                 loading={isTesting}
@@ -747,8 +747,7 @@ const EmailSettingsData = () => {
                 className="w-full"
               />
               <p className="m-0 text-xs leading-5 text-slate-400">
-                Test sends are not used for business notifications. Business
-                email remains durable in outbox history.
+                {i18nT("static.ftj5sv")}{" "}
               </p>
             </div>
           </Card>
@@ -762,11 +761,10 @@ const EmailSettingsData = () => {
       <div className="space-y-4 p-1">
         <div>
           <h2 className="m-0 text-lg font-semibold text-slate-800">
-            Notification rules
+            {i18nT("static.wws9gl")}{" "}
           </h2>
           <p className="m-0 mt-1 text-sm text-slate-500">
-            Existing channel choices are preserved. New rollout events start
-            disabled until explicitly enabled.
+            {i18nT("static.1h187ch")}{" "}
           </p>
         </div>
         <DataTable
@@ -776,11 +774,11 @@ const EmailSettingsData = () => {
           paginator
           rows={12}
           responsiveLayout="scroll"
-          emptyMessage="No notification rules found."
+          emptyMessage={i18nT("static.2yexog")}
         >
           <Column
             field="event_code"
-            header="Event"
+            header={i18nT("static.1lrcegv")}
             body={(row: NotificationRule) => (
               <span className="font-medium text-slate-800">
                 {labelize(row.event_code)}
@@ -789,14 +787,14 @@ const EmailSettingsData = () => {
           />
           <Column
             field="module_code"
-            header="Module"
+            header={i18nT("static.1inmx8d")}
             body={(row: NotificationRule) => (
               <Tag value={labelize(row.module_code)} severity="info" rounded />
             )}
           />
           <Column
             field="description"
-            header="Description"
+            header={i18nT("static.sjj37t")}
             body={(row: NotificationRule) => (
               <span className="text-sm text-slate-500">
                 {row.description || "-"}
@@ -804,7 +802,7 @@ const EmailSettingsData = () => {
             )}
           />
           <Column
-            header="In-app"
+            header={i18nT("static.8648d4")}
             body={(row: NotificationRule) => (
               <InputSwitch
                 checked={row.in_app_enabled}
@@ -818,7 +816,7 @@ const EmailSettingsData = () => {
             )}
           />
           <Column
-            header="Email"
+            header={i18nT("static.inbfc7")}
             body={(row: NotificationRule) => (
               <InputSwitch
                 checked={row.email_enabled}
@@ -832,7 +830,7 @@ const EmailSettingsData = () => {
             )}
           />
           <Column
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={(row: NotificationRule) => (
               <InputSwitch
                 checked={row.is_active}
@@ -847,7 +845,7 @@ const EmailSettingsData = () => {
           />
           <Column
             field="updated_at"
-            header="Updated"
+            header={i18nT("static.miz9ao")}
             body={(row: NotificationRule) => (
               <span className="whitespace-nowrap text-sm text-slate-500">
                 {formatDate(row.updated_at)}
@@ -865,16 +863,16 @@ const EmailSettingsData = () => {
         <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="m-0 text-lg font-semibold text-slate-800">
-              Email templates
+              {i18nT("static.1k3vqaw")}{" "}
             </h2>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Use safe placeholders such as {"{{employee_name}}"} and{" "}
-              {"{{action_url}}"}.
+              {i18nT("static.1w50ly4")} {i18nT("static.1j8z6m9")}{" "}
+              {i18nT("static.47gkh2")} {i18nT("static.3wuisl")}.
             </p>
           </div>
           {canUpdateEmailTemplates && (
             <Button
-              label="New template"
+              label={i18nT("static.17y9e6p")}
               icon="pi pi-plus"
               size="small"
               onClick={() => openTemplate()}
@@ -888,24 +886,28 @@ const EmailSettingsData = () => {
           paginator
           rows={10}
           responsiveLayout="scroll"
-          emptyMessage="No email templates configured. Generic fallback email remains active."
+          emptyMessage={i18nT("static.1xeoif5")}
         >
           <Column
             field="code"
-            header="Code"
+            header={i18nT("static.xoaiok")}
             body={(row: EmailTemplate) => (
               <span className="font-mono text-xs text-slate-700">
                 {row.code}
               </span>
             )}
           />
-          <Column field="name" header="Name" />
-          <Column field="module_code" header="Module" />
+          <Column field="name" header={i18nT("static.4el6o6")} />
+          <Column field="module_code" header={i18nT("static.1inmx8d")} />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: EmailTemplate) => (
               <Tag
-                value={row.is_active ? "Active" : "Inactive"}
+                value={
+                  row.is_active
+                    ? i18nT("static.8qzyhb")
+                    : i18nT("static.13zf5vc")
+                }
                 severity={row.is_active ? "success" : "secondary"}
                 rounded
               />
@@ -913,19 +915,19 @@ const EmailSettingsData = () => {
           />
           <Column
             field="updated_at"
-            header="Updated"
+            header={i18nT("static.miz9ao")}
             body={(row: EmailTemplate) => formatDate(row.updated_at)}
           />
           {canUpdateEmailTemplates && (
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={(row: EmailTemplate) => (
                 <Button
                   icon="pi pi-pencil"
                   rounded
                   outlined
                   size="small"
-                  tooltip="Edit template"
+                  tooltip={i18nT("static.15if7rl")}
                   onClick={() => openTemplate(row)}
                 />
               )}
@@ -942,26 +944,28 @@ const EmailSettingsData = () => {
         <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h2 className="m-0 text-lg font-semibold text-slate-800">
-              Outgoing email history
+              {i18nT("static.1nb7px7")}{" "}
             </h2>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Every retry has an attempt record. Resend creates a new linked
-              outbox row.
+              {i18nT("static.tas5cc")}{" "}
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Dropdown
               value={historyStatus}
-              options={historyStatusOptions}
+              options={historyStatusOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               onChange={(event) => setHistoryStatus(event.value)}
-              placeholder="All statuses"
+              placeholder={i18nT("static.u1q98u")}
               className="w-full sm:w-44"
             />
             <InputNumber
               value={cleanupDays}
               onValueChange={(event) => setCleanupDays(event.value ?? 90)}
               disabled={!canUpdateEmailOutbox}
-              suffix=" days"
+              suffix={i18nT("static.1wewy2y")}
               min={1}
               max={3650}
               className="w-full sm:w-32"
@@ -969,7 +973,7 @@ const EmailSettingsData = () => {
             />
             {canUpdateEmailOutbox && (
               <Button
-                label="Purge content"
+                label={i18nT("static.1w72z95")}
                 icon="pi pi-eraser"
                 severity="secondary"
                 outlined
@@ -986,11 +990,11 @@ const EmailSettingsData = () => {
           paginator
           rows={15}
           responsiveLayout="scroll"
-          emptyMessage="No outgoing email history found."
+          emptyMessage={i18nT("static.493r3q")}
         >
           <Column
             field="created_at"
-            header="Created"
+            header={i18nT("static.2qkacb")}
             body={(row: EmailOutboxHistoryItem) => (
               <span className="whitespace-nowrap text-sm">
                 {formatDate(row.created_at)}
@@ -1000,14 +1004,14 @@ const EmailSettingsData = () => {
           />
           <Column
             field="to_email"
-            header="Recipient"
+            header={i18nT("static.1oncz6g")}
             body={(row: EmailOutboxHistoryItem) => (
               <span className="text-sm">{row.to_email}</span>
             )}
           />
           <Column
             field="subject"
-            header="Subject"
+            header={i18nT("static.18ix78v")}
             body={(row: EmailOutboxHistoryItem) => (
               <span className="max-w-[20rem] truncate text-sm text-slate-700">
                 {row.subject}
@@ -1016,24 +1020,24 @@ const EmailSettingsData = () => {
           />
           <Column
             field="status"
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: EmailOutboxHistoryItem) => (
               <Tag
-                value={row.status}
+                value={i18nT(formatStatusLabel(row.status))}
                 severity={statusSeverity(row.status)}
                 rounded
               />
             )}
           />
           <Column
-            header="Attempts"
+            header={i18nT("static.1scdpc7")}
             body={(row: EmailOutboxHistoryItem) =>
               `${row.retry_count}/${row.max_retry}`
             }
           />
           <Column
             field="last_error"
-            header="Last error"
+            header={i18nT("static.1a7xgo3")}
             body={(row: EmailOutboxHistoryItem) => (
               <span className="max-w-[16rem] truncate text-xs text-rose-700">
                 {row.last_error || "-"}
@@ -1041,7 +1045,7 @@ const EmailSettingsData = () => {
             )}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={(row: EmailOutboxHistoryItem) => (
               <div className="flex gap-2">
                 <Button
@@ -1049,7 +1053,7 @@ const EmailSettingsData = () => {
                   rounded
                   outlined
                   size="small"
-                  tooltip="View detail"
+                  tooltip={i18nT("static.1dtxu7d")}
                   onClick={() => openHistoryDetail(row)}
                 />
                 {canUpdateEmailOutbox && (
@@ -1061,8 +1065,8 @@ const EmailSettingsData = () => {
                     size="small"
                     tooltip={
                       row.content_purged_at
-                        ? "Content purged; resend unavailable"
-                        : "Queue resend"
+                        ? i18nT("static.zx3qjd")
+                        : i18nT("static.4czexv")
                     }
                     disabled={
                       !["FAILED", "SENT", "CANCELLED"].includes(row.status) ||
@@ -1095,17 +1099,15 @@ const EmailSettingsData = () => {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Email Configuration
+                  {i18nT("static.cnm0k9")}{" "}
                 </h1>
                 <p className="m-0 mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-                  Configure business email delivery, notification channels,
-                  templates, and durable resend history without putting SMTP
-                  work on request handlers.
+                  {i18nT("static.1vik1j9")}{" "}
                 </p>
               </div>
             </div>
             <Button
-              label="Refresh"
+              label={i18nT("static.28r6qc")}
               icon="pi pi-refresh"
               severity="secondary"
               outlined
@@ -1143,7 +1145,9 @@ const EmailSettingsData = () => {
       </Card>
 
       <Dialog
-        header={selectedTemplate ? "Edit email template" : "New email template"}
+        header={
+          selectedTemplate ? i18nT("static.1bidgm9") : i18nT("static.f071b5")
+        }
         visible={templateDialogVisible}
         onHide={() => !isSavingTemplate && setTemplateDialogVisible(false)}
         style={{ width: "min(900px, 96vw)" }}
@@ -1152,7 +1156,7 @@ const EmailSettingsData = () => {
         <div className="space-y-4 pt-2">
           <div className="grid gap-4 md:grid-cols-3">
             <label className="text-sm text-slate-600">
-              Code
+              {i18nT("static.xoaiok")}{" "}
               <InputText
                 value={templateDraft.code}
                 disabled={!canUpdateEmailTemplates || Boolean(selectedTemplate)}
@@ -1166,7 +1170,7 @@ const EmailSettingsData = () => {
               />
             </label>
             <label className="text-sm text-slate-600">
-              Module
+              {i18nT("static.1inmx8d")}{" "}
               <InputText
                 value={templateDraft.module_code}
                 disabled={!canUpdateEmailTemplates}
@@ -1180,7 +1184,7 @@ const EmailSettingsData = () => {
               />
             </label>
             <label className="text-sm text-slate-600">
-              Name
+              {i18nT("static.4el6o6")}{" "}
               <InputText
                 value={templateDraft.name}
                 disabled={!canUpdateEmailTemplates}
@@ -1195,7 +1199,7 @@ const EmailSettingsData = () => {
             </label>
           </div>
           <label className="block text-sm text-slate-600">
-            Description
+            {i18nT("static.sjj37t")}{" "}
             <InputText
               value={templateDraft.description ?? ""}
               disabled={!canUpdateEmailTemplates}
@@ -1209,7 +1213,7 @@ const EmailSettingsData = () => {
             />
           </label>
           <label className="block text-sm text-slate-600">
-            Subject template
+            {i18nT("static.1jyzwn7")}{" "}
             <InputText
               value={templateDraft.subject_template}
               disabled={!canUpdateEmailTemplates}
@@ -1223,7 +1227,7 @@ const EmailSettingsData = () => {
             />
           </label>
           <label className="block text-sm text-slate-600">
-            HTML template
+            {i18nT("static.f11zsq")}{" "}
             <InputTextarea
               value={templateDraft.body_html_template}
               disabled={!canUpdateEmailTemplates}
@@ -1239,7 +1243,7 @@ const EmailSettingsData = () => {
             />
           </label>
           <label className="block text-sm text-slate-600">
-            Plain text template
+            {i18nT("static.d8o7ng")}{" "}
             <InputTextarea
               value={templateDraft.body_text_template ?? ""}
               disabled={!canUpdateEmailTemplates}
@@ -1255,7 +1259,9 @@ const EmailSettingsData = () => {
             />
           </label>
           <div className="flex items-center justify-between rounded-lg border border-slate-200 p-3">
-            <span className="text-sm text-slate-600">Active template</span>
+            <span className="text-sm text-slate-600">
+              {i18nT("static.v61p7n")}
+            </span>
             <InputSwitch
               checked={templateDraft.is_active}
               disabled={!canUpdateEmailTemplates}
@@ -1270,10 +1276,10 @@ const EmailSettingsData = () => {
           {preview && (
             <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-3">
               <p className="m-0 text-sm font-medium text-blue-900">
-                Preview: {preview.subject}
+                {i18nT("static.tvazsn")} {preview.subject}
               </p>
               <iframe
-                title="Email template preview"
+                title={i18nT("static.1wsc56z")}
                 sandbox=""
                 srcDoc={preview.body_html}
                 className="h-64 w-full rounded border border-blue-100 bg-white"
@@ -1282,14 +1288,14 @@ const EmailSettingsData = () => {
           )}
           <div className="flex flex-col-reverse justify-end gap-2 sm:flex-row">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               text
               severity="secondary"
               disabled={isSavingTemplate}
               onClick={() => setTemplateDialogVisible(false)}
             />
             <Button
-              label="Preview"
+              label={i18nT("static.1yfnwtz")}
               icon="pi pi-eye"
               outlined
               loading={previewingCode === templateDraft.code}
@@ -1297,7 +1303,7 @@ const EmailSettingsData = () => {
             />
             {canUpdateEmailTemplates && (
               <Button
-                label="Save template"
+                label={i18nT("static.eohzoi")}
                 icon="pi pi-check"
                 loading={isSavingTemplate}
                 onClick={saveTemplate}
@@ -1308,7 +1314,7 @@ const EmailSettingsData = () => {
       </Dialog>
 
       <Dialog
-        header="Email delivery detail"
+        header={i18nT("static.17dn1ta")}
         visible={Boolean(selectedHistory) || isLoadingDetail}
         onHide={() => !isLoadingDetail && setSelectedHistory(null)}
         style={{ width: "min(800px, 96vw)" }}
@@ -1318,53 +1324,60 @@ const EmailSettingsData = () => {
           <div className="space-y-4">
             <div className="grid gap-3 text-sm sm:grid-cols-2">
               <div>
-                <span className="text-slate-500">Recipient</span>
+                <span className="text-slate-500">
+                  {i18nT("static.1oncz6g")}
+                </span>
                 <p className="m-0 font-medium">{selectedHistory.to_email}</p>
               </div>
               <div>
-                <span className="text-slate-500">Status</span>
+                <span className="text-slate-500">{i18nT("static.3pd73")}</span>
                 <p className="m-0">
                   <Tag
-                    value={selectedHistory.status}
+                    value={i18nT(formatStatusLabel(selectedHistory.status))}
                     severity={statusSeverity(selectedHistory.status)}
                     rounded
                   />
                 </p>
               </div>
               <div>
-                <span className="text-slate-500">Subject</span>
+                <span className="text-slate-500">
+                  {i18nT("static.18ix78v")}
+                </span>
                 <p className="m-0">{selectedHistory.subject}</p>
               </div>
               <div>
-                <span className="text-slate-500">Created</span>
+                <span className="text-slate-500">{i18nT("static.2qkacb")}</span>
                 <p className="m-0">{formatDate(selectedHistory.created_at)}</p>
               </div>
             </div>
             <div>
               <p className="mb-2 text-sm font-medium text-slate-700">
-                Attempts
+                {i18nT("static.1scdpc7")}{" "}
               </p>
               <DataTable
                 value={selectedHistory.attempts}
                 size="small"
-                emptyMessage="No attempt records yet."
+                emptyMessage={i18nT("static.m3a1sb")}
               >
                 <Column field="attempt_no" header="#" />
-                <Column field="status" header="Status" />
+                <Column field="status" header={i18nT("static.3pd73")} />
                 <Column
                   field="started_at"
-                  header="Started"
+                  header={i18nT("static.163dnb2")}
                   body={(row) => formatDate(row.started_at)}
                 />
-                <Column field="error_message" header="Error" />
+                <Column
+                  field="error_message"
+                  header={i18nT("static.1vks92p")}
+                />
               </DataTable>
             </div>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                HTML body
+                {i18nT("static.1evxbek")}{" "}
               </p>
               <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs text-slate-600">
-                {selectedHistory.body_html || "[content purged]"}
+                {selectedHistory.body_html || i18nT("static.j4bf0b")}
               </pre>
             </div>
           </div>

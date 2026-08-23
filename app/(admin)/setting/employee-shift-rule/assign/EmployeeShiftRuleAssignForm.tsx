@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,6 +94,7 @@ const isSchedulePreviewStaleError = (error: unknown) =>
   isResponseTypeError(error) && error.code === "SCHEDULE_PREVIEW_STALE";
 
 const EmployeeShiftRuleAssignForm = () => {
+  const { t: i18nT } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -303,7 +305,7 @@ const EmployeeShiftRuleAssignForm = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -314,7 +316,7 @@ const EmployeeShiftRuleAssignForm = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Validation",
+        summary: i18nT("static.gy1qqi"),
         detail: message,
       }),
     );
@@ -326,7 +328,7 @@ const EmployeeShiftRuleAssignForm = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -339,7 +341,7 @@ const EmployeeShiftRuleAssignForm = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -351,8 +353,8 @@ const EmployeeShiftRuleAssignForm = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -483,31 +485,31 @@ const EmployeeShiftRuleAssignForm = () => {
 
   const validateAssignment = () => {
     if (selectedIds.size === 0) {
-      showWarning("Select at least one employee.");
+      showWarning(i18nT("static.rlgmd1"));
 
       return false;
     }
 
     if (!shiftRule) {
-      showWarning("Shift rule is required.");
+      showWarning(i18nT("static.1ewgjwo"));
 
       return false;
     }
 
     if (!effectiveFrom) {
-      showWarning("Effective From is required.");
+      showWarning(i18nT("static.1ryngff"));
 
       return false;
     }
 
     if (!effectiveTo) {
-      showWarning("Effective To is required for a schedule change.");
+      showWarning(i18nT("static.1kajgm9"));
 
       return false;
     }
 
     if (hasInvalidDateRange) {
-      showWarning("Effective From cannot be later than Effective To.");
+      showWarning(i18nT("static.1el5hxj"));
 
       return false;
     }
@@ -553,9 +555,7 @@ const EmployeeShiftRuleAssignForm = () => {
       setPreview(response.data);
 
       if (response.data.conflicts.length > 0) {
-        showWarning(
-          "Preview generated. Resolve the listed conflicts before applying.",
-        );
+        showWarning(i18nT("static.65xp7k"));
       }
     } catch (err: unknown) {
       showError(err);
@@ -577,15 +577,13 @@ const EmployeeShiftRuleAssignForm = () => {
     try {
       setIsAssigning(true);
       const response = await applyEmployeeScheduleChange(payload);
-      showSuccess(response.message || "Schedule change applied successfully.");
+      showSuccess(response.message || i18nT("static.1wnk2rw"));
       resetPage();
       router.push("/setting/employee-shift-assignment");
     } catch (err: unknown) {
       if (isSchedulePreviewStaleError(err)) {
         setPreview(null);
-        showWarning(
-          "The schedule changed after the preview. Generate a new preview before applying.",
-        );
+        showWarning(i18nT("static.1t477m1"));
         return;
       }
 
@@ -606,41 +604,39 @@ const EmployeeShiftRuleAssignForm = () => {
     }
 
     if (!preview.can_apply) {
-      showWarning("The preview contains blocking conflicts.");
+      showWarning(i18nT("static.449r5f"));
       return;
     }
 
     requestActionConfirmation({
-      header: "Apply Schedule Change",
+      header: i18nT("static.14lv1xk"),
 
       message: (
         <div className="flex flex-col gap-3">
-          <span className="text-slate-600">
-            Apply the previewed Shift Rule and regenerate the affected Daily
-            Schedule rows?
-          </span>
+          <span className="text-slate-600">{i18nT("static.emss5")} </span>
 
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-              <span className="text-slate-500">Shift Rule</span>
+              <span className="text-slate-500">{i18nT("static.qlsvoz")}</span>
 
               <span className="font-semibold text-slate-800">
                 {selectedRule?.name || "-"}
               </span>
 
-              <span className="text-slate-500">Employees</span>
+              <span className="text-slate-500">{i18nT("static.f4bo3a")}</span>
 
               <span className="font-semibold text-slate-800">
                 {selectedIds.size}
               </span>
 
-              <span className="text-slate-500">Period</span>
+              <span className="text-slate-500">{i18nT("static.11hwh7o")}</span>
 
               <span className="font-semibold text-slate-800">
-                {formatDate(effectiveFrom)} – {formatDate(effectiveTo)}
+                {formatDate(effectiveFrom)} {i18nT("static.hnl64v")}{" "}
+                {formatDate(effectiveTo)}
               </span>
 
-              <span className="text-slate-500">Daily Schedule updates</span>
+              <span className="text-slate-500">{i18nT("static.1evh1st")}</span>
 
               <span className="font-semibold text-slate-800">
                 {preview.totals.assignments_to_insert +
@@ -648,10 +644,10 @@ const EmployeeShiftRuleAssignForm = () => {
                   preview.totals.assignments_to_archive}
               </span>
 
-              <span className="text-slate-500">Attendance policy</span>
+              <span className="text-slate-500">{i18nT("static.1asxuco")}</span>
 
               <span className="font-semibold text-slate-800">
-                {overwrite ? "Overwrite and reprocess" : "Block final rows"}
+                {overwrite ? i18nT("static.60179x") : i18nT("static.1eg1a6j")}
               </span>
             </div>
           </div>
@@ -660,10 +656,7 @@ const EmployeeShiftRuleAssignForm = () => {
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">
               <i className="pi pi-exclamation-triangle mt-0.5" />
 
-              <span>
-                Final attendance rows will be reprocessed in the same atomic
-                transaction.
-              </span>
+              <span>{i18nT("static.1exiif6")} </span>
             </div>
           )}
         </div>
@@ -683,7 +676,7 @@ const EmployeeShiftRuleAssignForm = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -692,7 +685,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
           <Button
             type="button"
-            label="Apply"
+            label={i18nT("static.1k6e5zv")}
             icon="pi pi-check"
             severity={overwrite ? "warning" : "success"}
             onClick={options.accept}
@@ -761,11 +754,11 @@ const EmployeeShiftRuleAssignForm = () => {
     return (
       <div className="flex min-w-0 flex-col gap-1">
         <span className="truncate text-sm font-medium text-slate-700">
-          {row.department_name || "No department"}
+          {row.department_name || i18nT("static.1nlh2ss")}
         </span>
 
         <span className="truncate text-xs text-slate-500">
-          {row.position_name || "No position"}
+          {row.position_name || i18nT("static.1hijdjd")}
         </span>
       </div>
     );
@@ -783,9 +776,14 @@ const EmployeeShiftRuleAssignForm = () => {
 
   const selectedBody = (row: EmployeeListRow) => {
     return selectedIds.has(row.id) ? (
-      <Tag value="Selected" severity="success" icon="pi pi-check" rounded />
+      <Tag
+        value={i18nT("static.1ucoec4")}
+        severity="success"
+        icon="pi pi-check"
+        rounded
+      />
     ) : (
-      <span className="text-sm text-slate-400">Not selected</span>
+      <span className="text-sm text-slate-400">{i18nT("static.8frm9z")}</span>
     );
   };
 
@@ -819,8 +817,8 @@ const EmployeeShiftRuleAssignForm = () => {
                   rounded
                   text
                   severity="secondary"
-                  aria-label="Back"
-                  tooltip="Back to Employee Shift Rule"
+                  aria-label={i18nT("static.1hzmxtu")}
+                  tooltip={i18nT("static.e6sye1")}
                   tooltipOptions={{
                     appendTo: getBody,
                     position: "top",
@@ -834,19 +832,22 @@ const EmployeeShiftRuleAssignForm = () => {
 
                 <div className="min-w-0">
                   <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                    Mass Schedule Change
+                    {i18nT("static.15ge9fu")}{" "}
                   </h1>
 
                   <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                    Apply one Shift Rule to many employees and synchronize the
-                    Daily Schedule for the selected period.
+                    {i18nT("static.6x84cg")}{" "}
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Tag value="Employee Shift Rule" severity="info" rounded />
+                    <Tag
+                      value={i18nT("static.fywzdp")}
+                      severity="info"
+                      rounded
+                    />
 
                     <Tag
-                      value="Preview before apply"
+                      value={i18nT("static.va4xz6")}
                       severity="success"
                       rounded
                     />
@@ -856,7 +857,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -872,16 +873,9 @@ const EmployeeShiftRuleAssignForm = () => {
               <i className="pi pi-info-circle mt-1 shrink-0" />
 
               <div>
-                <p className="m-0 font-semibold">
-                  Atomic rule and Daily Schedule change
-                </p>
+                <p className="m-0 font-semibold">{i18nT("static.19itws9")} </p>
 
-                <p className="m-0 mt-1">
-                  The system splits overlapping Employee Shift Rules, keeps the
-                  original rotation anchor after an exception, and updates only
-                  generated Daily Schedule rows. Manual or locked rows are
-                  reported as conflicts.
-                </p>
+                <p className="m-0 mt-1">{i18nT("static.147kc1o")} </p>
               </div>
             </div>
           </div>
@@ -890,7 +884,9 @@ const EmployeeShiftRuleAssignForm = () => {
         {/* Summary */}
         <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="m-0 text-xs text-slate-500">Available Employees</p>
+            <p className="m-0 text-xs text-slate-500">
+              {i18nT("static.1bufc81")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
               {employees.length}
@@ -898,7 +894,9 @@ const EmployeeShiftRuleAssignForm = () => {
           </div>
 
           <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 shadow-sm">
-            <p className="m-0 text-xs text-blue-700">Selected Employees</p>
+            <p className="m-0 text-xs text-blue-700">
+              {i18nT("static.tzr2gd")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
               {selectedIds.size}
@@ -906,7 +904,9 @@ const EmployeeShiftRuleAssignForm = () => {
           </div>
 
           <div className="rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm">
-            <p className="m-0 text-xs text-green-700">Selected Departments</p>
+            <p className="m-0 text-xs text-green-700">
+              {i18nT("static.i9hyff")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
               {selectedDepartmentCount}
@@ -914,7 +914,9 @@ const EmployeeShiftRuleAssignForm = () => {
           </div>
 
           <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
-            <p className="m-0 text-xs text-indigo-700">Selected Positions</p>
+            <p className="m-0 text-xs text-indigo-700">
+              {i18nT("static.tv5ef8")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-indigo-800">
               {selectedPositionCount}
@@ -922,7 +924,9 @@ const EmployeeShiftRuleAssignForm = () => {
           </div>
 
           <div className="col-span-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:col-span-1">
-            <p className="m-0 text-xs text-slate-500">Filtered Employees</p>
+            <p className="m-0 text-xs text-slate-500">
+              {i18nT("static.z2jt2v")}
+            </p>
 
             <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
               {filteredEmployees.length}
@@ -936,17 +940,16 @@ const EmployeeShiftRuleAssignForm = () => {
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Employee Selection
+                  {i18nT("static.sadvsn")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Search employees, select employees by department or position,
-                  then adjust individual selections manually.
+                  {i18nT("static.1tfchfx")}{" "}
                 </p>
               </div>
 
               <Tag
-                value={`${selectedIds.size} selected`}
+                value={i18nT("static.fkvuu6", { p0: selectedIds.size })}
                 severity={selectedIds.size > 0 ? "success" : "secondary"}
                 rounded
               />
@@ -958,7 +961,7 @@ const EmployeeShiftRuleAssignForm = () => {
               <InputText
                 value={search}
                 autoFocus
-                placeholder="Search employee, code, department, position, branch, or agency"
+                placeholder={i18nT("static.1wi6rlh")}
                 className="w-full"
                 disabled={isAssigning}
                 onChange={(event: ChangeEvent<HTMLInputElement>) =>
@@ -971,19 +974,17 @@ const EmployeeShiftRuleAssignForm = () => {
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
-                  Select by Department
+                  {i18nT("static.1tmn1k4")}{" "}
                 </h3>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Selecting a department selects all employees in that
-                  department. Manual and position selections remain
-                  synchronized.
+                  {i18nT("static.qf0w6u")}{" "}
                 </p>
               </div>
 
               {departments.length === 0 ? (
                 <p className="m-0 text-sm text-slate-500">
-                  No department data is available.
+                  {i18nT("static.cr7i5n")}{" "}
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -1039,18 +1040,17 @@ const EmployeeShiftRuleAssignForm = () => {
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3">
                 <h3 className="m-0 text-sm font-semibold text-slate-800">
-                  Select by Position
+                  {i18nT("static.1ybw07l")}{" "}
                 </h3>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Selecting a position selects all employees assigned to that
-                  position across all departments.
+                  {i18nT("static.xn3bfo")}{" "}
                 </p>
               </div>
 
               {positions.length === 0 ? (
                 <p className="m-0 text-sm text-slate-500">
-                  No position data is available.
+                  {i18nT("static.i3hc9w")}{" "}
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -1104,7 +1104,7 @@ const EmployeeShiftRuleAssignForm = () => {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
-                label="Select Filtered"
+                label={i18nT("static.9fc2ug")}
                 icon="pi pi-check-square"
                 severity="secondary"
                 outlined
@@ -1115,7 +1115,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <Button
                 type="button"
-                label="Clear Filtered"
+                label={i18nT("static.1qfq1up")}
                 icon="pi pi-minus-circle"
                 severity="secondary"
                 outlined
@@ -1126,7 +1126,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <Button
                 type="button"
-                label="Clear All"
+                label={i18nT("static.1pqh2hx")}
                 icon="pi pi-filter-slash"
                 severity="danger"
                 text
@@ -1153,8 +1153,8 @@ const EmployeeShiftRuleAssignForm = () => {
                 tableStyle={{
                   minWidth: "76rem",
                 }}
-                emptyMessage="No employee data found."
-                currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                emptyMessage={i18nT("static.1l60s88")}
+                currentPageReportTemplate={i18nT("static.1kqh8lr")}
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 onRowClick={(event) =>
                   toggleEmployee((event.data as EmployeeListRow).id)
@@ -1173,7 +1173,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
                 <Column
                   field="full_name"
-                  header="Employee"
+                  header={i18nT("static.1fak8xt")}
                   sortable
                   body={employeeBody}
                   style={{
@@ -1183,7 +1183,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
                 <Column
                   field="department_name"
-                  header="Organization"
+                  header={i18nT("static.725tl6")}
                   sortable
                   body={organizationBody}
                   style={{
@@ -1193,7 +1193,7 @@ const EmployeeShiftRuleAssignForm = () => {
 
                 <Column
                   field="agency_name"
-                  header="Branch / Agency"
+                  header={i18nT("static.v94987")}
                   sortable
                   body={locationBody}
                   style={{
@@ -1202,7 +1202,7 @@ const EmployeeShiftRuleAssignForm = () => {
                 />
 
                 <Column
-                  header="Selection"
+                  header={i18nT("static.1gp08mt")}
                   body={selectedBody}
                   style={{
                     minWidth: "12rem",
@@ -1219,20 +1219,17 @@ const EmployeeShiftRuleAssignForm = () => {
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Shift Configuration
+                  {i18nT("static.6wwes9")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Select the existing Shift Rule and the exact exception period.
-                  The server will preview every rule and Daily Schedule change.
+                  {i18nT("static.77pz7e")}{" "}
                 </p>
               </div>
 
               <Tag
                 value={
-                  overwrite
-                    ? "Reprocess Final Attendance"
-                    : "Block Final Attendance"
+                  overwrite ? i18nT("static.j9n4k8") : i18nT("static.2az7sd")
                 }
                 severity={overwrite ? "warning" : "info"}
                 icon={overwrite ? "pi pi-exclamation-triangle" : "pi pi-shield"}
@@ -1246,7 +1243,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   htmlFor="shift_rule_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Shift Rule
+                  {i18nT("static.qlsvoz")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1261,7 +1258,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   showClear
                   loading={shiftRuleIsLoading}
                   disabled={shiftRuleIsLoading || isAssigning}
-                  placeholder="Select shift rule"
+                  placeholder={i18nT("static.1tvus0p")}
                   className="w-full"
                   onChange={(event) => {
                     setShiftRule(event.value ?? null);
@@ -1275,7 +1272,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   htmlFor="effective_from"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Effective From
+                  {i18nT("static.ypbwia")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1287,7 +1284,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   showIcon
                   maxDate={effectiveTo ?? undefined}
                   disabled={isAssigning}
-                  placeholder="Select start date"
+                  placeholder={i18nT("static.h39lib")}
                   className="w-full"
                   onChange={(event) => {
                     const newDate = (event.value as Date | null) ?? null;
@@ -1311,7 +1308,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   htmlFor="effective_to"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Effective To
+                  {i18nT("static.mtbgcr")}{" "}
                   <span className="ml-1 text-red-500">*</span>
                 </label>
 
@@ -1323,7 +1320,7 @@ const EmployeeShiftRuleAssignForm = () => {
                   showIcon
                   minDate={effectiveFrom ?? undefined}
                   disabled={isAssigning}
-                  placeholder="Select end date"
+                  placeholder={i18nT("static.12xc3jc")}
                   className="w-full"
                   onChange={(event) => {
                     setEffectiveTo((event.value as Date | null) ?? null);
@@ -1337,23 +1334,25 @@ const EmployeeShiftRuleAssignForm = () => {
               <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 <i className="pi pi-exclamation-circle mt-0.5" />
 
-                <span>Effective From cannot be later than Effective To.</span>
+                <span>{i18nT("static.1el5hxj")}</span>
               </div>
             )}
 
             {assignmentSummary && (
               <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
                 <p className="m-0 text-xs font-semibold uppercase tracking-wide text-indigo-600">
-                  Assignment Preview
+                  {i18nT("static.1nnmrf8")}{" "}
                 </p>
 
                 <p className="m-0 mt-2 text-sm font-semibold text-indigo-900">
-                  {assignmentSummary.ruleName} • {assignmentSummary.period}
+                  {assignmentSummary.ruleName} {i18nT("static.syyan8")}{" "}
+                  {assignmentSummary.period}
                 </p>
 
                 <p className="m-0 mt-1 text-xs text-indigo-700">
-                  {selectedIds.size} employee
-                  {selectedIds.size === 1 ? "" : "s"} selected
+                  {selectedIds.size} {i18nT("static.5gxg69")}{" "}
+                  {selectedIds.size === 1 ? "" : i18nT("static.1w9pcoy")}{" "}
+                  {i18nT("static.lnii5w")}{" "}
                 </p>
               </div>
             )}
@@ -1376,12 +1375,11 @@ const EmployeeShiftRuleAssignForm = () => {
                     htmlFor="overwrite"
                     className="cursor-pointer text-sm font-semibold text-slate-800"
                   >
-                    Overwrite Final Attendance and Reprocess
+                    {i18nT("static.75jhmu")}{" "}
                   </label>
 
                   <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                    Enable this only when HR explicitly wants final attendance
-                    rows in the selected period to be recalculated.
+                    {i18nT("static.1rdsjzn")}{" "}
                   </p>
                 </div>
               </div>
@@ -1410,8 +1408,8 @@ const EmployeeShiftRuleAssignForm = () => {
                         }`}
                       >
                         {overwrite
-                          ? "Overwrite and reprocess"
-                          : "Block final attendance rows"}
+                          ? i18nT("static.60179x")
+                          : i18nT("static.35xp42")}
                       </p>
 
                       <p
@@ -1420,8 +1418,8 @@ const EmployeeShiftRuleAssignForm = () => {
                         }`}
                       >
                         {overwrite
-                          ? "Final attendance rows are recalculated in the same atomic transaction as the schedule change."
-                          : "Final attendance rows block the whole apply until HR explicitly chooses overwrite and reprocess."}
+                          ? i18nT("static.8izv3n")
+                          : i18nT("static.120ncaz")}
                       </p>
                     </div>
                   </div>
@@ -1433,50 +1431,42 @@ const EmployeeShiftRuleAssignForm = () => {
                     <div className="mt-4 grid gap-3 border-t border-green-200 pt-4 lg:grid-cols-2">
                       <div className="rounded-xl border border-green-100 bg-white p-4 text-xs leading-6 text-slate-700">
                         <p className="m-0 font-semibold text-slate-900">
-                          Example 1: Fill Empty Gaps
+                          {i18nT("static.17dw5bl")}{" "}
                         </p>
 
-                        <p className="m-0 mt-2">
-                          Existing: 01 Apr 2026 – 31 May 2026 = Night Shift
-                        </p>
+                        <p className="m-0 mt-2">{i18nT("static.1bur2zv")} </p>
 
-                        <p className="m-0">
-                          New: 01 Jan 2026 – 31 Dec 2026 = Morning Shift
-                        </p>
+                        <p className="m-0">{i18nT("static.lghcnd")} </p>
 
                         <p className="m-0 mt-2 font-semibold text-slate-900">
-                          Result
+                          {i18nT("static.ma0s3o")}{" "}
                         </p>
 
-                        <p className="m-0">01 Jan – 31 Mar = Morning Shift</p>
+                        <p className="m-0">{i18nT("static.vot6st")}</p>
 
-                        <p className="m-0">01 Apr – 31 May = Night Shift</p>
+                        <p className="m-0">{i18nT("static.g9ogh2")}</p>
 
-                        <p className="m-0">01 Jun – 31 Dec = Morning Shift</p>
+                        <p className="m-0">{i18nT("static.u8rv3d")}</p>
                       </div>
 
                       <div className="rounded-xl border border-green-100 bg-white p-4 text-xs leading-6 text-slate-700">
                         <p className="m-0 font-semibold text-slate-900">
-                          Example 2: Create Exception
+                          {i18nT("static.kudu98")}{" "}
                         </p>
 
-                        <p className="m-0 mt-2">
-                          Existing: 01 Jan 2026 – 31 Dec 2026 = Morning Shift
-                        </p>
+                        <p className="m-0 mt-2">{i18nT("static.vhoevi")} </p>
 
-                        <p className="m-0">
-                          New: 01 Apr 2026 – 31 May 2026 = Rotation Shift
-                        </p>
+                        <p className="m-0">{i18nT("static.10pbp34")} </p>
 
                         <p className="m-0 mt-2 font-semibold text-slate-900">
-                          Result
+                          {i18nT("static.ma0s3o")}{" "}
                         </p>
 
-                        <p className="m-0">01 Jan – 31 Mar = Morning Shift</p>
+                        <p className="m-0">{i18nT("static.vot6st")}</p>
 
-                        <p className="m-0">01 Apr – 31 May = Rotation Shift</p>
+                        <p className="m-0">{i18nT("static.ts9wpq")}</p>
 
-                        <p className="m-0">01 Jun – 31 Dec = Morning Shift</p>
+                        <p className="m-0">{i18nT("static.u8rv3d")}</p>
                       </div>
                     </div>
                   )}
@@ -1487,22 +1477,15 @@ const EmployeeShiftRuleAssignForm = () => {
                     <div className="mt-4 border-t border-amber-200 pt-4">
                       <div className="rounded-xl border border-amber-100 bg-white p-4 text-xs leading-6 text-slate-700">
                         <p className="m-0 font-semibold text-slate-900">
-                          What Overwrite Does
+                          {i18nT("static.7442c3")}{" "}
                         </p>
 
-                        <p className="m-0 mt-2">
-                          Existing employee shift rules that overlap the
-                          selected period are soft-deleted.
-                        </p>
+                        <p className="m-0 mt-2">{i18nT("static.1ohlxg6")} </p>
 
-                        <p className="m-0">
-                          The new rule is then inserted for the full selected
-                          period.
-                        </p>
+                        <p className="m-0">{i18nT("static.1niw5fm")} </p>
 
                         <p className="m-0 mt-2 font-medium text-amber-700">
-                          Use overwrite only when the existing rules must
-                          genuinely be replaced.
+                          {i18nT("static.9tplko")}{" "}
                         </p>
                       </div>
                     </div>
@@ -1518,15 +1501,18 @@ const EmployeeShiftRuleAssignForm = () => {
               <div className="flex flex-col gap-3 border-b border-indigo-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="m-0 text-base font-semibold text-slate-800">
-                    Server Preview
+                    {i18nT("static.11fdnd6")}{" "}
                   </h2>
                   <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                    This snapshot is required for apply. If data changes after
-                    preview, the server rejects the stale fingerprint.
+                    {i18nT("static.xuipnj")}{" "}
                   </p>
                 </div>
                 <Tag
-                  value={preview.can_apply ? "Ready to apply" : "Blocked"}
+                  value={
+                    preview.can_apply
+                      ? i18nT("static.ranbcx")
+                      : i18nT("static.1r45c2b")
+                  }
                   severity={preview.can_apply ? "success" : "danger"}
                   icon={preview.can_apply ? "pi pi-check" : "pi pi-ban"}
                   rounded
@@ -1535,26 +1521,32 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="m-0 text-xs text-slate-500">Employees</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.f4bo3a")}
+                  </p>
                   <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                     {preview.totals.employees}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="m-0 text-xs text-slate-500">Rules created</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.1eerko0")}
+                  </p>
                   <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                     {preview.totals.rule_segments_to_create}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="m-0 text-xs text-slate-500">Rules archived</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.1f41f32")}
+                  </p>
                   <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                     {preview.totals.rule_segments_to_archive}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <p className="m-0 text-xs text-slate-500">
-                    Schedules inserted
+                    {i18nT("static.12rin9r")}{" "}
                   </p>
                   <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                     {preview.totals.assignments_to_insert}
@@ -1562,14 +1554,16 @@ const EmployeeShiftRuleAssignForm = () => {
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <p className="m-0 text-xs text-slate-500">
-                    Schedules updated
+                    {i18nT("static.100tidi")}{" "}
                   </p>
                   <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                     {preview.totals.assignments_to_update}
                   </p>
                 </div>
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="m-0 text-xs text-slate-500">Attendance rows</p>
+                  <p className="m-0 text-xs text-slate-500">
+                    {i18nT("static.14tx1bf")}
+                  </p>
                   <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
                     {preview.totals.attendance_rows_to_reprocess}
                   </p>
@@ -1579,7 +1573,8 @@ const EmployeeShiftRuleAssignForm = () => {
               {preview.conflicts.length > 0 && (
                 <div className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 p-4">
                   <p className="m-0 text-sm font-semibold text-red-900">
-                    Conflicts ({preview.conflicts.length})
+                    {i18nT("static.1c5yboc")}
+                    {preview.conflicts.length})
                   </p>
                   <div className="flex max-h-56 flex-col gap-2 overflow-y-auto">
                     {preview.conflicts.map((conflict, index) => (
@@ -1589,12 +1584,14 @@ const EmployeeShiftRuleAssignForm = () => {
                       >
                         <span className="font-semibold">{conflict.code}</span>
                         {conflict.employee_id
-                          ? ` - Employee #${conflict.employee_id}`
+                          ? i18nT("static.ok0grd", { p0: conflict.employee_id })
                           : ""}
                         {conflict.date
-                          ? ` - ${dayjs(conflict.date).format("DD MMM YYYY")}`
+                          ? i18nT("static.reumh0", {
+                              p0: dayjs(conflict.date).format("DD MMM YYYY"),
+                            })
                           : ""}
-                        {`: ${conflict.message}`}
+                        {i18nT("static.1jw9hsr", { p0: conflict.message })}
                       </div>
                     ))}
                   </div>
@@ -1602,12 +1599,8 @@ const EmployeeShiftRuleAssignForm = () => {
               )}
 
               <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-xs leading-5 text-indigo-900">
-                <p className="m-0 font-semibold">Rotation phase is preserved</p>
-                <p className="m-0 mt-1">
-                  The post-exception segment keeps the original anchor. For a
-                  weekly morning-night rotation, a week-2 morning exception
-                  leaves week 3 morning and week 4 night as the original phase.
-                </p>
+                <p className="m-0 font-semibold">{i18nT("static.1jrbf3w")}</p>
+                <p className="m-0 mt-1">{i18nT("static.1n391lq")} </p>
               </div>
             </div>
           </Card>
@@ -1621,39 +1614,39 @@ const EmployeeShiftRuleAssignForm = () => {
                 <span className="font-semibold text-slate-900">
                   {selectedIds.size}
                 </span>{" "}
-                employee
-                {selectedIds.size === 1 ? "" : "s"} selected
+                {i18nT("static.5gxg69")}{" "}
+                {selectedIds.size === 1 ? "" : i18nT("static.1w9pcoy")}{" "}
+                {i18nT("static.lnii5w")}{" "}
               </p>
 
               {assignmentSummary && (
                 <p className="m-0 mt-1 text-sm font-medium text-slate-800">
-                  {assignmentSummary.ruleName} • {assignmentSummary.period}
+                  {assignmentSummary.ruleName} {i18nT("static.syyan8")}{" "}
+                  {assignmentSummary.period}
                 </p>
               )}
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Fully selected groups:{" "}
+                {i18nT("static.12rbvs2")}{" "}
                 <span className="font-semibold text-slate-700">
-                  {selectedDepartmentCount} department
-                  {selectedDepartmentCount === 1 ? "" : "s"}
+                  {selectedDepartmentCount} {i18nT("static.1li2jif")}{" "}
+                  {selectedDepartmentCount === 1 ? "" : i18nT("static.1w9pcoy")}
                 </span>
-                {" • "}
+                {i18nT("static.av53jt")}
                 <span className="font-semibold text-slate-700">
-                  {selectedPositionCount} position
-                  {selectedPositionCount === 1 ? "" : "s"}
+                  {selectedPositionCount} {i18nT("static.14vfpje")}{" "}
+                  {selectedPositionCount === 1 ? "" : i18nT("static.1w9pcoy")}
                 </span>
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                Attendance policy:{" "}
+                {i18nT("static.q0ipw6")}{" "}
                 <span
                   className={`font-semibold ${
                     overwrite ? "text-amber-700" : "text-green-700"
                   }`}
                 >
-                  {overwrite
-                    ? "Overwrite final rows and reprocess"
-                    : "Block final attendance rows"}
+                  {overwrite ? i18nT("static.11c2gjs") : i18nT("static.35xp42")}
                 </span>
               </p>
             </div>
@@ -1661,7 +1654,7 @@ const EmployeeShiftRuleAssignForm = () => {
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Button
                 type="button"
-                label="Reset"
+                label={i18nT("static.2zps2o")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -1672,7 +1665,9 @@ const EmployeeShiftRuleAssignForm = () => {
 
               <Button
                 type="button"
-                label={preview ? "Apply Schedule Change" : "Preview Changes"}
+                label={
+                  preview ? i18nT("static.14lv1xk") : i18nT("static.z7xv16")
+                }
                 icon={preview ? "pi pi-check" : "pi pi-eye"}
                 severity={overwrite ? "warning" : "success"}
                 loading={isAssigning}

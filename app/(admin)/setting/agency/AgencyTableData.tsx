@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -59,6 +60,7 @@ const EMPTY_AGENCY: Agency = {
 const getBody = () => document.body;
 
 const AgencyTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -106,7 +108,7 @@ const AgencyTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -118,7 +120,7 @@ const AgencyTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -131,7 +133,7 @@ const AgencyTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -143,8 +145,8 @@ const AgencyTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -228,7 +230,7 @@ const AgencyTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message ?? "Agency created successfully.");
+      showSuccess(response.message ?? i18nT("static.b975rr"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -256,7 +258,7 @@ const AgencyTableData = () => {
 
       handleCloseDialog();
 
-      showSuccess(response.message ?? "Agency updated successfully.");
+      showSuccess(response.message ?? i18nT("static.1wtm6jg"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -270,7 +272,7 @@ const AgencyTableData = () => {
 
       await refreshAgencyData();
 
-      showSuccess(response.message ?? "Agency deleted successfully.");
+      showSuccess(response.message ?? i18nT("static.kgd06u"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -282,7 +284,7 @@ const AgencyTableData = () => {
 
       await refreshAgencyData();
 
-      showSuccess(response.message ?? "Agency restored successfully.");
+      showSuccess(response.message ?? i18nT("static.1g5fdsh"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -294,7 +296,7 @@ const AgencyTableData = () => {
 
       await refreshAgencyData();
 
-      showSuccess(response.message ?? "Agency permanently deleted.");
+      showSuccess(response.message ?? i18nT("static.14a6mrc"));
     } catch (err: unknown) {
       showError(err);
     }
@@ -315,12 +317,10 @@ const AgencyTableData = () => {
 
   const onClickDelete = (data: Agency) => {
     requestActionConfirmation({
-      header: "Delete Agency",
+      header: i18nT("static.1b4ixx5"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this agency?
-          </span>
+          <span className="text-slate-600">{i18nT("static.1atcf6i")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -333,7 +333,7 @@ const AgencyTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -342,7 +342,7 @@ const AgencyTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -354,12 +354,10 @@ const AgencyTableData = () => {
 
   const onClickRestore = (data: Agency) => {
     requestActionConfirmation({
-      header: "Restore Agency",
+      header: i18nT("static.1tbvytw"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this agency?
-          </span>
+          <span className="text-slate-600">{i18nT("static.bi16kv")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -372,7 +370,7 @@ const AgencyTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -381,7 +379,7 @@ const AgencyTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -393,12 +391,10 @@ const AgencyTableData = () => {
 
   const onClickPurge = (data: Agency) => {
     requestActionConfirmation({
-      header: "Delete Agency Permanently",
+      header: i18nT("static.e1uz0c"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -411,7 +407,7 @@ const AgencyTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -420,7 +416,7 @@ const AgencyTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -433,14 +429,19 @@ const AgencyTableData = () => {
   const statusColumnBody = (rowData: Agency) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -450,7 +451,7 @@ const AgencyTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -470,7 +471,11 @@ const AgencyTableData = () => {
 
   const addressColumnBody = (rowData: Agency) => {
     if (!rowData.address) {
-      return <span className="text-sm text-slate-400">No address</span>;
+      return (
+        <span className="text-sm text-slate-400">
+          {i18nT("static.1t6oafa")}
+        </span>
+      );
     }
 
     return (
@@ -490,7 +495,11 @@ const AgencyTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -503,7 +512,7 @@ const AgencyTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -520,7 +529,7 @@ const AgencyTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -541,7 +550,7 @@ const AgencyTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -556,7 +565,7 @@ const AgencyTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -571,7 +580,7 @@ const AgencyTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -583,7 +592,7 @@ const AgencyTableData = () => {
       <Button
         type="submit"
         form="agency-form"
-        label={isAddNew ? "Create Agency" : "Save Changes"}
+        label={isAddNew ? i18nT("static.nrjzg0") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -613,12 +622,11 @@ const AgencyTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Agency
+                  {i18nT("static.1v3zejm")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage employing companies, legal entities, and agency contact
-                  details.
+                  {i18nT("static.s117wd")}{" "}
                 </p>
               </div>
             </div>
@@ -626,7 +634,7 @@ const AgencyTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -639,7 +647,7 @@ const AgencyTableData = () => {
 
               <Button
                 type="button"
-                label="New Agency"
+                label={i18nT("static.iy0clw")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -664,7 +672,7 @@ const AgencyTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -675,7 +683,7 @@ const AgencyTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search agency or contact details"
+                placeholder={i18nT("static.1m1c2fz")}
                 className="w-full"
               />
             </IconField>
@@ -707,8 +715,8 @@ const AgencyTableData = () => {
               tableStyle={{
                 minWidth: "82rem",
               }}
-              emptyMessage="No agency data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.1hiewc7")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -724,7 +732,7 @@ const AgencyTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -738,7 +746,7 @@ const AgencyTableData = () => {
 
               <Column
                 field="name"
-                header="Agency Name"
+                header={i18nT("static.smbfad")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -752,7 +760,7 @@ const AgencyTableData = () => {
 
               <Column
                 field="phone_number1"
-                header="Primary Phone"
+                header={i18nT("static.yx0c3t")}
                 sortable
                 body={(rowData: Agency) =>
                   phoneColumnBody(rowData.phone_number1)
@@ -764,7 +772,7 @@ const AgencyTableData = () => {
 
               <Column
                 field="phone_number2"
-                header="Secondary Phone"
+                header={i18nT("static.1ag4es1")}
                 sortable
                 body={(rowData: Agency) =>
                   phoneColumnBody(rowData.phone_number2)
@@ -776,7 +784,7 @@ const AgencyTableData = () => {
 
               <Column
                 field="address"
-                header="Address"
+                header={i18nT("static.v2y2ur")}
                 sortable
                 body={addressColumnBody}
                 style={{
@@ -786,7 +794,7 @@ const AgencyTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -795,7 +803,7 @@ const AgencyTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -851,7 +859,7 @@ const AgencyTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Agency Code
+              {i18nT("static.2i4vvf")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -859,7 +867,7 @@ const AgencyTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Agency code is required.",
+                required: i18nT("static.zx9iy8"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) || "Agency code must not contain spaces.",
@@ -871,7 +879,7 @@ const AgencyTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: AMG"
+                    placeholder={i18nT("static.1hfn33m")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -883,7 +891,7 @@ const AgencyTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique agency code.
+                      {i18nT("static.4hi6af")}{" "}
                     </small>
                   )}
                 </>
@@ -896,7 +904,7 @@ const AgencyTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Agency Name
+              {i18nT("static.smbfad")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -904,7 +912,7 @@ const AgencyTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Agency name is required.",
+                required: i18nT("static.1a05ila"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -912,7 +920,7 @@ const AgencyTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Asahimas"
+                    placeholder={i18nT("static.ddjlmo")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -933,7 +941,7 @@ const AgencyTableData = () => {
               htmlFor="phone_number1"
               className="text-sm font-medium text-slate-700"
             >
-              Primary Phone
+              {i18nT("static.yx0c3t")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -941,7 +949,7 @@ const AgencyTableData = () => {
               name="phone_number1"
               control={control}
               rules={{
-                required: "Primary phone number is required.",
+                required: i18nT("static.1hcihgj"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -949,7 +957,7 @@ const AgencyTableData = () => {
                     {...field}
                     id="phone_number1"
                     autoComplete="off"
-                    placeholder="Example: +62 21 1234 5678"
+                    placeholder={i18nT("static.1byfk5h")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -970,7 +978,7 @@ const AgencyTableData = () => {
               htmlFor="phone_number2"
               className="text-sm font-medium text-slate-700"
             >
-              Secondary Phone
+              {i18nT("static.1ag4es1")}{" "}
             </label>
 
             <Controller
@@ -983,12 +991,12 @@ const AgencyTableData = () => {
                     value={field.value ?? ""}
                     id="phone_number2"
                     autoComplete="off"
-                    placeholder="Optional secondary phone"
+                    placeholder={i18nT("static.16zl6bb")}
                     className="w-full"
                   />
 
                   <small className="text-slate-500">
-                    Optional alternate contact number.
+                    {i18nT("static.1ja3uhy")}{" "}
                   </small>
                 </>
               )}
@@ -1000,7 +1008,7 @@ const AgencyTableData = () => {
               htmlFor="address"
               className="text-sm font-medium text-slate-700"
             >
-              Address
+              {i18nT("static.v2y2ur")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -1008,7 +1016,7 @@ const AgencyTableData = () => {
               name="address"
               control={control}
               rules={{
-                required: "Agency address is required.",
+                required: i18nT("static.19gpzav"),
               }}
               render={({ field, fieldState }) => (
                 <>
@@ -1017,7 +1025,7 @@ const AgencyTableData = () => {
                     id="address"
                     rows={4}
                     autoResize
-                    placeholder="Enter the agency's complete address"
+                    placeholder={i18nT("static.1gq5vkq")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -1045,12 +1053,11 @@ const AgencyTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive agencies remain stored but should not be
-                      available for branch or employee employment records.
+                      {i18nT("static.j4fhsp")}{" "}
                     </p>
                   </div>
 

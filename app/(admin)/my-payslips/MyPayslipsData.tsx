@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -16,6 +17,17 @@ import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 const payslipUrl = "/api/payroll-payslips/me";
 
+const formatStatusLabel = (status?: string | null) => {
+  const normalized = String(status ?? "")
+    .trim()
+    .toUpperCase();
+  if (!normalized) return "Unknown";
+  return normalized
+    .split("_")
+    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 const formatCurrency = (value: string | number) => {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "-";
@@ -27,6 +39,7 @@ const formatCurrency = (value: string | number) => {
 };
 
 export default function MyPayslipsData() {
+  const { t: i18nT } = useI18n();
   const { data, error, isLoading } = useSWR<PayrollPayslip[]>(
     payslipUrl,
     getMyPayrollPayslips,
@@ -50,10 +63,10 @@ export default function MyPayslipsData() {
           </div>
           <div>
             <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-              My Payslips
+              {i18nT("static.18hf8vs")}{" "}
             </h1>
             <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-              View payroll slips after your payroll payment has been finalized.
+              {i18nT("static.k2uw42")}{" "}
             </p>
           </div>
         </div>
@@ -77,24 +90,28 @@ export default function MyPayslipsData() {
             responsiveLayout="scroll"
             size="small"
             tableStyle={{ minWidth: "48rem" }}
-            emptyMessage="No published payslip is available yet."
+            emptyMessage={i18nT("static.c7p42h")}
           >
-            <Column field="payslip_no" header="Payslip No." sortable />
             <Column
-              header="Period"
+              field="payslip_no"
+              header={i18nT("static.7ovzpo")}
+              sortable
+            />
+            <Column
+              header={i18nT("static.11hwh7o")}
               body={(row: PayrollPayslip) =>
                 `${formatDisplayDate(row.snapshot_json.batch.period_start)} – ${formatDisplayDate(row.snapshot_json.batch.period_end)}`
               }
             />
             <Column
               field="snapshot_json.batch.payroll_date"
-              header="Payment Date"
+              header={i18nT("static.1tkvpiv")}
               body={(row: PayrollPayslip) =>
                 formatDisplayDate(row.snapshot_json.batch.payroll_date)
               }
             />
             <Column
-              header="Take Home Pay"
+              header={i18nT("static.1brz9dr")}
               body={(row: PayrollPayslip) => (
                 <span className="font-semibold text-slate-800">
                   {formatCurrency(row.snapshot_json.amounts.take_home_pay)}
@@ -102,9 +119,12 @@ export default function MyPayslipsData() {
               )}
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: PayrollPayslip) => (
-                <Tag value={row.status} severity="success" />
+                <Tag
+                  value={i18nT(formatStatusLabel(row.status))}
+                  severity="success"
+                />
               )}
             />
           </DataTable>
@@ -117,6 +137,7 @@ export default function MyPayslipsData() {
 }
 
 function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
+  const { t: i18nT } = useI18n();
   const { amounts, batch, components, employee } = payslip.snapshot_json;
   return (
     <Card className="payslip-print-root border border-slate-200 shadow-sm">
@@ -127,14 +148,14 @@ function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
               {payslip.payslip_no}
             </h2>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              {formatDisplayDate(batch.period_start)} to{" "}
+              {formatDisplayDate(batch.period_start)} {i18nT("static.idyip0")}{" "}
               {formatDisplayDate(batch.period_end)}
             </p>
           </div>
           <div className="payslip-print-actions flex items-center gap-2">
-            <Tag value="PUBLISHED" severity="success" />
+            <Tag value={i18nT("static.1drx2ll")} severity="success" />
             <Button
-              label="Print / Save PDF"
+              label={i18nT("static.5db01g")}
               icon="pi pi-print"
               severity="secondary"
               outlined
@@ -144,29 +165,35 @@ function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
           </div>
         </div>
         <div className="grid grid-cols-1 gap-3 border-b border-slate-200 pb-4 sm:grid-cols-3">
-          <PayslipDetail label="Employee" value={employee.employee_name} />
-          <PayslipDetail label="Employee ID" value={employee.employee_code} />
           <PayslipDetail
-            label="Department"
+            label={i18nT("static.1fak8xt")}
+            value={employee.employee_name}
+          />
+          <PayslipDetail
+            label={i18nT("static.1lghzb2")}
+            value={employee.employee_code}
+          />
+          <PayslipDetail
+            label={i18nT("static.1430r53")}
             value={employee.department_name ?? "-"}
           />
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Amount label="Gross Income" value={amounts.gross_income} />
+          <Amount label={i18nT("static.awjta6")} value={amounts.gross_income} />
           <Amount
-            label="Employee Deduction"
+            label={i18nT("static.1yemymq")}
             value={amounts.employee_deduction}
           />
-          <Amount label="PPh 21" value={amounts.pph21_amount} />
+          <Amount label={i18nT("static.mlv85w")} value={amounts.pph21_amount} />
           <Amount
-            label="Take Home Pay"
+            label={i18nT("static.1brz9dr")}
             value={amounts.take_home_pay}
             emphasized
           />
         </div>
         <section>
           <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
-            Payroll Components
+            {i18nT("static.11zzcwa")}{" "}
           </h3>
           <DataTable
             value={components}
@@ -175,11 +202,11 @@ function PayslipSummary({ payslip }: { payslip: PayrollPayslip }) {
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "42rem" }}
           >
-            <Column field="component_name" header="Component" />
-            <Column field="component_type" header="Type" />
-            <Column field="source" header="Source" />
+            <Column field="component_name" header={i18nT("static.bvqo3k")} />
+            <Column field="component_type" header={i18nT("static.1m2zofh")} />
+            <Column field="source" header={i18nT("static.r5qyuw")} />
             <Column
-              header="Amount"
+              header={i18nT("static.a2ky21")}
               body={(
                 row: PayrollPayslip["snapshot_json"]["components"][number],
               ) => formatCurrency(row.amount)}

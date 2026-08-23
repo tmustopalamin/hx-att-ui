@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   createEmployeeIdentity,
@@ -65,6 +66,7 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 const helperTextClass = "mt-1 text-xs text-slate-500";
 
 const PersonalIdentityAndAddress = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -109,7 +111,7 @@ const PersonalIdentityAndAddress = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -189,10 +191,8 @@ const PersonalIdentityAndAddress = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: isAddMode
-            ? "Identity created successfully"
-            : "Identity updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: isAddMode ? i18nT("static.7ccvkc") : i18nT("static.1cxmokp"),
         }),
       );
 
@@ -204,7 +204,7 @@ const PersonalIdentityAndAddress = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -213,7 +213,7 @@ const PersonalIdentityAndAddress = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -223,8 +223,8 @@ const PersonalIdentityAndAddress = () => {
 
   const onDelete = (row: EmployeeIdentityRow) => {
     requestActionConfirmation({
-      message: "Do you want to delete this identity record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1p6vgqr"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -234,8 +234,8 @@ const PersonalIdentityAndAddress = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "Success",
-              detail: "Identity deleted successfully",
+              summary: i18nT("static.udvru8"),
+              detail: i18nT("static.5av9pb"),
             }),
           );
           await loadData();
@@ -245,7 +245,7 @@ const PersonalIdentityAndAddress = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "Error",
+                summary: i18nT("static.1vks92p"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -262,8 +262,8 @@ const PersonalIdentityAndAddress = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: "Identity restored successfully",
+          summary: i18nT("static.udvru8"),
+          detail: i18nT("static.1ku8wk8"),
         }),
       );
       await loadData();
@@ -273,7 +273,7 @@ const PersonalIdentityAndAddress = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -283,8 +283,8 @@ const PersonalIdentityAndAddress = () => {
 
   const onPurge = (row: EmployeeIdentityRow) => {
     requestActionConfirmation({
-      message: "This will permanently delete the identity record. Continue?",
-      header: "Permanent Delete Confirmation",
+      message: i18nT("static.16fxab"),
+      header: i18nT("static.5k7v89"),
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -294,8 +294,8 @@ const PersonalIdentityAndAddress = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "Success",
-              detail: "Identity permanently deleted",
+              summary: i18nT("static.udvru8"),
+              detail: i18nT("static.heyxyn"),
             }),
           );
           await loadData();
@@ -305,7 +305,7 @@ const PersonalIdentityAndAddress = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "Error",
+                summary: i18nT("static.1vks92p"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -317,15 +317,15 @@ const PersonalIdentityAndAddress = () => {
 
   const activeBodyTemplate = (row: EmployeeIdentityRow) => {
     return row.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="secondary" />
+      <Tag value={i18nT("static.13zf5vc")} severity="secondary" />
     );
   };
 
   const expiryBodyTemplate = (row: EmployeeIdentityRow) => {
     if (row.is_permanent) {
-      return <Tag value="Lifetime" severity="info" />;
+      return <Tag value={i18nT("static.1vh11ce")} severity="info" />;
     }
 
     if (!row.expire_date) {
@@ -350,7 +350,7 @@ const PersonalIdentityAndAddress = () => {
               icon="pi pi-pencil"
               severity="secondary"
               onClick={() => openEdit(row)}
-              tooltip="Edit"
+              tooltip={i18nT("static.1i1lcq9")}
               tooltipOptions={{ position: "top" }}
             />
             <Button
@@ -361,7 +361,7 @@ const PersonalIdentityAndAddress = () => {
               icon="pi pi-trash"
               severity="danger"
               onClick={() => onDelete(row)}
-              tooltip="Delete"
+              tooltip={i18nT("static.oay2cq")}
               tooltipOptions={{ position: "top" }}
             />
           </>
@@ -377,7 +377,7 @@ const PersonalIdentityAndAddress = () => {
               icon="pi pi-refresh"
               severity="success"
               onClick={() => void onRestore(row)}
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ position: "top" }}
             />
             <Button
@@ -388,7 +388,7 @@ const PersonalIdentityAndAddress = () => {
               icon="pi pi-trash"
               severity="danger"
               onClick={() => onPurge(row)}
-              tooltip="Purge"
+              tooltip={i18nT("static.73yb38")}
               tooltipOptions={{ position: "top" }}
             />
           </>
@@ -401,7 +401,7 @@ const PersonalIdentityAndAddress = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -410,7 +410,7 @@ const PersonalIdentityAndAddress = () => {
       />
       <Button
         type="button"
-        label={isAddMode ? "Create Identity" : "Save Changes"}
+        label={isAddMode ? i18nT("static.q7hijd") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
@@ -422,12 +422,12 @@ const PersonalIdentityAndAddress = () => {
     <>
       <div className="flex flex-col gap-5">
         <EmployeeDetailTableHeader
-          title="Identity & Address"
-          description="Manage employee identity documents and registered addresses."
+          title={i18nT("static.s7msxp")}
+          description={i18nT("static.16p14z9")}
           actions={
             <Button
               type="button"
-              label="New Identity"
+              label={i18nT("static.1eu437x")}
               icon="pi pi-plus"
               size="small"
               className="w-full sm:w-auto"
@@ -448,10 +448,10 @@ const PersonalIdentityAndAddress = () => {
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
-          emptyMessage="No identity data found."
+          emptyMessage={i18nT("static.ncz95e")}
           scrollable
           tableStyle={{ minWidth: "70rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -459,32 +459,36 @@ const PersonalIdentityAndAddress = () => {
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "60px" }}
           />
-          <Column field="identity_type_name" header="Identity Type" sortable />
-          <Column field="number" header="Number" sortable />
           <Column
-            header="Expiry"
+            field="identity_type_name"
+            header={i18nT("static.4mj4o9")}
+            sortable
+          />
+          <Column field="number" header={i18nT("static.r616tc")} sortable />
+          <Column
+            header={i18nT("static.r38mzi")}
             body={expiryBodyTemplate}
             style={{ minWidth: "140px" }}
           />
           <Column
             field="citizen_address"
-            header="Citizen Address"
+            header={i18nT("static.1r1dn73")}
             sortable
             style={{ minWidth: "220px" }}
           />
           <Column
             field="residential_address"
-            header="Residential Address"
+            header={i18nT("static.12qzyx9")}
             sortable
             style={{ minWidth: "220px" }}
           />
           <Column
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={activeBodyTemplate}
             style={{ minWidth: "110px" }}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBodyTemplate}
             frozen
             alignFrozen="right"
@@ -501,7 +505,7 @@ const PersonalIdentityAndAddress = () => {
       </div>
 
       <Dialog
-        header={isAddMode ? "New Identity" : "Update Identity"}
+        header={isAddMode ? i18nT("static.1eu437x") : i18nT("static.7q8t7a")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "52rem" }}
         onHide={hideDialog}
@@ -515,11 +519,11 @@ const PersonalIdentityAndAddress = () => {
           <Controller
             name="identity_type_id"
             control={control}
-            rules={{ required: "Identity type is required" }}
+            rules={{ required: i18nT("static.pqu008") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="identity_type_id" className={fieldLabelClass}>
-                  Identity Type
+                  {i18nT("static.4mj4o9")}{" "}
                 </label>
                 <Dropdown
                   id="identity_type_id"
@@ -529,7 +533,7 @@ const PersonalIdentityAndAddress = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select identity type"
+                  placeholder={i18nT("static.1okaw0j")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -542,17 +546,17 @@ const PersonalIdentityAndAddress = () => {
           <Controller
             name="number"
             control={control}
-            rules={{ required: "Identity number is required" }}
+            rules={{ required: i18nT("static.7xznot") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="number" className={fieldLabelClass}>
-                  Identity Number
+                  {i18nT("static.eafcr0")}{" "}
                 </label>
                 <InputText
                   id="number"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter identity number"
+                  placeholder={i18nT("static.1yn3lai")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -570,11 +574,10 @@ const PersonalIdentityAndAddress = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Valid for lifetime
+                        {i18nT("static.6ewhj5")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Enable this if the document does not have an expiration
-                        date.
+                        {i18nT("static.184l94r")}{" "}
                       </p>
                     </div>
                     <InputSwitch
@@ -592,10 +595,10 @@ const PersonalIdentityAndAddress = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Active
+                        {i18nT("static.8qzyhb")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Control whether this identity record is still active.
+                        {i18nT("static.zhtc64")}{" "}
                       </p>
                     </div>
                     <InputSwitch
@@ -614,7 +617,7 @@ const PersonalIdentityAndAddress = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="expire_date" className={fieldLabelClass}>
-                  Expire Date
+                  {i18nT("static.u2ldwy")}{" "}
                 </label>
                 <Calendar
                   id="expire_date"
@@ -626,12 +629,12 @@ const PersonalIdentityAndAddress = () => {
                   onChange={(e) => field.onChange(e.value)}
                   className="w-full"
                   placeholder={
-                    isPermanent ? "Lifetime document" : "Select expire date"
+                    isPermanent
+                      ? i18nT("static.3chj13")
+                      : i18nT("static.16tqp0")
                   }
                 />
-                <p className={helperTextClass}>
-                  Leave empty for documents without expiry.
-                </p>
+                <p className={helperTextClass}>{i18nT("static.3ywz2f")} </p>
               </div>
             )}
           />
@@ -641,11 +644,11 @@ const PersonalIdentityAndAddress = () => {
           <Controller
             name="citizen_address"
             control={control}
-            rules={{ required: "Citizen address is required" }}
+            rules={{ required: i18nT("static.oxm12a") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="citizen_address" className={fieldLabelClass}>
-                  Citizen Address
+                  {i18nT("static.1r1dn73")}{" "}
                 </label>
                 <InputTextarea
                   id="citizen_address"
@@ -653,7 +656,7 @@ const PersonalIdentityAndAddress = () => {
                   rows={4}
                   autoResize
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter citizen address"
+                  placeholder={i18nT("static.yharjh")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -665,14 +668,14 @@ const PersonalIdentityAndAddress = () => {
           <Controller
             name="residential_address"
             control={control}
-            rules={{ required: "Residential address is required" }}
+            rules={{ required: i18nT("static.1lfvk6k") }}
             render={({ field, fieldState }) => (
               <div>
                 <label
                   htmlFor="residential_address"
                   className={fieldLabelClass}
                 >
-                  Residential Address
+                  {i18nT("static.12qzyx9")}{" "}
                 </label>
                 <InputTextarea
                   id="residential_address"
@@ -680,7 +683,7 @@ const PersonalIdentityAndAddress = () => {
                   rows={4}
                   autoResize
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter residential address"
+                  placeholder={i18nT("static.lpsv9v")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>

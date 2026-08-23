@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -62,6 +63,7 @@ const EMPTY_CITY: City = {
 const getBody = () => document.body;
 
 const CityTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -123,7 +125,7 @@ const CityTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -135,7 +137,7 @@ const CityTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -148,7 +150,7 @@ const CityTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -160,8 +162,8 @@ const CityTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -311,12 +313,10 @@ const CityTableData = () => {
 
   const onClickDelete = (data: City) => {
     requestActionConfirmation({
-      header: "Delete City",
+      header: i18nT("static.9g6795"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this city?
-          </span>
+          <span className="text-slate-600">{i18nT("static.12na4yi")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -329,7 +329,7 @@ const CityTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -338,7 +338,7 @@ const CityTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -350,12 +350,10 @@ const CityTableData = () => {
 
   const onClickRestore = (data: City) => {
     requestActionConfirmation({
-      header: "Restore City",
+      header: i18nT("static.17ny3cs"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this city?
-          </span>
+          <span className="text-slate-600">{i18nT("static.plfvkf")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -368,7 +366,7 @@ const CityTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -377,7 +375,7 @@ const CityTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -389,12 +387,10 @@ const CityTableData = () => {
 
   const onClickPurge = (data: City) => {
     requestActionConfirmation({
-      header: "Delete City Permanently",
+      header: i18nT("static.ydebp8"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -407,7 +403,7 @@ const CityTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -416,7 +412,7 @@ const CityTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -429,14 +425,19 @@ const CityTableData = () => {
   const statusColumnBody = (rowData: City) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -446,7 +447,7 @@ const CityTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -461,7 +462,11 @@ const CityTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -474,7 +479,7 @@ const CityTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -491,7 +496,7 @@ const CityTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -512,7 +517,7 @@ const CityTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -527,7 +532,7 @@ const CityTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -542,7 +547,7 @@ const CityTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -554,7 +559,7 @@ const CityTableData = () => {
       <Button
         type="submit"
         form="city-form"
-        label={isAddNew ? "Create City" : "Save Changes"}
+        label={isAddNew ? i18nT("static.1py5l7c") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving || stateIsLoading || Boolean(stateError)}
@@ -584,11 +589,11 @@ const CityTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  City
+                  {i18nT("static.142k4ma")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage city data for each province or state.
+                  {i18nT("static.v6ss79")}{" "}
                 </p>
               </div>
             </div>
@@ -596,7 +601,7 @@ const CityTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -609,7 +614,7 @@ const CityTableData = () => {
 
               <Button
                 type="button"
-                label="New City"
+                label={i18nT("static.159g75o")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -634,7 +639,7 @@ const CityTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -645,7 +650,7 @@ const CityTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code, city, or province"
+                placeholder={i18nT("static.aeyxjw")}
                 className="w-full"
               />
             </IconField>
@@ -671,8 +676,8 @@ const CityTableData = () => {
               tableStyle={{
                 minWidth: "60rem",
               }}
-              emptyMessage="No city data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.40z3mf")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -688,7 +693,7 @@ const CityTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -702,7 +707,7 @@ const CityTableData = () => {
 
               <Column
                 field="name"
-                header="City Name"
+                header={i18nT("static.n1wuud")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -716,7 +721,7 @@ const CityTableData = () => {
 
               <Column
                 field="state_name"
-                header="Province / State"
+                header={i18nT("static.1pevyth")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -730,7 +735,7 @@ const CityTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -739,7 +744,7 @@ const CityTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -794,7 +799,7 @@ const CityTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              City Code
+              {i18nT("static.1vyudej")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -802,14 +807,14 @@ const CityTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "City code is required.",
+                required: i18nT("static.1lj4fu8"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) || "City code must not contain spaces.",
                 },
                 maxLength: {
                   value: 50,
-                  message: "City code cannot exceed 50 characters.",
+                  message: i18nT("static.1e4zxs9"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -818,7 +823,7 @@ const CityTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: BANDUNG"
+                    placeholder={i18nT("static.k1v64g")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -830,7 +835,7 @@ const CityTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique city code.
+                      {i18nT("static.1bxio9j")}{" "}
                     </small>
                   )}
                 </>
@@ -843,7 +848,7 @@ const CityTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              City Name
+              {i18nT("static.n1wuud")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -851,10 +856,10 @@ const CityTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "City name is required.",
+                required: i18nT("static.1vm0fha"),
                 maxLength: {
                   value: 50,
-                  message: "City name cannot exceed 50 characters.",
+                  message: i18nT("static.hwycsj"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -863,7 +868,7 @@ const CityTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Bandung"
+                    placeholder={i18nT("static.14xehkw")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -884,7 +889,7 @@ const CityTableData = () => {
               htmlFor="state_id"
               className="text-sm font-medium text-slate-700"
             >
-              Province / State
+              {i18nT("static.1pevyth")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -892,7 +897,7 @@ const CityTableData = () => {
               name="state_id"
               control={control}
               rules={{
-                required: "Province / state is required.",
+                required: i18nT("static.1jcmnlq"),
                 validate: (value) =>
                   Number(value) > 0 || "Province / state is required.",
               }}
@@ -911,8 +916,8 @@ const CityTableData = () => {
                     disabled={stateIsLoading || Boolean(stateError)}
                     placeholder={
                       stateIsLoading
-                        ? "Loading provinces..."
-                        : "Select a province / state"
+                        ? i18nT("static.mtgucg")
+                        : i18nT("static.f1tobm")
                     }
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
@@ -928,15 +933,12 @@ const CityTableData = () => {
 
                   {!fieldState.error && !stateError && (
                     <small className="text-slate-500">
-                      Select the province or state that contains this city.
+                      {i18nT("static.z07pd3")}{" "}
                     </small>
                   )}
 
                   {stateError && (
-                    <small className="p-error">
-                      Provinces could not be loaded. Refresh the page and try
-                      again.
-                    </small>
+                    <small className="p-error">{i18nT("static.i2qd6x")} </small>
                   )}
                 </>
               )}
@@ -955,12 +957,11 @@ const CityTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive cities remain stored but should not be available
-                      for new records.
+                      {i18nT("static.16h17m2")}{" "}
                     </p>
                   </div>
 

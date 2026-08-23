@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -32,6 +33,7 @@ import type {
   PayrollBatchStatus,
 } from "@/app/types/payroll-batch";
 import type { ResponseTypeError } from "@/app/types/response-type";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 type AdjustmentAction = "submit" | "approve" | "cancel";
 
@@ -50,6 +52,7 @@ export default function PayrollAdjustmentPanel({
   batchId: number;
   batchStatus: PayrollBatchStatus;
 }) {
+  const { t: i18nT } = useI18n();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
   );
@@ -167,8 +170,8 @@ export default function PayrollAdjustmentPanel({
       confirmIcon: actionName === "cancel" ? "pi pi-times" : "pi pi-check",
       description:
         actionName === "cancel"
-          ? "Cancel this payroll adjustment?"
-          : `${labels[actionName]} this payroll adjustment?`,
+          ? i18nT("static.yrchp8")
+          : i18nT("static.4pk7zi", { p0: labels[actionName] }),
       onAccept: () => action(row, actionName),
     });
   };
@@ -201,11 +204,10 @@ export default function PayrollAdjustmentPanel({
       <div className="flex flex-col gap-4 p-4">
         <div>
           <h2 className="m-0 text-base font-semibold text-slate-800">
-            Payroll Adjustments
+            {i18nT("static.6lzle2")}{" "}
           </h2>
           <p className="m-0 mt-1 text-sm text-slate-500">
-            Requests are created while the batch is READY, approved by the
-            checker, and applied automatically during Calculate Payroll.
+            {i18nT("static.6sycdx")}{" "}
           </p>
         </div>
         {error && <Message severity="error" text={error} />}
@@ -214,10 +216,13 @@ export default function PayrollAdjustmentPanel({
             <Dropdown
               value={employeeId}
               options={(options?.employees ?? []).map((item) => ({
-                label: `${item.employee_code} · ${item.employee_name}`,
+                label: i18nT("static.1cx6cam", {
+                  p0: item.employee_code,
+                  p1: item.employee_name,
+                }),
                 value: item.employee_id,
               }))}
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               filter
               className="w-full"
               onChange={(event) => setEmployeeId(event.value as number | null)}
@@ -234,10 +239,13 @@ export default function PayrollAdjustmentPanel({
             <Dropdown
               value={componentId}
               options={components.map((item) => ({
-                label: `${item.code} · ${item.name}`,
+                label: i18nT("static.1cx6cam", {
+                  p0: item.code,
+                  p1: item.name,
+                }),
                 value: item.id,
               }))}
-              placeholder="Select component"
+              placeholder={i18nT("static.yrs9f6")}
               disabled={components.length === 0}
               className="w-full"
               onChange={(event) => setComponentId(event.value as number | null)}
@@ -245,18 +253,18 @@ export default function PayrollAdjustmentPanel({
             <InputNumber
               value={amount}
               onValueChange={(event) => setAmount(event.value ?? null)}
-              placeholder="Amount"
+              placeholder={i18nT("static.a2ky21")}
               className="w-full"
               inputClassName="w-full"
             />
             <InputText
               value={reason}
-              placeholder="Reason"
+              placeholder={i18nT("static.i36sl5")}
               className="w-full"
               onChange={(event) => setReason(event.target.value)}
             />
             <Button
-              label="Create Draft"
+              label={i18nT("static.4tz1ya")}
               icon="pi pi-plus"
               onClick={() => void create()}
             />
@@ -267,23 +275,23 @@ export default function PayrollAdjustmentPanel({
           dataKey="id"
           size="small"
           stripedRows
-          emptyMessage="No adjustment request."
+          emptyMessage={i18nT("static.1488bfm")}
         >
           <Column
-            header="Employee"
+            header={i18nT("static.1fak8xt")}
             body={(row: PayrollAdjustment) =>
               employeeLabels.get(row.employee_id) ??
               `Employee #${row.employee_id}`
             }
           />
-          <Column field="component_type" header="Type" />
-          <Column field="amount" header="Amount" />
-          <Column field="reason" header="Reason" />
+          <Column field="component_type" header={i18nT("static.1m2zofh")} />
+          <Column field="amount" header={i18nT("static.a2ky21")} />
+          <Column field="reason" header={i18nT("static.i36sl5")} />
           <Column
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: PayrollAdjustment) => (
               <Tag
-                value={row.status}
+                value={i18nT(formatStatusLabel(row.status))}
                 severity={
                   row.status === "APPLIED"
                     ? "success"
@@ -295,21 +303,21 @@ export default function PayrollAdjustmentPanel({
             )}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={(row: PayrollAdjustment) => (
               <div className="flex flex-wrap gap-1">
                 {canAdjust && row.status === "DRAFT" && (
                   <>
                     <Button
                       size="small"
-                      label="Submit"
+                      label={i18nT("static.hvztxh")}
                       loading={busyId === row.id}
                       onClick={() => confirmAction(row, "submit")}
                     />
                     <Button
                       size="small"
                       text
-                      label="Cancel"
+                      label={i18nT("static.ew9em3")}
                       disabled={busyId === row.id}
                       onClick={() => confirmAction(row, "cancel")}
                     />
@@ -319,7 +327,7 @@ export default function PayrollAdjustmentPanel({
                   <>
                     <Button
                       size="small"
-                      label="Approve"
+                      label={i18nT("static.1s2ov2y")}
                       loading={busyId === row.id}
                       onClick={() => confirmAction(row, "approve")}
                     />
@@ -327,7 +335,7 @@ export default function PayrollAdjustmentPanel({
                       size="small"
                       severity="danger"
                       outlined
-                      label="Reject"
+                      label={i18nT("static.1kej36u")}
                       disabled={busyId === row.id}
                       onClick={() => {
                         setError(null);
@@ -342,7 +350,7 @@ export default function PayrollAdjustmentPanel({
         </DataTable>
       </div>
       <Dialog
-        header="Reject Payroll Adjustment"
+        header={i18nT("static.nyj7z2")}
         visible={rejectTarget !== null}
         modal
         draggable={false}
@@ -356,14 +364,14 @@ export default function PayrollAdjustmentPanel({
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={busyId !== null}
               onClick={() => setRejectTarget(null)}
             />
             <Button
-              label="Reject Adjustment"
+              label={i18nT("static.b1kwc9")}
               severity="danger"
               loading={busyId === rejectTarget?.id}
               onClick={() => void reject()}
@@ -373,7 +381,7 @@ export default function PayrollAdjustmentPanel({
       >
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-slate-700">
-            Rejection reason *
+            {i18nT("static.ulf2f6")}{" "}
           </span>
           <InputTextarea
             value={rejectionReason}

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -64,6 +65,7 @@ const emptyForm: EmployeeFingerprint = {
 const getBody = () => document.body;
 
 const EmployeeFingerprintTableData = () => {
+  const { t: i18nT } = useI18n();
   const params = useParams();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
@@ -228,8 +230,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "Please select fingerprint scanner first",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.1ka0yp5"),
         }),
       );
       return;
@@ -240,8 +242,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "Please fill Fingerprint User ID / PIN2 first",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.14mq1i6"),
         }),
       );
       return;
@@ -297,7 +299,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -306,7 +308,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -320,8 +322,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail: "Please check Fingerprint User ID / PIN2 before saving.",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.r0fweg"),
         }),
       );
       return false;
@@ -332,9 +334,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail:
-            "This mode links existing user, but the Fingerprint User ID / PIN2 was not found in device.",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.1qajc1w"),
         }),
       );
       return false;
@@ -345,9 +346,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "warn",
-          summary: "Warning",
-          detail:
-            "This mode creates new user, but the Fingerprint User ID / PIN2 already exists in device.",
+          summary: i18nT("static.fh2d8v"),
+          detail: i18nT("static.1xcyvc9"),
         }),
       );
       return false;
@@ -373,8 +373,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Fingerprint mapping created successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.1khfysm"),
         }),
       );
     } catch (err: unknown) {
@@ -383,7 +383,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -392,7 +392,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -406,8 +406,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: "Please select data",
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT("static.c2e3i3"),
         }),
       );
       return;
@@ -433,8 +433,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Fingerprint mapping updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.16sor9v"),
         }),
       );
     } catch (err: unknown) {
@@ -443,7 +443,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -452,7 +452,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -471,8 +471,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Fingerprint mapping deleted successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.9hjnrt"),
         }),
       );
     } catch (err: unknown) {
@@ -481,7 +481,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -490,7 +490,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -509,8 +509,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Fingerprint mapping permanently deleted",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.18qa1k9"),
         }),
       );
     } catch (err: unknown) {
@@ -519,7 +519,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -528,7 +528,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -547,8 +547,8 @@ const EmployeeFingerprintTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Fingerprint mapping restored successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.tf39ae"),
         }),
       );
     } catch (err: unknown) {
@@ -557,7 +557,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -566,7 +566,7 @@ const EmployeeFingerprintTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -576,8 +576,8 @@ const EmployeeFingerprintTableData = () => {
 
   const onClickDelete = (data: EmployeeFingerprint) => {
     requestActionConfirmation({
-      message: "Do you want to delete this fingerprint mapping?",
-      header: "Delete Confirmation",
+      message: i18nT("static.o9j8f8"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: () => {
@@ -588,8 +588,8 @@ const EmployeeFingerprintTableData = () => {
 
   const onClickRestore = (data: EmployeeFingerprint) => {
     requestActionConfirmation({
-      message: "Do you want to restore this fingerprint mapping?",
-      header: "Restore Confirmation",
+      message: i18nT("static.io19xd"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-success",
       accept: () => {
@@ -600,8 +600,8 @@ const EmployeeFingerprintTableData = () => {
 
   const onClickPurge = (data: EmployeeFingerprint) => {
     requestActionConfirmation({
-      message: "Do you want to permanently delete this fingerprint mapping?",
-      header: "Permanent Delete Confirmation",
+      message: i18nT("static.aak25f"),
+      header: i18nT("static.5k7v89"),
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
       accept: () => {
@@ -616,25 +616,25 @@ const EmployeeFingerprintTableData = () => {
 
   const primaryBodyTemplate = (rowData: EmployeeFingerprint) => {
     return rowData.is_primary ? (
-      <Tag value="Primary" severity="success" />
+      <Tag value={i18nT("static.1jcui61")} severity="success" />
     ) : (
-      <Tag value="Secondary" severity="secondary" />
+      <Tag value={i18nT("static.75qooh")} severity="secondary" />
     );
   };
 
   const pinSourceBodyTemplate = (rowData: EmployeeFingerprint) => {
     return rowData.pin_already_exist ? (
-      <Tag value="Linked Existing" severity="info" />
+      <Tag value={i18nT("static.1f7nqyt")} severity="info" />
     ) : (
-      <Tag value="Created by HRIS" severity="warning" />
+      <Tag value={i18nT("static.1eohjki")} severity="warning" />
     );
   };
 
   const statusBodyTemplate = (rowData: EmployeeFingerprint) => {
     return rowData.deleted_at ? (
-      <Tag value="Deleted" severity="danger" />
+      <Tag value={i18nT("static.1v6qcju")} severity="danger" />
     ) : (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     );
   };
 
@@ -645,7 +645,7 @@ const EmployeeFingerprintTableData = () => {
           {canRestore && (
             <Button
               tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               rounded
               outlined
               severity="success"
@@ -657,7 +657,7 @@ const EmployeeFingerprintTableData = () => {
           {canPurge && (
             <Button
               tooltipOptions={{ appendTo: getBody, position: "top" }}
-              tooltip="Delete Forever"
+              tooltip={i18nT("static.dwhjc5")}
               rounded
               outlined
               severity="danger"
@@ -675,7 +675,7 @@ const EmployeeFingerprintTableData = () => {
         {canUpdate && (
           <Button
             tooltipOptions={{ appendTo: getBody, position: "top" }}
-            tooltip="Edit"
+            tooltip={i18nT("static.1i1lcq9")}
             rounded
             outlined
             severity="secondary"
@@ -687,7 +687,7 @@ const EmployeeFingerprintTableData = () => {
         {canDelete && (
           <Button
             tooltipOptions={{ appendTo: getBody, position: "top" }}
-            tooltip="Delete"
+            tooltip={i18nT("static.oay2cq")}
             rounded
             outlined
             severity="danger"
@@ -703,10 +703,7 @@ const EmployeeFingerprintTableData = () => {
   const pinCheckMessageNode = () => {
     if (pinCheckState === "idle") {
       return (
-        <small className="text-slate-500">
-          Check Fingerprint User ID / PIN2 in the fingerprint scanner before
-          saving.
-        </small>
+        <small className="text-slate-500">{i18nT("static.kih5n4")} </small>
       );
     }
 
@@ -731,31 +728,39 @@ const EmployeeFingerprintTableData = () => {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <div className="mb-2 font-semibold text-slate-800">
-          Device Check Result
+          {i18nT("static.cvcys0")}{" "}
         </div>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
           <div>
-            <div className="text-xs text-slate-500">Exists in Device</div>
+            <div className="text-xs text-slate-500">
+              {i18nT("static.16v6w0e")}
+            </div>
             <div className="font-medium text-slate-800">
-              {pinCheckResult.exists ? "Yes" : "No"}
+              {pinCheckResult.exists
+                ? i18nT("static.1dudzcg")
+                : i18nT("static.r5wqai")}
             </div>
           </div>
           <div>
-            <div className="text-xs text-slate-500">Machine PIN / PIN1</div>
+            <div className="text-xs text-slate-500">
+              {i18nT("static.173bczy")}
+            </div>
             <div className="font-medium text-slate-800">
               {pinCheckResult.pin ?? "-"}
             </div>
           </div>
           <div>
             <div className="text-xs text-slate-500">
-              Fingerprint User ID / PIN2
+              {i18nT("static.1c6fih")}{" "}
             </div>
             <div className="font-medium text-slate-800">
               {pinCheckResult.pin2 ?? watchedFpPin ?? "-"}
             </div>
           </div>
           <div className="md:col-span-3">
-            <div className="text-xs text-slate-500">Device User Name</div>
+            <div className="text-xs text-slate-500">
+              {i18nT("static.mgsbih")}
+            </div>
             <div className="font-medium text-slate-800">
               {pinCheckResult.name ?? "-"}
             </div>
@@ -787,8 +792,8 @@ const EmployeeFingerprintTableData = () => {
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
           <EmployeeDetailTableHeader
-            title="Employee Fingerprint"
-            description="Map this employee to a fingerprint device user using Fingerprint User ID / PIN2."
+            title={i18nT("static.1in17th")}
+            description={i18nT("static.jo6xui")}
             showDeleted={
               archivedAccess.canShowDeleted
                 ? {
@@ -801,14 +806,14 @@ const EmployeeFingerprintTableData = () => {
             search={{
               value: globalFilterValue,
               onChange: onGlobalFilterChange,
-              placeholder: "Search fingerprint",
+              placeholder: i18nT("static.kyvz4t"),
             }}
             actions={
               canCreate ? (
                 <Button
                   type="button"
                   className="w-full sm:w-auto"
-                  label="New Fingerprint"
+                  label={i18nT("static.lxp0cl")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={onClickNew}
@@ -830,8 +835,8 @@ const EmployeeFingerprintTableData = () => {
               "fp_machine_pin",
               "fp_device_user_name",
             ]}
-            emptyMessage="No fingerprint mapping found."
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            emptyMessage={i18nT("static.9mnyiq")}
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
             scrollable
@@ -850,21 +855,21 @@ const EmployeeFingerprintTableData = () => {
 
             <Column
               field="fp_device_name"
-              header="Scanner"
+              header={i18nT("static.1bz37xh")}
               sortable
               style={{ minWidth: "13rem" }}
             />
 
             <Column
               field="fp_pin"
-              header="User ID / PIN2"
+              header={i18nT("static.rb5dx1")}
               sortable
               style={{ minWidth: "12rem" }}
             />
 
             <Column
               field="fp_machine_pin"
-              header="Machine PIN / PIN1"
+              header={i18nT("static.173bczy")}
               sortable
               style={{ minWidth: "12rem" }}
               body={(rowData: EmployeeFingerprint) =>
@@ -874,7 +879,7 @@ const EmployeeFingerprintTableData = () => {
 
             <Column
               field="fp_device_user_name"
-              header="Device User Name"
+              header={i18nT("static.mgsbih")}
               sortable
               style={{ minWidth: "14rem" }}
               body={(rowData: EmployeeFingerprint) =>
@@ -883,25 +888,25 @@ const EmployeeFingerprintTableData = () => {
             />
 
             <Column
-              header="Source"
+              header={i18nT("static.r5qyuw")}
               body={pinSourceBodyTemplate}
               style={{ minWidth: "12rem" }}
             />
 
             <Column
-              header="Primary"
+              header={i18nT("static.1jcui61")}
               body={primaryBodyTemplate}
               style={{ minWidth: "10rem" }}
             />
 
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={statusBodyTemplate}
               style={{ minWidth: "10rem" }}
             />
 
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={actionColumnBody}
               frozen
               alignFrozen="right"
@@ -930,14 +935,16 @@ const EmployeeFingerprintTableData = () => {
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
-                label="Cancel"
+                label={i18nT("static.ew9em3")}
                 icon="pi pi-times"
                 onClick={closeDialog}
                 className="p-button-text"
               />
               <Button
                 type="submit"
-                label={isAddNew ? "Submit" : "Save"}
+                label={
+                  isAddNew ? i18nT("static.hvztxh") : i18nT("static.lewgh4")
+                }
                 icon="pi pi-check"
                 disabled={!isValid || pinCheckState !== "valid"}
               />
@@ -947,7 +954,7 @@ const EmployeeFingerprintTableData = () => {
           <div className="flex flex-col gap-5 pt-2">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3 text-sm font-semibold text-slate-900">
-                Mapping Mode
+                {i18nT("static.8a3kfs")}{" "}
               </div>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -972,12 +979,10 @@ const EmployeeFingerprintTableData = () => {
                         htmlFor="mode_link_existing"
                         className="cursor-pointer text-sm font-semibold text-slate-900"
                       >
-                        Link Existing User in Device
+                        {i18nT("static.n55o2u")}{" "}
                       </label>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Use this if the fingerprint user already exists in the
-                        device. The system will search by PIN2 and save the
-                        Machine PIN / PIN1.
+                        {i18nT("static.16f7twx")}{" "}
                       </p>
                     </div>
                   </div>
@@ -1004,12 +1009,10 @@ const EmployeeFingerprintTableData = () => {
                         htmlFor="mode_create_new"
                         className="cursor-pointer text-sm font-semibold text-slate-900"
                       >
-                        Create New User in Device
+                        {i18nT("static.8075sh")}{" "}
                       </label>
                       <p className="mt-1 text-xs leading-5 text-slate-500">
-                        Use this if the fingerprint user does not exist yet. The
-                        backend will generate Machine PIN / PIN1 and insert PIN2
-                        to the device.
+                        {i18nT("static.p16ai")}{" "}
                       </p>
                     </div>
                   </div>
@@ -1021,7 +1024,7 @@ const EmployeeFingerprintTableData = () => {
               name="fp_device_id"
               control={control}
               rules={{
-                required: "Fingerprint scanner is required",
+                required: i18nT("static.4bc6q8"),
                 validate: (value) =>
                   Number(value) > 0 || "Fingerprint scanner is required",
               }}
@@ -1031,7 +1034,7 @@ const EmployeeFingerprintTableData = () => {
                     htmlFor="fp_device_id"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Fingerprint Scanner
+                    {i18nT("static.1yyp0s1")}{" "}
                   </label>
                   <Dropdown
                     id="fp_device_id"
@@ -1040,7 +1043,9 @@ const EmployeeFingerprintTableData = () => {
                     optionLabel="name"
                     optionValue="id"
                     placeholder={
-                      fpIsLoading ? "Loading scanner..." : "Select scanner"
+                      fpIsLoading
+                        ? i18nT("static.1s2oq1")
+                        : i18nT("static.1c1iptj")
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                     onChange={(e) => {
@@ -1063,7 +1068,7 @@ const EmployeeFingerprintTableData = () => {
               name="fp_pin"
               control={control}
               rules={{
-                required: "Fingerprint User ID / PIN2 is required",
+                required: i18nT("static.nbp7ig"),
                 validate: (value) =>
                   String(value ?? "").trim().length > 0 ||
                   "Fingerprint User ID / PIN2 is required",
@@ -1074,14 +1079,14 @@ const EmployeeFingerprintTableData = () => {
                     htmlFor="fp_pin"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Fingerprint User ID / PIN2
+                    {i18nT("static.1c6fih")}{" "}
                   </label>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <InputText
                       id="fp_pin"
                       value={field.value ?? ""}
                       className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                      placeholder="Example: EMP001"
+                      placeholder={i18nT("static.agxfoa")}
                       onChange={(e) => {
                         field.onChange(e.target.value);
                         resetPinCheckState();
@@ -1089,7 +1094,7 @@ const EmployeeFingerprintTableData = () => {
                     />
                     <Button
                       type="button"
-                      label="Check User"
+                      label={i18nT("static.1if68pe")}
                       icon="pi pi-search"
                       loading={pinCheckState === "checking"}
                       onClick={onClickCheckPin}
@@ -1116,11 +1121,10 @@ const EmployeeFingerprintTableData = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Primary Fingerprint Mapping
+                        {i18nT("static.e336d7")}{" "}
                       </p>
                       <p className="mt-1 text-xs text-slate-500">
-                        Mark this scanner user as the primary fingerprint
-                        mapping for this employee.
+                        {i18nT("static.wqp7x7")}{" "}
                       </p>
                     </div>
                     <InputSwitch

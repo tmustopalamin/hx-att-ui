@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   createEmployeeWorkExperience,
@@ -59,6 +60,7 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 const helperTextClass = "mt-1 text-xs text-slate-500";
 
 const WorkExperience = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -85,7 +87,7 @@ const WorkExperience = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -156,10 +158,8 @@ const WorkExperience = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: isAddMode
-            ? "Work experience created successfully"
-            : "Work experience updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: isAddMode ? i18nT("static.1w02689") : i18nT("static.11w21bs"),
         }),
       );
 
@@ -171,7 +171,7 @@ const WorkExperience = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -180,7 +180,7 @@ const WorkExperience = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -190,8 +190,8 @@ const WorkExperience = () => {
 
   const onDelete = (row: EmployeeWorkExperienceRow) => {
     requestActionConfirmation({
-      message: "Do you want to delete this work experience record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.gcubb0"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -205,8 +205,8 @@ const WorkExperience = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "Success",
-              detail: "Work experience deleted successfully",
+              summary: i18nT("static.udvru8"),
+              detail: i18nT("static.8ddmqy"),
             }),
           );
           await loadData();
@@ -216,7 +216,7 @@ const WorkExperience = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "Error",
+                summary: i18nT("static.1vks92p"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -235,9 +235,9 @@ const WorkExperience = () => {
 
   const activeBodyTemplate = (row: EmployeeWorkExperienceRow) => {
     return row.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="secondary" />
+      <Tag value={i18nT("static.13zf5vc")} severity="secondary" />
     );
   };
 
@@ -252,7 +252,7 @@ const WorkExperience = () => {
           icon="pi pi-pencil"
           severity="secondary"
           onClick={() => openEdit(row)}
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ position: "top" }}
         />
         <Button
@@ -263,7 +263,7 @@ const WorkExperience = () => {
           icon="pi pi-trash"
           severity="danger"
           onClick={() => onDelete(row)}
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ position: "top" }}
         />
       </div>
@@ -274,7 +274,7 @@ const WorkExperience = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -283,7 +283,7 @@ const WorkExperience = () => {
       />
       <Button
         type="button"
-        label={isAddMode ? "Create Experience" : "Save Changes"}
+        label={isAddMode ? i18nT("static.1b3j6lb") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
@@ -295,12 +295,12 @@ const WorkExperience = () => {
     <>
       <div className="flex flex-col gap-5">
         <EmployeeDetailTableHeader
-          title="Work Experience"
-          description="Manage previous company and professional experience records."
+          title={i18nT("static.3ytfto")}
+          description={i18nT("static.1veu87k")}
           actions={
             <Button
               type="button"
-              label="New Experience"
+              label={i18nT("static.8kme5v")}
               icon="pi pi-plus"
               size="small"
               className="w-full sm:w-auto"
@@ -321,10 +321,10 @@ const WorkExperience = () => {
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
-          emptyMessage="No work experience found."
+          emptyMessage={i18nT("static.1q5z4st")}
           scrollable
           tableStyle={{ minWidth: "48rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -332,20 +332,20 @@ const WorkExperience = () => {
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "60px" }}
           />
-          <Column field="company" header="Company" />
-          <Column field="position" header="Position" />
+          <Column field="company" header={i18nT("static.1hra0d8")} />
+          <Column field="position" header={i18nT("static.1quewx6")} />
           <Column
-            header="Period"
+            header={i18nT("static.11hwh7o")}
             body={periodBodyTemplate}
             style={{ minWidth: "180px" }}
           />
           <Column
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={activeBodyTemplate}
             style={{ minWidth: "110px" }}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBodyTemplate}
             frozen
             alignFrozen="right"
@@ -357,7 +357,7 @@ const WorkExperience = () => {
       </div>
 
       <Dialog
-        header={isAddMode ? "New Work Experience" : "Update Work Experience"}
+        header={isAddMode ? i18nT("static.p6766y") : i18nT("static.6sxip7")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "48rem" }}
         onHide={hideDialog}
@@ -371,17 +371,17 @@ const WorkExperience = () => {
           <Controller
             name="company"
             control={control}
-            rules={{ required: "Company is required" }}
+            rules={{ required: i18nT("static.rn0vel") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="work_company" className={fieldLabelClass}>
-                  Company
+                  {i18nT("static.1hra0d8")}{" "}
                 </label>
                 <InputText
                   id="work_company"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter company name"
+                  placeholder={i18nT("static.za5gjl")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -393,17 +393,17 @@ const WorkExperience = () => {
           <Controller
             name="position"
             control={control}
-            rules={{ required: "Position is required" }}
+            rules={{ required: i18nT("static.1y306v3") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="work_position" className={fieldLabelClass}>
-                  Position
+                  {i18nT("static.1quewx6")}{" "}
                 </label>
                 <InputText
                   id="work_position"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter position"
+                  placeholder={i18nT("static.op3j8")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -415,11 +415,11 @@ const WorkExperience = () => {
           <Controller
             name="start_date"
             control={control}
-            rules={{ required: "Start date is required" }}
+            rules={{ required: i18nT("static.oz4lds") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="work_start_date" className={fieldLabelClass}>
-                  Start Date
+                  {i18nT("static.7bl5hd")}{" "}
                 </label>
                 <Calendar
                   id="work_start_date"
@@ -443,7 +443,7 @@ const WorkExperience = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="work_end_date" className={fieldLabelClass}>
-                  End Date
+                  {i18nT("static.1j4m31m")}{" "}
                 </label>
                 <Calendar
                   id="work_end_date"
@@ -467,11 +467,10 @@ const WorkExperience = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Active
+                        {i18nT("static.8qzyhb")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Control whether this work experience record is still
-                        active.
+                        {i18nT("static.1q14ipb")}{" "}
                       </p>
                     </div>
                     <InputSwitch

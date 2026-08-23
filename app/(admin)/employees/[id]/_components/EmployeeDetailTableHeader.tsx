@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/app/i18n";
 import type { ChangeEvent, ReactNode } from "react";
 import { Checkbox } from "primereact/checkbox";
 import { IconField } from "primereact/iconfield";
@@ -34,6 +35,7 @@ export default function EmployeeDetailTableHeader({
   search,
   actions,
 }: EmployeeDetailTableHeaderProps) {
+  const { t: i18nT } = useI18n();
   return (
     <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0">
@@ -58,7 +60,7 @@ export default function EmployeeDetailTableHeader({
                 htmlFor={showDeleted.inputId ?? "showDeletedData"}
                 className="cursor-pointer select-none text-sm text-slate-700"
               >
-                {showDeleted.label ?? "Show deleted data"}
+                {showDeleted.label ?? i18nT("static.1beum2j")}
               </label>
             </div>
           )}

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "primereact/button";
@@ -66,6 +67,7 @@ const tag = (status: string) =>
         ? "warning"
         : "danger";
 export default function PerformanceData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector((s: RootState) => s.profile.permissions);
   const currentEmployeeId = useSelector(
@@ -216,7 +218,10 @@ export default function PerformanceData() {
     () =>
       cycles
         .filter((c) => c.status === "OPEN")
-        .map((c) => ({ label: `${c.code} — ${c.name}`, value: c.id })),
+        .map((c) => ({
+          label: i18nT("static.gu0us5", { p0: c.code, p1: c.name }),
+          value: c.id,
+        })),
     [cycles],
   );
   const reviewerOptions = useMemo(
@@ -269,7 +274,7 @@ export default function PerformanceData() {
   const footer = (label: string, onClick: () => void) => (
     <div className="flex justify-end gap-2">
       <Button
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         text
         severity="secondary"
         onClick={close}
@@ -294,7 +299,7 @@ export default function PerformanceData() {
       reset();
       setDialog(null);
       await refresh();
-      notify("success", "Saved", success);
+      notify("success", i18nT("static.12ek4is"), success);
     } catch (cause: unknown) {
       const message =
         typeof cause === "object" &&
@@ -304,7 +309,7 @@ export default function PerformanceData() {
         cause.message.trim()
           ? cause.message
           : "Review the data and refresh if it has changed.";
-      notify("error", "Unable to save", message);
+      notify("error", i18nT("static.rulhkg"), message);
     } finally {
       setSaving(false);
     }
@@ -317,13 +322,13 @@ export default function PerformanceData() {
     try {
       await updatePerformanceCycleStatus(row.id, row.row_version, status);
       await reloadCycles();
-      notify("success", "Updated", `Cycle is now ${status.toLowerCase()}.`);
-    } catch {
       notify(
-        "error",
-        "Unable to update",
-        "Cycle has changed or cannot use that status.",
+        "success",
+        i18nT("static.miz9ao"),
+        i18nT("static.zwo5vl", { p0: status.toLowerCase() }),
       );
+    } catch {
+      notify("error", i18nT("static.1yhx6qk"), i18nT("static.stj5in"));
     } finally {
       setSaving(false);
     }
@@ -334,14 +339,12 @@ export default function PerformanceData() {
   ) => {
     const closing = status === "CLOSED";
     requestActionConfirmation({
-      action: closing ? "Close performance cycle" : "Open performance cycle",
+      action: closing ? i18nT("static.eqqb5n") : i18nT("static.g8a2v5"),
       target: `${row.code} · ${row.name}`,
       severity: closing ? "danger" : "warning",
-      confirmLabel: closing ? "Close Cycle" : "Open Cycle",
+      confirmLabel: closing ? i18nT("static.76ofnh") : i18nT("static.16uve83"),
       confirmIcon: closing ? "pi pi-lock" : "pi pi-folder-open",
-      description: closing
-        ? "Close this performance cycle?"
-        : "Open this performance cycle?",
+      description: closing ? i18nT("static.brjey6") : i18nT("static.1xsxudo"),
       onAccept: () => cycleAction(row, status),
     });
   };
@@ -352,7 +355,7 @@ export default function PerformanceData() {
       const current = currentReviews?.find((item) => item.id === row.id) ?? row;
       await finalizePerformanceReview(current.id, current.row_version);
       await reloadReviews();
-      notify("success", "Finalized", "Review is locked for payroll use.");
+      notify("success", i18nT("static.4cmc2p"), i18nT("static.1q411fc"));
     } catch (cause: unknown) {
       const message =
         typeof cause === "object" &&
@@ -362,19 +365,19 @@ export default function PerformanceData() {
         cause.message.trim()
           ? cause.message
           : "Review must be acknowledged, have a valid score, and belong to an open cycle.";
-      notify("error", "Unable to finalize", message);
+      notify("error", i18nT("static.cypogn"), message);
     } finally {
       setSaving(false);
     }
   };
   const confirmFinalizeReview = (row: PerformanceReview) => {
     requestActionConfirmation({
-      action: "Finalize performance review",
+      action: i18nT("static.1twp4pb"),
       target: `${row.employee_name} · ${row.cycle_name}`,
       severity: "danger",
-      confirmLabel: "Finalize",
+      confirmLabel: i18nT("static.1a3s3dr"),
       confirmIcon: "pi pi-lock",
-      description: "Finalize this review and lock its score?",
+      description: i18nT("static.y7wee6"),
       onAccept: () => finalizeReview(row),
     });
   };
@@ -390,13 +393,13 @@ export default function PerformanceData() {
         status,
       );
       await reloadPolicies();
-      notify("success", "Updated", `Policy is now ${status.toLowerCase()}.`);
-    } catch {
       notify(
-        "error",
-        "Unable to update",
-        "Policy changed, overlaps another published policy, or has invalid score rules.",
+        "success",
+        i18nT("static.miz9ao"),
+        i18nT("static.i473w3", { p0: status.toLowerCase() }),
       );
+    } catch {
+      notify("error", i18nT("static.1yhx6qk"), i18nT("static.wmbirz"));
     } finally {
       setSaving(false);
     }
@@ -407,26 +410,28 @@ export default function PerformanceData() {
   ) => {
     const publishing = status === "PUBLISHED";
     requestActionConfirmation({
-      action: publishing ? "Publish earning policy" : "Retire earning policy",
+      action: publishing ? i18nT("static.1gu0cas") : i18nT("static.tqo366"),
       target: `${row.code} · ${row.name}`,
       severity: publishing ? "warning" : "danger",
-      confirmLabel: publishing ? "Publish" : "Retire",
+      confirmLabel: publishing
+        ? i18nT("static.u2m17s")
+        : i18nT("static.rgquxi"),
       confirmIcon: publishing ? "pi pi-check-circle" : "pi pi-ban",
       description: publishing
-        ? "Publish this earning policy?"
-        : "Retire this earning policy?",
+        ? i18nT("static.1n2xxyl")
+        : i18nT("static.2nqyk7"),
       onAccept: () => policyAction(row, status),
     });
   };
   const confirmSubmitReview = () => {
     if (!selectedReview) return;
     requestActionConfirmation({
-      action: "Submit performance review",
+      action: i18nT("static.s6u7ed"),
       target: `${selectedReview.employee_name} · ${selectedReview.cycle_name}`,
       severity: "warning",
-      confirmLabel: "Submit review",
+      confirmLabel: i18nT("static.1vxjz0n"),
       confirmIcon: "pi pi-send",
-      description: "Submit this performance review?",
+      description: i18nT("static.9k9pf4"),
       onAccept: () =>
         save(
           () =>
@@ -443,12 +448,12 @@ export default function PerformanceData() {
   const confirmAcknowledgeReview = () => {
     if (!selectedReview) return;
     requestActionConfirmation({
-      action: "Acknowledge performance review",
+      action: i18nT("static.1siwsnv"),
       target: `${selectedReview.employee_name} · ${selectedReview.cycle_name}`,
       severity: "info",
-      confirmLabel: "Acknowledge",
+      confirmLabel: i18nT("static.wt2knn"),
       confirmIcon: "pi pi-check",
-      description: "Acknowledge this performance review?",
+      description: i18nT("static.1lo3hs6"),
       onAccept: () =>
         save(
           () =>
@@ -537,15 +542,14 @@ export default function PerformanceData() {
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-              Performance
+              {i18nT("static.13rkbwl")}{" "}
             </h1>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Set review cycles, assign reviewers, track goals, and submit
-              performance outcomes.
+              {i18nT("static.1bkmru8")}{" "}
             </p>
           </div>
           <Button
-            label="Refresh"
+            label={i18nT("static.28r6qc")}
             outlined
             severity="secondary"
             icon="pi pi-refresh"
@@ -555,11 +559,11 @@ export default function PerformanceData() {
           />
         </div>
         <TabView>
-          <TabPanel header="Review Cycles">
+          <TabPanel header={i18nT("static.17x6nw8")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="New Cycle"
+                  label={i18nT("static.1vnwzxn")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => setDialog("cycle")}
@@ -574,44 +578,44 @@ export default function PerformanceData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No performance cycle found."
+              emptyMessage={i18nT("static.1jlww0g")}
             >
-              <Column field="code" header="Code" />
-              <Column field="name" header="Cycle" />
+              <Column field="code" header={i18nT("static.xoaiok")} />
+              <Column field="name" header={i18nT("static.j0bn2p")} />
               <Column
                 field="start_date"
-                header="Start"
+                header={i18nT("static.30xvgf")}
                 body={(row: PerformanceCycle) =>
                   formatDisplayDate(row.start_date)
                 }
               />
               <Column
                 field="end_date"
-                header="End"
+                header={i18nT("static.1llf32i")}
                 body={(row: PerformanceCycle) =>
                   formatDisplayDate(row.end_date)
                 }
               />
               <Column
-                header="Earning"
+                header={i18nT("static.kuodwx")}
                 body={(r: PerformanceCycle) =>
                   r.earning_enabled ? "Enabled" : "Off"
                 }
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(r: PerformanceCycle) => (
                   <Tag value={r.status} severity={tag(r.status)} />
                 )}
               />
               {canManage && (
                 <Column
-                  header="Action"
+                  header={i18nT("static.2wk0tb")}
                   body={(r: PerformanceCycle) => (
                     <div className="flex gap-1">
                       {r.status === "DRAFT" && (
                         <Button
-                          label="Open"
+                          label={i18nT("static.n6hn1l")}
                           text
                           size="small"
                           onClick={() => confirmCycleAction(r, "OPEN")}
@@ -619,7 +623,7 @@ export default function PerformanceData() {
                       )}{" "}
                       {r.status === "OPEN" && (
                         <Button
-                          label="Close"
+                          label={i18nT("static.1l0xxoj")}
                           text
                           severity="secondary"
                           size="small"
@@ -632,11 +636,11 @@ export default function PerformanceData() {
               )}
             </DataTable>
           </TabPanel>
-          <TabPanel header="Reviews">
+          <TabPanel header={i18nT("static.1fc6u0m")}>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
-                  label="New Review"
+                  label={i18nT("static.re0nsr")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => setDialog("review")}
@@ -651,28 +655,28 @@ export default function PerformanceData() {
               stripedRows
               rowHover
               size="small"
-              emptyMessage="No performance review found."
+              emptyMessage={i18nT("static.6bd336")}
             >
-              <Column field="cycle_name" header="Cycle" />
-              <Column field="employee_name" header="Employee" />
-              <Column field="reviewer_name" header="Reviewer" />
-              <Column field="review_type" header="Type" />
+              <Column field="cycle_name" header={i18nT("static.j0bn2p")} />
+              <Column field="employee_name" header={i18nT("static.1fak8xt")} />
+              <Column field="reviewer_name" header={i18nT("static.oz4j0a")} />
+              <Column field="review_type" header={i18nT("static.1m2zofh")} />
               <Column
-                header="Score"
+                header={i18nT("static.x9tsfp")}
                 body={(r: PerformanceReview) => r.overall_score ?? "-"}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(r: PerformanceReview) => (
                   <Tag value={r.status} severity={tag(r.status)} />
                 )}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={(r: PerformanceReview) => (
                   <div className="flex flex-wrap gap-1">
                     <Button
-                      label="Goals"
+                      label={i18nT("static.1xybhq7")}
                       text
                       size="small"
                       onClick={() => {
@@ -684,7 +688,7 @@ export default function PerformanceData() {
                     {r.status === "DRAFT" &&
                     r.reviewer_employee_id === currentEmployeeId ? (
                       <Button
-                        label="Submit"
+                        label={i18nT("static.hvztxh")}
                         text
                         size="small"
                         onClick={() => {
@@ -700,7 +704,7 @@ export default function PerformanceData() {
                     {r.status === "SUBMITTED" &&
                     r.employee_id === currentEmployeeId ? (
                       <Button
-                        label="Acknowledge"
+                        label={i18nT("static.wt2knn")}
                         text
                         size="small"
                         onClick={() => {
@@ -712,7 +716,7 @@ export default function PerformanceData() {
                     ) : null}
                     {canManage && r.status === "ACKNOWLEDGED" ? (
                       <Button
-                        label="Finalize"
+                        label={i18nT("static.1a3s3dr")}
                         text
                         size="small"
                         onClick={() => confirmFinalizeReview(r)}
@@ -724,10 +728,10 @@ export default function PerformanceData() {
             </DataTable>
           </TabPanel>
           {canManage && (
-            <TabPanel header="Earning Policies">
+            <TabPanel header={i18nT("static.y7egl5")}>
               <div className="mb-4 flex justify-end">
                 <Button
-                  label="New Earning Policy"
+                  label={i18nT("static.tzcp03")}
                   icon="pi pi-plus"
                   size="small"
                   onClick={() => setDialog("policy")}
@@ -741,42 +745,42 @@ export default function PerformanceData() {
                 stripedRows
                 rowHover
                 size="small"
-                emptyMessage="No performance earning policy found."
+                emptyMessage={i18nT("static.ymn45m")}
               >
-                <Column field="code" header="Code" />
-                <Column field="name" header="Policy" />
+                <Column field="code" header={i18nT("static.xoaiok")} />
+                <Column field="name" header={i18nT("static.1g6zau7")} />
                 <Column
-                  header="Scope"
+                  header={i18nT("static.rpvfkb")}
                   body={(row: PerformanceEarningPolicy) =>
                     row.position_name || row.department_name || "-"
                   }
                 />
                 <Column
-                  header="Component"
+                  header={i18nT("static.bvqo3k")}
                   body={(row: PerformanceEarningPolicy) =>
                     `${row.income_component_code} — ${row.income_component_name}`
                   }
                 />
-                <Column field="version_no" header="Version" />
+                <Column field="version_no" header={i18nT("static.q0zd4n")} />
                 <Column
-                  header="Status"
+                  header={i18nT("static.3pd73")}
                   body={(row: PerformanceEarningPolicy) => (
                     <Tag value={row.status} severity={tag(row.status)} />
                   )}
                 />
                 <Column
-                  header="Rules"
+                  header={i18nT("static.igop6o")}
                   body={(row: PerformanceEarningPolicy) => row.rules.length}
                 />
                 <Column
-                  header="Action"
+                  header={i18nT("static.2wk0tb")}
                   frozen
                   alignFrozen="right"
                   body={(row: PerformanceEarningPolicy) => (
                     <div className="flex gap-1">
                       {row.status === "DRAFT" && (
                         <Button
-                          label="Edit"
+                          label={i18nT("static.1i1lcq9")}
                           text
                           size="small"
                           onClick={() => editPolicy(row)}
@@ -784,7 +788,7 @@ export default function PerformanceData() {
                       )}
                       {row.status === "DRAFT" && (
                         <Button
-                          label="Publish"
+                          label={i18nT("static.u2m17s")}
                           text
                           size="small"
                           onClick={() => confirmPolicyAction(row, "PUBLISHED")}
@@ -792,7 +796,7 @@ export default function PerformanceData() {
                       )}
                       {row.status === "PUBLISHED" && (
                         <Button
-                          label="Retire"
+                          label={i18nT("static.rgquxi")}
                           text
                           severity="secondary"
                           size="small"
@@ -808,7 +812,7 @@ export default function PerformanceData() {
         </TabView>
       </div>
       <Dialog
-        header="New Performance Cycle"
+        header={i18nT("static.11saf09")}
         visible={dialog === "cycle"}
         modal
         draggable={false}
@@ -822,7 +826,7 @@ export default function PerformanceData() {
             !cycle.start_date ||
             !cycle.end_date
           ) {
-            notify("error", "Validation", "All cycle fields are required.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.rd1hxc"));
             return;
           }
           void save(
@@ -841,21 +845,21 @@ export default function PerformanceData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Code
+            {i18nT("static.xoaiok")}{" "}
             <InputText
               value={cycle.code}
               onChange={(e) => setCycle({ ...cycle, code: e.target.value })}
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Name
+            {i18nT("static.4el6o6")}{" "}
             <InputText
               value={cycle.name}
               onChange={(e) => setCycle({ ...cycle, name: e.target.value })}
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Start Date
+            {i18nT("static.7bl5hd")}{" "}
             <PrimeDatePicker
               value={cycle.start_date}
               onValueChange={(value) =>
@@ -864,7 +868,7 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            End Date
+            {i18nT("static.1j4m31m")}{" "}
             <PrimeDatePicker
               value={cycle.end_date}
               onValueChange={(value) => setCycle({ ...cycle, end_date: value })}
@@ -878,15 +882,13 @@ export default function PerformanceData() {
                 setCycle({ ...cycle, earning_enabled: event.checked === true })
               }
             />
-            Enable performance earning for this cycle
+            {i18nT("static.12texmh")}{" "}
           </label>
         </div>
       </Dialog>
       <Dialog
         header={
-          editingPolicyId
-            ? "Edit Performance Earning Policy"
-            : "New Performance Earning Policy"
+          editingPolicyId ? i18nT("static.12kzrh") : i18nT("static.13rn8r1")
         }
         visible={dialog === "policy"}
         modal
@@ -903,11 +905,7 @@ export default function PerformanceData() {
             (!policy.department_id && !policy.position_id) ||
             policyRules.length === 0
           ) {
-            notify(
-              "error",
-              "Validation",
-              "Scope, earning component, dates, and score rules are required.",
-            );
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.pyt764"));
             return;
           }
           const payload = {
@@ -935,7 +933,7 @@ export default function PerformanceData() {
         <div className="grid gap-4 py-2">
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Policy Code
+              {i18nT("static.yyofws")}{" "}
               <InputText
                 value={policy.code}
                 onChange={(event) =>
@@ -944,7 +942,7 @@ export default function PerformanceData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Name
+              {i18nT("static.4el6o6")}{" "}
               <InputText
                 value={policy.name}
                 onChange={(event) =>
@@ -955,7 +953,7 @@ export default function PerformanceData() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Department scope
+              {i18nT("static.173kkr")}{" "}
               <Dropdown
                 value={policy.department_id}
                 options={departments.map((item) => ({
@@ -965,7 +963,7 @@ export default function PerformanceData() {
                 filter
                 showClear
                 className="w-full"
-                placeholder="Optional department"
+                placeholder={i18nT("static.y4yt11")}
                 onChange={(event) =>
                   setPolicy({
                     ...policy,
@@ -976,7 +974,7 @@ export default function PerformanceData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Position scope
+              {i18nT("static.12n22je")}{" "}
               <Dropdown
                 value={policy.position_id}
                 options={positions
@@ -989,7 +987,7 @@ export default function PerformanceData() {
                 filter
                 showClear
                 className="w-full"
-                placeholder="Optional position"
+                placeholder={i18nT("static.1wtf6d4")}
                 onChange={(event) =>
                   setPolicy({
                     ...policy,
@@ -1001,18 +999,21 @@ export default function PerformanceData() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Earning component
+              {i18nT("static.zdk34u")}{" "}
               <Dropdown
                 value={policy.income_component_id}
                 options={incomeComponents
                   .filter((item) => item.is_active)
                   .map((item) => ({
-                    label: `${item.code} — ${item.name}`,
+                    label: i18nT("static.gu0us5", {
+                      p0: item.code,
+                      p1: item.name,
+                    }),
                     value: item.id,
                   }))}
                 filter
                 className="w-full"
-                placeholder="Select component"
+                placeholder={i18nT("static.yrs9f6")}
                 onChange={(event) =>
                   setPolicy({
                     ...policy,
@@ -1022,7 +1023,7 @@ export default function PerformanceData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective from
+              {i18nT("static.1y9m5iq")}{" "}
               <PrimeDatePicker
                 value={policy.effective_from}
                 onValueChange={(value) =>
@@ -1031,7 +1032,7 @@ export default function PerformanceData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective to
+              {i18nT("static.mq7icr")}{" "}
               <PrimeDatePicker
                 value={policy.effective_to}
                 onValueChange={(value) =>
@@ -1044,13 +1045,13 @@ export default function PerformanceData() {
             <table className="w-full min-w-[42rem] text-sm">
               <thead className="bg-slate-50 text-left text-slate-600">
                 <tr>
-                  <th className="p-2">From</th>
-                  <th className="p-2">To</th>
-                  <th className="p-2">Mode</th>
-                  <th className="p-2">Fixed amount</th>
-                  <th className="p-2">Percentage</th>
+                  <th className="p-2">{i18nT("static.6s9hn9")}</th>
+                  <th className="p-2">{i18nT("static.iaukp0")}</th>
+                  <th className="p-2">{i18nT("static.n44ilu")}</th>
+                  <th className="p-2">{i18nT("static.7lgj73")}</th>
+                  <th className="p-2">{i18nT("static.wa149h")}</th>
                   <th className="sticky right-0 z-10 bg-slate-50 p-2 shadow-[-4px_0_8px_-6px_rgba(15,23,42,0.35)]">
-                    Action
+                    {i18nT("static.2wk0tb")}{" "}
                   </th>
                 </tr>
               </thead>
@@ -1161,12 +1162,12 @@ export default function PerformanceData() {
                         icon="pi pi-trash"
                         text
                         severity="danger"
-                        aria-label="Remove score rule"
+                        aria-label={i18nT("static.1lbzegn")}
                         disabled={policyRules.length <= 1}
                         tooltip={
                           policyRules.length <= 1
-                            ? "At least one score rule is required."
-                            : "Remove score rule"
+                            ? i18nT("static.18up6m0")
+                            : i18nT("static.1lbzegn")
                         }
                         onClick={() =>
                           setPolicyRules((current) =>
@@ -1183,7 +1184,7 @@ export default function PerformanceData() {
             </table>
             <div className="border-t border-slate-200 p-2">
               <Button
-                label="Add score rule"
+                label={i18nT("static.sol48k")}
                 icon="pi pi-plus"
                 text
                 size="small"
@@ -1205,7 +1206,7 @@ export default function PerformanceData() {
         </div>
       </Dialog>
       <Dialog
-        header="New Performance Review"
+        header={i18nT("static.24f0h5")}
         visible={dialog === "review"}
         modal
         draggable={false}
@@ -1220,10 +1221,10 @@ export default function PerformanceData() {
           ) {
             notify(
               "error",
-              "Validation",
+              i18nT("static.gy1qqi"),
               review.review_type === "MANAGER"
-                ? "Cycle and employee are required. Select the current supervisor or choose a reviewer manually."
-                : "Cycle, employee, and reviewer are required.",
+                ? i18nT("static.fchzog")
+                : i18nT("static.a4edbm"),
             );
             return;
           }
@@ -1244,12 +1245,12 @@ export default function PerformanceData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Open Cycle
+            {i18nT("static.16uve83")}{" "}
             <Dropdown
               value={review.performance_cycle_id || null}
               options={cycleOptions}
               filter
-              placeholder="Select cycle"
+              placeholder={i18nT("static.15irszb")}
               className="w-full"
               onChange={(e) =>
                 setReview({
@@ -1260,13 +1261,13 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Review Type
+            {i18nT("static.1ygosdn")}{" "}
             <Dropdown
               value={review.review_type}
               options={[
-                { label: "Manager review", value: "MANAGER" },
-                { label: "Self review", value: "SELF" },
-                { label: "Peer review", value: "PEER" },
+                { label: i18nT("static.8hgou0"), value: "MANAGER" },
+                { label: i18nT("static.ucgzbl"), value: "SELF" },
+                { label: i18nT("static.14idxv"), value: "PEER" },
               ]}
               className="w-full"
               onChange={(e) => {
@@ -1282,12 +1283,12 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee
+            {i18nT("static.1fak8xt")}{" "}
             <Dropdown
               value={review.employee_id || null}
               options={employeeOptions}
               filter
-              placeholder="Select employee"
+              placeholder={i18nT("static.1izgm0n")}
               className="w-full"
               onChange={(e) => {
                 const employeeId = e.value as number;
@@ -1304,7 +1305,7 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Reviewer
+            {i18nT("static.oz4j0a")}{" "}
             <Dropdown
               value={review.reviewer_employee_id || null}
               options={
@@ -1313,7 +1314,7 @@ export default function PerformanceData() {
                   : reviewerOptions
               }
               filter
-              placeholder="Select reviewer"
+              placeholder={i18nT("static.1yczgck")}
               className="w-full"
               disabled={!review.employee_id || review.review_type === "SELF"}
               onChange={(e) => {
@@ -1326,27 +1327,27 @@ export default function PerformanceData() {
             />
             {review.review_type === "SELF" && (
               <span className="text-xs font-normal text-slate-500">
-                Reviewer is automatically set to the selected employee.
+                {i18nT("static.ti1hvy")}{" "}
               </span>
             )}
             {review.review_type === "MANAGER" && review.employee_id && (
               <span className="text-xs font-normal text-slate-500">
                 {selectedEmploymentError
-                  ? "Unable to load employment data. You can select a reviewer manually."
+                  ? i18nT("static.18weo4l")
                   : selectedEmployment === undefined
-                    ? "Loading the employee's current supervisor..."
+                    ? i18nT("static.7hbmun")
                     : selectedEmployment?.supervisor_employee_id
                       ? reviewerSource === "AUTO"
-                        ? "Reviewer was set automatically from the current supervisor. You can override it if needed."
-                        : "Manual reviewer override selected."
-                      : "No supervisor is configured. Select a reviewer manually or set the employee's supervisor first."}
+                        ? i18nT("static.q8kei")
+                        : i18nT("static.10j234r")
+                      : i18nT("static.aapktr")}
               </span>
             )}
           </label>
         </div>
       </Dialog>
       <Dialog
-        header="Submit Performance Review"
+        header={i18nT("static.u2c0l1")}
         visible={dialog === "submit"}
         modal
         draggable={false}
@@ -1357,14 +1358,13 @@ export default function PerformanceData() {
       >
         <div className="grid gap-4 py-2">
           <p className="rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-            If this review has goals, every active goal needs a score and the
-            active goal weights must total exactly 100%. The weighted score is
-            calculated automatically; the overall score below is used only when
-            no active goals exist.
+            {i18nT("static.1shr12f")}{" "}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Overall Score{" "}
-            <span className="font-normal text-slate-400">(0–100)</span>
+            {i18nT("static.1fhywqk")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.1wtopll")}
+            </span>
             <InputNumber
               value={submission.overall_score}
               min={0}
@@ -1375,8 +1375,10 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Reviewer Comment{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.gq98mb")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={4}
               autoResize
@@ -1392,7 +1394,7 @@ export default function PerformanceData() {
         </div>
       </Dialog>
       <Dialog
-        header="Acknowledge Performance Review"
+        header={i18nT("static.mhoiaj")}
         visible={dialog === "acknowledge"}
         modal
         draggable={false}
@@ -1403,12 +1405,13 @@ export default function PerformanceData() {
       >
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm text-slate-600">
-            Acknowledgement confirms that the review has been received. It does
-            not necessarily mean agreement with the score.
+            {i18nT("static.1lowoxw")}{" "}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee Comment
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.b1mnxw")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={4}
               autoResize
@@ -1420,7 +1423,9 @@ export default function PerformanceData() {
       </Dialog>
       <Dialog
         header={
-          selectedReview ? `Goals — ${selectedReview.employee_name}` : "Goals"
+          selectedReview
+            ? i18nT("static.rz6mga", { p0: selectedReview.employee_name })
+            : i18nT("static.1xybhq7")
         }
         visible={dialog === "goals"}
         modal
@@ -1433,12 +1438,17 @@ export default function PerformanceData() {
             {selectedReview?.status === "DRAFT" &&
               isReviewParticipant(selectedReview) && (
                 <Button
-                  label="New Goal"
+                  label={i18nT("static.llrv7w")}
                   icon="pi pi-plus"
                   onClick={() => setDialog("goal")}
                 />
               )}
-            <Button label="Close" text severity="secondary" onClick={close} />
+            <Button
+              label={i18nT("static.1l0xxoj")}
+              text
+              severity="secondary"
+              onClick={close}
+            />
           </div>
         }
       >
@@ -1447,33 +1457,37 @@ export default function PerformanceData() {
           dataKey="id"
           size="small"
           stripedRows
-          emptyMessage="No goal found."
+          emptyMessage={i18nT("static.1mpg075")}
         >
-          <Column field="title" header="Goal" />
-          <Column field="weight" header="Weight" body={(r) => `${r.weight}%`} />
+          <Column field="title" header={i18nT("static.15sdt3q")} />
+          <Column
+            field="weight"
+            header={i18nT("static.16i5exl")}
+            body={(r) => `${r.weight}%`}
+          />
           <Column
             field="target_value"
-            header="Target"
+            header={i18nT("static.12ohkdk")}
             body={(r) => r.target_value || "-"}
           />
-          <Column field="status" header="Status" />
+          <Column field="status" header={i18nT("static.3pd73")} />
           <Column
             field="actual_value"
-            header="Actual"
+            header={i18nT("static.1v23pg7")}
             body={(r: PerformanceGoal) => r.actual_value || "-"}
           />
           <Column
             field="score"
-            header="Score"
+            header={i18nT("static.x9tsfp")}
             body={(r: PerformanceGoal) => r.score ?? "-"}
           />
           {selectedReview?.status === "DRAFT" &&
             isReviewParticipant(selectedReview) && (
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={(r: PerformanceGoal) => (
                   <Button
-                    label="Update"
+                    label={i18nT("static.uk4kus")}
                     text
                     size="small"
                     onClick={() => {
@@ -1494,7 +1508,9 @@ export default function PerformanceData() {
       </Dialog>
       <Dialog
         header={
-          selectedGoal ? `Update Goal — ${selectedGoal.title}` : "Update Goal"
+          selectedGoal
+            ? i18nT("static.t7z0ki", { p0: selectedGoal.title })
+            : i18nT("static.ccosw7")
         }
         visible={dialog === "updateGoal"}
         modal
@@ -1526,7 +1542,7 @@ export default function PerformanceData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Status
+            {i18nT("static.3pd73")}{" "}
             <Dropdown
               value={goalProgress.status}
               options={["NOT_STARTED", "IN_PROGRESS", "COMPLETED"]}
@@ -1540,7 +1556,7 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Actual Result
+            {i18nT("static.cvm2l0")}{" "}
             <InputTextarea
               rows={3}
               autoResize
@@ -1554,7 +1570,10 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Score <span className="font-normal text-slate-400">(0–100)</span>
+            {i18nT("static.x9tsfp")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.1wtopll")}
+            </span>
             <InputNumber
               value={goalProgress.score}
               min={0}
@@ -1570,7 +1589,7 @@ export default function PerformanceData() {
         </div>
       </Dialog>
       <Dialog
-        header="New Goal"
+        header={i18nT("static.llrv7w")}
         visible={dialog === "goal"}
         modal
         draggable={false}
@@ -1579,7 +1598,7 @@ export default function PerformanceData() {
         onHide={close}
         footer={footer("Save", () => {
           if (!selectedReview || !goal.title.trim()) {
-            notify("error", "Validation", "Goal title is required.");
+            notify("error", i18nT("static.gy1qqi"), i18nT("static.xqivv5"));
             return;
           }
           void save(
@@ -1605,14 +1624,14 @@ export default function PerformanceData() {
       >
         <div className="grid gap-4 py-2">
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Goal Title
+            {i18nT("static.7xzesk")}{" "}
             <InputText
               value={goal.title}
               onChange={(e) => setGoal({ ...goal, title: e.target.value })}
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Weight (%)
+            {i18nT("static.e3nl4n")}{" "}
             <InputNumber
               value={goal.weight}
               min={0}
@@ -1621,8 +1640,10 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Target{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.12ohkdk")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputText
               value={goal.target_value}
               onChange={(e) =>
@@ -1631,8 +1652,10 @@ export default function PerformanceData() {
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Description{" "}
-            <span className="font-normal text-slate-400">(optional)</span>
+            {i18nT("static.sjj37t")}{" "}
+            <span className="font-normal text-slate-400">
+              {i18nT("static.6pi6gi")}
+            </span>
             <InputTextarea
               rows={3}
               autoResize

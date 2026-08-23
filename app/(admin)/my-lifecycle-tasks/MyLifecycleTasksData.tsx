@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useState } from "react";
 import useSWR from "swr";
@@ -28,25 +29,26 @@ import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog
 
 const employmentChangeFields: Array<{
   key: keyof EmployeeLifecycleEmploymentSnapshot;
-  label: string;
+  labelKey: string;
 }> = [
-  { key: "join_date", label: "Join Date" },
-  { key: "code", label: "Employment Code" },
-  { key: "agency_name", label: "Agency" },
-  { key: "branch_name", label: "Branch" },
-  { key: "department_name", label: "Department" },
-  { key: "position_name", label: "Position" },
-  { key: "employment_status_name", label: "Employment Status" },
-  { key: "supervisor_name", label: "Supervisor" },
-  { key: "end_date", label: "End Date" },
-  { key: "probation_end_date", label: "Probation End Date" },
-  { key: "confirmation_date", label: "Confirmation Date" },
-  { key: "notes", label: "Notes" },
+  { key: "join_date", labelKey: "Join Date" },
+  { key: "code", labelKey: "Employment Code" },
+  { key: "agency_name", labelKey: "Agency" },
+  { key: "branch_name", labelKey: "Branch" },
+  { key: "department_name", labelKey: "Department" },
+  { key: "position_name", labelKey: "Position" },
+  { key: "employment_status_name", labelKey: "Employment Status" },
+  { key: "supervisor_name", labelKey: "Supervisor" },
+  { key: "end_date", labelKey: "End Date" },
+  { key: "probation_end_date", labelKey: "Probation End Date" },
+  { key: "confirmation_date", labelKey: "Confirmation Date" },
+  { key: "notes", labelKey: "Notes" },
 ];
 
 const displayValue = (value: string | null) => value || "-";
 
 export default function MyLifecycleTasksData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const [reviewTask, setReviewTask] =
     useState<EmployeeLifecycleAssignedTask | null>(null);
@@ -77,8 +79,8 @@ export default function MyLifecycleTasksData() {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Task completed",
-          detail: "The lifecycle checklist has been updated.",
+          summary: i18nT("static.r996ql"),
+          detail: i18nT("static.1xre2gp"),
         }),
       );
       return true;
@@ -87,12 +89,12 @@ export default function MyLifecycleTasksData() {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Unable to complete task",
+          summary: i18nT("static.6hu8lv"),
           detail: isResponseTypeError(error)
             ? getErrorMessage(error, "message")
             : error instanceof Error
               ? error.message
-              : "Refresh the page and review the task status.",
+              : i18nT("static.2lr57r"),
         }),
       );
       return false;
@@ -100,12 +102,12 @@ export default function MyLifecycleTasksData() {
   };
   const confirmComplete = (task: EmployeeLifecycleAssignedTask) => {
     requestActionConfirmation({
-      action: "Complete task",
+      action: i18nT("static.57uda3"),
       target: `${task.employee_name} · ${task.name}`,
       severity: "warning",
-      confirmLabel: "Complete Task",
+      confirmLabel: i18nT("static.1bpdrq3"),
       confirmIcon: "pi pi-check",
-      description: "Mark this lifecycle task as complete?",
+      description: i18nT("static.1yyhwmj"),
       onAccept: async () => {
         const completed = await complete(task);
         if (completed) setReviewTask(null);
@@ -115,9 +117,7 @@ export default function MyLifecycleTasksData() {
   if (error)
     return (
       <Card className="border border-red-200">
-        <p className="m-0 text-sm text-red-600">
-          Unable to load assigned lifecycle tasks.
-        </p>
+        <p className="m-0 text-sm text-red-600">{i18nT("static.1vf0yx1")} </p>
       </Card>
     );
   return (
@@ -126,15 +126,14 @@ export default function MyLifecycleTasksData() {
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="m-0 text-xl font-semibold text-slate-800 sm:text-2xl">
-              My Lifecycle Tasks
+              {i18nT("static.11s4or5")}{" "}
             </h1>
             <p className="m-0 mt-1 text-sm text-slate-500">
-              Review the lifecycle context before confirming work assigned to
-              you.
+              {i18nT("static.1weftn7")}{" "}
             </p>
           </div>
           <Button
-            label="Refresh"
+            label={i18nT("static.28r6qc")}
             icon="pi pi-refresh"
             outlined
             severity="secondary"
@@ -152,12 +151,12 @@ export default function MyLifecycleTasksData() {
           stripedRows
           rowHover
           size="small"
-          emptyMessage="No lifecycle task is assigned to you."
+          emptyMessage={i18nT("static.5ulv3")}
         >
-          <Column field="employee_name" header="Employee" />
+          <Column field="employee_name" header={i18nT("static.1fak8xt")} />
           <Column
             field="lifecycle_type"
-            header="Lifecycle"
+            header={i18nT("static.1nvorn3")}
             body={(row: EmployeeLifecycleAssignedTask) => (
               <Tag
                 value={row.lifecycle_type.replace("_", " ")}
@@ -165,9 +164,9 @@ export default function MyLifecycleTasksData() {
               />
             )}
           />
-          <Column field="name" header="Task" />
+          <Column field="name" header={i18nT("static.x0051o")} />
           <Column
-            header="Owner Policy"
+            header={i18nT("static.q3tmuu")}
             body={(row: EmployeeLifecycleAssignedTask) =>
               row.assignment_source === "ROLE"
                 ? `Role: ${row.assignment_role_code ?? row.owner_scope}`
@@ -180,22 +179,22 @@ export default function MyLifecycleTasksData() {
           />
           <Column
             field="effective_date"
-            header="Effective Date"
+            header={i18nT("static.dfnnk2")}
             body={(row: EmployeeLifecycleAssignedTask) =>
               formatDisplayDate(row.effective_date)
             }
           />
           <Column
-            header="Due Date"
+            header={i18nT("static.vtfgln")}
             body={(row: EmployeeLifecycleAssignedTask) =>
               formatDisplayDate(row.due_date)
             }
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={(row: EmployeeLifecycleAssignedTask) => (
               <Button
-                label="Review"
+                label={i18nT("static.tnr3lt")}
                 icon="pi pi-eye"
                 size="small"
                 onClick={() => setReviewTask(row)}
@@ -205,7 +204,7 @@ export default function MyLifecycleTasksData() {
         </DataTable>
       </div>
       <Dialog
-        header="Lifecycle Task Review"
+        header={i18nT("static.1jim9ds")}
         visible={reviewTask !== null}
         modal
         draggable={false}
@@ -215,14 +214,14 @@ export default function MyLifecycleTasksData() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               severity="secondary"
               outlined
               disabled={isLoadingDetail}
               onClick={() => setReviewTask(null)}
             />
             <Button
-              label="Complete Task"
+              label={i18nT("static.1bpdrq3")}
               icon="pi pi-check"
               disabled={!reviewTask || !lifecycleDetail || isLoadingDetail}
               onClick={() => {
@@ -234,37 +233,37 @@ export default function MyLifecycleTasksData() {
       >
         {!reviewTask || isLoadingDetail ? (
           <p className="m-0 py-4 text-sm text-slate-500">
-            Loading lifecycle details...
+            {i18nT("static.f7tii9")}{" "}
           </p>
         ) : lifecycleDetail ? (
           <div className="space-y-5 py-2">
             <div className="grid gap-3 rounded-lg bg-slate-50 p-4 text-sm sm:grid-cols-2">
               <div>
-                <p className="m-0 text-slate-500">Employee</p>
+                <p className="m-0 text-slate-500">{i18nT("static.1fak8xt")}</p>
                 <p className="mb-0 mt-1 font-medium text-slate-800">
                   {lifecycleDetail.case.employee_name}
                 </p>
               </div>
               <div>
-                <p className="m-0 text-slate-500">Effective Date</p>
+                <p className="m-0 text-slate-500">{i18nT("static.dfnnk2")}</p>
                 <p className="mb-0 mt-1 font-medium text-slate-800">
                   {formatDisplayDate(lifecycleDetail.case.effective_date)}
                 </p>
               </div>
               <div>
-                <p className="m-0 text-slate-500">Lifecycle</p>
+                <p className="m-0 text-slate-500">{i18nT("static.1nvorn3")}</p>
                 <p className="mb-0 mt-1 font-medium text-slate-800">
                   {lifecycleDetail.case.lifecycle_type.replaceAll("_", " ")}
                 </p>
               </div>
               <div>
-                <p className="m-0 text-slate-500">Lifecycle Owner</p>
+                <p className="m-0 text-slate-500">{i18nT("static.crwzgc")}</p>
                 <p className="mb-0 mt-1 font-medium text-slate-800">
                   {lifecycleDetail.case.requested_by_name}
                 </p>
               </div>
               <div>
-                <p className="m-0 text-slate-500">Your Task</p>
+                <p className="m-0 text-slate-500">{i18nT("static.vjo5r7")}</p>
                 <p className="mb-0 mt-1 font-medium text-slate-800">
                   {reviewTask.name}
                 </p>
@@ -273,7 +272,7 @@ export default function MyLifecycleTasksData() {
             {reviewTask.description && (
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Task Instructions
+                  {i18nT("static.1jqkq7x")}{" "}
                 </h2>
                 <p className="mb-0 mt-1 text-sm text-slate-600">
                   {reviewTask.description}
@@ -283,7 +282,7 @@ export default function MyLifecycleTasksData() {
             {lifecycleDetail.case.reason && (
               <div>
                 <h2 className="m-0 text-base font-semibold text-slate-800">
-                  Request Reason
+                  {i18nT("static.hyvn9u")}{" "}
                 </h2>
                 <p className="mb-0 mt-1 whitespace-pre-wrap text-sm text-slate-600">
                   {lifecycleDetail.case.reason}
@@ -296,22 +295,28 @@ export default function MyLifecycleTasksData() {
               return (
                 <div>
                   <h2 className="m-0 text-base font-semibold text-slate-800">
-                    Employment Change Summary
+                    {i18nT("static.qlpiit")}{" "}
                   </h2>
                   <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200">
                     <table className="min-w-full text-sm">
                       <thead className="bg-slate-50 text-left text-slate-600">
                         <tr>
-                          <th className="px-3 py-2 font-medium">Field</th>
-                          <th className="px-3 py-2 font-medium">Current</th>
-                          <th className="px-3 py-2 font-medium">Proposed</th>
+                          <th className="px-3 py-2 font-medium">
+                            {i18nT("static.4d0paf")}
+                          </th>
+                          <th className="px-3 py-2 font-medium">
+                            {i18nT("static.1dw4k8q")}
+                          </th>
+                          <th className="px-3 py-2 font-medium">
+                            {i18nT("static.1bv6k83")}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {employmentChangeFields.map(({ key, label }) => (
+                        {employmentChangeFields.map(({ key, labelKey }) => (
                           <tr key={key} className="border-t border-slate-100">
                             <td className="px-3 py-2 font-medium text-slate-700">
-                              {label}
+                              {i18nT(labelKey)}
                             </td>
                             <td className="px-3 py-2 text-slate-600">
                               {displayValue(employmentChange.previous[key])}
@@ -330,7 +335,7 @@ export default function MyLifecycleTasksData() {
           </div>
         ) : (
           <p className="m-0 py-4 text-sm text-red-600">
-            Unable to load lifecycle details.
+            {i18nT("static.xatoaj")}{" "}
           </p>
         )}
       </Dialog>

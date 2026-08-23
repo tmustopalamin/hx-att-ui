@@ -1,6 +1,7 @@
 // app/(admin)/employees/[id]/layout.tsx
 
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import React, { Suspense, useMemo } from "react";
 import useSWR from "swr";
@@ -49,6 +50,7 @@ const pageTitleMap: Record<string, string> = {
 };
 
 const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
+  const { t: i18nT } = useI18n();
   const params = useParams<{ id: string }>();
   const pathname = usePathname();
   const id = params?.id;
@@ -94,16 +96,16 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
         <h1 className="text-lg font-semibold text-amber-900">
-          Invalid employee ID
+          {i18nT("static.1dtkfhp")}{" "}
         </h1>
         <p className="mt-2 text-sm text-amber-800">
-          The requested employee identifier is not valid.
+          {i18nT("static.1vg9cyc")}{" "}
         </p>
         <Link
           href="/employees"
           className="mt-4 inline-flex text-sm font-semibold text-blue-700 hover:underline"
         >
-          Back to employees
+          {i18nT("static.j7h2y")}{" "}
         </Link>
       </div>
     );
@@ -122,7 +124,10 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
       <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
         <EmployeePageHeader
           title={employeeName}
-          description={`${employmentData?.position_name || "Employee profile"} · ${pageTitle}`}
+          description={i18nT("static.1qqupbl", {
+            p0: employmentData?.position_name || i18nT("static.nlcs7w"),
+            p1: pageTitle,
+          })}
           icon="pi pi-user"
           actions={
             <>
@@ -133,7 +138,7 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
                 >
                   <Button
                     type="button"
-                    label="Manage Documents"
+                    label={i18nT("static.7z08jo")}
                     icon="pi pi-file-check"
                     outlined
                     size="small"
@@ -144,7 +149,7 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
               <Link href="/employees" className="w-full sm:w-auto">
                 <Button
                   type="button"
-                  label="Back"
+                  label={i18nT("static.1hzmxtu")}
                   icon="pi pi-arrow-left"
                   severity="secondary"
                   outlined
@@ -194,14 +199,16 @@ const EmployeeDetailLayout = ({ children }: EmployeeLayoutProps) => {
             <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 md:p-5">
               <div className="mb-5 flex min-w-0 items-center gap-2 overflow-hidden border-b border-slate-200 pb-4 text-sm text-slate-500">
                 <span className="shrink-0 font-medium text-slate-700">
-                  Employee Detail
+                  {i18nT("static.dhgaxu")}{" "}
                 </span>
                 <i className="pi pi-angle-right shrink-0 text-xs" />
                 <span className="truncate">{pageTitle}</span>
               </div>
 
               <div className="employee-detail-content min-w-0 overflow-x-auto">
-                <Suspense fallback={<p>Loading...</p>}>{children}</Suspense>
+                <Suspense fallback={<p>{i18nT("static.6kndir")}</p>}>
+                  {children}
+                </Suspense>
               </div>
             </div>
           </section>

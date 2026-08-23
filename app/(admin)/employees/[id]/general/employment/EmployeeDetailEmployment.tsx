@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   getAgencyOptions,
@@ -65,6 +66,7 @@ const getBody = () => document.body;
 const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 
 const EmployeeDetailEmployment = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const canUpdate = useSelector((state: RootState) =>
     state.profile.permissions.includes("employee.update"),
@@ -242,7 +244,7 @@ const EmployeeDetailEmployment = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -251,7 +253,7 @@ const EmployeeDetailEmployment = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -278,8 +280,8 @@ const EmployeeDetailEmployment = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: "Supervisor cannot be the same as the employee.",
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT("static.1215kan"),
         }),
       );
       return;
@@ -317,8 +319,8 @@ const EmployeeDetailEmployment = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: "Employment data updated successfully.",
+          summary: i18nT("static.udvru8"),
+          detail: i18nT("static.9l0b3z"),
         }),
       );
 
@@ -330,7 +332,7 @@ const EmployeeDetailEmployment = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -339,7 +341,7 @@ const EmployeeDetailEmployment = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -350,7 +352,7 @@ const EmployeeDetailEmployment = () => {
   if (loading) {
     return (
       <div className="py-8 text-sm text-slate-500">
-        Loading employment data...
+        {i18nT("static.whl66l")}{" "}
       </div>
     );
   }
@@ -359,11 +361,11 @@ const EmployeeDetailEmployment = () => {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col gap-5">
         <EmployeeDetailTableHeader
-          title="Employment Data"
+          title={i18nT("static.mirjw9")}
           description={
             hasEmploymentHistory
-              ? "Employment changes are effective-dated and must be processed through Employee Lifecycle to preserve history."
-              : "Set the initial employment assignment, organization placement, and direct supervisor."
+              ? i18nT("static.e2b8sp")
+              : i18nT("static.joi3d")
           }
           actions={
             <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
@@ -371,7 +373,7 @@ const EmployeeDetailEmployment = () => {
                 <>
                   <Button
                     type="button"
-                    label="Cancel"
+                    label={i18nT("static.ew9em3")}
                     icon="pi pi-times"
                     text
                     severity="secondary"
@@ -384,7 +386,7 @@ const EmployeeDetailEmployment = () => {
                   />
                   <Button
                     type="submit"
-                    label="Save Changes"
+                    label={i18nT("static.6gmm1l")}
                     icon="pi pi-check"
                     size="small"
                     className="w-full sm:w-auto"
@@ -397,7 +399,7 @@ const EmployeeDetailEmployment = () => {
                 >
                   <Button
                     type="button"
-                    label="Request Employment Change"
+                    label={i18nT("static.14hifi8")}
                     icon="pi pi-send"
                     severity="secondary"
                     outlined
@@ -408,7 +410,7 @@ const EmployeeDetailEmployment = () => {
               ) : canUpdate ? (
                 <Button
                   type="button"
-                  label="Edit"
+                  label={i18nT("static.1i1lcq9")}
                   icon="pi pi-pencil"
                   severity="secondary"
                   outlined
@@ -428,14 +430,14 @@ const EmployeeDetailEmployment = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="employment_code" className={fieldLabelClass}>
-                  Employee Code
+                  {i18nT("static.ncb762")}{" "}
                 </label>
                 <InputText
                   id="employment_code"
                   {...field}
                   disabled={!isPageEdit}
                   className="w-full"
-                  placeholder="Enter employee code"
+                  placeholder={i18nT("static.6fmays")}
                 />
               </div>
             )}
@@ -444,14 +446,14 @@ const EmployeeDetailEmployment = () => {
           <Controller
             name="employment_status_id"
             control={control}
-            rules={{ required: "Employment status is required" }}
+            rules={{ required: i18nT("static.mbr0u") }}
             render={({ field, fieldState }) => (
               <div>
                 <label
                   htmlFor="employment_status_id"
                   className={fieldLabelClass}
                 >
-                  Employment Status
+                  {i18nT("static.p2ngjv")}{" "}
                 </label>
                 <Dropdown
                   id="employment_status_id"
@@ -462,7 +464,7 @@ const EmployeeDetailEmployment = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select employment status"
+                  placeholder={i18nT("static.loo409")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -470,10 +472,10 @@ const EmployeeDetailEmployment = () => {
                 )}
                 {field.value && (
                   <small className="mt-1 block text-slate-500">
-                    Tax treatment:{" "}
+                    {i18nT("static.g14cjo")}{" "}
                     {employmentStatuses.find(
                       (status) => Number(status.id) === Number(field.value),
-                    )?.default_tax_employee_type ?? "Not configured"}
+                    )?.default_tax_employee_type ?? i18nT("static.4tqh3i")}
                   </small>
                 )}
               </div>
@@ -486,7 +488,7 @@ const EmployeeDetailEmployment = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="agency_id" className={fieldLabelClass}>
-                  Agency
+                  {i18nT("static.1v3zejm")}{" "}
                 </label>
                 <Dropdown
                   id="agency_id"
@@ -497,13 +499,13 @@ const EmployeeDetailEmployment = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select agency"
+                  placeholder={i18nT("static.1aklnvk")}
                   className="w-full"
                   showClear
                   filter
                 />
                 <small className="text-slate-500">
-                  Select legal entity / employing company first.
+                  {i18nT("static.1ba84v1")}{" "}
                 </small>
               </div>
             )}
@@ -515,7 +517,7 @@ const EmployeeDetailEmployment = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="branch_id" className={fieldLabelClass}>
-                  Branch
+                  {i18nT("static.19gzx45")}{" "}
                 </label>
                 <Dropdown
                   id="branch_id"
@@ -527,14 +529,16 @@ const EmployeeDetailEmployment = () => {
                   optionLabel="name"
                   optionValue="id"
                   placeholder={
-                    selectedAgencyId ? "Select branch" : "Select agency first"
+                    selectedAgencyId
+                      ? i18nT("static.17q9myv")
+                      : i18nT("static.1dacy3y")
                   }
                   className="w-full"
                   showClear
                   filter
                 />
                 <small className="text-slate-500">
-                  Branch list is filtered by selected agency.
+                  {i18nT("static.1ez84u9")}{" "}
                 </small>
               </div>
             )}
@@ -543,11 +547,11 @@ const EmployeeDetailEmployment = () => {
           <Controller
             name="department_id"
             control={control}
-            rules={{ required: "Department is required" }}
+            rules={{ required: i18nT("static.2o8agq") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="department_id" className={fieldLabelClass}>
-                  Department
+                  {i18nT("static.1430r53")}{" "}
                 </label>
                 <Dropdown
                   id="department_id"
@@ -558,7 +562,7 @@ const EmployeeDetailEmployment = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select department"
+                  placeholder={i18nT("static.sln621")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   filter
                 />
@@ -572,11 +576,11 @@ const EmployeeDetailEmployment = () => {
           <Controller
             name="position_id"
             control={control}
-            rules={{ required: "Position is required" }}
+            rules={{ required: i18nT("static.1y306v3") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="position_id" className={fieldLabelClass}>
-                  Position
+                  {i18nT("static.1quewx6")}{" "}
                 </label>
                 <Dropdown
                   id="position_id"
@@ -587,7 +591,7 @@ const EmployeeDetailEmployment = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select position"
+                  placeholder={i18nT("static.1e100xw")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   filter
                 />
@@ -607,7 +611,7 @@ const EmployeeDetailEmployment = () => {
                   htmlFor="supervisor_employee_id"
                   className={fieldLabelClass}
                 >
-                  Supervisor / Direct Manager
+                  {i18nT("static.1k7tusw")}{" "}
                 </label>
                 <Dropdown
                   id="supervisor_employee_id"
@@ -618,14 +622,14 @@ const EmployeeDetailEmployment = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select supervisor"
-                  emptyMessage="No employee + approver account found"
+                  placeholder={i18nT("static.xhzk5d")}
+                  emptyMessage={i18nT("static.1j4mgrb")}
                   className="w-full"
                   showClear
                   filter
                 />
                 <small className="text-slate-500">
-                  Used by approval engine to route leave and overtime requests.
+                  {i18nT("static.1c4u8uv")}{" "}
                 </small>
               </div>
             )}
@@ -634,11 +638,11 @@ const EmployeeDetailEmployment = () => {
           <Controller
             name="join_date"
             control={control}
-            rules={{ required: "Join date is required" }}
+            rules={{ required: i18nT("static.3tb0xu") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="join_date" className={fieldLabelClass}>
-                  Join Date
+                  {i18nT("static.136fqhb")}{" "}
                 </label>
                 <Calendar
                   id="join_date"
@@ -663,7 +667,7 @@ const EmployeeDetailEmployment = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="end_date" className={fieldLabelClass}>
-                  End Date
+                  {i18nT("static.1j4m31m")}{" "}
                 </label>
                 <Calendar
                   id="end_date"
@@ -685,7 +689,7 @@ const EmployeeDetailEmployment = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="probation_end_date" className={fieldLabelClass}>
-                  Probation End Date
+                  {i18nT("static.1ignfpe")}{" "}
                 </label>
                 <Calendar
                   id="probation_end_date"
@@ -698,7 +702,7 @@ const EmployeeDetailEmployment = () => {
                   className="w-full"
                 />
                 <small className="text-slate-500">
-                  Last day of the probation period.
+                  {i18nT("static.befwhu")}{" "}
                 </small>
               </div>
             )}
@@ -710,7 +714,7 @@ const EmployeeDetailEmployment = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="confirmation_date" className={fieldLabelClass}>
-                  Confirmation Date
+                  {i18nT("static.404n94")}{" "}
                 </label>
                 <Calendar
                   id="confirmation_date"
@@ -723,7 +727,7 @@ const EmployeeDetailEmployment = () => {
                   className="w-full"
                 />
                 <small className="text-slate-500">
-                  Date the employee is formally confirmed after probation.
+                  {i18nT("static.o99315")}{" "}
                 </small>
               </div>
             )}

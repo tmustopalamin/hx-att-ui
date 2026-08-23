@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   createEmployeeFamily,
@@ -48,6 +49,7 @@ type FormData = {
 const getBody = () => document.body;
 
 const EmployeeFamilyDataTable = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -114,7 +116,7 @@ const EmployeeFamilyDataTable = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -189,10 +191,8 @@ const EmployeeFamilyDataTable = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "success",
-          detail: isAddMode
-            ? "Family data created successfully"
-            : "Family data updated successfully",
+          summary: i18nT("static.g72xw0"),
+          detail: isAddMode ? i18nT("static.1e2n938") : i18nT("static.19pon1d"),
         }),
       );
 
@@ -205,7 +205,7 @@ const EmployeeFamilyDataTable = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -214,7 +214,7 @@ const EmployeeFamilyDataTable = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "error",
+            summary: i18nT("static.9bb0pd"),
             detail: err.message,
           }),
         );
@@ -224,8 +224,8 @@ const EmployeeFamilyDataTable = () => {
 
   const onDelete = (row: EmployeeFamilyRow) => {
     requestActionConfirmation({
-      message: "Do you want to delete this family record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.1b4g205"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -235,8 +235,8 @@ const EmployeeFamilyDataTable = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "success",
-              detail: "Family data deleted successfully",
+              summary: i18nT("static.g72xw0"),
+              detail: i18nT("static.1nxu2kn"),
             }),
           );
           await loadData();
@@ -246,7 +246,7 @@ const EmployeeFamilyDataTable = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "error",
+                summary: i18nT("static.9bb0pd"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -265,7 +265,7 @@ const EmployeeFamilyDataTable = () => {
         size="small"
         icon="pi pi-pencil"
         severity="secondary"
-        tooltip="Edit"
+        tooltip={i18nT("static.1i1lcq9")}
         onClick={() => openEdit(row)}
       />
       <Button
@@ -275,7 +275,7 @@ const EmployeeFamilyDataTable = () => {
         size="small"
         icon="pi pi-trash"
         severity="danger"
-        tooltip="Delete"
+        tooltip={i18nT("static.oay2cq")}
         onClick={() => onDelete(row)}
       />
     </div>
@@ -285,12 +285,12 @@ const EmployeeFamilyDataTable = () => {
     <>
       <div className="flex flex-col gap-6">
         <EmployeeDetailTableHeader
-          title="Family"
-          description="Manage employee spouse, child, or family information."
+          title={i18nT("static.1ii54cp")}
+          description={i18nT("static.ueoc7o")}
           actions={
             <Button
               type="button"
-              label="New Family"
+              label={i18nT("static.1gjq8z")}
               icon="pi pi-plus"
               size="small"
               className="w-full sm:w-auto"
@@ -311,10 +311,10 @@ const EmployeeFamilyDataTable = () => {
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
-          emptyMessage="No family data found."
+          emptyMessage={i18nT("static.112xcjc")}
           scrollable
           tableStyle={{ minWidth: "70rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -322,26 +322,26 @@ const EmployeeFamilyDataTable = () => {
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "56px" }}
           />
-          <Column field="name" header="Name" />
-          <Column field="relationship_name" header="Relationship" />
+          <Column field="name" header={i18nT("static.4el6o6")} />
+          <Column field="relationship_name" header={i18nT("static.7fp6jf")} />
           <Column
-            header="Birth Date"
+            header={i18nT("static.1m101fi")}
             body={(row: EmployeeFamilyRow) =>
               row.dob ? formatDisplayDate(row.dob) : "-"
             }
           />
-          <Column field="gender_name" header="Gender" />
-          <Column field="marital_name" header="Marital Status" />
-          <Column field="job" header="Job" />
-          <Column field="phone1" header="Phone 1" />
-          <Column field="phone2" header="Phone 2" />
+          <Column field="gender_name" header={i18nT("static.1adu274")} />
+          <Column field="marital_name" header={i18nT("static.s7ogwz")} />
+          <Column field="job" header={i18nT("static.ijqa2k")} />
+          <Column field="phone1" header={i18nT("static.17pijxg")} />
+          <Column field="phone2" header={i18nT("static.18jhd0d")} />
           <Column
             field="is_active"
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={(row: EmployeeFamilyRow) => (row.is_active ? "Yes" : "No")}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBody}
             frozen
             alignFrozen="right"
@@ -352,7 +352,7 @@ const EmployeeFamilyDataTable = () => {
       </div>
 
       <Dialog
-        header={isAddMode ? "New Family Data" : "Edit Family Data"}
+        header={isAddMode ? i18nT("static.1l5p87d") : i18nT("static.n960nd")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "42rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -364,7 +364,7 @@ const EmployeeFamilyDataTable = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -373,7 +373,9 @@ const EmployeeFamilyDataTable = () => {
             />
             <Button
               type="button"
-              label={isAddMode ? "Create Family" : "Save Changes"}
+              label={
+                isAddMode ? i18nT("static.18b6kn3") : i18nT("static.6gmm1l")
+              }
               icon="pi pi-check"
               className="w-full sm:w-auto"
               onClick={handleSubmit(onSubmit)}
@@ -385,19 +387,20 @@ const EmployeeFamilyDataTable = () => {
           <Controller
             name="name"
             control={control}
-            rules={{ required: "Name is required" }}
+            rules={{ required: i18nT("static.izdgzf") }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2 md:col-span-2">
                 <label
                   htmlFor="family_name"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Name <span className="text-red-500">*</span>
+                  {i18nT("static.4el6o6")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <InputText
                   id="family_name"
                   {...field}
-                  placeholder="Enter family member name"
+                  placeholder={i18nT("static.i641zu")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -410,14 +413,15 @@ const EmployeeFamilyDataTable = () => {
           <Controller
             name="relationship_id"
             control={control}
-            rules={{ required: "Relationship is required" }}
+            rules={{ required: i18nT("static.m0qu8u") }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="relationship_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Relationship <span className="text-red-500">*</span>
+                  {i18nT("static.7fp6jf")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <Dropdown
                   id="relationship_id"
@@ -427,7 +431,7 @@ const EmployeeFamilyDataTable = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select relationship"
+                  placeholder={i18nT("static.1g6pggt")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -440,14 +444,15 @@ const EmployeeFamilyDataTable = () => {
           <Controller
             name="dob"
             control={control}
-            rules={{ required: "Birth date is required" }}
+            rules={{ required: i18nT("static.1tvgdpv") }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="family_dob"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Birth Date <span className="text-red-500">*</span>
+                  {i18nT("static.1m101fi")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <Calendar
                   id="family_dob"
@@ -468,14 +473,15 @@ const EmployeeFamilyDataTable = () => {
           <Controller
             name="gender_id"
             control={control}
-            rules={{ required: "Gender is required" }}
+            rules={{ required: i18nT("static.15jbp1t") }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="family_gender_id"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Gender <span className="text-red-500">*</span>
+                  {i18nT("static.1adu274")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <Dropdown
                   id="family_gender_id"
@@ -485,7 +491,7 @@ const EmployeeFamilyDataTable = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select gender"
+                  placeholder={i18nT("static.rtoq86")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -498,14 +504,15 @@ const EmployeeFamilyDataTable = () => {
           <Controller
             name="marital_status"
             control={control}
-            rules={{ required: "Marital status is required" }}
+            rules={{ required: i18nT("static.14zb8qu") }}
             render={({ field, fieldState }) => (
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="family_marital_status"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Marital Status <span className="text-red-500">*</span>
+                  {i18nT("static.s7ogwz")}{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <Dropdown
                   id="family_marital_status"
@@ -515,7 +522,7 @@ const EmployeeFamilyDataTable = () => {
                   onChange={(e) => field.onChange(e.value)}
                   optionLabel="name"
                   optionValue="id"
-                  placeholder="Select marital status"
+                  placeholder={i18nT("static.r2t1q1")}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                 />
                 {fieldState.error && (
@@ -534,12 +541,12 @@ const EmployeeFamilyDataTable = () => {
                   htmlFor="family_job"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Job
+                  {i18nT("static.ijqa2k")}{" "}
                 </label>
                 <InputText
                   id="family_job"
                   {...field}
-                  placeholder="Enter occupation"
+                  placeholder={i18nT("static.1vq75gg")}
                   className="w-full"
                 />
               </div>
@@ -555,12 +562,12 @@ const EmployeeFamilyDataTable = () => {
                   htmlFor="family_phone1"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Primary Phone
+                  {i18nT("static.yx0c3t")}{" "}
                 </label>
                 <InputText
                   id="family_phone1"
                   {...field}
-                  placeholder="Enter primary phone"
+                  placeholder={i18nT("static.uo48tb")}
                   className="w-full"
                 />
               </div>
@@ -576,12 +583,12 @@ const EmployeeFamilyDataTable = () => {
                   htmlFor="family_phone2"
                   className="text-sm font-medium text-slate-700"
                 >
-                  Secondary Phone
+                  {i18nT("static.1ag4es1")}{" "}
                 </label>
                 <InputText
                   id="family_phone2"
                   {...field}
-                  placeholder="Enter secondary phone"
+                  placeholder={i18nT("static.bvb283")}
                   className="w-full"
                 />
               </div>
@@ -599,10 +606,10 @@ const EmployeeFamilyDataTable = () => {
                       htmlFor="family_is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive family records remain stored in employee history.
+                      {i18nT("static.s1s8a")}{" "}
                     </p>
                   </div>
                   <InputSwitch

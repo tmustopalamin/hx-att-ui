@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "primereact/button";
@@ -51,6 +52,7 @@ export default function PayrollRegulationVersionWizard({
   onCreated,
   onError,
 }: Props) {
+  const { t: i18nT } = useI18n();
   const sources = useMemo(() => publishedSources(packages), [packages]);
   const [step, setStep] = useState(0);
   const [sourceId, setSourceId] = useState<number | null>(null);
@@ -130,7 +132,7 @@ export default function PayrollRegulationVersionWizard({
 
   return (
     <Dialog
-      header="Buat versi baru"
+      header={i18nT("static.1qhcwwo")}
       visible={visible}
       modal
       draggable={false}
@@ -140,7 +142,7 @@ export default function PayrollRegulationVersionWizard({
       footer={
         <div className="flex justify-between gap-2">
           <Button
-            label="Batal"
+            label={i18nT("static.1mtd50l")}
             severity="secondary"
             text
             disabled={saving}
@@ -149,7 +151,7 @@ export default function PayrollRegulationVersionWizard({
           <div className="flex gap-2">
             {step > 0 && (
               <Button
-                label="Kembali"
+                label={i18nT("static.eysymu")}
                 severity="secondary"
                 outlined
                 disabled={saving}
@@ -158,7 +160,7 @@ export default function PayrollRegulationVersionWizard({
             )}
             {step < 2 ? (
               <Button
-                label="Lanjut"
+                label={i18nT("static.tn9krz")}
                 icon="pi pi-arrow-right"
                 iconPos="right"
                 disabled={!canContinue}
@@ -166,7 +168,7 @@ export default function PayrollRegulationVersionWizard({
               />
             ) : (
               <Button
-                label="Buat Draft"
+                label={i18nT("static.1i3p2sa")}
                 icon="pi pi-check"
                 loading={saving}
                 disabled={!source}
@@ -200,22 +202,20 @@ export default function PayrollRegulationVersionWizard({
 
         {sources.length === 0 ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
-            Belum ada regulation package berstatus Published. Buat package
-            pertama melalui menu Advanced terlebih dahulu.
+            {i18nT("static.1dszq6j")}{" "}
           </div>
         ) : step === 0 ? (
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="m-0 text-base font-semibold text-slate-800">
-                Salin aturan yang sudah berlaku
+                {i18nT("static.29hxcp")}{" "}
               </h3>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Semua parameter, bracket tarif, dan test case akan disalin ke
-                draft baru. Versi lama tetap aman untuk payroll historis.
+                {i18nT("static.9oe3y")}{" "}
               </p>
             </div>
             <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              Regulation yang menjadi sumber
+              {i18nT("static.q10e4o")}{" "}
               <Dropdown
                 value={sourceId}
                 options={sources}
@@ -230,8 +230,8 @@ export default function PayrollRegulationVersionWizard({
                         {item.name}
                       </span>
                       <span className="font-mono text-xs text-slate-500">
-                        {item.code} · {item.version} · berlaku{" "}
-                        {item.effective_from}
+                        {item.code} {i18nT("static.19xoda3")} {item.version}{" "}
+                        {i18nT("static.17ucgh8")} {item.effective_from}
                       </span>
                     </div>
                   ) : null
@@ -240,10 +240,13 @@ export default function PayrollRegulationVersionWizard({
             </label>
             {source && (
               <div className="grid grid-cols-1 gap-3 rounded-lg bg-slate-50 p-4 text-sm sm:grid-cols-2">
-                <Info label="Program" value={source.code} />
-                <Info label="Versi sumber" value={source.version} />
-                <Info label="Regulator" value={source.regulator} />
-                <Info label="Berlaku sejak" value={source.effective_from} />
+                <Info label={i18nT("static.1if8prf")} value={source.code} />
+                <Info label={i18nT("static.s0kipy")} value={source.version} />
+                <Info label={i18nT("static.phhmg")} value={source.regulator} />
+                <Info
+                  label={i18nT("static.1q2tdpr")}
+                  value={source.effective_from}
+                />
               </div>
             )}
           </div>
@@ -251,30 +254,33 @@ export default function PayrollRegulationVersionWizard({
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="m-0 text-base font-semibold text-slate-800">
-                Isi hanya perubahan dari pemerintah
+                {i18nT("static.1bdtuyy")}{" "}
               </h3>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Kode internal dan struktur teknis tidak perlu diisi di sini.
-                Detail lanjutan tersedia melalui Advanced.
+                {i18nT("static.uvw12z")}{" "}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Versi baru *">
+              <Field label={i18nT("static.1vk237g")}>
                 <InputText
                   value={values.version}
-                  placeholder={source ? `${source.version}-rev1` : "2026.1"}
+                  placeholder={
+                    source
+                      ? i18nT("static.1c390f0", { p0: source.version })
+                      : "2026.1"
+                  }
                   className="w-full"
                   onChange={(event) => update("version", event.target.value)}
                 />
               </Field>
-              <Field label="Mulai berlaku *">
+              <Field label={i18nT("static.17qe8t7")}>
                 <PrimeDatePicker
                   value={values.effective_from}
                   className="w-full"
                   onValueChange={(value) => update("effective_from", value)}
                 />
               </Field>
-              <Field label="Berlaku sampai (opsional)">
+              <Field label={i18nT("static.11a3atu")}>
                 <PrimeDatePicker
                   value={values.effective_to}
                   className="w-full"
@@ -283,7 +289,7 @@ export default function PayrollRegulationVersionWizard({
                   }
                 />
               </Field>
-              <Field label="Nomor peraturan">
+              <Field label={i18nT("static.1rpywa2")}>
                 <InputText
                   value={values.regulation_number ?? ""}
                   className="w-full"
@@ -292,18 +298,18 @@ export default function PayrollRegulationVersionWizard({
                   }
                 />
               </Field>
-              <Field label="Link sumber resmi">
+              <Field label={i18nT("static.o8vx8b")}>
                 <InputText
                   value={values.source_url ?? ""}
                   className="w-full"
                   onChange={(event) => update("source_url", event.target.value)}
                 />
               </Field>
-              <Field label="Catatan perubahan">
+              <Field label={i18nT("static.1apezaf")}>
                 <InputText
                   value={values.notes ?? ""}
                   className="w-full"
-                  placeholder="Contoh: batas TER harian berubah"
+                  placeholder={i18nT("static.17yxvme")}
                   onChange={(event) => update("notes", event.target.value)}
                 />
               </Field>
@@ -312,14 +318,13 @@ export default function PayrollRegulationVersionWizard({
               values.effective_from &&
               values.effective_from <= source.effective_from && (
                 <div className="text-xs text-amber-700">
-                  Mulai berlaku harus setelah versi sumber (
-                  {source.effective_from}) agar periode payroll tidak tumpang
-                  tindih.
+                  {i18nT("static.tkrszt")} {source.effective_from}
+                  {i18nT("static.zfb4r")}{" "}
                 </div>
               )}
             {!effectiveWindowValid && (
               <div className="text-xs text-amber-700">
-                Berlaku sampai tidak boleh sebelum tanggal mulai berlaku.
+                {i18nT("static.o27ebo")}{" "}
               </div>
             )}
           </div>
@@ -327,32 +332,47 @@ export default function PayrollRegulationVersionWizard({
           <div className="flex flex-col gap-4">
             <div>
               <h3 className="m-0 text-base font-semibold text-slate-800">
-                Periksa sebelum membuat draft
+                {i18nT("static.1ikhcg7")}{" "}
               </h3>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Draft akan membawa salinan detail dari versi sumber dan harus
-                melewati test, approval, lalu publish.
+                {i18nT("static.o31ck7")}{" "}
               </p>
             </div>
             <div className="divide-y divide-slate-200 rounded-lg border border-slate-200">
               <Summary
-                label="Sumber"
-                value={source ? `${source.code} · ${source.version}` : "-"}
+                label={i18nT("static.lo79d5")}
+                value={
+                  source
+                    ? i18nT("static.9hnqb2", {
+                        p0: source.code,
+                        p1: source.version,
+                      })
+                    : "-"
+                }
               />
-              <Summary label="Versi baru" value={values.version || "-"} />
               <Summary
-                label="Periode berlaku"
-                value={`${values.effective_from || "-"}${values.effective_to ? ` s/d ${values.effective_to}` : ""}`}
+                label={i18nT("static.yxtbl6")}
+                value={values.version || "-"}
               />
               <Summary
-                label="Nomor peraturan"
-                value={values.regulation_number || "Mengikuti sumber"}
+                label={i18nT("static.1e8gma1")}
+                value={i18nT("static.jhyx2o", {
+                  p0: values.effective_from || "-",
+                  p1: values.effective_to
+                    ? i18nT("static.f5ghiv", { p0: values.effective_to })
+                    : "",
+                })}
               />
-              <Summary label="Catatan" value={values.notes || "Tidak ada"} />
+              <Summary
+                label={i18nT("static.1rpywa2")}
+                value={values.regulation_number || i18nT("static.aw39ks")}
+              />
+              <Summary
+                label={i18nT("static.trr5c5")}
+                value={values.notes || i18nT("static.19hlzfa")}
+              />
               <div className="border-t border-slate-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
-                Parameter, tabel tarif, dan test case dari sumber akan ikut
-                disalin. Setelah draft dibuat, periksa perubahan angka dan
-                jalankan test sebelum approval.
+                {i18nT("static.1ilzesl")}{" "}
               </div>
             </div>
           </div>

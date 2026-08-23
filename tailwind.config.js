@@ -4,7 +4,13 @@ const config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Lato", "sans-serif"],
+        sans: [
+          "Lato",
+          "Microsoft YaHei",
+          "PingFang SC",
+          "Noto Sans SC",
+          "sans-serif",
+        ],
       },
     },
   },

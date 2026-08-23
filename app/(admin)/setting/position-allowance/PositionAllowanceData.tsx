@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/app/i18n";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
@@ -120,6 +122,7 @@ const POSITION_ALLOWANCE_ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function PositionAllowanceData() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -169,27 +172,30 @@ export default function PositionAllowanceData() {
     () =>
       (options?.positions ?? []).map((position) => ({
         label: position.code
-          ? `${position.code} — ${position.name}`
+          ? i18nT("static.gu0us5", { p0: position.code, p1: position.name })
           : position.name,
         value: position.id,
       })),
-    [options?.positions],
+    [i18nT, options?.positions],
   );
   const incomeComponentOptions = useMemo(
     () =>
       (options?.income_components ?? []).map((component) => ({
-        label: `${component.code ?? "-"} — ${component.name}`,
+        label: i18nT("static.gu0us5", {
+          p0: component.code ?? "-",
+          p1: component.name,
+        }),
         value: component.id,
       })),
-    [options?.income_components],
+    [i18nT, options?.income_components],
   );
   const employeeOptions = useMemo(
     () =>
       (options?.employees ?? []).map((employee) => ({
-        label: `${employee.code} — ${employee.name}`,
+        label: i18nT("static.gu0us5", { p0: employee.code, p1: employee.name }),
         value: employee.id,
       })),
-    [options?.employees],
+    [i18nT, options?.employees],
   );
 
   const notify = (
@@ -213,35 +219,27 @@ export default function PositionAllowanceData() {
         `${getErrorMessage(requestError, "code")}${
           code ? ` (Code: ${code})` : ""
         }`;
-      notify("error", "Position Allowance", detail);
+      notify("error", i18nT("static.1yhf46k"), detail);
       return;
     }
 
     notify(
       "error",
-      "Position Allowance",
+      i18nT("static.1yhf46k"),
       requestError instanceof Error
         ? requestError.message
-        : "An unexpected error occurred.",
+        : i18nT("static.37lwsc"),
     );
   };
 
   const ensureOptionsReady = () => {
     if (optionsError) {
-      notify(
-        "error",
-        "Position Allowance options unavailable",
-        "Positions, income components, and employees could not be loaded. Retry the options request before editing a policy.",
-      );
+      notify("error", i18nT("static.1d8u9ps"), i18nT("static.cuqqju"));
       retryOptions();
       return false;
     }
     if (optionsLoading || !options) {
-      notify(
-        "error",
-        "Position Allowance options loading",
-        "Wait for the position allowance options to finish loading before editing a policy.",
-      );
+      notify("error", i18nT("static.1k47w1u"), i18nT("static.1ds799h"));
       return false;
     }
     return true;
@@ -296,11 +294,7 @@ export default function PositionAllowanceData() {
       ) ||
       form.exclusions.some((exclusion) => !exclusion.reason.trim())
     ) {
-      notify(
-        "error",
-        "Validation",
-        "Code, name, fixed-amount income component, dates, and an amount for every position are required. Exclusion reasons cannot be empty.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.15c8y8b"));
       return null;
     }
     return {
@@ -339,8 +333,10 @@ export default function PositionAllowanceData() {
       closeEditor();
       notify(
         "success",
-        "Saved",
-        `Position allowance ${selected ? "draft updated" : "draft created"}.`,
+        i18nT("static.12ek4is"),
+        i18nT("static.4ts8le", {
+          p0: selected ? i18nT("static.ih4s1f") : i18nT("static.1occrmk"),
+        }),
       );
     } catch (requestError) {
       showError(requestError);
@@ -378,8 +374,8 @@ export default function PositionAllowanceData() {
       await mutate();
       notify(
         "success",
-        "Published",
-        `${policy.code} is now active for payroll.`,
+        i18nT("static.75k7c9"),
+        i18nT("static.4u9575", { p0: policy.code }),
       );
     } catch (requestError) {
       showError(requestError);
@@ -397,19 +393,11 @@ export default function PositionAllowanceData() {
   const retire = async () => {
     if (!statusTarget) return;
     if (!retireTo) {
-      notify(
-        "error",
-        "Validation",
-        "An effective to date is required when retiring a policy.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.1tkt416"));
       return;
     }
     if (retireTo && retireTo < statusTarget.effective_from) {
-      notify(
-        "error",
-        "Validation",
-        "Retirement date cannot be before effective from.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.gj7ivi"));
       return;
     }
     setSaving(true);
@@ -423,7 +411,11 @@ export default function PositionAllowanceData() {
       await mutate();
       setRetireVisible(false);
       setStatusTarget(null);
-      notify("success", "Retired", `${statusTarget.code} was retired.`);
+      notify(
+        "success",
+        i18nT("static.j9u73q"),
+        i18nT("static.wd1q65", { p0: statusTarget.code }),
+      );
     } catch (requestError) {
       showError(requestError);
     } finally {
@@ -445,19 +437,11 @@ export default function PositionAllowanceData() {
 
   const createVersion = async () => {
     if (!statusTarget || !versionFrom) {
-      notify(
-        "error",
-        "Validation",
-        "A new version effective date is required.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.eygkk2"));
       return;
     }
     if (versionTo && versionTo < versionFrom) {
-      notify(
-        "error",
-        "Validation",
-        "Effective to cannot be before effective from.",
-      );
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.18incb9"));
       return;
     }
     setSaving(true);
@@ -472,11 +456,7 @@ export default function PositionAllowanceData() {
       setVersionVisible(false);
       setStatusTarget(null);
       openEdit(draft);
-      notify(
-        "success",
-        "Draft version created",
-        "Complete the draft before publishing it.",
-      );
+      notify("success", i18nT("static.1q6bb20"), i18nT("static.muz8wr"));
     } catch (requestError) {
       showError(requestError);
     } finally {
@@ -523,20 +503,17 @@ export default function PositionAllowanceData() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Position Allowance
+                  {i18nT("static.1yhf46k")}{" "}
                 </h1>
                 <p className="m-0 mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-                  Monthly fixed allowance by position. Payroll uses the employee
-                  position effective on payroll date, pays the full monthly
-                  amount without proration, and snapshots the policy during
-                  validation.
+                  {i18nT("static.115aopx")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full gap-2 sm:w-auto">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -547,7 +524,7 @@ export default function PositionAllowanceData() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Policy"
+                  label={i18nT("static.19n8kxx")}
                   icon="pi pi-plus"
                   size="small"
                   disabled={!optionsReady}
@@ -570,14 +547,14 @@ export default function PositionAllowanceData() {
                 />
                 <span>
                   {optionsError
-                    ? "Required position allowance options could not be loaded. Retry before creating or editing a policy."
-                    : "Loading positions, income components, and employees for the policy editor..."}
+                    ? i18nT("static.1x68gel")
+                    : i18nT("static.123j8cz")}
                 </span>
               </div>
               {optionsError && (
                 <Button
                   type="button"
-                  label="Retry Options"
+                  label={i18nT("static.142vlfj")}
                   icon="pi pi-refresh"
                   severity="warning"
                   outlined
@@ -590,19 +567,19 @@ export default function PositionAllowanceData() {
           )}
 
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-            <span className="font-medium">Lifecycle:</span>
-            <Tag value="DRAFT" severity="warning" />
-            <span>→</span>
-            <Tag value="PUBLISHED" severity="success" />
-            <span>→</span>
-            <Tag value="RETIRED" severity="secondary" />
+            <span className="font-medium">{i18nT("static.14bk28f")}</span>
+            <Tag value={i18nT("static.12xppws")} severity="warning" />
+            <span>{i18nT("static.142kvve")}</span>
+            <Tag value={i18nT("static.1drx2ll")} severity="success" />
+            <span>{i18nT("static.142kvve")}</span>
+            <Tag value={i18nT("static.1anjv92")} severity="secondary" />
             <label className="ml-auto flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={includeAll}
                 onChange={(event) => setIncludeAll(event.target.checked)}
               />
-              Show all versions
+              {i18nT("static.1rg79f8")}{" "}
             </label>
           </div>
 
@@ -618,13 +595,17 @@ export default function PositionAllowanceData() {
             size="small"
             loading={isValidating}
             tableStyle={{ minWidth: "78rem" }}
-            emptyMessage="No position allowance policy found."
+            emptyMessage={i18nT("static.10br7l7")}
           >
-            <Column field="code" header="Code" sortable />
-            <Column field="version_no" header="Version" sortable />
-            <Column field="name" header="Policy" sortable />
+            <Column field="code" header={i18nT("static.xoaiok")} sortable />
             <Column
-              header="Position Amounts"
+              field="version_no"
+              header={i18nT("static.q0zd4n")}
+              sortable
+            />
+            <Column field="name" header={i18nT("static.1g6zau7")} sortable />
+            <Column
+              header={i18nT("static.y9fzfn")}
               body={(row: PositionAllowancePolicy) => (
                 <div className="flex flex-col gap-1">
                   {row.positions.map((position) => (
@@ -637,7 +618,7 @@ export default function PositionAllowanceData() {
               style={{ minWidth: "20rem" }}
             />
             <Column
-              header="Income Component"
+              header={i18nT("static.14pnb2x")}
               body={(row: PositionAllowancePolicy) =>
                 row.income_component_code
                   ? `${row.income_component_code} — ${row.income_component_name}`
@@ -646,20 +627,20 @@ export default function PositionAllowanceData() {
               style={{ minWidth: "18rem" }}
             />
             <Column
-              header="Exclusions"
+              header={i18nT("static.1lr4ql4")}
               body={(row: PositionAllowancePolicy) => row.exclusions.length}
             />
             <Column
-              header="Effective"
+              header={i18nT("static.1r1sas2")}
               body={(row: PositionAllowancePolicy) =>
                 `${row.effective_from} — ${row.effective_to ?? "Open"}`
               }
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: PositionAllowancePolicy) => (
                 <Tag
-                  value={row.status}
+                  value={i18nT(formatStatusLabel(row.status))}
                   severity={
                     row.status === "PUBLISHED"
                       ? "success"
@@ -672,14 +653,14 @@ export default function PositionAllowanceData() {
             />
             {canManage && (
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={(row: PositionAllowancePolicy) => (
                   <div className="flex flex-wrap gap-2">
                     {row.status === "DRAFT" && (
                       <>
                         <Button
                           type="button"
-                          label="Edit"
+                          label={i18nT("static.1i1lcq9")}
                           icon="pi pi-pencil"
                           outlined
                           size="small"
@@ -687,7 +668,7 @@ export default function PositionAllowanceData() {
                         />
                         <Button
                           type="button"
-                          label="Publish"
+                          label={i18nT("static.u2m17s")}
                           icon="pi pi-check"
                           size="small"
                           loading={saving}
@@ -699,7 +680,7 @@ export default function PositionAllowanceData() {
                       row.status === "RETIRED") && (
                       <Button
                         type="button"
-                        label="New Version"
+                        label={i18nT("static.1hjynst")}
                         icon="pi pi-copy"
                         outlined
                         size="small"
@@ -709,7 +690,7 @@ export default function PositionAllowanceData() {
                     {row.status === "PUBLISHED" && (
                       <Button
                         type="button"
-                        label="Retire"
+                        label={i18nT("static.rgquxi")}
                         icon="pi pi-stop-circle"
                         severity="secondary"
                         outlined
@@ -726,9 +707,7 @@ export default function PositionAllowanceData() {
       </Card>
 
       <Dialog
-        header={
-          selected ? "Edit Position Allowance Draft" : "New Position Allowance"
-        }
+        header={selected ? i18nT("static.i3lkqt") : i18nT("static.nwcujm")}
         visible={editorVisible}
         modal
         draggable={false}
@@ -739,7 +718,7 @@ export default function PositionAllowanceData() {
           <div className="flex justify-between gap-2">
             <Button
               type="button"
-              label="Preview Eligibility"
+              label={i18nT("static.d4sj7i")}
               icon="pi pi-eye"
               severity="secondary"
               outlined
@@ -750,14 +729,14 @@ export default function PositionAllowanceData() {
             <div className="flex gap-2">
               <Button
                 type="button"
-                label="Cancel"
+                label={i18nT("static.ew9em3")}
                 severity="secondary"
                 text
                 onClick={closeEditor}
               />
               <Button
                 type="button"
-                label="Save Draft"
+                label={i18nT("static.1mxlpez")}
                 icon="pi pi-check"
                 disabled={!optionsReady}
                 loading={saving}
@@ -771,14 +750,11 @@ export default function PositionAllowanceData() {
           {!optionsReady && (
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               <i className="pi pi-exclamation-triangle mt-0.5" />
-              <span>
-                Required editor options are unavailable. Retry the options
-                request before saving or previewing this policy.
-              </span>
+              <span>{i18nT("static.1y6zqfb")} </span>
               {optionsError && (
                 <Button
                   type="button"
-                  label="Retry"
+                  label={i18nT("static.zkouah")}
                   icon="pi pi-refresh"
                   severity="warning"
                   text
@@ -791,7 +767,7 @@ export default function PositionAllowanceData() {
           )}
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Policy Code
+              {i18nT("static.yyofws")}{" "}
               <InputText
                 value={form.code}
                 onChange={(event) =>
@@ -800,11 +776,11 @@ export default function PositionAllowanceData() {
                     code: event.target.value,
                   }))
                 }
-                placeholder="POSITION_ALLOWANCE"
+                placeholder={i18nT("static.t3fuub")}
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Policy Name
+              {i18nT("static.c1t4lq")}{" "}
               <InputText
                 value={form.name}
                 onChange={(event) =>
@@ -813,19 +789,19 @@ export default function PositionAllowanceData() {
                     name: event.target.value,
                   }))
                 }
-                placeholder="Monthly Position Allowance"
+                placeholder={i18nT("static.1524haj")}
               />
             </label>
           </div>
 
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Existing Income Component
+            {i18nT("static.1p2qmo")}{" "}
             <Dropdown
               value={form.income_component_id}
               options={incomeComponentOptions}
               filter
               className="w-full"
-              placeholder="Select FIXED_ALLOWANCE / FIXED_AMOUNT component"
+              placeholder={i18nT("static.49tvxd")}
               onChange={(event) =>
                 setForm((current) => ({
                   ...current,
@@ -834,20 +810,19 @@ export default function PositionAllowanceData() {
               }
             />
             <span className="text-xs font-normal text-slate-500">
-              Tax, BPJS, and payslip classification are inherited from Settings
-              → Payroll → Income Component.
+              {i18nT("static.5ontda")}{" "}
             </span>
           </label>
 
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Eligible Positions
+            {i18nT("static.io9v8g")}{" "}
             <MultiSelect
               value={form.positions.map((position) => position.position_id)}
               options={positionOptions}
               filter
               display="chip"
               className="w-full"
-              placeholder="Select one or more positions"
+              placeholder={i18nT("static.9isl27")}
               onChange={(event) =>
                 updateSelectedPositions((event.value as number[]) ?? [])
               }
@@ -857,7 +832,7 @@ export default function PositionAllowanceData() {
           {form.positions.length > 0 && (
             <div className="grid gap-2 rounded-lg border border-slate-200 p-3">
               <div className="text-sm font-semibold text-slate-700">
-                Monthly amount per position
+                {i18nT("static.zdl2qg")}{" "}
               </div>
               {form.positions.map((position, index) => {
                 const option = options?.positions.find(
@@ -870,7 +845,10 @@ export default function PositionAllowanceData() {
                   >
                     <span className="text-sm text-slate-600">
                       {option?.code
-                        ? `${option.code} — ${option.name}`
+                        ? i18nT("static.gu0us5", {
+                            p0: option.code,
+                            p1: option.name,
+                          })
                         : (option?.name ?? position.position_id)}
                     </span>
                     <InputNumber
@@ -880,7 +858,7 @@ export default function PositionAllowanceData() {
                       locale="id-ID"
                       min={0}
                       className="w-full"
-                      placeholder="Full monthly amount"
+                      placeholder={i18nT("static.1dhwgef")}
                       onValueChange={(event) =>
                         setForm((current) => ({
                           ...current,
@@ -900,7 +878,7 @@ export default function PositionAllowanceData() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective From
+              {i18nT("static.ypbwia")}{" "}
               <PrimeDatePicker
                 value={form.effective_from}
                 onValueChange={(value) =>
@@ -909,7 +887,7 @@ export default function PositionAllowanceData() {
               />
             </label>
             <label className="grid gap-2 text-sm font-medium text-slate-700">
-              Effective To
+              {i18nT("static.mtbgcr")}{" "}
               <PrimeDatePicker
                 value={form.effective_to}
                 onValueChange={(value) =>
@@ -920,14 +898,14 @@ export default function PositionAllowanceData() {
           </div>
 
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Employee Exclusions (optional)
+            {i18nT("static.1tu0cy9")}{" "}
             <MultiSelect
               value={form.exclusions.map((exclusion) => exclusion.employee_id)}
               options={employeeOptions}
               filter
               display="chip"
               className="w-full"
-              placeholder="Select employees excluded from this policy"
+              placeholder={i18nT("static.11xsfa8")}
               onChange={(event) =>
                 updateSelectedExclusions((event.value as number[]) ?? [])
               }
@@ -937,7 +915,7 @@ export default function PositionAllowanceData() {
           {form.exclusions.length > 0 && (
             <div className="grid gap-2 rounded-lg border border-amber-200 bg-amber-50/40 p-3">
               <div className="text-sm font-semibold text-slate-700">
-                Exclusion reason per employee
+                {i18nT("static.1yfgx5q")}{" "}
               </div>
               {form.exclusions.map((exclusion, index) => {
                 const option = options?.employees.find(
@@ -953,7 +931,7 @@ export default function PositionAllowanceData() {
                     </span>
                     <InputText
                       value={exclusion.reason}
-                      placeholder="Reason for exclusion"
+                      placeholder={i18nT("static.1oqha3e")}
                       onChange={(event) =>
                         setForm((current) => ({
                           ...current,
@@ -973,16 +951,13 @@ export default function PositionAllowanceData() {
           )}
 
           <p className="m-0 text-xs leading-5 text-slate-500">
-            A published policy is immutable. Create a new version for amount,
-            position, date, component, or exclusion changes. The same income
-            component cannot be manually assigned to an employee during a
-            published policy period.
+            {i18nT("static.1xv25wt")}{" "}
           </p>
         </div>
       </Dialog>
 
       <Dialog
-        header="Position Allowance Eligibility Preview"
+        header={i18nT("static.c44x7l")}
         visible={previewVisible}
         modal
         draggable={false}
@@ -993,13 +968,16 @@ export default function PositionAllowanceData() {
         <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">
-              Eligible: <strong>{preview?.eligible_count ?? 0}</strong>
+              {i18nT("static.1avtau6")}{" "}
+              <strong>{preview?.eligible_count ?? 0}</strong>
             </div>
             <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-              Excluded: <strong>{preview?.excluded_count ?? 0}</strong>
+              {i18nT("static.sl3cwn")}{" "}
+              <strong>{preview?.excluded_count ?? 0}</strong>
             </div>
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-800">
-              Manual conflicts: <strong>{preview?.conflict_count ?? 0}</strong>
+              {i18nT("static.l1bghi")}{" "}
+              <strong>{preview?.conflict_count ?? 0}</strong>
             </div>
           </div>
           <DataTable
@@ -1010,27 +988,27 @@ export default function PositionAllowanceData() {
             size="small"
             stripedRows
             responsiveLayout="scroll"
-            emptyMessage="No employees match the selected positions on the reference date."
+            emptyMessage={i18nT("static.1wgpnm3")}
           >
-            <Column field="employee_code" header="Employee" />
-            <Column field="employee_name" header="Name" />
-            <Column field="position_name" header="Position" />
+            <Column field="employee_code" header={i18nT("static.1fak8xt")} />
+            <Column field="employee_name" header={i18nT("static.4el6o6")} />
+            <Column field="position_name" header={i18nT("static.1quewx6")} />
             <Column
-              header="Amount"
+              header={i18nT("static.a2ky21")}
               body={(row: PositionAllowancePreview["rows"][number]) =>
                 formatCurrency(row.monthly_amount)
               }
             />
             <Column
-              header="Result"
+              header={i18nT("static.ma0s3o")}
               body={(row: PositionAllowancePreview["rows"][number]) => (
                 <Tag
                   value={
                     row.eligible
-                      ? "Eligible"
+                      ? i18nT("static.ile4gg")
                       : row.exclusion_reason
-                        ? "Excluded"
-                        : "Manual conflict"
+                        ? i18nT("static.tio6hj")
+                        : i18nT("static.1f81jxn")
                   }
                   severity={row.eligible ? "success" : "warning"}
                 />
@@ -1041,7 +1019,7 @@ export default function PositionAllowanceData() {
       </Dialog>
 
       <Dialog
-        header="Create New Position Allowance Version"
+        header={i18nT("static.17nhwl4")}
         visible={versionVisible}
         modal
         draggable={false}
@@ -1052,14 +1030,14 @@ export default function PositionAllowanceData() {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               onClick={() => setVersionVisible(false)}
             />
             <Button
               type="button"
-              label="Create Draft"
+              label={i18nT("static.4tz1ya")}
               icon="pi pi-copy"
               loading={saving}
               onClick={() => void createVersion()}
@@ -1069,25 +1047,24 @@ export default function PositionAllowanceData() {
       >
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm leading-6 text-slate-500">
-            The new version copies positions, amounts, and exclusions. Adjust
-            the draft before publishing it.
+            {i18nT("static.1wh38am")}{" "}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Effective From
+            {i18nT("static.ypbwia")}{" "}
             <PrimeDatePicker
               value={versionFrom}
               onValueChange={setVersionFrom}
             />
           </label>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Effective To
+            {i18nT("static.mtbgcr")}{" "}
             <PrimeDatePicker value={versionTo} onValueChange={setVersionTo} />
           </label>
         </div>
       </Dialog>
 
       <Dialog
-        header="Retire Position Allowance Policy"
+        header={i18nT("static.zi9hcb")}
         visible={retireVisible}
         modal
         draggable={false}
@@ -1098,14 +1075,14 @@ export default function PositionAllowanceData() {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               onClick={() => setRetireVisible(false)}
             />
             <Button
               type="button"
-              label="Retire"
+              label={i18nT("static.rgquxi")}
               severity="secondary"
               icon="pi pi-stop-circle"
               loading={saving}
@@ -1116,12 +1093,10 @@ export default function PositionAllowanceData() {
       >
         <div className="grid gap-4 py-2">
           <p className="m-0 text-sm leading-6 text-slate-500">
-            Retiring stops the policy from being changed. The end date is
-            required so historical payroll can still use the policy without
-            leaving an open-ended retired policy.
+            {i18nT("static.zuzwuf")}{" "}
           </p>
           <label className="grid gap-2 text-sm font-medium text-slate-700">
-            Effective To
+            {i18nT("static.mtbgcr")}{" "}
             <PrimeDatePicker value={retireTo} onValueChange={setRetireTo} />
           </label>
         </div>

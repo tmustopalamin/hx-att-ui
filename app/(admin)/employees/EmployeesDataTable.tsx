@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -96,32 +97,32 @@ type OnboardingStep = 0 | 1 | 2;
 
 const ONBOARDING_STEPS = [
   {
-    label: "Setup",
-    description: "Choose account mode",
+    labelKey: "Setup",
+    descriptionKey: "Choose account mode",
     icon: "pi pi-sliders-h",
   },
   {
-    label: "Personal",
-    description: "Employee identity",
+    labelKey: "Personal",
+    descriptionKey: "Employee identity",
     icon: "pi pi-user",
   },
   {
-    label: "Review",
-    description: "Account and confirmation",
+    labelKey: "Review",
+    descriptionKey: "Account and confirmation",
     icon: "pi pi-check-circle",
   },
 ] as const;
 
 const CREATION_MODE_OPTIONS: {
-  label: string;
+  labelKey: string;
   value: QuickCreateMode;
 }[] = [
   {
-    label: "Employee Only",
+    labelKey: "Employee Only",
     value: "employee_only",
   },
   {
-    label: "Employee + User",
+    labelKey: "Employee + User",
     value: "employee_with_user",
   },
 ];
@@ -161,8 +162,7 @@ const getEmployeeFullName = (employee: EmployeeListRow) => {
     employee.full_name ||
     [employee.first_name, employee.middle_name, employee.last_name]
       .filter(Boolean)
-      .join(" ") ||
-    "Unknown employee"
+      .join(" ")
   );
 };
 
@@ -175,6 +175,7 @@ const formatDateTime = (value?: string | Date | null) => {
 };
 
 const EmployeesDataTable = () => {
+  const { t: i18nT, tText } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
 
@@ -365,7 +366,7 @@ const EmployeesDataTable = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -376,7 +377,7 @@ const EmployeesDataTable = () => {
       showToast({
         visible: true,
         severity: "warn",
-        summary: "Warning",
+        summary: i18nT("static.fh2d8v"),
         detail: message,
       }),
     );
@@ -388,7 +389,7 @@ const EmployeesDataTable = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -401,7 +402,7 @@ const EmployeesDataTable = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -413,8 +414,8 @@ const EmployeesDataTable = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -424,7 +425,7 @@ const EmployeesDataTable = () => {
     label: string,
   ) => {
     if (!value) {
-      showWarning(`${label} is not available.`);
+      showWarning(i18nT("static.14skndx", { p0: label }));
 
       return;
     }
@@ -453,7 +454,7 @@ const EmployeesDataTable = () => {
         }
       }
 
-      showSuccess(`${label} copied to clipboard.`);
+      showSuccess(i18nT("static.1fsijic", { p0: label }));
     } catch (err: unknown) {
       showError(err);
     }
@@ -646,8 +647,8 @@ const EmployeesDataTable = () => {
 
       showSuccess(
         onboardingLinked
-          ? "Employee created, offer linked, and onboarding started."
-          : response.message || "Employee created successfully.",
+          ? i18nT("static.g37l0t")
+          : response.message || i18nT("static.m4afvc"),
       );
 
       if (response.data?.user_created) {
@@ -672,7 +673,7 @@ const EmployeesDataTable = () => {
 
       await refreshEmployeesData();
 
-      showSuccess(response.message || "Employee deleted successfully.");
+      showSuccess(response.message || i18nT("static.7ad3f9"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -691,7 +692,7 @@ const EmployeesDataTable = () => {
 
       await refreshEmployeesData();
 
-      showSuccess(response.message || "Employee restored successfully.");
+      showSuccess(response.message || i18nT("static.606iig"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -718,7 +719,7 @@ const EmployeesDataTable = () => {
 
       await refreshEmployeesData();
 
-      showSuccess(response.message || "Employee permanently deleted.");
+      showSuccess(response.message || i18nT("static.1goo0qt"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -729,20 +730,18 @@ const EmployeesDataTable = () => {
 
   const onClickDelete = (data: EmployeeListRow) => {
     requestActionConfirmation({
-      header: "Delete Employee",
+      header: i18nT("static.105m52y"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            Are you sure you want to delete this employee?
-          </span>
+          <span className="text-slate-600">{i18nT("static.17jfm2v")} </span>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-sm font-semibold text-slate-800">
-              {getEmployeeFullName(data)}
+              {getEmployeeFullName(data) || tText("Unknown employee")}
             </p>
 
             <p className="m-0 mt-1 font-mono text-xs text-slate-500">
-              {data.code || `Employee ID: ${data.id}`}
+              {data.code || i18nT("static.qgq1so", { p0: data.id })}
             </p>
           </div>
         </div>
@@ -757,7 +756,7 @@ const EmployeesDataTable = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -766,7 +765,7 @@ const EmployeesDataTable = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -778,18 +777,18 @@ const EmployeesDataTable = () => {
 
   const onClickRestore = (data: EmployeeListRow) => {
     requestActionConfirmation({
-      header: "Restore Employee",
+      header: i18nT("static.89fhf"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">Restore this employee record?</span>
+          <span className="text-slate-600">{i18nT("static.7c1swj")}</span>
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <p className="m-0 text-sm font-semibold text-slate-800">
-              {getEmployeeFullName(data)}
+              {getEmployeeFullName(data) || tText("Unknown employee")}
             </p>
 
             <p className="m-0 mt-1 font-mono text-xs text-slate-500">
-              {data.code || `Employee ID: ${data.id}`}
+              {data.code || i18nT("static.qgq1so", { p0: data.id })}
             </p>
           </div>
         </div>
@@ -804,7 +803,7 @@ const EmployeesDataTable = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -813,7 +812,7 @@ const EmployeesDataTable = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -825,20 +824,18 @@ const EmployeesDataTable = () => {
 
   const onClickPurge = (data: EmployeeListRow) => {
     requestActionConfirmation({
-      header: "Delete Employee Permanently",
+      header: i18nT("static.lnct4j"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <div className="rounded-lg border border-red-200 bg-red-50 p-3">
             <p className="m-0 text-sm font-semibold text-red-800">
-              {getEmployeeFullName(data)}
+              {getEmployeeFullName(data) || tText("Unknown employee")}
             </p>
 
             <p className="m-0 mt-1 font-mono text-xs text-red-600">
-              {data.code || `Employee ID: ${data.id}`}
+              {data.code || i18nT("static.qgq1so", { p0: data.id })}
             </p>
           </div>
         </div>
@@ -853,7 +850,7 @@ const EmployeesDataTable = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -862,7 +859,7 @@ const EmployeesDataTable = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -900,11 +897,11 @@ const EmployeesDataTable = () => {
 
         <div className="flex min-w-0 flex-col gap-1">
           <span className="truncate text-sm font-semibold text-slate-800">
-            {getEmployeeFullName(rowData)}
+            {getEmployeeFullName(rowData) || tText("Unknown employee")}
           </span>
 
           <span className="truncate font-mono text-xs text-slate-500">
-            {rowData.code || "No employee code"}
+            {rowData.code || i18nT("static.1t8ynib")}
           </span>
         </div>
       </div>
@@ -949,10 +946,10 @@ const EmployeesDataTable = () => {
         {email ? (
           <button
             type="button"
-            title={`Copy ${email}`}
+            title={i18nT("static.1tk1nkw", { p0: email })}
             className="flex min-w-0 items-center gap-2 border-0 bg-transparent p-0 text-left text-sm text-blue-700 hover:underline"
             onClick={() => {
-              void copyToClipboard(email, "Email");
+              void copyToClipboard(email, tText("Email"));
             }}
           >
             <span className="truncate">{email}</span>
@@ -960,21 +957,27 @@ const EmployeesDataTable = () => {
             <i className="pi pi-copy shrink-0 text-xs" />
           </button>
         ) : (
-          <span className="text-sm text-slate-400">No email</span>
+          <span className="text-sm text-slate-400">
+            {i18nT("static.r59ohm")}
+          </span>
         )}
 
         <span className="truncate text-xs text-slate-500">
-          {rowData.phone_number || "No phone number"}
+          {rowData.phone_number || i18nT("static.1gjv9jb")}
         </span>
       </div>
     );
   };
 
   const organizationBodyTemplate = (rowData: EmployeeListRow) => {
-    const primary =
+    const primarySource =
       rowData.position_name ||
       rowData.department_name ||
       "Organization not assigned";
+    const hasOrganization = primarySource !== "Organization not assigned";
+    const primary = hasOrganization
+      ? primarySource
+      : tText("Organization not assigned");
 
     const secondary = [
       rowData.department_name !== primary ? rowData.department_name : null,
@@ -988,9 +991,7 @@ const EmployeesDataTable = () => {
       <div className="flex min-w-0 flex-col gap-1">
         <span
           className={`truncate text-sm font-medium ${
-            primary === "Organization not assigned"
-              ? "text-amber-700"
-              : "text-slate-700"
+            !hasOrganization ? "text-amber-700" : "text-slate-700"
           }`}
         >
           {primary}
@@ -1008,7 +1009,7 @@ const EmployeesDataTable = () => {
       return (
         <div className="flex flex-col items-start gap-1">
           <Tag
-            value="Deleted"
+            value={i18nT("static.1v6qcju")}
             severity="secondary"
             icon="pi pi-trash"
             rounded
@@ -1023,7 +1024,7 @@ const EmployeesDataTable = () => {
 
     return (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
@@ -1036,7 +1037,11 @@ const EmployeesDataTable = () => {
 
     if (rowData.deleted_at) {
       if (!canRestoreEmployee && !canPurgeEmployee) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -1049,7 +1054,7 @@ const EmployeesDataTable = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -1068,7 +1073,7 @@ const EmployeesDataTable = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -1092,7 +1097,7 @@ const EmployeesDataTable = () => {
             outlined
             severity="secondary"
             size="small"
-            tooltip="Open employee detail"
+            tooltip={i18nT("static.11n6dnk")}
             tooltipOptions={{
               appendTo: getBody,
               position: "top",
@@ -1109,7 +1114,7 @@ const EmployeesDataTable = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -1176,7 +1181,7 @@ const EmployeesDataTable = () => {
       <div className="flex flex-col-reverse gap-2 sm:flex-row">
         <Button
           type="button"
-          label="Cancel"
+          label={i18nT("static.ew9em3")}
           icon="pi pi-times"
           text
           severity="secondary"
@@ -1188,7 +1193,7 @@ const EmployeesDataTable = () => {
         {onboardingStep > 0 && (
           <Button
             type="button"
-            label="Back"
+            label={i18nT("static.1hzmxtu")}
             icon="pi pi-arrow-left"
             severity="secondary"
             outlined
@@ -1202,7 +1207,7 @@ const EmployeesDataTable = () => {
       {onboardingStep < 2 ? (
         <Button
           type="button"
-          label="Continue"
+          label={i18nT("static.1bipuuc")}
           icon="pi pi-arrow-right"
           iconPos="right"
           disabled={
@@ -1217,8 +1222,8 @@ const EmployeesDataTable = () => {
           form="quick-create-employee-form"
           label={
             creationMode === "employee_with_user"
-              ? "Create Employee + User"
-              : "Create Employee"
+              ? i18nT("static.2li1n5")
+              : i18nT("static.1vwvqw7")
           }
           icon="pi pi-check"
           loading={isSaving}
@@ -1248,13 +1253,13 @@ const EmployeesDataTable = () => {
         <Card className="border border-slate-200 shadow-sm">
           <div className="flex flex-col gap-5 p-3 sm:p-4 md:p-5">
             <EmployeePageHeader
-              title="Employees"
-              description="Manage employee records and open detailed employee profiles."
+              title={i18nT("static.f4bo3a")}
+              description={i18nT("static.1fxsmlb")}
               actions={
                 <>
                   <Button
                     type="button"
-                    label="Refresh"
+                    label={i18nT("static.28r6qc")}
                     icon="pi pi-refresh"
                     severity="secondary"
                     outlined
@@ -1268,7 +1273,7 @@ const EmployeesDataTable = () => {
                   {canCreateEmployee && (
                     <Button
                       type="button"
-                      label="New Employee"
+                      label={i18nT("static.70a3xf")}
                       icon="pi pi-plus"
                       size="small"
                       disabled={isProcessing || isSaving}
@@ -1295,12 +1300,12 @@ const EmployeesDataTable = () => {
                     htmlFor="showDeletedData"
                     className="cursor-pointer select-none text-sm text-slate-600"
                   >
-                    Show deleted records
+                    {i18nT("static.1kk3in7")}{" "}
                   </label>
                 </div>
               ) : (
                 <span className="text-xs text-slate-500">
-                  Showing active employee records.
+                  {i18nT("static.1ftehny")}{" "}
                 </span>
               )}
 
@@ -1310,7 +1315,7 @@ const EmployeesDataTable = () => {
                 <InputText
                   value={globalFilterValue}
                   onChange={onGlobalFilterChange}
-                  placeholder="Search name, code, email, branch, or position"
+                  placeholder={i18nT("static.1911zfp")}
                   className="w-full"
                 />
               </IconField>
@@ -1354,8 +1359,8 @@ const EmployeesDataTable = () => {
                 tableStyle={{
                   minWidth: "94rem",
                 }}
-                emptyMessage="No employee data found."
-                currentPageReportTemplate="{first} to {last} of {totalRecords}"
+                emptyMessage={i18nT("static.1l60s88")}
+                currentPageReportTemplate={i18nT("static.1kqh8lr")}
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 onRowDoubleClick={(event) => {
                   openDetail(event.data as EmployeeListRow);
@@ -1373,7 +1378,7 @@ const EmployeesDataTable = () => {
                 />
 
                 <Column
-                  header="Employee"
+                  header={i18nT("static.1fak8xt")}
                   sortable
                   sortField="full_name"
                   body={employeeBodyTemplate}
@@ -1383,7 +1388,7 @@ const EmployeesDataTable = () => {
                 />
 
                 <Column
-                  header="Demographic"
+                  header={i18nT("static.g5rbk2")}
                   body={demographicBodyTemplate}
                   style={{
                     minWidth: "18rem",
@@ -1391,7 +1396,7 @@ const EmployeesDataTable = () => {
                 />
 
                 <Column
-                  header="Contact"
+                  header={i18nT("static.w3fq2r")}
                   body={contactBodyTemplate}
                   style={{
                     minWidth: "20rem",
@@ -1399,7 +1404,7 @@ const EmployeesDataTable = () => {
                 />
 
                 <Column
-                  header="Organization"
+                  header={i18nT("static.725tl6")}
                   body={organizationBodyTemplate}
                   style={{
                     minWidth: "20rem",
@@ -1407,7 +1412,7 @@ const EmployeesDataTable = () => {
                 />
 
                 <Column
-                  header="Status"
+                  header={i18nT("static.3pd73")}
                   body={statusBodyTemplate}
                   style={{
                     minWidth: "13rem",
@@ -1415,7 +1420,7 @@ const EmployeesDataTable = () => {
                 />
 
                 <Column
-                  header="Action"
+                  header={i18nT("static.2wk0tb")}
                   body={actionColumnBody}
                   frozen
                   alignFrozen="right"
@@ -1439,7 +1444,7 @@ const EmployeesDataTable = () => {
 
       {/* Quick Create Employee */}
       <Dialog
-        header="Quick Add Employee"
+        header={i18nT("static.jofrnd")}
         visible={quickCreateDialogVisible}
         style={{
           width: "95vw",
@@ -1469,7 +1474,7 @@ const EmployeesDataTable = () => {
 
               return (
                 <div
-                  key={step.label}
+                  key={step.labelKey}
                   className={`flex items-center gap-3 rounded-xl border px-3 py-3 transition-colors ${
                     isActive
                       ? "border-blue-200 bg-blue-50"
@@ -1504,10 +1509,10 @@ const EmployeesDataTable = () => {
                             : "text-slate-700"
                       }`}
                     >
-                      {index + 1}. {step.label}
+                      {index + 1}. {i18nT(step.labelKey)}
                     </p>
                     <p className="m-0 mt-0.5 truncate text-xs text-slate-500">
-                      {step.description}
+                      {i18nT(step.descriptionKey)}
                     </p>
                   </div>
                 </div>
@@ -1520,12 +1525,11 @@ const EmployeesDataTable = () => {
             <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-4">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Creation Mode
+                  {i18nT("static.1jp1y3z")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Create only an employee profile or create the employee
-                  together with a login account.
+                  {i18nT("static.12x9tcy")}{" "}
                 </p>
               </div>
 
@@ -1535,7 +1539,10 @@ const EmployeesDataTable = () => {
                 render={({ field }) => (
                   <SelectButton
                     value={field.value}
-                    options={CREATION_MODE_OPTIONS}
+                    options={CREATION_MODE_OPTIONS.map((option) => ({
+                      label: i18nT(option.labelKey),
+                      value: option.value,
+                    }))}
                     optionLabel="label"
                     optionValue="value"
                     allowEmpty={false}
@@ -1554,10 +1561,7 @@ const EmployeesDataTable = () => {
             <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <i className="pi pi-exclamation-circle mt-0.5" />
 
-              <span>
-                Gender, religion, or marital-status reference data could not be
-                loaded. Refresh the page before creating an employee.
-              </span>
+              <span>{i18nT("static.16agmdg")} </span>
             </div>
           )}
 
@@ -1566,12 +1570,11 @@ const EmployeesDataTable = () => {
             <section className="flex flex-col gap-4">
               <div className="border-b border-slate-200 pb-2">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Basic Information
+                  {i18nT("static.20pywr")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Enter the employee&apos;s identity and demographic
-                  information.
+                  {i18nT("static.bdylyz")}{" "}
                 </p>
               </div>
 
@@ -1581,7 +1584,7 @@ const EmployeesDataTable = () => {
                     htmlFor="first_name"
                     className="text-sm font-medium text-slate-700"
                   >
-                    First Name
+                    {i18nT("static.6yjm7s")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1589,10 +1592,10 @@ const EmployeesDataTable = () => {
                     name="first_name"
                     control={control}
                     rules={{
-                      required: "First name is required.",
+                      required: i18nT("static.7p5ep1"),
                       maxLength: {
                         value: 50,
-                        message: "First name cannot exceed 50 characters.",
+                        message: i18nT("static.j7d8rc"),
                       },
                     }}
                     render={({ field, fieldState }) => (
@@ -1602,7 +1605,7 @@ const EmployeesDataTable = () => {
                           id="first_name"
                           value={field.value ?? ""}
                           autoComplete="off"
-                          placeholder="Enter first name"
+                          placeholder={i18nT("static.9wbfnm")}
                           disabled={isSaving}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
@@ -1624,7 +1627,7 @@ const EmployeesDataTable = () => {
                     htmlFor="middle_name"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Middle Name
+                    {i18nT("static.1i6ktxn")}{" "}
                   </label>
 
                   <Controller
@@ -1633,7 +1636,7 @@ const EmployeesDataTable = () => {
                     rules={{
                       maxLength: {
                         value: 50,
-                        message: "Middle name cannot exceed 50 characters.",
+                        message: i18nT("static.1iamymx"),
                       },
                     }}
                     render={({ field, fieldState }) => (
@@ -1643,7 +1646,7 @@ const EmployeesDataTable = () => {
                           id="middle_name"
                           value={field.value ?? ""}
                           autoComplete="off"
-                          placeholder="Enter middle name"
+                          placeholder={i18nT("static.akq5gt")}
                           disabled={isSaving}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
@@ -1665,7 +1668,7 @@ const EmployeesDataTable = () => {
                     htmlFor="last_name"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Last Name
+                    {i18nT("static.16p3u1s")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1673,10 +1676,10 @@ const EmployeesDataTable = () => {
                     name="last_name"
                     control={control}
                     rules={{
-                      required: "Last name is required.",
+                      required: i18nT("static.evbznx"),
                       maxLength: {
                         value: 50,
-                        message: "Last name cannot exceed 50 characters.",
+                        message: i18nT("static.18abhyo"),
                       },
                     }}
                     render={({ field, fieldState }) => (
@@ -1686,7 +1689,7 @@ const EmployeesDataTable = () => {
                           id="last_name"
                           value={field.value ?? ""}
                           autoComplete="off"
-                          placeholder="Enter last name"
+                          placeholder={i18nT("static.kcplye")}
                           disabled={isSaving}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
@@ -1708,7 +1711,7 @@ const EmployeesDataTable = () => {
                     htmlFor="birth_place"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Birth Place
+                    {i18nT("static.vqo7c5")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1716,10 +1719,10 @@ const EmployeesDataTable = () => {
                     name="birth_place"
                     control={control}
                     rules={{
-                      required: "Birth place is required.",
+                      required: i18nT("static.nto55q"),
                       maxLength: {
                         value: 100,
-                        message: "Birth place cannot exceed 100 characters.",
+                        message: i18nT("static.1mdcsx5"),
                       },
                     }}
                     render={({ field, fieldState }) => (
@@ -1729,7 +1732,7 @@ const EmployeesDataTable = () => {
                           id="birth_place"
                           value={field.value ?? ""}
                           autoComplete="off"
-                          placeholder="Enter birth place"
+                          placeholder={i18nT("static.l46w3z")}
                           disabled={isSaving}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
@@ -1751,7 +1754,7 @@ const EmployeesDataTable = () => {
                     htmlFor="dob"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Birth Date
+                    {i18nT("static.1m101fi")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1759,7 +1762,7 @@ const EmployeesDataTable = () => {
                     name="dob"
                     control={control}
                     rules={{
-                      required: "Birth date is required.",
+                      required: i18nT("static.7d73hj"),
                       validate: (value) => {
                         if (!value) {
                           return true;
@@ -1780,7 +1783,7 @@ const EmployeesDataTable = () => {
                           dateFormat="dd MM yy"
                           showIcon
                           maxDate={new Date()}
-                          placeholder="Select birth date"
+                          placeholder={i18nT("static.heojps")}
                           disabled={isSaving}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
@@ -1805,7 +1808,7 @@ const EmployeesDataTable = () => {
                     htmlFor="gender_id"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Gender
+                    {i18nT("static.1adu274")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1813,7 +1816,7 @@ const EmployeesDataTable = () => {
                     name="gender_id"
                     control={control}
                     rules={{
-                      required: "Gender is required.",
+                      required: i18nT("static.t17bfx"),
                       validate: (value) =>
                         Number(value) > 0 || "Gender is required.",
                     }}
@@ -1832,7 +1835,7 @@ const EmployeesDataTable = () => {
                           disabled={
                             isSaving || genderIsLoading || Boolean(genderError)
                           }
-                          placeholder="Select gender"
+                          placeholder={i18nT("static.rtoq86")}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
                           }`}
@@ -1856,7 +1859,7 @@ const EmployeesDataTable = () => {
                     htmlFor="religion_id"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Religion
+                    {i18nT("static.1y626di")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1864,7 +1867,7 @@ const EmployeesDataTable = () => {
                     name="religion_id"
                     control={control}
                     rules={{
-                      required: "Religion is required.",
+                      required: i18nT("static.ka19ov"),
                       validate: (value) =>
                         Number(value) > 0 || "Religion is required.",
                     }}
@@ -1885,7 +1888,7 @@ const EmployeesDataTable = () => {
                             religionIsLoading ||
                             Boolean(religionError)
                           }
-                          placeholder="Select religion"
+                          placeholder={i18nT("static.d04w6o")}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
                           }`}
@@ -1909,7 +1912,7 @@ const EmployeesDataTable = () => {
                     htmlFor="marital_status_id"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Marital Status
+                    {i18nT("static.s7ogwz")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1917,7 +1920,7 @@ const EmployeesDataTable = () => {
                     name="marital_status_id"
                     control={control}
                     rules={{
-                      required: "Marital status is required.",
+                      required: i18nT("static.1b8a7zs"),
                     }}
                     render={({ field, fieldState }) => (
                       <>
@@ -1936,7 +1939,7 @@ const EmployeesDataTable = () => {
                             maritalStatusIsLoading ||
                             Boolean(maritalStatusError)
                           }
-                          placeholder="Select marital status"
+                          placeholder={i18nT("static.r2t1q1")}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
                           }`}
@@ -1963,12 +1966,11 @@ const EmployeesDataTable = () => {
             <section className="flex flex-col gap-4 rounded-xl border border-blue-200 bg-blue-50/40 p-4">
               <div>
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Login Account
+                  {i18nT("static.1r69so9")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  The account receives the employee role. Password is generated
-                  automatically and must be changed at first login.
+                  {i18nT("static.slr02e")}{" "}
                 </p>
               </div>
 
@@ -1978,7 +1980,7 @@ const EmployeesDataTable = () => {
                     htmlFor="username"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Username
+                    {i18nT("static.7s11ax")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -1994,15 +1996,17 @@ const EmployeesDataTable = () => {
                         const username = value.trim().toLowerCase();
 
                         if (!username) {
-                          return "Username is required.";
+                          return i18nT("Username is required.");
                         }
 
                         if (username.length < 3) {
-                          return "Username must contain at least 3 characters.";
+                          return i18nT(
+                            "Username must contain at least 3 characters.",
+                          );
                         }
 
                         if (username.length > 50) {
-                          return "Username cannot exceed 50 characters.";
+                          return i18nT("Username cannot exceed 50 characters.");
                         }
 
                         return (
@@ -2019,7 +2023,7 @@ const EmployeesDataTable = () => {
                             id="username"
                             value={field.value ?? ""}
                             autoComplete="off"
-                            placeholder="Enter username"
+                            placeholder={i18nT("static.11nba67")}
                             disabled={isSaving}
                             className={`w-full ${
                               fieldState.invalid ? "p-invalid" : ""
@@ -2035,7 +2039,7 @@ const EmployeesDataTable = () => {
                             severity="secondary"
                             outlined
                             disabled={isSaving}
-                            tooltip="Generate username"
+                            tooltip={i18nT("static.1q15z5u")}
                             tooltipOptions={{
                               appendTo: getBody,
                               position: "top",
@@ -2069,7 +2073,7 @@ const EmployeesDataTable = () => {
                     htmlFor="email"
                     className="text-sm font-medium text-slate-700"
                   >
-                    Login Email
+                    {i18nT("static.8z75sy")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
 
@@ -2085,11 +2089,11 @@ const EmployeesDataTable = () => {
                         const email = value.trim().toLowerCase();
 
                         if (!email) {
-                          return "Email is required.";
+                          return i18nT("Email is required.");
                         }
 
                         if (email.length > 254) {
-                          return "Email cannot exceed 254 characters.";
+                          return i18nT("Email cannot exceed 254 characters.");
                         }
 
                         return (
@@ -2106,7 +2110,7 @@ const EmployeesDataTable = () => {
                           type="email"
                           value={field.value ?? ""}
                           autoComplete="off"
-                          placeholder="employee@company.com"
+                          placeholder={i18nT("static.jl4uld")}
                           disabled={isSaving}
                           className={`w-full ${
                             fieldState.invalid ? "p-invalid" : ""
@@ -2137,12 +2141,11 @@ const EmployeesDataTable = () => {
                             htmlFor="user_is_active"
                             className="cursor-pointer text-sm font-medium text-slate-700"
                           >
-                            Active Login
+                            {i18nT("static.10s6gq")}{" "}
                           </label>
 
                           <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                            Turn this off when the user account should be
-                            created but cannot log in yet.
+                            {i18nT("static.j5bg6n")}{" "}
                           </p>
                         </div>
 
@@ -2164,18 +2167,17 @@ const EmployeesDataTable = () => {
             <section className="flex flex-col gap-4">
               <div className="border-b border-slate-200 pb-2">
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Review Employee
+                  {i18nT("static.bnqff7")}{" "}
                 </h2>
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Confirm the onboarding information before creating the
-                  employee.
+                  {i18nT("static.17c2efo")}{" "}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Employee
+                    {i18nT("static.1fak8xt")}{" "}
                   </p>
                   <p className="m-0 mt-2 font-semibold text-slate-900">
                     {[
@@ -2187,24 +2189,24 @@ const EmployeesDataTable = () => {
                       .join(" ")}
                   </p>
                   <p className="m-0 mt-1 text-sm text-slate-500">
-                    Born in {getValues("birth_place")} ·{" "}
-                    {formatDate(getValues("dob"))}
+                    {i18nT("static.1alk0it")} {getValues("birth_place")}{" "}
+                    {i18nT("static.19xoda3")} {formatDate(getValues("dob"))}
                   </p>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">
-                    Login Access
+                    {i18nT("static.a5hzdc")}{" "}
                   </p>
                   <p className="m-0 mt-2 font-semibold text-slate-900">
                     {creationMode === "employee_with_user"
-                      ? "Employee account"
-                      : "Profile only"}
+                      ? i18nT("static.1i1dy52")
+                      : i18nT("static.1bnjhrg")}
                   </p>
                   <p className="m-0 mt-1 truncate text-sm text-slate-500">
                     {creationMode === "employee_with_user"
-                      ? getValues("email") || "Email not entered"
-                      : "A login account can be added later."}
+                      ? getValues("email") || i18nT("static.i0rhc9")
+                      : i18nT("static.o8rykt")}
                   </p>
                 </div>
               </div>
@@ -2212,9 +2214,7 @@ const EmployeesDataTable = () => {
               <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <i className="pi pi-info-circle mt-0.5 text-amber-700" />
                 <p className="m-0 text-sm leading-6 text-amber-900">
-                  Organization, employment, payroll, and attendance details can
-                  be completed from the employee profile after this onboarding
-                  step.
+                  {i18nT("static.1rmkl3g")}{" "}
                 </p>
               </div>
             </section>
@@ -2224,7 +2224,7 @@ const EmployeesDataTable = () => {
 
       {/* Credentials */}
       <Dialog
-        header="Login Account Created"
+        header={i18nT("static.i00mul")}
         visible={credentialDialogVisible}
         style={{
           width: "95vw",
@@ -2241,7 +2241,7 @@ const EmployeesDataTable = () => {
           <div className="flex justify-end">
             <Button
               type="button"
-              label="Close"
+              label={i18nT("static.1l0xxoj")}
               icon="pi pi-check"
               onClick={closeCredentialDialog}
             />
@@ -2252,12 +2252,14 @@ const EmployeesDataTable = () => {
           <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
             <i className="pi pi-check-circle mt-0.5" />
 
-            <span>Employee and login account were created successfully.</span>
+            <span>{i18nT("static.mnww5q")}</span>
           </div>
 
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
-              <span className="font-medium text-slate-500">Employee ID</span>
+              <span className="font-medium text-slate-500">
+                {i18nT("static.1lghzb2")}
+              </span>
 
               <span className="font-mono text-slate-800">
                 {createdResult?.employee_id ?? "-"}
@@ -2265,7 +2267,9 @@ const EmployeesDataTable = () => {
             </div>
 
             <div className="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
-              <span className="font-medium text-slate-500">User ID</span>
+              <span className="font-medium text-slate-500">
+                {i18nT("static.17sernv")}
+              </span>
 
               <span className="font-mono text-slate-800">
                 {createdResult?.user_id ?? "-"}
@@ -2273,7 +2277,9 @@ const EmployeesDataTable = () => {
             </div>
 
             <div className="grid grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm">
-              <span className="font-medium text-slate-500">Username</span>
+              <span className="font-medium text-slate-500">
+                {i18nT("static.7s11ax")}
+              </span>
 
               <span className="min-w-0 truncate font-mono text-slate-800">
                 {createdResult?.username ?? "-"}
@@ -2286,19 +2292,24 @@ const EmployeesDataTable = () => {
                 text
                 size="small"
                 severity="secondary"
-                tooltip="Copy username"
+                tooltip={i18nT("static.vk8lt8")}
                 tooltipOptions={{
                   appendTo: getBody,
                   position: "top",
                 }}
                 onClick={() => {
-                  void copyToClipboard(createdResult?.username, "Username");
+                  void copyToClipboard(
+                    createdResult?.username,
+                    tText("Username"),
+                  );
                 }}
               />
             </div>
 
             <div className="grid grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
-              <span className="font-medium text-amber-700">Password</span>
+              <span className="font-medium text-amber-700">
+                {i18nT("static.cf437c")}
+              </span>
 
               <span className="min-w-0 break-all font-mono font-semibold text-amber-900">
                 {createdResult?.temporary_password ?? "-"}
@@ -2311,7 +2322,7 @@ const EmployeesDataTable = () => {
                 text
                 size="small"
                 severity="warning"
-                tooltip="Copy temporary password"
+                tooltip={i18nT("static.e4c598")}
                 tooltipOptions={{
                   appendTo: getBody,
                   position: "top",
@@ -2319,7 +2330,7 @@ const EmployeesDataTable = () => {
                 onClick={() => {
                   void copyToClipboard(
                     createdResult?.temporary_password,
-                    "Temporary password",
+                    tText("Temporary password"),
                   );
                 }}
               />
@@ -2329,10 +2340,7 @@ const EmployeesDataTable = () => {
           <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-800">
             <i className="pi pi-exclamation-triangle mt-0.5" />
 
-            <span>
-              Save the temporary password now. It may not be displayed again,
-              and the user must change it during the first login.
-            </span>
+            <span>{i18nT("static.37m4x2")} </span>
           </div>
         </div>
       </Dialog>

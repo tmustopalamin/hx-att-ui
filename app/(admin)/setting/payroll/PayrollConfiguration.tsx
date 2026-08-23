@@ -1,4 +1,6 @@
 "use client";
+import { useI18n } from "@/app/i18n";
+import { formatStatusLabel } from "@/app/i18n/statusLabel";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
@@ -121,24 +123,24 @@ const nextStatus = (
 const optional = (value: string): string | null => value.trim() || null;
 
 const prorationBasisLabel = (method: PayrollProrationMethod) => {
-  if (method.basis_code === "SCHEDULED_DAYS") return "Hari kerja terjadwal";
-  if (method.basis_code === "CALENDAR_DAYS") return "Hari kalender";
+  if (method.basis_code === "SCHEDULED_DAYS") return "Scheduled working days";
+  if (method.basis_code === "CALENDAR_DAYS") return "Calendar days";
   if (method.basis_code === "FIXED_DIVISOR") {
-    return `Pembagi tetap${method.fixed_divisor_days ? ` (${method.fixed_divisor_days} hari)` : ""}`;
+    return "Fixed divisor";
   }
-  return "Tanpa prorata";
+  return "No proration";
 };
 
 const prorationMethodLabel = (method: PayrollProrationMethod) => {
   if (method.code === "SCHEDULED_DAYS" || method.code === "WORKING_DAYS") {
-    return "Berdasarkan Hari Kerja Terjadwal";
+    return "Based on Scheduled Working Days";
   }
-  if (method.code === "CALENDAR_DAYS") return "Berdasarkan Hari Kalender";
+  if (method.code === "CALENDAR_DAYS") return "Based on Calendar Days";
   if (method.code === "FIXED_30_DAYS" || method.code === "FIXED_DIVISOR") {
-    return `Pembagi Tetap${method.fixed_divisor_days ? ` ${method.fixed_divisor_days} Hari` : ""}`;
+    return "Fixed divisor";
   }
-  if (method.code === "NONE") return "Tanpa Prorata";
-  return "Metode Prorata Khusus";
+  if (method.code === "NONE") return "No Proration";
+  return "Custom Proration Method";
 };
 
 const prorationMethodDescription = (method: PayrollProrationMethod) => {
@@ -163,6 +165,7 @@ type LocalizedPayrollProrationMethod = PayrollProrationMethod & {
 };
 
 export default function PayrollConfiguration() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -264,23 +267,31 @@ export default function PayrollConfiguration() {
   const settingOptions = useMemo(
     () =>
       (settings ?? []).map((item) => ({
-        label: `${item.name} · ${
-          item.branch_id === null
-            ? "Global"
-            : (branchNames.get(item.branch_id) ?? `Branch ${item.branch_id}`)
-        }${item.is_active ? "" : " · Inactive"}`,
+        label: i18nT("static.1uuktlc", {
+          p0: item.name,
+          p1:
+            item.branch_id === null
+              ? i18nT("static.rrldxq")
+              : (branchNames.get(item.branch_id) ??
+                i18nT("static.9imgeb", { p0: item.branch_id })),
+          p2: item.is_active ? "" : i18nT("static.l8g9rw"),
+        }),
         value: item.id,
       })),
-    [branchNames, settings],
+    [branchNames, i18nT, settings],
   );
   const prorationMethodOptions = useMemo<LocalizedPayrollProrationMethod[]>(
     () =>
       (prorationMethods ?? []).map((method) => ({
         ...method,
-        localized_name: prorationMethodLabel(method),
-        localized_description: prorationMethodDescription(method),
+        localized_name: `${i18nT(prorationMethodLabel(method))}${
+          method.fixed_divisor_days
+            ? ` ${method.fixed_divisor_days} ${i18nT("days")}`
+            : ""
+        }`,
+        localized_description: i18nT(prorationMethodDescription(method)),
       })),
-    [prorationMethods],
+    [i18nT, prorationMethods],
   );
   const selectedProrationMethod = useMemo(
     () =>
@@ -296,7 +307,7 @@ export default function PayrollConfiguration() {
   ) => dispatch(showToast({ visible: true, severity, summary, detail }));
 
   const showError = (error: unknown) => {
-    toast("error", "Error", getErrorMessage(error));
+    toast("error", i18nT("static.1vks92p"), getErrorMessage(error));
   };
 
   useEffect(() => {
@@ -316,7 +327,7 @@ export default function PayrollConfiguration() {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Payroll setup",
+            summary: i18nT("static.1laurpn"),
             detail: getErrorMessage(periodRuleError),
           }),
         );
@@ -332,9 +343,8 @@ export default function PayrollConfiguration() {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Payroll setup",
-            detail:
-              "No payroll period rule is configured for this setting. Add an effective rule below before running payroll.",
+            summary: i18nT("static.1laurpn"),
+            detail: i18nT("static.1d4apq0"),
           }),
         );
       }
@@ -347,6 +357,7 @@ export default function PayrollConfiguration() {
     periodRuleError,
     periodRuleLoading,
     periodRules,
+    i18nT,
     setting,
   ]);
 
@@ -363,11 +374,7 @@ export default function PayrollConfiguration() {
         (method) => method.code === setting.default_proration_method,
       )
     ) {
-      toast(
-        "error",
-        "Validation",
-        "Pilih metode prorata aktif dari master Metode Prorata.",
-      );
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.bwwp2u"));
       return;
     }
     const payload: UpdatePayrollSetting = {
@@ -386,7 +393,7 @@ export default function PayrollConfiguration() {
       setSavingSetting(true);
       await updatePayrollSetting(setting.id, setting.row_version, payload);
       await refreshSettings();
-      toast("success", "Success", "Payroll settings saved.");
+      toast("success", i18nT("static.udvru8"), i18nT("static.153ro4a"));
     } catch (error: unknown) {
       showError(error);
     } finally {
@@ -401,7 +408,7 @@ export default function PayrollConfiguration() {
 
   const createSetting = async () => {
     if (!newSetting.name.trim() || !canManage) {
-      toast("error", "Validation", "Setting name is required.");
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.k0y8g3"));
       return;
     }
     if (
@@ -409,11 +416,7 @@ export default function PayrollConfiguration() {
         (method) => method.code === newSetting.default_proration_method,
       )
     ) {
-      toast(
-        "error",
-        "Validation",
-        "Pilih metode prorata aktif dari master Metode Prorata.",
-      );
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.bwwp2u"));
       return;
     }
     try {
@@ -425,7 +428,7 @@ export default function PayrollConfiguration() {
       await refreshSettings();
       setSetting(created);
       setShowSettingDialog(false);
-      toast("success", "Success", "Payroll setting created.");
+      toast("success", i18nT("static.udvru8"), i18nT("static.1nzpdrw"));
     } catch (error: unknown) {
       showError(error);
     } finally {
@@ -454,11 +457,7 @@ export default function PayrollConfiguration() {
       periodRule.cutoff_day < 1 ||
       periodRule.cutoff_day > 31
     ) {
-      toast(
-        "error",
-        "Validation",
-        "Choose an effective month and cutoff day from 1 to 31.",
-      );
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.1jvac4y"));
       return;
     }
     const effectiveMonth = `${periodRule.effective_month.slice(0, 7)}-01`;
@@ -481,7 +480,7 @@ export default function PayrollConfiguration() {
       }
       await refreshPeriodRules();
       setShowPeriodRuleDialog(false);
-      toast("success", "Success", "Payroll period rule saved.");
+      toast("success", i18nT("static.udvru8"), i18nT("static.16z2e8i"));
     } catch (error: unknown) {
       showError(error);
     } finally {
@@ -495,7 +494,7 @@ export default function PayrollConfiguration() {
       setDeletingPeriodRuleId(rule.id);
       await deletePayrollPeriodRule(setting.id, rule.id, rule.row_version);
       await refreshPeriodRules();
-      toast("success", "Success", "Payroll period rule retired.");
+      toast("success", i18nT("static.udvru8"), i18nT("static.1k3fjck"));
     } catch (error: unknown) {
       showError(error);
     } finally {
@@ -505,12 +504,12 @@ export default function PayrollConfiguration() {
 
   const confirmRemovePeriodRule = (rule: PayrollPeriodRule) => {
     requestActionConfirmation({
-      action: "Retire payroll period rule",
+      action: i18nT("static.1nzxg6a"),
       target: `Cutoff day ${rule.cutoff_day} · effective ${rule.effective_month}`,
       severity: "danger",
-      confirmLabel: "Retire rule",
+      confirmLabel: i18nT("static.13g4z6s"),
       confirmIcon: "pi pi-trash",
-      description: "Retire this future cutoff rule?",
+      description: i18nT("static.1fnvzel"),
       onAccept: () => removePeriodRule(rule),
     });
   };
@@ -523,7 +522,7 @@ export default function PayrollConfiguration() {
       !regulation.version.trim() ||
       !regulation.effective_from
     ) {
-      toast("error", "Validation", "Complete all required regulation fields.");
+      toast("error", i18nT("static.gy1qqi"), i18nT("static.f2kucb"));
       return;
     }
     try {
@@ -538,7 +537,7 @@ export default function PayrollConfiguration() {
       await refreshRegulations();
       setRegulation(EMPTY_REGULATION);
       setShowRegulationDialog(false);
-      toast("success", "Success", "Regulation package created as draft.");
+      toast("success", i18nT("static.udvru8"), i18nT("static.1or1j4y"));
     } catch (error: unknown) {
       showError(error);
     } finally {
@@ -553,7 +552,11 @@ export default function PayrollConfiguration() {
       setTransitioningId(row.id);
       await transitionPayrollRegulation(row.id, row.row_version, target);
       await refreshRegulations();
-      toast("success", "Success", `Regulation moved to ${target}.`);
+      toast(
+        "success",
+        i18nT("static.udvru8"),
+        i18nT("static.1v7wvgt", { p0: target }),
+      );
     } catch (error: unknown) {
       showError(error);
     } finally {
@@ -565,17 +568,26 @@ export default function PayrollConfiguration() {
     if (!target) return;
     const finalAction = target === "PUBLISHED" || target === "RETIRED";
     requestActionConfirmation({
-      action: `${target === "RETIRED" ? "Retire" : target === "PUBLISHED" ? "Publish" : target === "APPROVED" ? "Approve" : "Mark tested"} regulation`,
+      action: i18nT("static.1c6rii3", {
+        p0:
+          target === "RETIRED"
+            ? i18nT("static.rgquxi")
+            : target === "PUBLISHED"
+              ? i18nT("static.u2m17s")
+              : target === "APPROVED"
+                ? i18nT("static.1s2ov2y")
+                : i18nT("static.5q3lzp"),
+      }),
       target: `${row.code} · ${row.version}`,
       severity: finalAction ? "danger" : "warning",
-      confirmLabel: target === "RETIRED" ? "Retire" : target,
+      confirmLabel: target === "RETIRED" ? i18nT("static.rgquxi") : target,
       confirmIcon: target === "RETIRED" ? "pi pi-ban" : "pi pi-check",
       description:
         target === "RETIRED"
-          ? "Retire this regulation package?"
+          ? i18nT("static.gf1yzz")
           : target === "PUBLISHED"
-            ? "Publish this regulation package?"
-            : `Mark this regulation ${target.toLowerCase()}?`,
+            ? i18nT("static.3lev5")
+            : i18nT("static.at2w39", { p0: target.toLowerCase() }),
       onAccept: () => transition(row),
     });
   };
@@ -587,8 +599,14 @@ export default function PayrollConfiguration() {
       setTestRun(result);
       toast(
         result.status === "PASSED" ? "success" : "error",
-        result.status === "PASSED" ? "Tests passed" : "Tests need attention",
-        `${result.passed_count} passed, ${result.failed_count} failed, ${result.error_count} errors.`,
+        result.status === "PASSED"
+          ? i18nT("static.pyxkuu")
+          : i18nT("static.1yu5hfk"),
+        i18nT("static.1of3d7a", {
+          p0: result.passed_count,
+          p1: result.failed_count,
+          p2: result.error_count,
+        }),
       );
     } catch (error: unknown) {
       showError(error);
@@ -598,12 +616,12 @@ export default function PayrollConfiguration() {
   };
   const confirmRunTests = (row: PayrollRegulationPackage) => {
     requestActionConfirmation({
-      action: "Run regulation tests",
+      action: i18nT("static.xq6ksb"),
       target: `${row.code} · ${row.version}`,
       severity: "info",
-      confirmLabel: "Run Tests",
+      confirmLabel: i18nT("static.1kf2t4f"),
       confirmIcon: "pi pi-play",
-      description: "Run regulation tests for this package?",
+      description: i18nT("static.ed5x5h"),
       onAccept: () => runTests(row),
     });
   };
@@ -620,18 +638,17 @@ export default function PayrollConfiguration() {
             </div>
             <div>
               <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                Payroll Configuration
+                {i18nT("static.n0b678")}{" "}
               </h1>
               <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                Configure payroll behavior and effective-dated Indonesian
-                regulations.
+                {i18nT("static.5oudfg")}{" "}
               </p>
             </div>
           </div>
         </div>
 
         <TabView>
-          <TabPanel header="General Settings" leftIcon="pi pi-cog mr-2">
+          <TabPanel header={i18nT("static.5zlfh8")} leftIcon="pi pi-cog mr-2">
             {settingError ? (
               <ErrorNotConnectedToApi mutateKey={SETTING_URL} />
             ) : setting ? (
@@ -639,8 +656,8 @@ export default function PayrollConfiguration() {
                 <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
                   <div className="w-full md:max-w-xl">
                     <Field
-                      label="Payroll Setting"
-                      hint="Pilih profil payroll yang ingin diatur. Profil Global berlaku untuk semua cabang; profil cabang hanya berlaku untuk cabang tersebut."
+                      label={i18nT("static.1aar9d6")}
+                      hint={i18nT("static.1vq9shn")}
                     >
                       <Dropdown
                         value={setting.id}
@@ -659,7 +676,7 @@ export default function PayrollConfiguration() {
                   </div>
                   {canManage && (
                     <Button
-                      label="New Payroll Setting"
+                      label={i18nT("static.m8xp8g")}
                       icon="pi pi-plus"
                       size="small"
                       onClick={openNewSetting}
@@ -668,8 +685,8 @@ export default function PayrollConfiguration() {
                 </div>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <Field
-                    label="Setting Name"
-                    hint="Nama profil konfigurasi payroll agar mudah dibedakan."
+                    label={i18nT("static.gs3w22")}
+                    hint={i18nT("static.e8x4c0")}
                   >
                     <InputText
                       value={setting.name}
@@ -681,8 +698,8 @@ export default function PayrollConfiguration() {
                     />
                   </Field>
                   <Field
-                    label="Currency"
-                    hint="Mata uang yang digunakan dalam perhitungan payroll. Saat ini menggunakan IDR."
+                    label={i18nT("static.5o3zh2")}
+                    hint={i18nT("static.tccj4d")}
                   >
                     <InputText
                       value={setting.currency_code}
@@ -691,26 +708,26 @@ export default function PayrollConfiguration() {
                     />
                   </Field>
                   <Field
-                    label="Payroll Cycle"
+                    label={i18nT("static.cnnxc")}
                     hint={
                       isLegacyNonMonthlySetting
-                        ? "Setting lama ini belum dimigrasikan ke siklus Monthly dan tidak dapat diproses dengan Payroll Period Rules saat ini."
-                        : "Payroll batch saat ini berjalan bulanan. Rentang tanggal payroll diatur melalui Payroll Period Rules."
+                        ? i18nT("static.w8qfp2")
+                        : i18nT("static.1qpym0s")
                     }
                   >
                     <InputText
                       value={
                         isLegacyNonMonthlySetting
-                          ? "Legacy non-monthly (migration required)"
-                          : "Monthly"
+                          ? i18nT("static.85tx1b")
+                          : i18nT("static.669v12")
                       }
                       disabled
                       className="w-full"
                     />
                   </Field>
                   <Field
-                    label="Metode Prorata"
-                    hint="Cara menghitung gaji proporsional ketika karyawan bekerja tidak selama satu periode penuh."
+                    label={i18nT("static.my8k20")}
+                    hint={i18nT("static.jggg61")}
                   >
                     <div className="flex flex-col gap-2">
                       <Dropdown
@@ -727,7 +744,11 @@ export default function PayrollConfiguration() {
                                 {method.localized_name}
                               </span>
                               <span className="font-mono text-xs text-slate-500">
-                                Dasar: {prorationBasisLabel(method)}
+                                {i18nT("static.140ash2")}{" "}
+                                {i18nT(prorationBasisLabel(method))}
+                                {method.fixed_divisor_days
+                                  ? ` (${method.fixed_divisor_days} ${i18nT("days")})`
+                                  : ""}
                               </span>
                               <span className="text-xs leading-5 text-slate-500">
                                 {method.localized_description}
@@ -737,8 +758,8 @@ export default function PayrollConfiguration() {
                         }
                         placeholder={
                           prorationMethodLoading
-                            ? "Memuat metode prorata..."
-                            : "Pilih metode prorata"
+                            ? i18nT("static.q3i165")
+                            : i18nT("static.1dsf42k")
                         }
                         disabled={
                           !canManage ||
@@ -755,36 +776,40 @@ export default function PayrollConfiguration() {
                       />
                       {selectedProrationMethod ? (
                         <span className="text-xs leading-5 text-slate-500">
-                          {prorationMethodDescription(selectedProrationMethod)}
+                          {i18nT(
+                            prorationMethodDescription(selectedProrationMethod),
+                          )}
                         </span>
                       ) : prorationMethodError ? (
                         <span className="text-xs text-red-600">
-                          Data master metode prorata tidak dapat dimuat.
+                          {i18nT("static.g7icfh")}{" "}
                         </span>
                       ) : (
                         <span className="text-xs text-amber-700">
-                          Pilih metode dari master Metode Prorata.
+                          {i18nT("static.uawqxc")}{" "}
                         </span>
                       )}
                     </div>
                   </Field>
                   <Field
-                    label="Attendance Cutoff"
-                    hint="Ditentukan oleh aturan efektif di bawah. Ubah melalui Payroll Period Rules."
+                    label={i18nT("static.mhfuqj")}
+                    hint={i18nT("static.84tfnr")}
                   >
                     <InputText
                       value={
                         periodRules?.[0]
-                          ? `Configured by effective rules (latest: day ${periodRules[0].cutoff_day})`
-                          : "Not configured — add an effective period rule below"
+                          ? i18nT("static.10pgjki", {
+                              p0: periodRules[0].cutoff_day,
+                            })
+                          : i18nT("static.26yjwk")
                       }
                       disabled
                       className="w-full"
                     />
                   </Field>
                   <Field
-                    label="Payment Day"
-                    hint="Hari target pembayaran dalam bulan (1-31). Saat membuat payroll batch, Payroll Date tetap diisi secara terpisah."
+                    label={i18nT("static.21x3xr")}
+                    hint={i18nT("static.1ncdzmb")}
                   >
                     <InputNumber
                       value={setting.payment_day}
@@ -799,8 +824,8 @@ export default function PayrollConfiguration() {
                     />
                   </Field>
                   <Field
-                    label="Rounding Mode"
-                    hint="Aturan pembulatan nominal: HALF_UP normal, HALF_EVEN ke angka genap, DOWN menuju nol, dan UP menjauhi nol."
+                    label={i18nT("static.1blymlc")}
+                    hint={i18nT("static.n9rzr1")}
                   >
                     <Dropdown
                       value={setting.rounding_mode}
@@ -813,8 +838,8 @@ export default function PayrollConfiguration() {
                     />
                   </Field>
                   <Field
-                    label="Decimal Scale"
-                    hint="Jumlah angka di belakang koma yang digunakan dalam kalkulasi payroll (0-4)."
+                    label={i18nT("static.xc46da")}
+                    hint={i18nT("static.1k1iy96")}
                   >
                     <InputNumber
                       value={setting.decimal_scale}
@@ -831,8 +856,8 @@ export default function PayrollConfiguration() {
                 </div>
                 <div className="grid grid-cols-1 gap-3 border-t border-slate-200 pt-5 md:grid-cols-3">
                   <SwitchField
-                    label="Require maker-checker"
-                    hint="Pembuat payroll tidak dapat menyetujui payrollnya sendiri; persetujuan harus dilakukan pengguna lain."
+                    label={i18nT("static.67ibcm")}
+                    hint={i18nT("static.1ahn0wy")}
                     checked={setting.require_maker_checker}
                     disabled={!canManage}
                     onChange={(value) =>
@@ -840,8 +865,8 @@ export default function PayrollConfiguration() {
                     }
                   />
                   <SwitchField
-                    label="Allow negative net pay"
-                    hint="Izinkan take-home pay negatif jika total potongan melebihi pendapatan."
+                    label={i18nT("static.159s58")}
+                    hint={i18nT("static.8zqhke")}
                     checked={setting.allow_negative_net_pay}
                     disabled={!canManage}
                     onChange={(value) =>
@@ -849,8 +874,8 @@ export default function PayrollConfiguration() {
                     }
                   />
                   <SwitchField
-                    label="Active"
-                    hint="Profil aktif tersedia untuk payroll baru; profil nonaktif tidak dapat dipilih saat membuat batch."
+                    label={i18nT("static.8qzyhb")}
+                    hint={i18nT("static.1wynqo")}
                     checked={setting.is_active}
                     disabled={!canManage}
                     onChange={(value) => changeSetting("is_active", value)}
@@ -859,7 +884,7 @@ export default function PayrollConfiguration() {
                 {canManage && (
                   <div className="flex justify-end border-t border-slate-200 pt-4">
                     <Button
-                      label="Save Changes"
+                      label={i18nT("static.6gmm1l")}
                       icon="pi pi-check"
                       loading={savingSetting}
                       disabled={savingSetting}
@@ -871,18 +896,15 @@ export default function PayrollConfiguration() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="m-0 text-base font-semibold text-slate-800">
-                        Payroll Period Rules
+                        {i18nT("static.ol3s8w")}{" "}
                       </h2>
                       <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                        Aturan efektif menentukan hari berakhirnya periode
-                        payroll. Tanggal 15 berarti periode berjalan dari
-                        tanggal 16 bulan sebelumnya sampai tanggal 15 bulan
-                        berjalan.
+                        {i18nT("static.1h73f83")}{" "}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        label="Refresh"
+                        label={i18nT("static.28r6qc")}
                         icon="pi pi-refresh"
                         severity="secondary"
                         outlined
@@ -892,7 +914,7 @@ export default function PayrollConfiguration() {
                       />
                       {canManage && (
                         <Button
-                          label="Add Period Rule"
+                          label={i18nT("static.y7l235")}
                           icon="pi pi-plus"
                           size="small"
                           disabled={
@@ -905,17 +927,15 @@ export default function PayrollConfiguration() {
                   </div>
                   {isLegacyNonMonthlySetting ? (
                     <p className="m-0 text-sm text-amber-700">
-                      This legacy payroll setting uses a non-monthly processing
-                      cycle and cannot use the current period rules. Review or
-                      migrate the setting before processing payroll.
+                      {i18nT("static.15sf3sh")}{" "}
                     </p>
                   ) : periodRuleError ? (
                     <p className="m-0 text-sm text-red-600">
-                      Unable to load payroll period rules.
+                      {i18nT("static.jen1hs")}{" "}
                     </p>
                   ) : periodRuleLoading ? (
                     <p className="m-0 text-sm text-slate-500">
-                      Loading period rules…
+                      {i18nT("static.mgyfb3")}{" "}
                     </p>
                   ) : (
                     <DataTable
@@ -924,22 +944,22 @@ export default function PayrollConfiguration() {
                       stripedRows
                       rowHover
                       size="small"
-                      emptyMessage="No payroll period rule configured."
+                      emptyMessage={i18nT("static.qreaus")}
                     >
                       <Column
-                        header="Effective Month"
+                        header={i18nT("static.whugww")}
                         body={(row: PayrollPeriodRule) =>
                           row.effective_month.slice(0, 7)
                         }
                       />
                       <Column
                         field="cutoff_day"
-                        header="Payroll Period End Day"
+                        header={i18nT("static.1c3dlf0")}
                       />
-                      <Column field="notes" header="Notes" />
+                      <Column field="notes" header={i18nT("static.4f76ga")} />
                       {canManage && (
                         <Column
-                          header="Action"
+                          header={i18nT("static.2wk0tb")}
                           frozen
                           alignFrozen="right"
                           body={(row: PayrollPeriodRule) => (
@@ -949,7 +969,7 @@ export default function PayrollConfiguration() {
                                 rounded
                                 text
                                 severity="secondary"
-                                tooltip="Edit unused rule"
+                                tooltip={i18nT("static.mgsk3h")}
                                 onClick={() => openPeriodRule(row)}
                               />
                               <Button
@@ -957,7 +977,7 @@ export default function PayrollConfiguration() {
                                 rounded
                                 text
                                 severity="danger"
-                                tooltip="Retire unused rule"
+                                tooltip={i18nT("static.31d3v6")}
                                 loading={deletingPeriodRuleId === row.id}
                                 disabled={deletingPeriodRuleId !== null}
                                 onClick={() => confirmRemovePeriodRule(row)}
@@ -973,11 +993,11 @@ export default function PayrollConfiguration() {
             ) : (
               <div className="flex flex-col items-start gap-3">
                 <p className="m-0 text-sm text-slate-500">
-                  No payroll setting is configured.
+                  {i18nT("static.2me8tn")}{" "}
                 </p>
                 {canManage && (
                   <Button
-                    label="New Payroll Setting"
+                    label={i18nT("static.m8xp8g")}
                     icon="pi pi-plus"
                     size="small"
                     onClick={openNewSetting}
@@ -987,14 +1007,14 @@ export default function PayrollConfiguration() {
             )}
           </TabPanel>
 
-          <TabPanel header="Regulatory Packages" leftIcon="pi pi-book mr-2">
+          <TabPanel header={i18nT("static.1s38tfg")} leftIcon="pi pi-book mr-2">
             {regulationError ? (
               <ErrorNotConnectedToApi mutateKey={REGULATION_URL} />
             ) : (
               <div className="flex flex-col gap-4 pt-3">
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <Button
-                    label="Refresh"
+                    label={i18nT("static.28r6qc")}
                     icon="pi pi-refresh"
                     severity="secondary"
                     outlined
@@ -1003,13 +1023,13 @@ export default function PayrollConfiguration() {
                     onClick={() => void refreshRegulations()}
                   />
                   <Button
-                    label="Buat versi baru"
+                    label={i18nT("static.1qhcwwo")}
                     icon="pi pi-copy"
                     size="small"
                     onClick={() => setShowVersionWizard(true)}
                   />
                   <Button
-                    label="Advanced"
+                    label={i18nT("static.qwfkor")}
                     icon="pi pi-sliders-h"
                     severity="secondary"
                     outlined
@@ -1028,11 +1048,11 @@ export default function PayrollConfiguration() {
                   responsiveLayout="scroll"
                   size="small"
                   tableStyle={{ minWidth: "68rem" }}
-                  emptyMessage="No regulatory package found."
+                  emptyMessage={i18nT("static.b2ktyy")}
                 >
                   <Column
                     field="code"
-                    header="Code"
+                    header={i18nT("static.xoaiok")}
                     sortable
                     body={(row: PayrollRegulationPackage) => (
                       <span className="font-mono font-semibold">
@@ -1040,18 +1060,26 @@ export default function PayrollConfiguration() {
                       </span>
                     )}
                   />
-                  <Column field="name" header="Name" sortable />
-                  <Column field="regulator" header="Regulator" sortable />
+                  <Column
+                    field="name"
+                    header={i18nT("static.4el6o6")}
+                    sortable
+                  />
+                  <Column
+                    field="regulator"
+                    header={i18nT("static.phhmg")}
+                    sortable
+                  />
                   <Column
                     field="version"
-                    header="Version"
+                    header={i18nT("static.q0zd4n")}
                     sortable
                     body={(row: PayrollRegulationPackage) => (
                       <div className="flex flex-col">
                         <span>{row.version}</span>
                         {row.supersedes_package_id && (
                           <span className="text-xs text-slate-400">
-                            Revision dari versi sebelumnya
+                            {i18nT("static.j9yc7u")}{" "}
                           </span>
                         )}
                       </div>
@@ -1059,7 +1087,7 @@ export default function PayrollConfiguration() {
                   />
                   <Column
                     field="effective_from"
-                    header="Effective From"
+                    header={i18nT("static.ypbwia")}
                     sortable
                     body={(row: PayrollRegulationPackage) =>
                       formatDisplayDate(row.effective_from)
@@ -1067,16 +1095,16 @@ export default function PayrollConfiguration() {
                   />
                   <Column
                     field="status"
-                    header="Status"
+                    header={i18nT("static.3pd73")}
                     body={(row: PayrollRegulationPackage) => (
                       <Tag
-                        value={row.status}
+                        value={i18nT(formatStatusLabel(row.status))}
                         severity={statusSeverity(row.status)}
                       />
                     )}
                   />
                   <Column
-                    header="Action"
+                    header={i18nT("static.2wk0tb")}
                     frozen
                     alignFrozen="right"
                     body={(row: PayrollRegulationPackage) => {
@@ -1085,16 +1113,16 @@ export default function PayrollConfiguration() {
                         <div className="flex justify-end gap-2">
                           <Button
                             icon="pi pi-sliders-h"
-                            tooltip="Configure details"
+                            tooltip={i18nT("static.bjtwnd")}
                             size="small"
                             severity="secondary"
                             outlined
-                            aria-label="Configure regulation details"
+                            aria-label={i18nT("static.m0sp1j")}
                             onClick={() => setSelectedRegulation(row)}
                           />
                           {row.status === "DRAFT" && (
                             <Button
-                              label="Run Tests"
+                              label={i18nT("static.1kf2t4f")}
                               icon="pi pi-play"
                               size="small"
                               severity="secondary"
@@ -1110,12 +1138,12 @@ export default function PayrollConfiguration() {
                             <Button
                               label={
                                 target === "TESTED"
-                                  ? "Mark Tested"
+                                  ? i18nT("static.191a0ad")
                                   : target === "APPROVED"
-                                    ? "Approve"
+                                    ? i18nT("static.1s2ov2y")
                                     : target === "PUBLISHED"
-                                      ? "Publish"
-                                      : "Retire"
+                                      ? i18nT("static.u2m17s")
+                                      : i18nT("static.rgquxi")
                               }
                               icon="pi pi-arrow-right"
                               size="small"
@@ -1128,7 +1156,7 @@ export default function PayrollConfiguration() {
                             />
                           ) : (
                             <span className="self-center text-sm text-slate-400">
-                              Final
+                              {i18nT("static.1fz95qv")}{" "}
                             </span>
                           )}
                         </div>
@@ -1139,9 +1167,14 @@ export default function PayrollConfiguration() {
               </div>
             )}
           </TabPanel>
-          <TabPanel header="Component Mapping" leftIcon="pi pi-sitemap mr-2">
+          <TabPanel
+            header={i18nT("static.7wn1ri")}
+            leftIcon="pi pi-sitemap mr-2"
+          >
             <PayrollComponentMappingPanel
-              onSuccess={(message) => toast("success", "Success", message)}
+              onSuccess={(message) =>
+                toast("success", i18nT("static.udvru8"), message)
+              }
               onError={showError}
             />
           </TabPanel>
@@ -1149,7 +1182,7 @@ export default function PayrollConfiguration() {
       </div>
 
       <Dialog
-        header="New Payroll Setting"
+        header={i18nT("static.m8xp8g")}
         visible={showSettingDialog}
         modal
         draggable={false}
@@ -1159,14 +1192,14 @@ export default function PayrollConfiguration() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={savingNewSetting}
               onClick={() => setShowSettingDialog(false)}
             />
             <Button
-              label="Create Setting"
+              label={i18nT("static.5vt0p9")}
               icon="pi pi-check"
               loading={savingNewSetting}
               onClick={() => void createSetting()}
@@ -1175,10 +1208,7 @@ export default function PayrollConfiguration() {
         }
       >
         <div className="flex flex-col gap-4 pt-2">
-          <Field
-            label="Setting Name *"
-            hint="Nama profil konfigurasi payroll agar mudah dibedakan."
-          >
+          <Field label={i18nT("static.1mnx718")} hint={i18nT("static.e8x4c0")}>
             <InputText
               value={newSetting.name}
               autoFocus
@@ -1191,16 +1221,13 @@ export default function PayrollConfiguration() {
               }
             />
           </Field>
-          <Field
-            label="Branch Scope"
-            hint="Kosongkan untuk berlaku di semua cabang, atau pilih satu cabang untuk membatasi cakupan profil."
-          >
+          <Field label={i18nT("static.1pde9y5")} hint={i18nT("static.1q07ha6")}>
             <Dropdown
               value={newSetting.branch_id}
               options={branchOptions}
               showClear
               filter
-              placeholder="Global (all branches)"
+              placeholder={i18nT("static.1yfzsu2")}
               className="w-full"
               onChange={(event) =>
                 setNewSetting((current) => ({
@@ -1210,16 +1237,14 @@ export default function PayrollConfiguration() {
               }
             />
           </Field>
-          <Field
-            label="Payroll Cycle"
-            hint="Payroll batch saat ini berjalan bulanan. Tanggal periode ditentukan melalui Payroll Period Rules setelah setting dibuat."
-          >
-            <InputText value="Monthly" disabled className="w-full" />
+          <Field label={i18nT("static.cnnxc")} hint={i18nT("static.1jpf66l")}>
+            <InputText
+              value={i18nT("static.669v12")}
+              disabled
+              className="w-full"
+            />
           </Field>
-          <Field
-            label="Metode Prorata *"
-            hint="Cara menghitung gaji proporsional ketika karyawan bekerja tidak selama satu periode penuh."
-          >
+          <Field label={i18nT("static.nv7i1i")} hint={i18nT("static.jggg61")}>
             <div className="flex flex-col gap-2">
               <Dropdown
                 value={newSetting.default_proration_method}
@@ -1233,7 +1258,11 @@ export default function PayrollConfiguration() {
                         {method.localized_name}
                       </span>
                       <span className="font-mono text-xs text-slate-500">
-                        Dasar: {prorationBasisLabel(method)}
+                        {i18nT("static.140ash2")}{" "}
+                        {i18nT(prorationBasisLabel(method))}
+                        {method.fixed_divisor_days
+                          ? ` (${method.fixed_divisor_days} ${i18nT("days")})`
+                          : ""}
                       </span>
                       <span className="text-xs leading-5 text-slate-500">
                         {method.localized_description}
@@ -1241,7 +1270,7 @@ export default function PayrollConfiguration() {
                     </div>
                   ) : null
                 }
-                placeholder="Pilih metode prorata"
+                placeholder={i18nT("static.1dsf42k")}
                 disabled={prorationMethodLoading || !!prorationMethodError}
                 onChange={(event) =>
                   setNewSetting((current) => ({
@@ -1255,28 +1284,27 @@ export default function PayrollConfiguration() {
                 (method) => method.code === newSetting.default_proration_method,
               )?.description && (
                 <span className="text-xs leading-5 text-slate-500">
-                  {prorationMethodDescription(
-                    prorationMethods.find(
-                      (method) =>
-                        method.code === newSetting.default_proration_method,
-                    )!,
+                  {i18nT(
+                    prorationMethodDescription(
+                      prorationMethods.find(
+                        (method) =>
+                          method.code === newSetting.default_proration_method,
+                      )!,
+                    ),
                   )}
                 </span>
               )}
             </div>
           </Field>
           <p className="m-0 text-xs leading-5 text-slate-500">
-            Profil baru menggunakan default payroll bulanan. Detail lainnya
-            dapat disesuaikan setelah profil dibuat.
+            {i18nT("static.ovnz1j")}{" "}
           </p>
         </div>
       </Dialog>
 
       <Dialog
         header={
-          editingPeriodRule
-            ? "Edit Payroll Period Rule"
-            : "Add Payroll Period Rule"
+          editingPeriodRule ? i18nT("static.1yrhahl") : i18nT("static.ly8flw")
         }
         visible={showPeriodRuleDialog}
         modal
@@ -1287,14 +1315,14 @@ export default function PayrollConfiguration() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={savingPeriodRule}
               onClick={() => setShowPeriodRuleDialog(false)}
             />
             <Button
-              label="Save Rule"
+              label={i18nT("static.1453lae")}
               icon="pi pi-check"
               loading={savingPeriodRule}
               onClick={() => void savePeriodRule()}
@@ -1303,10 +1331,7 @@ export default function PayrollConfiguration() {
         }
       >
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-          <Field
-            label="Effective Month *"
-            hint="Bulan mulai berlakunya aturan periode ini. Gunakan bulan mendatang untuk perubahan periode berikutnya."
-          >
+          <Field label={i18nT("static.ep0d9a")} hint={i18nT("static.mmww9j")}>
             <InputText
               type="month"
               value={periodRule.effective_month.slice(0, 7)}
@@ -1319,10 +1344,7 @@ export default function PayrollConfiguration() {
               }
             />
           </Field>
-          <Field
-            label="Payroll Period End Day *"
-            hint="Tanggal terakhir yang termasuk dalam periode payroll. Contoh: tanggal 15 berarti periode berjalan dari tanggal 16 bulan sebelumnya sampai dan termasuk tanggal 15."
-          >
+          <Field label={i18nT("static.5ehpsa")} hint={i18nT("static.au7d1b")}>
             <InputNumber
               value={periodRule.cutoff_day}
               min={1}
@@ -1339,8 +1361,8 @@ export default function PayrollConfiguration() {
           </Field>
           <div className="sm:col-span-2">
             <Field
-              label="Notes"
-              hint="Catatan tambahan mengenai kebijakan, alasan, atau referensi aturan."
+              label={i18nT("static.4f76ga")}
+              hint={i18nT("static.1xh4e4o")}
             >
               <InputText
                 value={periodRule.notes ?? ""}
@@ -1358,7 +1380,7 @@ export default function PayrollConfiguration() {
       </Dialog>
 
       <Dialog
-        header="Advanced: New Regulatory Package"
+        header={i18nT("static.19j22f1")}
         visible={showRegulationDialog}
         modal
         draggable={false}
@@ -1368,14 +1390,14 @@ export default function PayrollConfiguration() {
         footer={
           <div className="flex justify-end gap-2">
             <Button
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               severity="secondary"
               text
               disabled={savingRegulation}
               onClick={() => setShowRegulationDialog(false)}
             />
             <Button
-              label="Create Draft"
+              label={i18nT("static.4tz1ya")}
               icon="pi pi-check"
               loading={savingRegulation}
               onClick={() => void createRegulation()}
@@ -1384,7 +1406,7 @@ export default function PayrollConfiguration() {
         }
       >
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-          <Field label="Code *">
+          <Field label={i18nT("static.1ej1ao2")}>
             <InputText
               value={regulation.code}
               onChange={(event) =>
@@ -1396,7 +1418,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Version *">
+          <Field label={i18nT("static.13px1al")}>
             <InputText
               value={regulation.version}
               onChange={(event) =>
@@ -1408,7 +1430,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Name *">
+          <Field label={i18nT("static.bpumi0")}>
             <InputText
               value={regulation.name}
               onChange={(event) =>
@@ -1420,7 +1442,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Regulator *">
+          <Field label={i18nT("static.1nats06")}>
             <InputText
               value={regulation.regulator}
               onChange={(event) =>
@@ -1432,7 +1454,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Regulation Number">
+          <Field label={i18nT("static.redybm")}>
             <InputText
               value={regulation.regulation_number ?? ""}
               onChange={(event) =>
@@ -1444,7 +1466,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Source URL">
+          <Field label={i18nT("static.73t8ux")}>
             <InputText
               value={regulation.source_url ?? ""}
               onChange={(event) =>
@@ -1456,7 +1478,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Effective From *">
+          <Field label={i18nT("static.8lx39w")}>
             <PrimeDatePicker
               value={regulation.effective_from}
               onValueChange={(value) =>
@@ -1468,7 +1490,7 @@ export default function PayrollConfiguration() {
               className="w-full"
             />
           </Field>
-          <Field label="Effective To">
+          <Field label={i18nT("static.mtbgcr")}>
             <PrimeDatePicker
               value={regulation.effective_to}
               onValueChange={(value) =>
@@ -1490,8 +1512,8 @@ export default function PayrollConfiguration() {
           await refreshRegulations();
           toast(
             "success",
-            "Draft dibuat",
-            `${created.code} versi ${created.version} siap dikonfigurasi dan dites.`,
+            i18nT("static.1u0pq4v"),
+            i18nT("static.1dt75ll", { p0: created.code, p1: created.version }),
           );
         }}
         onError={showError}
@@ -1500,7 +1522,7 @@ export default function PayrollConfiguration() {
         regulation={selectedRegulation}
         onHide={() => setSelectedRegulation(null)}
         onSuccess={(message) => {
-          toast("success", "Success", message);
+          toast("success", i18nT("static.udvru8"), message);
           void refreshRegulations();
         }}
         onError={showError}
@@ -1520,9 +1542,10 @@ function PayrollRegulationTestRunDialog({
   testRun: PayrollRegulationTestRun | null;
   onHide: () => void;
 }) {
+  const { t: i18nT } = useI18n();
   return (
     <Dialog
-      header="Regulation Test Results"
+      header={i18nT("static.1d9lu4l")}
       visible={testRun !== null}
       modal
       draggable={false}
@@ -1532,7 +1555,7 @@ function PayrollRegulationTestRunDialog({
       footer={
         <div className="flex justify-end">
           <Button
-            label="Close"
+            label={i18nT("static.1l0xxoj")}
             severity="secondary"
             outlined
             onClick={onHide}
@@ -1544,17 +1567,23 @@ function PayrollRegulationTestRunDialog({
         <div className="flex flex-col gap-4 pt-2">
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
             <Tag
-              value={testRun.status}
+              value={i18nT(formatStatusLabel(testRun.status))}
               severity={testRun.status === "PASSED" ? "success" : "danger"}
             />
-            <span>{testRun.total_count} test cases</span>
-            <span className="text-emerald-700">
-              {testRun.passed_count} passed
+            <span>
+              {testRun.total_count} {i18nT("static.r02mq8")}
             </span>
-            <span className="text-rose-700">{testRun.failed_count} failed</span>
-            <span className="text-amber-700">{testRun.error_count} errors</span>
+            <span className="text-emerald-700">
+              {testRun.passed_count} {i18nT("static.mjgec9")}{" "}
+            </span>
+            <span className="text-rose-700">
+              {testRun.failed_count} {i18nT("static.1qc7sfo")}
+            </span>
+            <span className="text-amber-700">
+              {testRun.error_count} {i18nT("static.1xe3tl2")}
+            </span>
             <span className="text-slate-500">
-              Configuration revision {testRun.configuration_revision}
+              {i18nT("static.1hkietm")} {testRun.configuration_revision}
             </span>
           </div>
           <DataTable
@@ -1566,39 +1595,41 @@ function PayrollRegulationTestRunDialog({
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "58rem" }}
           >
-            <Column field="code" header="Code" />
-            <Column field="name" header="Test Case" />
+            <Column field="code" header={i18nT("static.xoaiok")} />
+            <Column field="name" header={i18nT("static.1lkiw5f")} />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row: PayrollRegulationTestCaseResult) => (
                 <Tag
-                  value={row.status}
+                  value={i18nT(formatStatusLabel(row.status))}
                   severity={row.status === "PASSED" ? "success" : "danger"}
                 />
               )}
             />
             <Column
-              header="Expected"
+              header={i18nT("static.119zxmh")}
               body={(row: PayrollRegulationTestCaseResult) => (
                 <JsonValue value={row.expected_output_json} />
               )}
             />
             <Column
-              header="Actual"
+              header={i18nT("static.1v23pg7")}
               body={(row: PayrollRegulationTestCaseResult) => (
                 <JsonValue value={row.actual_output_json} />
               )}
             />
-            <Column field="tolerance" header="Tolerance" />
+            <Column field="tolerance" header={i18nT("static.1llx3uw")} />
             <Column
-              header="Details"
+              header={i18nT("static.43f6md")}
               body={(row: PayrollRegulationTestCaseResult) =>
                 row.error_message ? (
                   <span className="text-sm text-rose-700">
                     {row.error_message}
                   </span>
                 ) : (
-                  <span className="text-sm text-slate-400">—</span>
+                  <span className="text-sm text-slate-400">
+                    {i18nT("static.112tcox")}
+                  </span>
                 )
               }
             />
@@ -1610,8 +1641,11 @@ function PayrollRegulationTestRunDialog({
 }
 
 function JsonValue({ value }: { value: unknown }) {
+  const { t: i18nT } = useI18n();
   if (value === null || value === undefined) {
-    return <span className="text-sm text-slate-400">—</span>;
+    return (
+      <span className="text-sm text-slate-400">{i18nT("static.112tcox")}</span>
+    );
   }
   return (
     <code className="block max-w-56 whitespace-pre-wrap break-words text-xs text-slate-700">

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -25,23 +26,59 @@ import { RootState } from "@/store/store";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 
 const statusOptions = [
-  { label: "All statuses", value: "" },
-  { label: "Queued", value: "QUEUED" },
-  { label: "Running", value: "RUNNING" },
-  { label: "Retry waiting", value: "RETRY_WAIT" },
-  { label: "Cancellation requested", value: "CANCEL_REQUESTED" },
-  { label: "Succeeded", value: "SUCCEEDED" },
-  { label: "Partial success", value: "PARTIAL_SUCCESS" },
-  { label: "Failed", value: "FAILED" },
-  { label: "Cancelled", value: "CANCELLED" },
+  { labelKey: "All statuses", value: "" },
+  { labelKey: "Queued", value: "QUEUED" },
+  { labelKey: "Running", value: "RUNNING" },
+  { labelKey: "Retry waiting", value: "RETRY_WAIT" },
+  { labelKey: "Cancellation requested", value: "CANCEL_REQUESTED" },
+  { labelKey: "Succeeded", value: "SUCCEEDED" },
+  { labelKey: "Partial success", value: "PARTIAL_SUCCESS" },
+  { labelKey: "Failed", value: "FAILED" },
+  { labelKey: "Cancelled", value: "CANCELLED" },
 ];
 
 const sourceOptions = [
-  { label: "All sources", value: "" },
-  { label: "Manual", value: "MANUAL" },
-  { label: "Scheduled", value: "SCHEDULED" },
-  { label: "System", value: "SYSTEM" },
+  { labelKey: "All sources", value: "" },
+  { labelKey: "Manual", value: "MANUAL" },
+  { labelKey: "Scheduled", value: "SCHEDULED" },
+  { labelKey: "System", value: "SYSTEM" },
 ];
+
+const formatStatusLabel = (status?: string | null) => {
+  switch (status) {
+    case "QUEUED":
+      return "Queued";
+    case "RUNNING":
+      return "Running";
+    case "RETRY_WAIT":
+      return "Retry waiting";
+    case "CANCEL_REQUESTED":
+      return "Cancellation requested";
+    case "SUCCEEDED":
+      return "Succeeded";
+    case "PARTIAL_SUCCESS":
+      return "Partial success";
+    case "FAILED":
+      return "Failed";
+    case "CANCELLED":
+      return "Cancelled";
+    default:
+      return status || "Unknown";
+  }
+};
+
+const formatSourceLabel = (source?: string | null) => {
+  switch (source) {
+    case "MANUAL":
+      return "Manual";
+    case "SCHEDULED":
+      return "Scheduled";
+    case "SYSTEM":
+      return "System";
+    default:
+      return source || "Unknown";
+  }
+};
 
 const isActive = (status: string) =>
   ["QUEUED", "RUNNING", "RETRY_WAIT", "CANCEL_REQUESTED"].includes(status);
@@ -71,6 +108,7 @@ const progressValue = (row: BackgroundJob) =>
     : null);
 
 export default function BackgroundJobsTableData() {
+  const { t: i18nT, tText } = useI18n();
   const router = useRouter();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -169,15 +207,15 @@ export default function BackgroundJobsTableData() {
             </div>
             <div>
               <h1 className="m-0 text-xl font-bold text-slate-900">
-                Background Jobs
+                {i18nT("static.31d7ef")}{" "}
               </h1>
               <p className="mt-1 text-sm text-slate-500">
-                Monitor progress, retries, errors, and safe cancellation.
+                {i18nT("static.1qr4uow")}{" "}
               </p>
             </div>
           </div>
           <Button
-            label="Refresh"
+            label={i18nT("static.28r6qc")}
             icon="pi pi-refresh"
             outlined
             loading={loading}
@@ -188,25 +226,33 @@ export default function BackgroundJobsTableData() {
         {canReadAll && health && (
           <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {[
-              ["Queued", health.queued_count, "bg-blue-50 text-blue-700"],
-              ["Running", health.running_count, "bg-amber-50 text-amber-700"],
               [
-                "Retry waiting",
+                tText("Queued"),
+                health.queued_count,
+                "bg-blue-50 text-blue-700",
+              ],
+              [
+                tText("Running"),
+                health.running_count,
+                "bg-amber-50 text-amber-700",
+              ],
+              [
+                tText("Retry waiting"),
                 health.retry_wait_count,
                 "bg-violet-50 text-violet-700",
               ],
               [
-                "Failed / 24h",
+                tText("Failed / 24h"),
                 health.failed_last_24h_count,
                 "bg-rose-50 text-rose-700",
               ],
               [
-                "Worker",
+                tText("Worker"),
                 health.worker_last_seen_at == null || workerIsOnline === null
-                  ? "Unknown"
+                  ? tText("Unknown")
                   : workerIsOnline
-                    ? "Online"
-                    : "Stale",
+                    ? tText("Online")
+                    : tText("Stale"),
                 workerIsOnline
                   ? "bg-emerald-50 text-emerald-700"
                   : "bg-slate-100 text-slate-600",
@@ -229,13 +275,13 @@ export default function BackgroundJobsTableData() {
           {canReadAll && (
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-500">
-                Scope
+                {i18nT("static.rpvfkb")}{" "}
               </label>
               <Dropdown
                 value={scope}
                 options={[
-                  { label: "My jobs", value: "mine" },
-                  { label: "All jobs", value: "all" },
+                  { label: i18nT("static.jv43t"), value: "mine" },
+                  { label: i18nT("static.1hk0iw4"), value: "all" },
                 ]}
                 onChange={(event) => {
                   setScope(event.value);
@@ -247,11 +293,14 @@ export default function BackgroundJobsTableData() {
           )}
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-500">
-              Status
+              {i18nT("static.3pd73")}{" "}
             </label>
             <Dropdown
               value={status}
-              options={statusOptions}
+              options={statusOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               onChange={(event) => {
                 setStatus(event.value);
                 setFirst(0);
@@ -261,11 +310,14 @@ export default function BackgroundJobsTableData() {
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-500">
-              Source
+              {i18nT("static.r5qyuw")}{" "}
             </label>
             <Dropdown
               value={source}
-              options={sourceOptions}
+              options={sourceOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               onChange={(event) => {
                 setSource(event.value);
                 setFirst(0);
@@ -294,37 +346,45 @@ export default function BackgroundJobsTableData() {
           rowsPerPageOptions={[10, 25, 50, 100]}
           responsiveLayout="scroll"
           stripedRows
-          emptyMessage="No background jobs found."
+          emptyMessage={i18nT("static.1tryd3o")}
           rowHover
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           onPage={(event) => {
             setFirst(event.first);
             setRowsPerPage(event.rows);
           }}
         >
-          <Column field="id" header="ID" style={{ width: "5rem" }} />
-          <Column field="display_name" header="Job" />
+          <Column
+            field="id"
+            header={i18nT("static.o4495s")}
+            style={{ width: "5rem" }}
+          />
+          <Column field="display_name" header={i18nT("static.ijqa2k")} />
           <Column
             field="source"
-            header="Source"
+            header={i18nT("static.r5qyuw")}
             body={(row: BackgroundJob) => (
-              <Tag value={row.source} severity="secondary" rounded />
+              <Tag
+                value={tText(formatSourceLabel(row.source))}
+                severity="secondary"
+                rounded
+              />
             )}
           />
           <Column
             field="status"
-            header="Status"
+            header={i18nT("static.3pd73")}
             body={(row: BackgroundJob) => (
               <Tag
-                value={row.status}
+                value={tText(formatStatusLabel(row.status))}
                 severity={statusSeverity(row.status)}
                 rounded
               />
             )}
           />
           <Column
-            header="Progress"
+            header={i18nT("static.79u6hy")}
             body={(row: BackgroundJob) => {
               const value = progressValue(row);
               return (
@@ -333,8 +393,8 @@ export default function BackgroundJobsTableData() {
                     <span>{row.stage || "-"}</span>
                     <span>
                       {value === null
-                        ? `${row.progress_current} processed`
-                        : `${Math.round(value)}%`}
+                        ? i18nT("static.d33r1p", { p0: row.progress_current })
+                        : i18nT("static.1axt9f4", { p0: Math.round(value) })}
                     </span>
                   </div>
                   {value !== null && (
@@ -350,27 +410,27 @@ export default function BackgroundJobsTableData() {
           />
           <Column
             field="attempt_count"
-            header="Attempt"
+            header={i18nT("static.1j0rhe6")}
             body={(row: BackgroundJob) =>
               `${row.attempt_count}/${row.max_attempts}`
             }
           />
           <Column
             field="created_at"
-            header="Created"
+            header={i18nT("static.2qkacb")}
             body={(row: BackgroundJob) =>
               formatDateTimeWithSeconds(row.created_at)
             }
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={(row: BackgroundJob) => (
               <Button
                 icon="pi pi-eye"
                 rounded
                 outlined
                 size="small"
-                tooltip="View detail"
+                tooltip={i18nT("static.1dtxu7d")}
                 onClick={() =>
                   router.push(`/setting/background-jobs/${row.id}`)
                 }

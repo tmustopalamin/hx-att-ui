@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,17 +20,17 @@ import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog
 import { formatDateTime as formatDisplayDateTime } from "@/app/utils/date-format";
 
 const moduleOptions = [
-  { label: "All Modules", value: "" },
-  { label: "Leave", value: "LEAVE" },
-  { label: "Overtime", value: "OVERTIME" },
-  { label: "Attendance", value: "ATTENDANCE" },
-  { label: "Fingerprint", value: "FINGERPRINT" },
-  { label: "Background Jobs", value: "BACKGROUND_JOB" },
+  { labelKey: "All Modules", value: "" },
+  { labelKey: "Leave", value: "LEAVE" },
+  { labelKey: "Overtime", value: "OVERTIME" },
+  { labelKey: "Attendance", value: "ATTENDANCE" },
+  { labelKey: "Fingerprint", value: "FINGERPRINT" },
+  { labelKey: "Background Jobs", value: "BACKGROUND_JOB" },
 ];
 
 const readOptions = [
-  { label: "All Notifications", value: "ALL" },
-  { label: "Unread Only", value: "UNREAD" },
+  { labelKey: "All Notifications", value: "ALL" },
+  { labelKey: "Unread Only", value: "UNREAD" },
 ];
 
 const formatDateTime = (value: string) => {
@@ -77,6 +78,7 @@ const getModuleIcon = (moduleCode: string) => {
 };
 
 const NotificationCenterTableData = () => {
+  const { t: i18nT } = useI18n();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
@@ -136,11 +138,11 @@ const NotificationCenterTableData = () => {
 
   const handleArchive = (notification: NotificationItem) => {
     requestActionConfirmation({
-      action: "Archive notification",
+      action: i18nT("static.8f7gg"),
       target: notification.title,
-      description: "Remove this notification from the active list?",
+      description: i18nT("static.lnqqy8"),
       severity: "warning",
-      confirmLabel: "Archive",
+      confirmLabel: i18nT("static.w0suw5"),
       confirmIcon: "pi pi-archive",
       onAccept: () => archive(notification),
     });
@@ -183,10 +185,10 @@ const NotificationCenterTableData = () => {
 
               <div>
                 <h1 className="text-lg font-bold text-slate-900">
-                  Notification Center
+                  {i18nT("static.1fnm0lz")}{" "}
                 </h1>
                 <p className="mt-0.5 text-sm text-slate-500">
-                  Review HRIS updates, approvals, and system messages.
+                  {i18nT("static.woon1t")}{" "}
                 </p>
               </div>
             </div>
@@ -194,12 +196,12 @@ const NotificationCenterTableData = () => {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
-              {unreadCount} unread
+              {unreadCount} {i18nT("static.1qowleq")}{" "}
             </div>
 
             <Button
               type="button"
-              label="Mark All Read"
+              label={i18nT("static.hlkdl5")}
               icon="pi pi-check"
               disabled={loading || unreadCount <= 0}
               onClick={handleMarkAllRead}
@@ -208,7 +210,7 @@ const NotificationCenterTableData = () => {
 
             <Button
               type="button"
-              label="Refresh"
+              label={i18nT("static.28r6qc")}
               icon="pi pi-refresh"
               disabled={loading}
               onClick={fetchData}
@@ -220,11 +222,14 @@ const NotificationCenterTableData = () => {
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:max-w-xl">
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-500">
-              Module
+              {i18nT("static.1inmx8d")}{" "}
             </label>
             <Dropdown
               value={moduleFilter}
-              options={moduleOptions}
+              options={moduleOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               onChange={(event) => setModuleFilter(event.value)}
               className="w-full"
             />
@@ -232,11 +237,14 @@ const NotificationCenterTableData = () => {
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-500">
-              Status
+              {i18nT("static.3pd73")}{" "}
             </label>
             <Dropdown
               value={readFilter}
-              options={readOptions}
+              options={readOptions.map((option) => ({
+                label: i18nT(option.labelKey),
+                value: option.value,
+              }))}
               onChange={(event) => setReadFilter(event.value)}
               className="w-full"
             />
@@ -260,10 +268,10 @@ const NotificationCenterTableData = () => {
               <i className="pi pi-bell-slash text-xl" />
             </div>
             <p className="mt-4 text-sm font-semibold text-slate-800">
-              No notifications found
+              {i18nT("static.1fuhxg2")}{" "}
             </p>
             <p className="mt-1 text-sm text-slate-500">
-              Try changing the filter or check again later.
+              {i18nT("static.ccjehb")}{" "}
             </p>
           </div>
         )}
@@ -333,7 +341,9 @@ const NotificationCenterTableData = () => {
                           )}
 
                           <span>
-                            {notification.is_read ? "Read" : "Unread"}
+                            {notification.is_read
+                              ? i18nT("static.lxkov9")
+                              : i18nT("static.431vnm")}
                           </span>
                         </div>
                       </div>
@@ -343,7 +353,7 @@ const NotificationCenterTableData = () => {
                       {notification.action_url && (
                         <Button
                           type="button"
-                          label="Open"
+                          label={i18nT("static.n6hn1l")}
                           icon="pi pi-external-link"
                           disabled={isProcessing}
                           onClick={() => handleOpen(notification)}
@@ -354,7 +364,7 @@ const NotificationCenterTableData = () => {
                       {!notification.is_read && (
                         <Button
                           type="button"
-                          label="Mark Read"
+                          label={i18nT("static.1l9wvjo")}
                           icon="pi pi-check"
                           disabled={isProcessing}
                           onClick={() => handleMarkRead(notification)}
@@ -364,7 +374,7 @@ const NotificationCenterTableData = () => {
 
                       <Button
                         type="button"
-                        label="Archive"
+                        label={i18nT("static.w0suw5")}
                         icon="pi pi-times"
                         disabled={isProcessing}
                         onClick={() => handleArchive(notification)}

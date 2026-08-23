@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -65,6 +66,7 @@ const normalizeId = (value: string) => {
 };
 
 const RolePermissionsTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const canUpdateRolePermissions = useSelector((state: RootState) =>
     state.profile.permissions.includes("role-permission.update"),
@@ -355,7 +357,7 @@ const RolePermissionsTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -367,7 +369,7 @@ const RolePermissionsTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -380,7 +382,7 @@ const RolePermissionsTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -392,8 +394,8 @@ const RolePermissionsTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -495,7 +497,7 @@ const RolePermissionsTableData = () => {
 
       await refreshRolePermissionData();
 
-      showSuccess(response.message || "Role permissions updated successfully.");
+      showSuccess(response.message || i18nT("static.q5usk3"));
     } catch (err: unknown) {
       showError(err);
     } finally {
@@ -519,7 +521,7 @@ const RolePermissionsTableData = () => {
 
   const selectedRoleTemplate = (role: RoleOption | null) => {
     if (!role) {
-      return <span className="text-slate-400">Select role</span>;
+      return <span className="text-slate-400">{i18nT("static.po23s3")}</span>;
     }
 
     return roleOptionTemplate(role);
@@ -561,19 +563,18 @@ const RolePermissionsTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Role Permissions
+                  {i18nT("static.1qgl8p9")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Assign permissions to roles and synchronize role access with
-                  Casbin authorization policies.
+                  {i18nT("static.15rm0a")}{" "}
                 </p>
               </div>
             </div>
 
             <Button
               type="button"
-              label="Refresh"
+              label={i18nT("static.28r6qc")}
               icon="pi pi-refresh"
               severity="secondary"
               outlined
@@ -594,11 +595,11 @@ const RolePermissionsTableData = () => {
             <section className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
               <div>
                 <h2 className="m-0 text-sm font-semibold text-slate-800">
-                  Select Role
+                  {i18nT("static.1i7mrb7")}{" "}
                 </h2>
 
                 <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                  Choose the role whose permissions will be reviewed or changed.
+                  {i18nT("static.1b6royw")}{" "}
                 </p>
               </div>
 
@@ -606,7 +607,7 @@ const RolePermissionsTableData = () => {
                 name="role_id"
                 control={control}
                 rules={{
-                  required: "Role is required.",
+                  required: i18nT("static.khf3uq"),
                 }}
                 render={({ field, fieldState }) => (
                   <div className="flex flex-col gap-2">
@@ -614,7 +615,7 @@ const RolePermissionsTableData = () => {
                       htmlFor="role_id"
                       className="text-sm font-medium text-slate-700"
                     >
-                      Role
+                      {i18nT("static.1402mgp")}{" "}
                       <span className="ml-1 text-red-500">*</span>
                     </label>
 
@@ -630,7 +631,7 @@ const RolePermissionsTableData = () => {
                       filter
                       showClear
                       disabled={isSaving || roleOptions.length === 0}
-                      placeholder="Select role"
+                      placeholder={i18nT("static.po23s3")}
                       className={`w-full md:max-w-md ${
                         fieldState.invalid ? "p-invalid" : ""
                       }`}
@@ -647,7 +648,7 @@ const RolePermissionsTableData = () => {
 
                     {roleOptions.length === 0 && (
                       <small className="text-amber-600">
-                        No active roles are available.
+                        {i18nT("static.khs1bq")}{" "}
                       </small>
                     )}
                   </div>
@@ -659,7 +660,7 @@ const RolePermissionsTableData = () => {
               <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
                 <i className="pi pi-info-circle mt-0.5 text-slate-400" />
 
-                <span>Select a role to load and manage its permissions.</span>
+                <span>{i18nT("static.160gc19")}</span>
               </div>
             )}
 
@@ -677,20 +678,23 @@ const RolePermissionsTableData = () => {
                     </div>
 
                     <p className="m-0 mt-2 text-sm leading-6 text-slate-600">
-                      {selectedRole?.description ||
-                        "Manage permissions assigned to this role."}
+                      {selectedRole?.description || i18nT("static.1ksb7ir")}
                     </p>
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">
                     <Tag
-                      value={`${selectedPermissions.length} selected`}
+                      value={i18nT("static.fkvuu6", {
+                        p0: selectedPermissions.length,
+                      })}
                       severity="success"
                       rounded
                     />
 
                     <Tag
-                      value={`${totalPermissionCount} available`}
+                      value={i18nT("static.1dldoe6", {
+                        p0: totalPermissionCount,
+                      })}
                       severity="secondary"
                       rounded
                     />
@@ -701,7 +705,7 @@ const RolePermissionsTableData = () => {
                   <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
                     <i className="pi pi-spin pi-spinner" />
 
-                    <span>Loading assigned role permissions...</span>
+                    <span>{i18nT("static.10z8vdn")}</span>
                   </div>
                 )}
 
@@ -710,15 +714,12 @@ const RolePermissionsTableData = () => {
                     <div className="flex items-start gap-3 text-sm text-red-700">
                       <i className="pi pi-exclamation-circle mt-0.5" />
 
-                      <span>
-                        Assigned permissions could not be loaded. Refresh the
-                        data and try again.
-                      </span>
+                      <span>{i18nT("static.1utfald")} </span>
                     </div>
 
                     <Button
                       type="button"
-                      label="Retry"
+                      label={i18nT("static.zkouah")}
                       icon="pi pi-refresh"
                       severity="danger"
                       outlined
@@ -736,12 +737,11 @@ const RolePermissionsTableData = () => {
                     <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 xl:flex-row xl:items-center xl:justify-between">
                       <div>
                         <h2 className="m-0 text-sm font-semibold text-slate-800">
-                          Permission Access
+                          {i18nT("static.grs7y8")}{" "}
                         </h2>
 
                         <p className="m-0 mt-1 text-xs text-slate-500">
-                          Select permissions individually, by group, or for the
-                          entire role at once.
+                          {i18nT("static.1lj7c1")}{" "}
                         </p>
                       </div>
 
@@ -749,7 +749,7 @@ const RolePermissionsTableData = () => {
                         <div className="flex flex-1 gap-2 xl:flex-none">
                           <Button
                             type="button"
-                            label="Select All"
+                            label={i18nT("static.1l0m2oi")}
                             icon="pi pi-check-square"
                             severity="secondary"
                             outlined
@@ -765,7 +765,7 @@ const RolePermissionsTableData = () => {
 
                           <Button
                             type="button"
-                            label="Unselect All"
+                            label={i18nT("static.1oq4azp")}
                             icon="pi pi-times"
                             severity="secondary"
                             outlined
@@ -788,7 +788,7 @@ const RolePermissionsTableData = () => {
                           <InputText
                             value={permissionSearchValue}
                             onChange={onPermissionSearchChange}
-                            placeholder="Search permission or group"
+                            placeholder={i18nT("static.10t3ztu")}
                             className="w-full"
                           />
                         </IconField>
@@ -800,10 +800,8 @@ const RolePermissionsTableData = () => {
                         <i className="pi pi-exclamation-triangle mt-0.5" />
 
                         <span>
-                          {unavailablePermissionCount} assigned permission(s)
-                          are inactive or no longer available. They remain
-                          selected to prevent accidental removal. Uncheck them
-                          before saving to remove them from this role.
+                          {unavailablePermissionCount}{" "}
+                          {i18nT("static.1438tu4")}{" "}
                         </span>
                       </div>
                     )}
@@ -813,12 +811,11 @@ const RolePermissionsTableData = () => {
                         <i className="pi pi-key mb-3 text-3xl text-slate-400" />
 
                         <p className="m-0 text-sm font-medium text-slate-700">
-                          No permissions available
+                          {i18nT("static.10t7bu9")}{" "}
                         </p>
 
                         <p className="m-0 mt-1 text-xs text-slate-500">
-                          Create or activate permissions before assigning access
-                          to this role.
+                          {i18nT("static.7d3l8c")}{" "}
                         </p>
                       </div>
                     ) : filteredPermissionGroups.length === 0 ? (
@@ -826,11 +823,11 @@ const RolePermissionsTableData = () => {
                         <i className="pi pi-search mb-3 text-3xl text-slate-400" />
 
                         <p className="m-0 text-sm font-medium text-slate-700">
-                          No matching permissions
+                          {i18nT("static.z3cpdh")}{" "}
                         </p>
 
                         <p className="m-0 mt-1 text-xs text-slate-500">
-                          Change the search keyword and try again.
+                          {i18nT("static.9738pt")}{" "}
                         </p>
                       </div>
                     ) : (
@@ -877,7 +874,10 @@ const RolePermissionsTableData = () => {
                                           </h3>
 
                                           <Tag
-                                            value={`${checkedCount}/${groupCodes.length}`}
+                                            value={i18nT("static.mu2a8b", {
+                                              p0: checkedCount,
+                                              p1: groupCodes.length,
+                                            })}
                                             severity={
                                               checkedCount > 0
                                                 ? "info"
@@ -888,7 +888,7 @@ const RolePermissionsTableData = () => {
                                         </div>
 
                                         <p className="m-0 mt-1 font-mono text-xs text-slate-500">
-                                          Resource: {group.group}
+                                          {i18nT("static.q6uqyl")} {group.group}
                                         </p>
                                       </div>
 
@@ -925,7 +925,7 @@ const RolePermissionsTableData = () => {
                                           htmlFor={groupCheckboxId}
                                           className="cursor-pointer select-none text-sm font-medium text-slate-700"
                                         >
-                                          Select All
+                                          {i18nT("static.1l0m2oi")}{" "}
                                         </label>
                                       </div>
                                     </div>
@@ -989,7 +989,9 @@ const RolePermissionsTableData = () => {
 
                                                   {permission.unavailable && (
                                                     <Tag
-                                                      value="Unavailable"
+                                                      value={i18nT(
+                                                        "static.1okhrqh",
+                                                      )}
                                                       severity="warning"
                                                       rounded
                                                     />
@@ -1018,8 +1020,8 @@ const RolePermissionsTableData = () => {
                     <div className="flex min-h-10 items-center border-t border-slate-200 pt-5">
                       <p className="m-0 text-xs text-slate-500">
                         {isDirty
-                          ? "You have unsaved permission changes. Use the floating Save Changes button to apply them."
-                          : "Role permissions are synchronized with the latest saved data."}
+                          ? i18nT("static.1cgkhe3")
+                          : i18nT("static.1b1p648")}
                       </p>
                     </div>
                   </>
@@ -1034,7 +1036,7 @@ const RolePermissionsTableData = () => {
         <div className="fixed bottom-4 right-4 z-50 w-[calc(100%-2rem)] sm:w-auto">
           <Button
             type="button"
-            label="Save Changes"
+            label={i18nT("static.6gmm1l")}
             icon="pi pi-check"
             loading={isSaving}
             disabled={

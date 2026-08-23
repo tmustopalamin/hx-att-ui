@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import React from "react";
 import { Card } from "primereact/card";
@@ -20,6 +21,7 @@ import CardTitle from "@/app/_components/CardTitle";
 // };
 
 const AttendanceSchedulerDataTable = () => {
+  const { t: i18nT } = useI18n();
   // contoh data dummy untuk 2 karyawan
   const employees = [
     {
@@ -104,39 +106,39 @@ const AttendanceSchedulerDataTable = () => {
 
   return (
     <>
-      <Card title={<CardTitle title="Attendance Scheduler" url="" />}>
+      <Card title={<CardTitle title={i18nT("static.1o5g1ir")} url="" />}>
         <div className="p-3 flex flex-col gap-5">
           {/* Filter & Action */}
           <div className="flex flex-wrap items-center gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Month
+                {i18nT("static.1aqporp")}{" "}
               </label>
               <Calendar
                 view="month"
                 dateFormat="MM yy"
-                placeholder="Select Month"
+                placeholder={i18nT("static.ll2sab")}
                 showIcon
                 className="w-40"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Employee
+                {i18nT("static.1fak8xt")}{" "}
               </label>
               <Dropdown
                 options={[
-                  { label: "All Employees", value: "all" },
-                  { label: "E001 - John Doe", value: "E001" },
-                  { label: "E002 - Jane Smith", value: "E002" },
+                  { label: i18nT("static.douq59"), value: "all" },
+                  { label: i18nT("static.htgu5d"), value: "E001" },
+                  { label: i18nT("static.gawxho"), value: "E002" },
                 ]}
-                placeholder="Select Employee"
+                placeholder={i18nT("static.19bj5p3")}
                 className="w-52"
               />
             </div>
             <div className="ml-auto">
               <Button
-                label="Generate Schedule"
+                label={i18nT("static.a0nkg3")}
                 icon="pi pi-refresh"
                 className="bg-indigo-600 hover:bg-indigo-700 border-none"
               />
@@ -147,7 +149,7 @@ const AttendanceSchedulerDataTable = () => {
           <DataTable value={employees} scrollable className="text-sm">
             <Column
               field="employee"
-              header="Employee"
+              header={i18nT("static.1fak8xt")}
               frozen
               style={{ minWidth: "200px" }}
             ></Column>
@@ -168,13 +170,16 @@ const AttendanceSchedulerDataTable = () => {
           {/* Legend */}
           <div className="flex gap-6 text-sm mt-3">
             <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-green-100 border"></span> Pagi (P)
+              <span className="w-4 h-4 bg-green-100 border"></span>{" "}
+              {i18nT("static.fb95od")}{" "}
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-yellow-100 border"></span> Sore (S)
+              <span className="w-4 h-4 bg-yellow-100 border"></span>{" "}
+              {i18nT("static.1twgz76")}{" "}
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-blue-100 border"></span> Malam (M)
+              <span className="w-4 h-4 bg-blue-100 border"></span>{" "}
+              {i18nT("static.3d4rax")}{" "}
             </div>
           </div>
         </div>

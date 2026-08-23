@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { type ChangeEvent, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -49,6 +50,7 @@ const emptyPayload = (): FrequencyPayload => ({
 });
 
 export default function FrequencyDataTable() {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll-config");
@@ -74,7 +76,10 @@ export default function FrequencyDataTable() {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -86,7 +91,7 @@ export default function FrequencyDataTable() {
         ? getErrorMessage(requestError, "message")
         : requestError instanceof Error
           ? requestError.message
-          : "An unexpected error occurred.",
+          : i18nT("static.37lwsc"),
     );
   };
   const closeDialog = () => {
@@ -116,7 +121,7 @@ export default function FrequencyDataTable() {
   const submit = async () => {
     const name = form.name.trim();
     if (!name || form.days_in_period < 1) {
-      notify("error", "Wage basis name and rate period days are required.");
+      notify("error", i18nT("static.5ow5ks"));
       return;
     }
     try {
@@ -131,7 +136,7 @@ export default function FrequencyDataTable() {
       else await createFrequency(payload);
       await mutate();
       closeDialog();
-      notify("success", "Wage basis saved successfully.");
+      notify("success", i18nT("static.xa7h0h"));
     } catch (requestError: unknown) {
       showError(requestError);
     } finally {
@@ -142,7 +147,7 @@ export default function FrequencyDataTable() {
     try {
       await deleteFrequency(row.id, row.row_version);
       await mutate();
-      notify("success", "Wage basis deleted successfully.");
+      notify("success", i18nT("static.lrdpf7"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -151,7 +156,7 @@ export default function FrequencyDataTable() {
     try {
       await restoreFrequency(row.id, row.row_version);
       await mutate();
-      notify("success", "Wage basis restored successfully.");
+      notify("success", i18nT("static.1jw6qky"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -160,7 +165,7 @@ export default function FrequencyDataTable() {
     try {
       await purgeFrequency(row.id);
       await mutate();
-      notify("success", "Wage basis permanently deleted.");
+      notify("success", i18nT("static.1ugx5xf"));
     } catch (requestError: unknown) {
       showError(requestError);
     }
@@ -179,7 +184,7 @@ export default function FrequencyDataTable() {
           ? "This wage basis will be available again."
           : "This action cannot be undone.";
     requestActionConfirmation({
-      header: `${label} Wage Basis`,
+      header: i18nT("static.dl25vd", { p0: label }),
       message: (
         <div className="flex flex-col gap-1">
           <span className="text-slate-600">{message}</span>
@@ -201,18 +206,23 @@ export default function FrequencyDataTable() {
   const status = (row: Frequency) => {
     if (row.deleted_at)
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     return row.is_active ? (
       <Tag
-        value="Active"
+        value={i18nT("static.8qzyhb")}
         severity="success"
         icon="pi pi-check-circle"
         rounded
       />
     ) : (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -221,7 +231,9 @@ export default function FrequencyDataTable() {
   };
   const actions = (row: Frequency) => {
     if (!canManage)
-      return <span className="text-sm text-slate-400">No action</span>;
+      return (
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
+      );
     if (row.deleted_at) {
       return isSuperadmin ? (
         <div className="flex justify-end gap-2">
@@ -233,7 +245,7 @@ export default function FrequencyDataTable() {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "restore")}
             />
@@ -246,14 +258,14 @@ export default function FrequencyDataTable() {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{ appendTo: getBody, position: "top" }}
               onClick={() => ask(row, "purge")}
             />
           )}
         </div>
       ) : (
-        <span className="text-sm text-slate-400">No action</span>
+        <span className="text-sm text-slate-400">{i18nT("static.yaeuo4")}</span>
       );
     }
     return (
@@ -265,7 +277,7 @@ export default function FrequencyDataTable() {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => openEdit(row)}
         />
@@ -276,7 +288,7 @@ export default function FrequencyDataTable() {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ appendTo: getBody, position: "top" }}
           onClick={() => ask(row, "delete")}
         />
@@ -303,19 +315,17 @@ export default function FrequencyDataTable() {
               </div>
               <div>
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Wage Basis
+                  {i18nT("static.1m95xl7")}{" "}
                 </h1>
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Define compensation bases used by employee salary and payroll
-                  components. Payroll calendar is configured in General
-                  Settings.
+                  {i18nT("static.1sk6il1")}{" "}
                 </p>
               </div>
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -327,7 +337,7 @@ export default function FrequencyDataTable() {
               {canManage && (
                 <Button
                   type="button"
-                  label="New Wage Basis"
+                  label={i18nT("static.16k0x79")}
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
@@ -348,7 +358,7 @@ export default function FrequencyDataTable() {
                   htmlFor="frequency-show-deleted"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -357,7 +367,7 @@ export default function FrequencyDataTable() {
               <InputText
                 value={search}
                 onChange={onSearch}
-                placeholder="Search name or description"
+                placeholder={i18nT("static.1i3hbln")}
                 className="w-full"
               />
             </IconField>
@@ -379,8 +389,8 @@ export default function FrequencyDataTable() {
               size="small"
               loading={isValidating}
               tableStyle={{ minWidth: "56rem" }}
-              emptyMessage="No wage basis found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.t1476q")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -391,7 +401,7 @@ export default function FrequencyDataTable() {
               />
               <Column
                 field="name"
-                header="Wage Basis Name"
+                header={i18nT("static.1hc53be")}
                 sortable
                 body={(row: Frequency) => (
                   <span className="font-medium text-slate-800">{row.name}</span>
@@ -400,7 +410,7 @@ export default function FrequencyDataTable() {
               />
               <Column
                 field="description"
-                header="Description"
+                header={i18nT("static.sjj37t")}
                 sortable
                 body={(row: Frequency) => (
                   <span className="text-slate-600">
@@ -411,7 +421,7 @@ export default function FrequencyDataTable() {
               />
               <Column
                 field="days_in_period"
-                header="Rate Period Days"
+                header={i18nT("static.1qylkdr")}
                 sortable
                 body={(row: Frequency) => (
                   <span className="font-mono text-sm text-slate-700">
@@ -421,12 +431,12 @@ export default function FrequencyDataTable() {
                 style={{ minWidth: "11rem" }}
               />
               <Column
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={status}
                 style={{ minWidth: "10rem" }}
               />
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actions}
                 frozen
                 alignFrozen="right"
@@ -445,7 +455,7 @@ export default function FrequencyDataTable() {
       </Card>
 
       <Dialog
-        header={selected ? "Edit Wage Basis" : "New Wage Basis"}
+        header={selected ? i18nT("static.1hr37rp") : i18nT("static.16k0x79")}
         visible={dialogVisible}
         style={{ width: "95vw", maxWidth: "38rem" }}
         breakpoints={{ "640px": "95vw" }}
@@ -459,7 +469,7 @@ export default function FrequencyDataTable() {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -470,7 +480,9 @@ export default function FrequencyDataTable() {
             <Button
               type="submit"
               form="frequency-form"
-              label={selected ? "Save Changes" : "Create Wage Basis"}
+              label={
+                selected ? i18nT("static.6gmm1l") : i18nT("static.1mbpif5")
+              }
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -487,17 +499,17 @@ export default function FrequencyDataTable() {
             void submit();
           }}
         >
-          <Field label="Wage Basis Name" required>
+          <Field label={i18nT("static.1hc53be")} required>
             <InputText
               value={form.name}
               maxLength={50}
               autoComplete="off"
               className="w-full"
-              placeholder="e.g. Monthly"
+              placeholder={i18nT("static.1pmc4c2")}
               onChange={(event) => updateForm("name", event.target.value)}
             />
           </Field>
-          <Field label="Rate Period Days" required>
+          <Field label={i18nT("static.1qylkdr")} required>
             <InputNumber
               value={form.days_in_period}
               useGrouping={false}
@@ -509,19 +521,16 @@ export default function FrequencyDataTable() {
                 updateForm("days_in_period", event.value ?? 0)
               }
             />
-            <small className="text-slate-500">
-              Used only to normalize non-monthly salary or component amounts.
-              This does not define payroll calendar dates or monthly proration.
-            </small>
+            <small className="text-slate-500">{i18nT("static.9hpfmz")} </small>
           </Field>
-          <Field label="Description">
+          <Field label={i18nT("static.sjj37t")}>
             <InputTextarea
               value={form.description ?? ""}
               rows={3}
               autoResize
               maxLength={500}
               className="w-full"
-              placeholder="Optional description"
+              placeholder={i18nT("static.154ro8v")}
               onChange={(event) =>
                 updateForm("description", event.target.value)
               }
@@ -532,7 +541,7 @@ export default function FrequencyDataTable() {
               htmlFor="frequency-active"
               className="cursor-pointer text-sm font-medium text-slate-700"
             >
-              Active
+              {i18nT("static.8qzyhb")}{" "}
             </label>
             <InputSwitch
               inputId="frequency-active"

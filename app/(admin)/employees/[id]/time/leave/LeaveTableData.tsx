@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useMemo, useState } from "react";
 import useSWR, { mutate } from "swr";
@@ -71,6 +72,7 @@ const emptyForm: EmployeeLeaveBalanceForm = {
 };
 
 const LeaveTableData = () => {
+  const { t: i18nT } = useI18n();
   const params = useParams();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
@@ -201,8 +203,8 @@ const LeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Leave balance created successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.1c6zcpd"),
         }),
       );
     } catch (err: unknown) {
@@ -211,7 +213,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -220,7 +222,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -234,8 +236,8 @@ const LeaveTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
-          detail: "Please select data",
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT("static.c2e3i3"),
         }),
       );
       return;
@@ -260,8 +262,8 @@ const LeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Leave balance updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.1uvbnj4"),
         }),
       );
     } catch (err: unknown) {
@@ -270,7 +272,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -279,7 +281,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -296,8 +298,8 @@ const LeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Leave balance deleted successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.h0awwy"),
         }),
       );
     } catch (err: unknown) {
@@ -306,7 +308,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -315,7 +317,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -332,8 +334,8 @@ const LeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Leave balance restored successfully",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.1dkwiu7"),
         }),
       );
     } catch (err: unknown) {
@@ -342,7 +344,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -351,7 +353,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -368,8 +370,8 @@ const LeaveTableData = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: res.message ?? "Leave balance permanently deleted",
+          summary: i18nT("static.udvru8"),
+          detail: res.message ?? i18nT("static.1878oyc"),
         }),
       );
     } catch (err: unknown) {
@@ -378,7 +380,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -387,7 +389,7 @@ const LeaveTableData = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -415,8 +417,8 @@ const LeaveTableData = () => {
 
   const onClickDelete = (data: EmployeeLeaveBalance) => {
     requestActionConfirmation({
-      message: "Do you want to delete this leave balance?",
-      header: "Delete Confirmation",
+      message: i18nT("static.14jtqd7"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: () => {
@@ -427,8 +429,8 @@ const LeaveTableData = () => {
 
   const onClickRestore = (data: EmployeeLeaveBalance) => {
     requestActionConfirmation({
-      message: "Do you want to restore this leave balance?",
-      header: "Restore Confirmation",
+      message: i18nT("static.vbeqva"),
+      header: i18nT("static.j6hscu"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-success",
       accept: () => {
@@ -439,8 +441,8 @@ const LeaveTableData = () => {
 
   const onClickPurge = (data: EmployeeLeaveBalance) => {
     requestActionConfirmation({
-      message: "Do you want to permanently delete this leave balance?",
-      header: "Permanent Delete Confirmation",
+      message: i18nT("static.arrmrc"),
+      header: i18nT("static.5k7v89"),
       icon: "pi pi-exclamation-triangle",
       acceptClassName: "p-button-danger",
       accept: () => {
@@ -476,9 +478,9 @@ const LeaveTableData = () => {
 
   const statusBodyTemplate = (rowData: EmployeeLeaveBalance) => {
     return rowData.deleted_at ? (
-      <Tag value="Deleted" severity="danger" />
+      <Tag value={i18nT("static.1v6qcju")} severity="danger" />
     ) : (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     );
   };
 
@@ -493,7 +495,7 @@ const LeaveTableData = () => {
               severity="success"
               icon="pi pi-refresh"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
@@ -508,7 +510,7 @@ const LeaveTableData = () => {
               severity="danger"
               icon="pi pi-trash"
               size="small"
-              tooltip="Delete Forever"
+              tooltip={i18nT("static.dwhjc5")}
               tooltipOptions={{
                 appendTo: () => document.body,
                 position: "top",
@@ -528,7 +530,7 @@ const LeaveTableData = () => {
           severity="secondary"
           icon="pi pi-pencil"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ appendTo: () => document.body, position: "top" }}
           onClick={() => openEdit(rowData)}
         />
@@ -538,7 +540,7 @@ const LeaveTableData = () => {
           severity="danger"
           icon="pi pi-trash"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ appendTo: () => document.body, position: "top" }}
           onClick={() => onClickDelete(rowData)}
         />
@@ -557,8 +559,8 @@ const LeaveTableData = () => {
       <Card className="border border-slate-200 shadow-sm">
         <div className="flex flex-col gap-5">
           <EmployeeDetailTableHeader
-            title="Leave Balance"
-            description="Manage employee leave balance period, entitlement, usage, and remaining balance."
+            title={i18nT("static.1es4nt0")}
+            description={i18nT("static.jbnmud")}
             showDeleted={
               archivedAccess.canShowDeleted
                 ? {
@@ -570,12 +572,12 @@ const LeaveTableData = () => {
             search={{
               value: globalFilterValue,
               onChange: onGlobalFilterChange,
-              placeholder: "Search leave balance",
+              placeholder: i18nT("static.m0oh32"),
             }}
             actions={
               <Button
                 type="button"
-                label="New Leave Balance"
+                label={i18nT("static.lumw46")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -601,8 +603,8 @@ const LeaveTableData = () => {
               "period_start",
               "period_end",
             ]}
-            emptyMessage="No leave balance found."
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            emptyMessage={i18nT("static.1tsb299")}
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             loading={isLoading}
             scrollable
@@ -615,56 +617,56 @@ const LeaveTableData = () => {
             />
             <Column
               field="leave_type_name"
-              header="Leave Type"
+              header={i18nT("static.se3juw")}
               sortable
               style={{ minWidth: "14rem" }}
             />
             <Column
-              header="Period"
+              header={i18nT("static.11hwh7o")}
               body={periodBodyTemplate}
               style={{ minWidth: "16rem" }}
             />
             <Column
               field="opening_balance"
-              header="Opening"
+              header={i18nT("static.dfet3")}
               sortable
               style={{ minWidth: "8rem" }}
             />
             <Column
               field="entitlement"
-              header="Entitlement"
+              header={i18nT("static.ija3a8")}
               sortable
               style={{ minWidth: "8rem" }}
             />
             <Column
               field="taken"
-              header="Taken"
+              header={i18nT("static.1neeuvc")}
               sortable
               style={{ minWidth: "8rem" }}
             />
             <Column
               field="adjustment"
-              header="Adjustment"
+              header={i18nT("static.1ncp8v2")}
               sortable
               style={{ minWidth: "8rem" }}
             />
             <Column
-              header="Closing"
+              header={i18nT("static.sd6odg")}
               body={closingBalanceBodyTemplate}
               style={{ minWidth: "8rem" }}
             />
             <Column
               field="expired_balance"
-              header="Expired"
+              header={i18nT("static.1gcie36")}
               style={{ minWidth: "8rem" }}
             />
             <Column
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={statusBodyTemplate}
               style={{ minWidth: "8rem" }}
             />
             <Column
-              header="Action"
+              header={i18nT("static.2wk0tb")}
               body={actionColumnBody}
               frozen
               alignFrozen="right"
@@ -690,7 +692,7 @@ const LeaveTableData = () => {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               text
               severity="secondary"
@@ -701,7 +703,9 @@ const LeaveTableData = () => {
             <Button
               type="submit"
               form="leave-balance-form"
-              label={isAddNew ? "Create Leave Balance" : "Save Changes"}
+              label={
+                isAddNew ? i18nT("static.1x4v76i") : i18nT("static.6gmm1l")
+              }
               icon="pi pi-check"
               loading={isSaving}
               disabled={!isValid || isSaving}
@@ -724,7 +728,7 @@ const LeaveTableData = () => {
         >
           <div className="rounded-xl border border-blue-100 bg-blue-50/70 px-4 py-3">
             <p className="m-0 text-sm leading-6 text-slate-600">
-              Define the leave period and balance allocation for this employee.
+              {i18nT("static.1om811b")}{" "}
             </p>
           </div>
 
@@ -733,7 +737,7 @@ const LeaveTableData = () => {
               name="leave_type_id"
               control={control}
               rules={{
-                required: "Leave type is required",
+                required: i18nT("static.1sgcm61"),
                 validate: (value) =>
                   Number(value) > 0 || "Leave type is required",
               }}
@@ -743,7 +747,7 @@ const LeaveTableData = () => {
                     htmlFor="leave_type_id"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Leave Type
+                    {i18nT("static.se3juw")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
                   <Dropdown
@@ -754,7 +758,7 @@ const LeaveTableData = () => {
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
-                    placeholder="Select leave type"
+                    placeholder={i18nT("static.64jas6")}
                     loading={leaveTypeIsLoading}
                     disabled={leaveTypeIsLoading || !!leaveTypeError}
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
@@ -771,14 +775,14 @@ const LeaveTableData = () => {
             <Controller
               name="period_start"
               control={control}
-              rules={{ required: "Period start is required" }}
+              rules={{ required: i18nT("static.kdnf01") }}
               render={({ field, fieldState }) => (
                 <div>
                   <label
                     htmlFor="period_start"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Period Start
+                    {i18nT("static.rctpc")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
                   <Calendar
@@ -802,14 +806,14 @@ const LeaveTableData = () => {
             <Controller
               name="period_end"
               control={control}
-              rules={{ required: "Period end is required" }}
+              rules={{ required: i18nT("static.1wf0aqo") }}
               render={({ field, fieldState }) => (
                 <div>
                   <label
                     htmlFor="period_end"
                     className="mb-2 block text-sm font-medium text-slate-700"
                   >
-                    Period End
+                    {i18nT("static.1aquwpt")}{" "}
                     <span className="ml-1 text-red-500">*</span>
                   </label>
                   <Calendar
@@ -836,7 +840,7 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Opening Balance
+                    {i18nT("static.1wj9hsr")}{" "}
                   </label>
                   <InputNumber
                     value={field.value}
@@ -855,7 +859,7 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Entitlement
+                    {i18nT("static.ija3a8")}{" "}
                   </label>
                   <InputNumber
                     value={field.value}
@@ -874,7 +878,7 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Taken (system)
+                    {i18nT("static.1lqnafc")}{" "}
                   </label>
                   <InputNumber
                     value={field.value}
@@ -894,7 +898,7 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Adjustment
+                    {i18nT("static.1ncp8v2")}{" "}
                   </label>
                   <InputNumber
                     value={field.value}
@@ -912,7 +916,7 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Closing Balance (calculated)
+                    {i18nT("static.1jyyvyr")}{" "}
                   </label>
                   <InputNumber
                     value={field.value}
@@ -931,7 +935,7 @@ const LeaveTableData = () => {
               render={({ field }) => (
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-700">
-                    Expired Balance
+                    {i18nT("static.1dc1jx6")}{" "}
                   </label>
                   <InputNumber
                     value={field.value}

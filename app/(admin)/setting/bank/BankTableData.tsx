@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { ChangeEvent, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -59,6 +60,7 @@ const EMPTY_BANK: Bank = {
 const getBody = () => document.body;
 
 const BankTableData = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
@@ -107,7 +109,7 @@ const BankTableData = () => {
       showToast({
         visible: true,
         severity: "success",
-        summary: "Success",
+        summary: i18nT("static.udvru8"),
         detail: message,
       }),
     );
@@ -119,7 +121,7 @@ const BankTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: getErrorMessage(err, "message"),
         }),
       );
@@ -132,7 +134,7 @@ const BankTableData = () => {
         showToast({
           visible: true,
           severity: "error",
-          summary: "Error",
+          summary: i18nT("static.1vks92p"),
           detail: err.message,
         }),
       );
@@ -144,8 +146,8 @@ const BankTableData = () => {
       showToast({
         visible: true,
         severity: "error",
-        summary: "Error",
-        detail: "An unexpected error occurred.",
+        summary: i18nT("static.1vks92p"),
+        detail: i18nT("static.37lwsc"),
       }),
     );
   };
@@ -295,12 +297,10 @@ const BankTableData = () => {
 
   const onClickDelete = (data: Bank) => {
     requestActionConfirmation({
-      header: "Delete Bank",
+      header: i18nT("static.gkrtag"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to delete this bank?
-          </span>
+          <span className="text-slate-600">{i18nT("static.148yf3x")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -313,7 +313,7 @@ const BankTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -322,7 +322,7 @@ const BankTableData = () => {
 
           <Button
             type="button"
-            label="Delete"
+            label={i18nT("static.oay2cq")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -334,12 +334,10 @@ const BankTableData = () => {
 
   const onClickRestore = (data: Bank) => {
     requestActionConfirmation({
-      header: "Restore Bank",
+      header: i18nT("static.1yyjxw9"),
       message: (
         <div className="flex flex-col gap-1">
-          <span className="text-slate-600">
-            Are you sure you want to restore this bank?
-          </span>
+          <span className="text-slate-600">{i18nT("static.o7s1wg")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -352,7 +350,7 @@ const BankTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -361,7 +359,7 @@ const BankTableData = () => {
 
           <Button
             type="button"
-            label="Restore"
+            label={i18nT("static.4fiyr5")}
             icon="pi pi-refresh"
             severity="success"
             onClick={options.accept}
@@ -373,12 +371,10 @@ const BankTableData = () => {
 
   const onClickPurge = (data: Bank) => {
     requestActionConfirmation({
-      header: "Delete Bank Permanently",
+      header: i18nT("static.1p8zbwl"),
       message: (
         <div className="flex flex-col gap-2">
-          <span className="text-slate-600">
-            This action cannot be undone. Permanently delete:
-          </span>
+          <span className="text-slate-600">{i18nT("static.1g8j1g8")} </span>
 
           <span className="font-semibold text-slate-800">{data.name}</span>
         </div>
@@ -391,7 +387,7 @@ const BankTableData = () => {
         <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
           <Button
             type="button"
-            label="Cancel"
+            label={i18nT("static.ew9em3")}
             icon="pi pi-times"
             text
             severity="secondary"
@@ -400,7 +396,7 @@ const BankTableData = () => {
 
           <Button
             type="button"
-            label="Delete Permanently"
+            label={i18nT("static.1wopxwj")}
             icon="pi pi-trash"
             severity="danger"
             onClick={options.accept}
@@ -413,14 +409,19 @@ const BankTableData = () => {
   const statusColumnBody = (rowData: Bank) => {
     if (rowData.deleted_at) {
       return (
-        <Tag value="Deleted" severity="secondary" icon="pi pi-trash" rounded />
+        <Tag
+          value={i18nT("static.1v6qcju")}
+          severity="secondary"
+          icon="pi pi-trash"
+          rounded
+        />
       );
     }
 
     if (rowData.is_active) {
       return (
         <Tag
-          value="Active"
+          value={i18nT("static.8qzyhb")}
           severity="success"
           icon="pi pi-check-circle"
           rounded
@@ -430,7 +431,7 @@ const BankTableData = () => {
 
     return (
       <Tag
-        value="Inactive"
+        value={i18nT("static.13zf5vc")}
         severity="warning"
         icon="pi pi-minus-circle"
         rounded
@@ -445,7 +446,11 @@ const BankTableData = () => {
 
     if (isDeleted) {
       if (!isSuperadmin) {
-        return <span className="text-sm text-slate-400">No action</span>;
+        return (
+          <span className="text-sm text-slate-400">
+            {i18nT("static.yaeuo4")}
+          </span>
+        );
       }
 
       return (
@@ -458,7 +463,7 @@ const BankTableData = () => {
               outlined
               severity="success"
               size="small"
-              tooltip="Restore"
+              tooltip={i18nT("static.4fiyr5")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -475,7 +480,7 @@ const BankTableData = () => {
               outlined
               severity="danger"
               size="small"
-              tooltip="Delete permanently"
+              tooltip={i18nT("static.1ny6sg3")}
               tooltipOptions={{
                 appendTo: getBody,
                 position: "top",
@@ -496,7 +501,7 @@ const BankTableData = () => {
           outlined
           severity="secondary"
           size="small"
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -511,7 +516,7 @@ const BankTableData = () => {
           outlined
           severity="danger"
           size="small"
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{
             appendTo: getBody,
             position: "top",
@@ -526,7 +531,7 @@ const BankTableData = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -538,7 +543,7 @@ const BankTableData = () => {
       <Button
         type="submit"
         form="bank-form"
-        label={isAddNew ? "Create Bank" : "Save Changes"}
+        label={isAddNew ? i18nT("static.hij35h") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         loading={isSaving}
         disabled={isSaving}
@@ -568,11 +573,11 @@ const BankTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  Bank
+                  {i18nT("static.192q8xj")}{" "}
                 </h1>
 
                 <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  Manage bank codes, names, and active status.
+                  {i18nT("static.19yh3av")}{" "}
                 </p>
               </div>
             </div>
@@ -580,7 +585,7 @@ const BankTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -593,7 +598,7 @@ const BankTableData = () => {
 
               <Button
                 type="button"
-                label="New Bank"
+                label={i18nT("static.1wjzu3d")}
                 icon="pi pi-plus"
                 size="small"
                 className="w-full sm:w-auto"
@@ -618,7 +623,7 @@ const BankTableData = () => {
                   htmlFor="showDeletedData"
                   className="cursor-pointer select-none text-sm text-slate-600"
                 >
-                  Show deleted records
+                  {i18nT("static.1kk3in7")}{" "}
                 </label>
               </div>
             )}
@@ -629,7 +634,7 @@ const BankTableData = () => {
               <InputText
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
-                placeholder="Search code or bank name"
+                placeholder={i18nT("static.10se7ze")}
                 className="w-full"
               />
             </IconField>
@@ -655,8 +660,8 @@ const BankTableData = () => {
               tableStyle={{
                 minWidth: "48rem",
               }}
-              emptyMessage="No bank data found."
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              emptyMessage={i18nT("static.28haku")}
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
               <Column
@@ -672,7 +677,7 @@ const BankTableData = () => {
 
               <Column
                 field="code"
-                header="Code"
+                header={i18nT("static.xoaiok")}
                 sortable
                 style={{
                   minWidth: "10rem",
@@ -686,7 +691,7 @@ const BankTableData = () => {
 
               <Column
                 field="name"
-                header="Bank Name"
+                header={i18nT("static.1rafzjq")}
                 sortable
                 style={{
                   minWidth: "18rem",
@@ -700,7 +705,7 @@ const BankTableData = () => {
 
               <Column
                 field="is_active"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 sortable
                 body={statusColumnBody}
                 style={{
@@ -709,7 +714,7 @@ const BankTableData = () => {
               />
 
               <Column
-                header="Action"
+                header={i18nT("static.2wk0tb")}
                 body={actionColumnBody}
                 frozen
                 alignFrozen="right"
@@ -764,7 +769,7 @@ const BankTableData = () => {
               htmlFor="code"
               className="text-sm font-medium text-slate-700"
             >
-              Bank Code
+              {i18nT("static.3xyl6s")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -772,14 +777,14 @@ const BankTableData = () => {
               name="code"
               control={control}
               rules={{
-                required: "Bank code is required.",
+                required: i18nT("static.goh2r5"),
                 validate: {
                   noSpaces: (value) =>
                     !/\s/.test(value) || "Bank code must not contain spaces.",
                 },
                 maxLength: {
                   value: 50,
-                  message: "Bank code cannot exceed 50 characters.",
+                  message: i18nT("static.170acnw"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -788,7 +793,7 @@ const BankTableData = () => {
                     {...field}
                     id="code"
                     autoComplete="off"
-                    placeholder="Example: BCA"
+                    placeholder={i18nT("static.lj5fo3")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -800,7 +805,7 @@ const BankTableData = () => {
                     </small>
                   ) : (
                     <small className="text-slate-500">
-                      Use a short and unique bank code.
+                      {i18nT("static.143mbty")}{" "}
                     </small>
                   )}
                 </>
@@ -813,7 +818,7 @@ const BankTableData = () => {
               htmlFor="name"
               className="text-sm font-medium text-slate-700"
             >
-              Bank Name
+              {i18nT("static.1rafzjq")}{" "}
               <span className="ml-1 text-red-500">*</span>
             </label>
 
@@ -821,10 +826,10 @@ const BankTableData = () => {
               name="name"
               control={control}
               rules={{
-                required: "Bank name is required.",
+                required: i18nT("static.8dfuov"),
                 maxLength: {
                   value: 50,
-                  message: "Bank name cannot exceed 50 characters.",
+                  message: i18nT("static.12xwxza"),
                 },
               }}
               render={({ field, fieldState }) => (
@@ -833,7 +838,7 @@ const BankTableData = () => {
                     {...field}
                     id="name"
                     autoComplete="off"
-                    placeholder="Example: Bank Central Asia"
+                    placeholder={i18nT("static.28v1fa")}
                     className={`w-full ${
                       fieldState.invalid ? "p-invalid" : ""
                     }`}
@@ -861,12 +866,11 @@ const BankTableData = () => {
                       htmlFor="is_active"
                       className="cursor-pointer text-sm font-medium text-slate-700"
                     >
-                      Active Status
+                      {i18nT("static.almk4n")}{" "}
                     </label>
 
                     <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      Inactive banks remain stored but should not be available
-                      for new records.
+                      {i18nT("static.7qvmgq")}{" "}
                     </p>
                   </div>
 

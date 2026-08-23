@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { EmployeePersonalData } from "@/app/types/employee-general";
 import { useParams, useRouter } from "next/navigation";
@@ -25,6 +26,7 @@ const getPhotoUrl = (photoUrl?: string | null) => {
 };
 
 const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
+  const { t: i18nT } = useI18n();
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const [isHovering, setIsHovering] = useState(false);
@@ -68,7 +70,7 @@ const EmployeeProfilePicture = ({ data }: EmployeePhotoProfileProps) => {
           onClick={goToEditPhoto}
           className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/40 text-sm font-medium text-white"
         >
-          Change
+          {i18nT("static.18wuq59")}{" "}
         </button>
       )}
     </div>

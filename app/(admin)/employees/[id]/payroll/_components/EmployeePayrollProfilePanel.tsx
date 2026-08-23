@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
@@ -75,49 +76,49 @@ const TAX: NewTaxProfile = {
 const PTKP_OPTIONS = [
   {
     code: "TK/0",
-    label: "TK/0 — Tidak kawin, tanpa tanggungan",
+    labelKey: "TK/0 — Tidak kawin, tanpa tanggungan",
     amount: "54000000",
     ter: "A",
   },
   {
     code: "TK/1",
-    label: "TK/1 — Tidak kawin, 1 tanggungan",
+    labelKey: "TK/1 — Tidak kawin, 1 tanggungan",
     amount: "58500000",
     ter: "A",
   },
   {
     code: "TK/2",
-    label: "TK/2 — Tidak kawin, 2 tanggungan",
+    labelKey: "TK/2 — Tidak kawin, 2 tanggungan",
     amount: "63000000",
     ter: "B",
   },
   {
     code: "TK/3",
-    label: "TK/3 — Tidak kawin, 3 tanggungan",
+    labelKey: "TK/3 — Tidak kawin, 3 tanggungan",
     amount: "67500000",
     ter: "B",
   },
   {
     code: "K/0",
-    label: "K/0 — Kawin, tanpa tanggungan",
+    labelKey: "K/0 — Kawin, tanpa tanggungan",
     amount: "58500000",
     ter: "A",
   },
   {
     code: "K/1",
-    label: "K/1 — Kawin, 1 tanggungan",
+    labelKey: "K/1 — Kawin, 1 tanggungan",
     amount: "63000000",
     ter: "B",
   },
   {
     code: "K/2",
-    label: "K/2 — Kawin, 2 tanggungan",
+    labelKey: "K/2 — Kawin, 2 tanggungan",
     amount: "67500000",
     ter: "B",
   },
   {
     code: "K/3",
-    label: "K/3 — Kawin, 3 tanggungan",
+    labelKey: "K/3 — Kawin, 3 tanggungan",
     amount: "72000000",
     ter: "C",
   },
@@ -146,6 +147,7 @@ const SALARY: NewSalaryHistory = {
 };
 
 export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
+  const { t: i18nT } = useI18n();
   const params = useParams<{ id: string }>();
   const employeeId = Number(params.id);
   const dispatch = useDispatch();
@@ -195,7 +197,10 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
       showToast({
         visible: true,
         severity,
-        summary: severity === "success" ? "Success" : "Error",
+        summary:
+          severity === "success"
+            ? i18nT("static.udvru8")
+            : i18nT("static.1vks92p"),
         detail,
       }),
     );
@@ -204,7 +209,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
       "error",
       typeof error === "object" && error !== null && "message" in error
         ? String((error as ResponseTypeError).message)
-        : "Unexpected error.",
+        : i18nT("static.i7zn8m"),
     );
   const run = async (action: () => Promise<unknown>, message: string) => {
     try {
@@ -243,7 +248,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             <>
               <Button
                 type="button"
-                label="Refresh"
+                label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
                 severity="secondary"
                 outlined
@@ -256,7 +261,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               {canCreate && mode === "bpjs" && (
                 <Button
                   type="button"
-                  label="Advanced Wage Override"
+                  label={i18nT("static.1fidpif")}
                   icon="pi pi-money-bill"
                   severity="secondary"
                   outlined
@@ -270,10 +275,10 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                   type="button"
                   label={
                     mode === "bpjs"
-                      ? "New Enrollment"
+                      ? i18nT("static.11h459n")
                       : mode === "tax"
-                        ? "New Tax Profile"
-                        : "New Salary"
+                        ? i18nT("static.1ygaxld")
+                        : i18nT("static.liz1dd")
                   }
                   icon="pi pi-plus"
                   size="small"
@@ -298,14 +303,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               paginator
               rows={10}
               tableStyle={{ minWidth: "52rem" }}
-              currentPageReportTemplate="{first} to {last} of {totalRecords}"
+              currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
-              <Column field="program_code" header="Program" />
-              <Column field="participant_number" header="Participant No." />
+              <Column field="program_code" header={i18nT("static.1if8prf")} />
+              <Column
+                field="participant_number"
+                header={i18nT("static.zpx5hx")}
+              />
               <Column
                 field="enrollment_status"
-                header="Status"
+                header={i18nT("static.3pd73")}
                 body={(row) => (
                   <Tag
                     value={row.enrollment_status}
@@ -317,22 +325,22 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                   />
                 )}
               />
-              <Column field="risk_class_code" header="Risk Class" />
+              <Column field="risk_class_code" header={i18nT("static.psbfa6")} />
               <Column
                 field="effective_from"
-                header="Effective From"
+                header={i18nT("static.ypbwia")}
                 body={(row) => formatDisplayDate(row.effective_from)}
               />
               <Column
                 field="effective_to"
-                header="Effective To"
+                header={i18nT("static.mtbgcr")}
                 body={(row) =>
                   formatDisplayDate(row.effective_to, "Open ended")
                 }
               />
             </DataTable>
             <h2 className="text-base font-semibold text-slate-800">
-              Statutory Wage Overrides (optional)
+              {i18nT("static.kbepee")}{" "}
             </h2>
             <p className="m-0 -mt-3 text-sm leading-6 text-slate-500">
               Normally leave this empty. Payroll derives the statutory wage from
@@ -351,17 +359,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               scrollable
               tableStyle={{ minWidth: "44rem" }}
             >
-              <Column field="program_group" header="Group" />
-              <Column field="wage_amount" header="Wage" />
-              <Column field="source" header="Source" />
+              <Column field="program_group" header={i18nT("static.1ihp9o")} />
+              <Column field="wage_amount" header={i18nT("static.92yfvt")} />
+              <Column field="source" header={i18nT("static.r5qyuw")} />
               <Column
                 field="effective_from"
-                header="Effective From"
+                header={i18nT("static.ypbwia")}
                 body={(row) => formatDisplayDate(row.effective_from)}
               />
               <Column
                 field="effective_to"
-                header="Effective To"
+                header={i18nT("static.mtbgcr")}
                 body={(row) =>
                   formatDisplayDate(row.effective_to, "Open ended")
                 }
@@ -382,15 +390,15 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             paginator
             rows={10}
             tableStyle={{ minWidth: "64rem" }}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           >
-            <Column field="nik_masked" header="NIK" />
-            <Column field="npwp_masked" header="NPWP" />
-            <Column field="ptkp_code" header="PTKP" />
+            <Column field="nik_masked" header={i18nT("static.lvt3nd")} />
+            <Column field="npwp_masked" header={i18nT("static.4f980k")} />
+            <Column field="ptkp_code" header={i18nT("static.1w1piju")} />
             <Column
               field="ptkp_amount"
-              header="Annual PTKP"
+              header={i18nT("static.10lu6yx")}
               body={(row) =>
                 formatIdr(
                   row.ptkp_amount ??
@@ -401,34 +409,38 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             />
             <Column
               field="ter_category"
-              header="TER (derived)"
+              header={i18nT("static.1wrk3n4")}
               body={(row) => row.ter_category ?? "—"}
             />
-            <Column field="tax_method" header="Method" />
+            <Column field="tax_method" header={i18nT("static.16cmxjk")} />
             <Column
               field="employee_tax_type"
-              header="Tax Treatment"
+              header={i18nT("static.p6ft6e")}
               body={(row) => (
                 <div className="flex flex-col gap-1">
                   <span>{row.employee_tax_type}</span>
                   <small className="text-slate-500">
                     {row.tax_type_source === "EMPLOYMENT_STATUS"
-                      ? `From ${row.source_employment_status_name ?? "Employment Status"}`
+                      ? i18nT("static.qpob7", {
+                          p0:
+                            row.source_employment_status_name ??
+                            i18nT("static.p2ngjv"),
+                        })
                       : row.tax_type_source === "OVERRIDE"
-                        ? "Approved override"
-                        : "Legacy profile"}
+                        ? i18nT("static.jwdlri")
+                        : i18nT("static.cs68k7")}
                   </small>
                 </div>
               )}
             />
             <Column
               field="effective_from"
-              header="Effective From"
+              header={i18nT("static.ypbwia")}
               body={(row) => formatDisplayDate(row.effective_from)}
             />
             <Column
               field="effective_to"
-              header="Effective To"
+              header={i18nT("static.mtbgcr")}
               body={(row) => formatDisplayDate(row.effective_to, "Open ended")}
             />
           </DataTable>
@@ -446,27 +458,31 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             paginator
             rows={10}
             tableStyle={{ minWidth: "58rem" }}
-            currentPageReportTemplate="{first} to {last} of {totalRecords}"
+            currentPageReportTemplate={i18nT("static.1kqh8lr")}
             paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
           >
-            <Column field="base_salary" header="Base Salary" />
-            <Column field="currency_code" header="Currency" />
+            <Column field="base_salary" header={i18nT("static.38iui2")} />
+            <Column field="currency_code" header={i18nT("static.5o3zh2")} />
             <Column
               field="frequency_name"
-              header="Wage Basis"
+              header={i18nT("static.1m95xl7")}
               body={(row) => (
                 <div className="flex flex-col">
                   <span>{row.frequency_name}</span>
                   <small className="text-slate-500">
-                    Rate period: {row.frequency_days_in_period} day(s)
+                    {i18nT("static.bmw8qi")} {row.frequency_days_in_period}{" "}
+                    {i18nT("static.kjdug7")}{" "}
                   </small>
                 </div>
               )}
             />
-            <Column field="payroll_setting_name" header="Payroll Setting" />
+            <Column
+              field="payroll_setting_name"
+              header={i18nT("static.1aar9d6")}
+            />
             <Column
               field="status"
-              header="Status"
+              header={i18nT("static.3pd73")}
               body={(row) => (
                 <Tag
                   value={row.status}
@@ -476,27 +492,27 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             />
             <Column
               field="effective_from"
-              header="Effective From"
+              header={i18nT("static.ypbwia")}
               body={(row) => formatDisplayDate(row.effective_from)}
             />
             <Column
               field="effective_to"
-              header="Effective To"
+              header={i18nT("static.mtbgcr")}
               body={(row) => formatDisplayDate(row.effective_to, "Open ended")}
             />
-            <Column field="change_reason" header="Reason" />
+            <Column field="change_reason" header={i18nT("static.i36sl5")} />
           </DataTable>
         )}
       </div>
       <Dialog
         header={
           dialog === "wage"
-            ? "New Statutory Wage Override"
+            ? i18nT("static.xlzi20")
             : mode === "bpjs"
-              ? "New Enrollment"
+              ? i18nT("static.11h459n")
               : mode === "tax"
-                ? "New Tax Profile"
-                : "New Salary History"
+                ? i18nT("static.1ygaxld")
+                : i18nT("static.j1dh25")
         }
         visible={dialog !== null}
         onHide={() => setDialog(null)}
@@ -510,7 +526,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              label="Cancel"
+              label={i18nT("static.ew9em3")}
               icon="pi pi-times"
               severity="secondary"
               text
@@ -520,7 +536,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             />
             <Button
               type="button"
-              label="Create History"
+              label={i18nT("static.opuo55")}
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -601,9 +617,10 @@ function EnrollmentForm({
   change: React.Dispatch<React.SetStateAction<NewStatutoryEnrollment>>;
   profile?: EmployeePayrollProfile;
 }) {
+  const { t: i18nT } = useI18n();
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-      <Field label="Program *">
+      <Field label={i18nT("static.1vqe40x")}>
         <Dropdown
           value={value.statutory_program_id || null}
           options={profile?.statutory_programs ?? []}
@@ -614,7 +631,7 @@ function EnrollmentForm({
           }
         />
       </Field>
-      <Field label="Participant Number">
+      <Field label={i18nT("static.3yqbxz")}>
         <InputText
           value={value.participant_number ?? ""}
           onChange={(e) =>
@@ -625,7 +642,7 @@ function EnrollmentForm({
           }
         />
       </Field>
-      <Field label="Status">
+      <Field label={i18nT("static.3pd73")}>
         <Dropdown
           value={value.enrollment_status}
           options={["PENDING", "ACTIVE", "INACTIVE", "TERMINATED"]}
@@ -634,7 +651,7 @@ function EnrollmentForm({
           }
         />
       </Field>
-      <Field label="Risk Class">
+      <Field label={i18nT("static.psbfa6")}>
         <Dropdown
           value={value.bpjs_risk_class_id}
           options={profile?.bpjs_risk_classes ?? []}
@@ -668,16 +685,17 @@ function WageForm({
   change: React.Dispatch<React.SetStateAction<NewStatutoryWage>>;
   profile?: EmployeePayrollProfile;
 }) {
+  const { t: i18nT } = useI18n();
   const programGroups = [
-    { label: "All statutory programs (fallback)", value: "ALL" },
+    { label: i18nT("static.16km7xr"), value: "ALL" },
     ...(profile?.statutory_programs ?? []).map((program) => ({
-      label: `${program.name} (${program.code})`,
+      label: i18nT("static.14r9r1n", { p0: program.name, p1: program.code }),
       value: program.code,
     })),
   ];
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-      <Field label="Program Group *">
+      <Field label={i18nT("static.10xma8m")}>
         <Dropdown
           value={value.program_group}
           options={programGroups}
@@ -692,7 +710,7 @@ function WageForm({
           }
         />
       </Field>
-      <Field label="Wage Amount *">
+      <Field label={i18nT("static.p8v2lh")}>
         <InputText
           value={value.wage_amount}
           onChange={(e) =>
@@ -700,7 +718,7 @@ function WageForm({
           }
         />
       </Field>
-      <Field label="Source">
+      <Field label={i18nT("static.r5qyuw")}>
         <Dropdown
           value={value.source}
           options={["MANUAL", "SALARY", "REGULATORY", "IMPORT"]}
@@ -726,12 +744,13 @@ function TaxForm({
   change: React.Dispatch<React.SetStateAction<NewTaxProfile>>;
   canOverride: boolean;
 }) {
+  const { t: i18nT } = useI18n();
   const selectedPtkp = PTKP_OPTIONS.find(
     (option) => option.code === value.ptkp_code,
   );
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-      <Field label="NIK">
+      <Field label={i18nT("static.lvt3nd")}>
         <InputText
           value={value.nik ?? ""}
           onChange={(e) =>
@@ -739,7 +758,7 @@ function TaxForm({
           }
         />
       </Field>
-      <Field label="NPWP">
+      <Field label={i18nT("static.4f980k")}>
         <InputText
           value={value.npwp ?? ""}
           onChange={(e) =>
@@ -747,10 +766,13 @@ function TaxForm({
           }
         />
       </Field>
-      <Field label="PTKP Status *">
+      <Field label={i18nT("static.abmxvi")}>
         <Dropdown
           value={value.ptkp_code}
-          options={PTKP_OPTIONS}
+          options={PTKP_OPTIONS.map((option) => ({
+            ...option,
+            label: i18nT(option.labelKey),
+          }))}
           optionLabel="label"
           optionValue="code"
           className="w-full"
@@ -764,14 +786,14 @@ function TaxForm({
           }}
         />
       </Field>
-      <Field label="Annual PTKP">
+      <Field label={i18nT("static.10lu6yx")}>
         <InputText
           value={formatIdr(selectedPtkp?.amount)}
           readOnly
           className="bg-slate-50"
         />
       </Field>
-      <Field label="TER Category (automatic)">
+      <Field label={i18nT("static.1fa4tsi")}>
         <InputText
           value={selectedPtkp?.ter ?? ""}
           readOnly
@@ -779,11 +801,9 @@ function TaxForm({
         />
       </Field>
       <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm leading-6 text-blue-800 sm:col-span-2">
-        TER is derived from the PTKP status. It is used for monthly PPh 21
-        withholding; the final tax month uses the annual Article 17 calculation
-        with the same PTKP status.
+        {i18nT("static.krif09")}{" "}
       </div>
-      <Field label="Tax Method">
+      <Field label={i18nT("static.1vur36r")}>
         <Dropdown
           value={value.tax_method}
           options={["GROSS", "NET", "GROSS_UP"]}
@@ -795,21 +815,19 @@ function TaxForm({
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-slate-700">
-            Tax Treatment
+            {i18nT("static.p6ft6e")}{" "}
           </span>
           <p className="m-0 text-sm leading-6 text-slate-600">
-            The treatment is resolved from the employee&apos;s active Employment
-            Status when this profile is saved. It is stored as a snapshot for
-            payroll history.
+            {i18nT("static.122xort")}{" "}
           </p>
           {canOverride && (
             <div className="mt-2 flex items-center justify-between gap-4 border-t border-slate-200 pt-3">
               <div>
                 <span className="text-sm font-medium text-slate-700">
-                  Override tax treatment
+                  {i18nT("static.1ppop90")}{" "}
                 </span>
                 <p className="m-0 mt-1 text-xs text-slate-500">
-                  Use only for an approved tax exception and provide a reason.
+                  {i18nT("static.9bjm1e")}{" "}
                 </p>
               </div>
               <InputSwitch
@@ -841,7 +859,7 @@ function TaxForm({
               />
               <InputText
                 value={value.tax_type_override_reason ?? ""}
-                placeholder="Override reason *"
+                placeholder={i18nT("static.1a8w6op")}
                 onChange={(event) =>
                   change((current) => ({
                     ...current,
@@ -875,12 +893,13 @@ function SalaryForm({
   settings: PayrollSetting[];
   frequencies: Frequency[];
 }) {
+  const { t: i18nT } = useI18n();
   const activeFrequencies = frequencies.filter(
     (frequency) => frequency.is_active && !frequency.deleted_at,
   );
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-      <Field label="Base Salary *">
+      <Field label={i18nT("static.126qd30")}>
         <InputText
           value={value.base_salary}
           onChange={(e) =>
@@ -888,7 +907,7 @@ function SalaryForm({
           }
         />
       </Field>
-      <Field label="Currency">
+      <Field label={i18nT("static.5o3zh2")}>
         <InputText
           value={value.currency_code}
           maxLength={3}
@@ -900,13 +919,13 @@ function SalaryForm({
           }
         />
       </Field>
-      <Field label="Wage Basis *">
+      <Field label={i18nT("static.ks3sxt")}>
         <Dropdown
           value={value.frequency_id || null}
           options={activeFrequencies}
           optionLabel="name"
           optionValue="id"
-          placeholder="Select salary wage basis"
+          placeholder={i18nT("static.ib7hc1")}
           className="w-full"
           onChange={(event) =>
             change((current) => ({
@@ -916,12 +935,10 @@ function SalaryForm({
           }
         />
         <small className="text-xs leading-5 text-slate-500">
-          Base salary is the amount for the selected wage basis. This basis
-          normalizes the amount; payroll calendar dates remain controlled by
-          Payroll Settings &gt; General Settings.
+          {i18nT("static.1idelm6")}{" "}
         </small>
       </Field>
-      <Field label="Payroll Setting">
+      <Field label={i18nT("static.1aar9d6")}>
         <Dropdown
           value={value.payroll_setting_id}
           options={settings}
@@ -936,7 +953,7 @@ function SalaryForm({
           }
         />
       </Field>
-      <Field label="Status">
+      <Field label={i18nT("static.3pd73")}>
         <Dropdown
           value={value.status}
           options={["DRAFT", "ACTIVE", "EXPIRED", "CANCELLED"]}
@@ -950,7 +967,7 @@ function SalaryForm({
           change((v) => ({ ...v, effective_from: from, effective_to: to }))
         }
       />
-      <Field label="Change Reason">
+      <Field label={i18nT("static.pyvnw3")}>
         <InputText
           value={value.change_reason ?? ""}
           onChange={(e) =>
@@ -970,15 +987,16 @@ function Dates({
   to: string | null;
   set: (from: string, to: string | null) => void;
 }) {
+  const { t: i18nT } = useI18n();
   return (
     <>
-      <Field label="Effective From *">
+      <Field label={i18nT("static.8lx39w")}>
         <PrimeDatePicker
           value={from}
           onValueChange={(value) => set(value, to)}
         />
       </Field>
-      <Field label="Effective To">
+      <Field label={i18nT("static.mtbgcr")}>
         <PrimeDatePicker
           value={to}
           onValueChange={(value) => set(from, value || null)}

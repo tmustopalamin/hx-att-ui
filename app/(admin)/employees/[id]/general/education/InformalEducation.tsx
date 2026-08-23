@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/app/i18n";
 
 import {
   createEmployeeEducation,
@@ -74,6 +75,7 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 const helperTextClass = "mt-1 text-xs text-slate-500";
 
 const InformalEducation = () => {
+  const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const params = useParams();
   const employeeId = Number(params.id);
@@ -101,7 +103,7 @@ const InformalEducation = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -183,10 +185,8 @@ const InformalEducation = () => {
         showToast({
           visible: true,
           severity: "success",
-          summary: "Success",
-          detail: isAddMode
-            ? "Informal education created successfully"
-            : "Informal education updated successfully",
+          summary: i18nT("static.udvru8"),
+          detail: isAddMode ? i18nT("static.vpfx0w") : i18nT("static.uscamd"),
         }),
       );
 
@@ -198,7 +198,7 @@ const InformalEducation = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: getErrorMessage(err, "message"),
           }),
         );
@@ -207,7 +207,7 @@ const InformalEducation = () => {
           showToast({
             visible: true,
             severity: "error",
-            summary: "Error",
+            summary: i18nT("static.1vks92p"),
             detail: err.message,
           }),
         );
@@ -217,8 +217,8 @@ const InformalEducation = () => {
 
   const onDelete = (row: EmployeeEducationRow) => {
     requestActionConfirmation({
-      message: "Do you want to delete this informal education record?",
-      header: "Delete Confirmation",
+      message: i18nT("static.zqphun"),
+      header: i18nT("static.14tdkvz"),
       icon: "pi pi-info-circle",
       acceptClassName: "p-button-danger",
       accept: async () => {
@@ -233,8 +233,8 @@ const InformalEducation = () => {
             showToast({
               visible: true,
               severity: "success",
-              summary: "Success",
-              detail: "Informal education deleted successfully",
+              summary: i18nT("static.udvru8"),
+              detail: i18nT("static.ph6yxn"),
             }),
           );
           await loadData();
@@ -244,7 +244,7 @@ const InformalEducation = () => {
               showToast({
                 visible: true,
                 severity: "error",
-                summary: "Error",
+                summary: i18nT("static.1vks92p"),
                 detail: getErrorMessage(err, "message"),
               }),
             );
@@ -263,17 +263,17 @@ const InformalEducation = () => {
 
   const certificateBodyTemplate = (row: EmployeeEducationRow) => {
     return row.is_certificate ? (
-      <Tag value="Yes" severity="info" />
+      <Tag value={i18nT("static.1dudzcg")} severity="info" />
     ) : (
-      <Tag value="No" severity="secondary" />
+      <Tag value={i18nT("static.r5wqai")} severity="secondary" />
     );
   };
 
   const activeBodyTemplate = (row: EmployeeEducationRow) => {
     return row.is_active ? (
-      <Tag value="Active" severity="success" />
+      <Tag value={i18nT("static.8qzyhb")} severity="success" />
     ) : (
-      <Tag value="Inactive" severity="secondary" />
+      <Tag value={i18nT("static.13zf5vc")} severity="secondary" />
     );
   };
 
@@ -288,7 +288,7 @@ const InformalEducation = () => {
           icon="pi pi-pencil"
           severity="secondary"
           onClick={() => openEdit(row)}
-          tooltip="Edit"
+          tooltip={i18nT("static.1i1lcq9")}
           tooltipOptions={{ position: "top" }}
         />
         <Button
@@ -299,7 +299,7 @@ const InformalEducation = () => {
           icon="pi pi-trash"
           severity="danger"
           onClick={() => onDelete(row)}
-          tooltip="Delete"
+          tooltip={i18nT("static.oay2cq")}
           tooltipOptions={{ position: "top" }}
         />
       </div>
@@ -310,7 +310,7 @@ const InformalEducation = () => {
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
         type="button"
-        label="Cancel"
+        label={i18nT("static.ew9em3")}
         icon="pi pi-times"
         text
         severity="secondary"
@@ -319,7 +319,7 @@ const InformalEducation = () => {
       />
       <Button
         type="button"
-        label={isAddMode ? "Create Education" : "Save Changes"}
+        label={isAddMode ? i18nT("static.1dmlj8v") : i18nT("static.6gmm1l")}
         icon="pi pi-check"
         className="w-full sm:w-auto"
         onClick={() => void handleSubmit(onSubmit)()}
@@ -331,12 +331,12 @@ const InformalEducation = () => {
     <>
       <div className="flex flex-col gap-5">
         <EmployeeDetailTableHeader
-          title="Informal Education"
-          description="Manage course, workshop, training, and certification records."
+          title={i18nT("static.kkkn53")}
+          description={i18nT("static.1h1shk1")}
           actions={
             <Button
               type="button"
-              label="New Education"
+              label={i18nT("static.9pzugj")}
               icon="pi pi-plus"
               size="small"
               className="w-full sm:w-auto"
@@ -357,10 +357,10 @@ const InformalEducation = () => {
           paginator
           rows={5}
           rowsPerPageOptions={[5, 10, 25]}
-          emptyMessage="No informal education found."
+          emptyMessage={i18nT("static.157wcee")}
           scrollable
           tableStyle={{ minWidth: "70rem" }}
-          currentPageReportTemplate="{first} to {last} of {totalRecords}"
+          currentPageReportTemplate={i18nT("static.1kqh8lr")}
           paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
         >
           <Column
@@ -368,29 +368,29 @@ const InformalEducation = () => {
             body={(_, options) => options.rowIndex + 1}
             style={{ width: "60px" }}
           />
-          <Column field="degree" header="Program / Level" />
-          <Column field="name" header="Education Name" />
-          <Column field="institution_name" header="Institution" />
-          <Column field="major" header="Topic / Major" />
+          <Column field="degree" header={i18nT("static.1gcn45o")} />
+          <Column field="name" header={i18nT("static.2gldt8")} />
+          <Column field="institution_name" header={i18nT("static.1a523l1")} />
+          <Column field="major" header={i18nT("static.hzjs0w")} />
           <Column
-            header="Period"
+            header={i18nT("static.11hwh7o")}
             body={periodBodyTemplate}
             style={{ minWidth: "180px" }}
           />
-          <Column field="score" header="Score" />
-          <Column field="held_by" header="Held By" />
+          <Column field="score" header={i18nT("static.x9tsfp")} />
+          <Column field="held_by" header={i18nT("static.1h4t9b7")} />
           <Column
-            header="Certificate"
+            header={i18nT("static.l17574")}
             body={certificateBodyTemplate}
             style={{ minWidth: "120px" }}
           />
           <Column
-            header="Active"
+            header={i18nT("static.8qzyhb")}
             body={activeBodyTemplate}
             style={{ minWidth: "110px" }}
           />
           <Column
-            header="Action"
+            header={i18nT("static.2wk0tb")}
             body={actionBodyTemplate}
             frozen
             alignFrozen="right"
@@ -402,9 +402,7 @@ const InformalEducation = () => {
       </div>
 
       <Dialog
-        header={
-          isAddMode ? "New Informal Education" : "Update Informal Education"
-        }
+        header={isAddMode ? i18nT("static.3lo7rd") : i18nT("static.8so816")}
         visible={visible}
         style={{ width: "95vw", maxWidth: "56rem" }}
         onHide={hideDialog}
@@ -418,17 +416,17 @@ const InformalEducation = () => {
           <Controller
             name="degree"
             control={control}
-            rules={{ required: "Program / level is required" }}
+            rules={{ required: i18nT("static.p0umy5") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="informal_degree" className={fieldLabelClass}>
-                  Program / Level
+                  {i18nT("static.1gcn45o")}{" "}
                 </label>
                 <InputText
                   id="informal_degree"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Example: Bootcamp, Workshop, Certification"
+                  placeholder={i18nT("static.1gfqdb3")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -440,17 +438,17 @@ const InformalEducation = () => {
           <Controller
             name="name"
             control={control}
-            rules={{ required: "Education name is required" }}
+            rules={{ required: i18nT("static.1j30tfx") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="informal_name" className={fieldLabelClass}>
-                  Education Name
+                  {i18nT("static.2gldt8")}{" "}
                 </label>
                 <InputText
                   id="informal_name"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Example: React Bootcamp"
+                  placeholder={i18nT("static.1w6dbkn")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -462,20 +460,20 @@ const InformalEducation = () => {
           <Controller
             name="institution_name"
             control={control}
-            rules={{ required: "Institution is required" }}
+            rules={{ required: i18nT("static.15ixj50") }}
             render={({ field, fieldState }) => (
               <div>
                 <label
                   htmlFor="informal_institution"
                   className={fieldLabelClass}
                 >
-                  Institution
+                  {i18nT("static.1a523l1")}{" "}
                 </label>
                 <InputText
                   id="informal_institution"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter institution name"
+                  placeholder={i18nT("static.s0mghu")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -487,17 +485,17 @@ const InformalEducation = () => {
           <Controller
             name="major"
             control={control}
-            rules={{ required: "Topic / major is required" }}
+            rules={{ required: i18nT("static.zpavjl") }}
             render={({ field, fieldState }) => (
               <div>
                 <label htmlFor="informal_major" className={fieldLabelClass}>
-                  Topic / Major
+                  {i18nT("static.hzjs0w")}{" "}
                 </label>
                 <InputText
                   id="informal_major"
                   {...field}
                   className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  placeholder="Enter topic or major"
+                  placeholder={i18nT("static.17tkdri")}
                 />
                 {fieldState.error && (
                   <small className="p-error">{fieldState.error.message}</small>
@@ -509,14 +507,14 @@ const InformalEducation = () => {
           <Controller
             name="start_date"
             control={control}
-            rules={{ required: "Start date is required" }}
+            rules={{ required: i18nT("static.oz4lds") }}
             render={({ field, fieldState }) => (
               <div>
                 <label
                   htmlFor="informal_start_date"
                   className={fieldLabelClass}
                 >
-                  Start Date
+                  {i18nT("static.7bl5hd")}{" "}
                 </label>
                 <Calendar
                   id="informal_start_date"
@@ -540,7 +538,7 @@ const InformalEducation = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="informal_end_date" className={fieldLabelClass}>
-                  End Date
+                  {i18nT("static.1j4m31m")}{" "}
                 </label>
                 <Calendar
                   id="informal_end_date"
@@ -561,13 +559,13 @@ const InformalEducation = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="informal_score" className={fieldLabelClass}>
-                  Score
+                  {i18nT("static.x9tsfp")}{" "}
                 </label>
                 <InputText
                   id="informal_score"
                   {...field}
                   className="w-full"
-                  placeholder="Example: Pass / 90 / Excellent"
+                  placeholder={i18nT("static.v2zt03")}
                 />
               </div>
             )}
@@ -579,13 +577,13 @@ const InformalEducation = () => {
             render={({ field }) => (
               <div>
                 <label htmlFor="informal_held_by" className={fieldLabelClass}>
-                  Held By
+                  {i18nT("static.1h4t9b7")}{" "}
                 </label>
                 <InputText
                   id="informal_held_by"
                   {...field}
                   className="w-full"
-                  placeholder="Example: Training Provider"
+                  placeholder={i18nT("static.1a1wuj2")}
                 />
               </div>
             )}
@@ -600,11 +598,10 @@ const InformalEducation = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Certificate Available
+                        {i18nT("static.l9hrkr")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Enable this if certificate or supporting document is
-                        available.
+                        {i18nT("static.aowj0e")}{" "}
                       </p>
                     </div>
                     <InputSwitch
@@ -622,10 +619,10 @@ const InformalEducation = () => {
                   <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        Active
+                        {i18nT("static.8qzyhb")}{" "}
                       </p>
                       <p className={helperTextClass}>
-                        Control whether this education record is still active.
+                        {i18nT("static.10uo91a")}{" "}
                       </p>
                     </div>
                     <InputSwitch
