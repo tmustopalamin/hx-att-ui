@@ -3984,6 +3984,38 @@ const staticTextSources = {
   "static.employeeScheduleConfigure": "Configure change",
   "static.employeeScheduleNext": "Next",
   "static.employeeScheduleThreeMonths": "3 Months",
+  "static.employeeScheduleGenerateSelectionHint":
+    "Selected employees are candidates. The preview will show which schedules need generation.",
+  "static.employeeScheduleGenerateSelectionReview":
+    "The selected employees are candidates. Existing complete schedules will be skipped automatically.",
+  "static.employeeScheduleGeneratePreview": "Generate Schedule Preview",
+  "static.employeeScheduleGeneratePreviewDescription":
+    "Review which employees will be generated and which employees will be skipped.",
+  "static.employeeScheduleGenerateRefreshPreview": "Refresh Preview",
+  "static.employeeScheduleGeneratePreviewRequired":
+    "Generate preview before applying changes.",
+  "static.employeeScheduleGenerateNoChanges":
+    "There are no schedule changes to apply.",
+  "static.employeeScheduleGenerateOverwrite":
+    "Update existing generated schedules",
+  "static.employeeScheduleGenerateOverwriteHint":
+    "Only unlocked RULE schedules with different values can be updated. Manual and locked schedules are protected.",
+  "static.employeeScheduleCandidateEmployees": "Candidate Employees",
+  "static.employeeScheduleEmployeesToProcess": "Employees to Process",
+  "static.employeeScheduleEmployeesSkipped": "Employees Skipped",
+  "static.employeeScheduleAssignmentsToInsert": "Schedules to Create",
+  "static.employeeScheduleAssignmentsToUpdate": "Schedules to Update",
+  "static.employeeScheduleAssignmentsUnchanged": "Schedules Unchanged",
+  "static.employeeScheduleProtectedAssignments": "Protected Schedules",
+  "static.employeeScheduleUnconfiguredDays": "Unconfigured Days",
+  "static.employeeScheduleStatus": "Status",
+  "static.employeeScheduleRule": "Shift Rule",
+  "static.employeeScheduleAction": "Action",
+  "static.employeeScheduleReadyToGenerate": "Needs generation",
+  "static.employeeScheduleAlreadyComplete": "Already complete - skipped",
+  "static.employeeSchedulePartialConfiguration": "Partial configuration",
+  "static.employeeScheduleNoActiveRule": "No active rule - skipped",
+  "static.employeeScheduleSkippedReason": "This employee will not be changed.",
 } as const;
 
 export default staticTextSources;

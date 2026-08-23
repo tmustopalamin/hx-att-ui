@@ -3,9 +3,11 @@ import { apiFetchResponse } from "@/app/utils/api-client";
 import dayjs from "dayjs";
 import {
   EmployeeShiftAssignment,
+  EmployeeShiftAssignmentPreviewRequest,
+  EmployeeShiftAssignmentPreviewResponse,
   NewEmployeeShiftAssignment,
 } from "../types/employee-shift-assignment";
-import { ResponseTypeError } from "../types/response-type";
+import { ResponseType, ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/employee-shift-assignment";
 
@@ -51,6 +53,22 @@ export const createEmployeeShiftAssignment = async (
 
   await ensureOk(res);
   return res.json();
+};
+
+export const previewEmployeeShiftAssignment = async (
+  data: EmployeeShiftAssignmentPreviewRequest,
+): Promise<ResponseType<EmployeeShiftAssignmentPreviewResponse>> => {
+  const res = await apiFetchResponse(`${API_URL}/preview`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  await ensureOk(res);
+  return (await res.json()) as ResponseType<EmployeeShiftAssignmentPreviewResponse>;
 };
 
 export const updateEmployeeShiftAssignment = async (
