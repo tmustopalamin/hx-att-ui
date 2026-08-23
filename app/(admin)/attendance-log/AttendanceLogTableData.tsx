@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import dayjs from "dayjs";
 import * as XLSX from "@e965/xlsx";
@@ -24,7 +25,7 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -44,7 +45,9 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { hasAnyPermission } from "@/app/utils/permission-utils";
 
+import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
 type AttendanceLogRow = AttendanceLog & {
@@ -115,7 +118,15 @@ const getSecurityData = (row: AttendanceLogRow | null) => {
 };
 
 const AttendanceLogTableData = () => {
+  const router = useRouter();
   const dispatch = useDispatch();
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
+  );
+  const canReadBackgroundJobs = hasAnyPermission(permissions, [
+    "background-job.read",
+    "background-job.read-all",
+  ]);
 
   const [syncLoading, setSyncLoading] = useState(false);
 
@@ -444,14 +455,9 @@ const AttendanceLogTableData = () => {
 
       const response = await syncAttendanceLog();
 
-      if (!response.data) {
-        throw new Error(
-          "Attendance log synchronization result is not available.",
-        );
+      if (!response.data?.job_id) {
+        throw new Error("The synchronization job was not created.");
       }
-
-      setSyncResult(response.data);
-      setSyncResultDialog(true);
 
       returnToFirstPage();
 
@@ -462,18 +468,17 @@ const AttendanceLogTableData = () => {
       dispatch(
         showToast({
           visible: true,
-          severity:
-            response.data.scanner_failed > 0
-              ? response.data.scanner_success > 0
-                ? "warn"
-                : "error"
-              : "success",
-          summary: "Sync Finished",
+          severity: "info",
+          summary: response.data.deduplicated
+            ? "Sync Already Queued"
+            : "Sync Queued",
           detail:
-            response.data.message ||
-            "Attendance log synchronization completed.",
+            response.message || "Attendance log synchronization was queued.",
         }),
       );
+      if (canReadBackgroundJobs) {
+        router.push(`/setting/background-jobs/${response.data.job_id}`);
+      }
     } catch (err: unknown) {
       showError(err);
     } finally {

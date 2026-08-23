@@ -1,6 +1,7 @@
 import { apiFetchResponse } from "@/app/utils/api-client";
 
 import { AttendanceLog } from "../types/attendance-log";
+import { BackgroundJobAccepted } from "../types/background-job";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/attendance-log";
@@ -251,7 +252,11 @@ export interface AttendanceLogSyncResult {
   details: AttendanceLogSyncScannerResult[];
 }
 
-export const syncAttendanceLog = async () => {
+export const syncAttendanceLog = async (): Promise<{
+  success: boolean;
+  data: BackgroundJobAccepted;
+  message: string;
+}> => {
   const res = await apiFetchResponse(`${API_URL}/sync`, {
     method: "POST",
     credentials: "include",
@@ -289,7 +294,13 @@ export const syncAttendanceLog = async () => {
   return res.json();
 };
 
-export const syncAttendanceLogByScanner = async (scannerId: number) => {
+export const syncAttendanceLogByScanner = async (
+  scannerId: number,
+): Promise<{
+  success: boolean;
+  data: BackgroundJobAccepted;
+  message: string;
+}> => {
   const res = await apiFetchResponse(`${API_URL}/sync/${scannerId}`, {
     method: "POST",
     credentials: "include",

@@ -24,6 +24,7 @@ const moduleOptions = [
   { label: "Overtime", value: "OVERTIME" },
   { label: "Attendance", value: "ATTENDANCE" },
   { label: "Fingerprint", value: "FINGERPRINT" },
+  { label: "Background Jobs", value: "BACKGROUND_JOB" },
 ];
 
 const readOptions = [

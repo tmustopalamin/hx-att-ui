@@ -60,6 +60,10 @@ const getModuleIcon = (moduleCode: string) => {
     return "pi-id-card";
   }
 
+  if (normalized === "BACKGROUND_JOB") {
+    return "pi-cog";
+  }
+
   return "pi-bell";
 };
 

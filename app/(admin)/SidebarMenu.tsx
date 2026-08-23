@@ -305,6 +305,19 @@ const settingSubMenus: SettingSubMenu[] = [
     ],
   },
   {
+    key: "system-operations",
+    label: "System Operations",
+    icon: "pi-cog",
+    items: [
+      {
+        href: "/setting/background-jobs",
+        label: "Background Jobs",
+        icon: "pi-cog",
+        permission: "background-job.read",
+      },
+    ],
+  },
+  {
     key: "leave-setup",
     label: "Leave Setup",
     icon: "pi-calendar",

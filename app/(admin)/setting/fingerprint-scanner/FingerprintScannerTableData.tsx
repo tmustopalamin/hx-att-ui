@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
 
@@ -53,6 +54,7 @@ import {
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
+import { hasAnyPermission } from "@/app/utils/permission-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -208,9 +210,14 @@ const getSyncLabel = (status?: string | null) => {
 };
 
 const FingerprintScannerTableData = () => {
+  const router = useRouter();
   const dispatch = useDispatch();
 
   const profileState = useSelector((state: RootState) => state.profile);
+  const canReadBackgroundJobs = hasAnyPermission(profileState.permissions, [
+    "background-job.read",
+    "background-job.read-all",
+  ]);
   const archivedAccess = useArchivedDataAccess("master-data");
 
   const [selectedData, setSelectedData] = useState<FingerprintScanner | null>(
@@ -599,26 +606,26 @@ const FingerprintScannerTableData = () => {
 
       const response = await syncFingerprintScannerAttendanceLog(data.id);
 
-      if (!response.data) {
-        throw new Error("Sync result is not available.");
+      if (!response.data?.job_id) {
+        throw new Error("The synchronization job was not created.");
       }
-
-      setSyncResult(response.data);
-      setSyncResultDialog(true);
 
       await refreshFingerprintScannerData();
 
       dispatch(
         showToast({
           visible: true,
-          severity: response.data.scanner_failed > 0 ? "error" : "success",
-          summary: "Sync Finished",
+          severity: "info",
+          summary: response.data.deduplicated
+            ? "Sync Already Queued"
+            : "Sync Queued",
           detail:
-            response.data.message ||
-            response.message ||
-            "Attendance log synchronization completed.",
+            response.message || "Attendance log synchronization was queued.",
         }),
       );
+      if (canReadBackgroundJobs) {
+        router.push(`/setting/background-jobs/${response.data.job_id}`);
+      }
     } catch (err: unknown) {
       showError(err);
     } finally {

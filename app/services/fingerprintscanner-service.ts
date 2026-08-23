@@ -1,6 +1,7 @@
 import { apiFetchResponse } from "@/app/utils/api-client";
 
 import { FingerprintScanner } from "../types/fingerprint-scanner";
+import { BackgroundJobAccepted } from "../types/background-job";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/fingerprint-scanner";
@@ -227,7 +228,7 @@ export const syncFingerprintScannerAttendanceLog = async (
   scannerId: number,
 ): Promise<{
   success: boolean;
-  data: AttendanceLogSyncResult;
+  data: BackgroundJobAccepted;
   message: string;
 }> => {
   const res = await apiFetchResponse(`/api/attendance-log/sync/${scannerId}`, {
