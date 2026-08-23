@@ -1,8 +1,8 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
-import { ChangeEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { ChangeEvent, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import dayjs from "dayjs";
 import {
@@ -15,15 +15,17 @@ import {
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
-import Can from "@/app/_components/CanPermission";
 import { Checkbox } from "primereact/checkbox";
+import { Dialog } from "primereact/dialog";
+import { Menu } from "primereact/menu";
+import { MenuItem as PrimeMenuItem } from "primereact/menuitem";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
 import { Tag } from "primereact/tag";
 
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -46,6 +48,9 @@ import {
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
+import { hasPermission } from "@/app/utils/permission-utils";
+import { RootState } from "@/store/store";
+import EmployeeScheduleHelpDialog from "../employee-schedule/_components/EmployeeScheduleHelpDialog";
 
 import { showToast } from "@/store/ToastSlice";
 
@@ -54,7 +59,7 @@ type EmployeeShiftAssignmentRow = EmployeeShiftAssignment & {
   shift_name?: string | null;
 };
 
-type QuickRange = "today" | "this_week" | "this_month" | null;
+type QuickRange = "today" | "this_week" | "this_month" | "three_months" | null;
 
 type SelectedCell = {
   employeeId: number;
@@ -86,25 +91,43 @@ const getDefaultWeekRange = (): [Date, Date] => {
   return [today.startOf("week").toDate(), today.endOf("week").toDate()];
 };
 
+const parseQueryDate = (value: string | null) => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = dayjs(value);
+  return parsed.isValid() && parsed.format("YYYY-MM-DD") === value
+    ? parsed.toDate()
+    : null;
+};
+
 const EmployeeShiftAssignmentListPage = () => {
   const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const profileState = useSelector((state: RootState) => state.profile);
+  const moreMenuRef = useRef<Menu>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const archivedAccess = useArchivedDataAccess("employee-shift-rule");
 
   const [defaultWeekFrom, defaultWeekTo] = getDefaultWeekRange();
+  const queryFrom = parseQueryDate(searchParams.get("from"));
+  const queryTo = parseQueryDate(searchParams.get("to"));
 
   const [search, setSearch] = useState("");
 
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
 
-  const [dateFrom, setDateFrom] = useState<Date | null>(defaultWeekFrom);
+  const [dateFrom, setDateFrom] = useState<Date | null>(
+    queryFrom ?? defaultWeekFrom,
+  );
 
-  const [dateTo, setDateTo] = useState<Date | null>(defaultWeekTo);
+  const [dateTo, setDateTo] = useState<Date | null>(queryTo ?? defaultWeekTo);
 
-  const [quickRange, setQuickRange] = useState<QuickRange>("this_week");
+  const [quickRange, setQuickRange] = useState<QuickRange>(
+    queryFrom || queryTo ? null : "this_week",
+  );
 
   const [selectedCell, setSelectedCell] = useState<SelectedCell>(null);
 
@@ -112,6 +135,11 @@ const EmployeeShiftAssignmentListPage = () => {
 
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
+
+  const canReadAssignments = hasPermission(
+    profileState.permissions,
+    "employee-shift-assignment.read",
+  );
 
   const currentKey = `/api/employee-shift-assignment?show_all=${archivedAccess.canShowDeleted && isShowDeletedDataChecked}`;
 
@@ -121,9 +149,29 @@ const EmployeeShiftAssignmentListPage = () => {
     isLoading,
     isValidating,
     mutate: refreshEmployeeShiftAssignmentData,
-  } = useSWR<EmployeeShiftAssignmentRow[]>(currentKey, fetcher);
+  } = useSWR<EmployeeShiftAssignmentRow[]>(
+    canReadAssignments ? currentKey : null,
+    fetcher,
+  );
 
-  const rows = assignmentData ?? [];
+  const moreItems = useMemo<PrimeMenuItem[]>(() => {
+    const items: Array<PrimeMenuItem | false> = [
+      hasPermission(
+        profileState.permissions,
+        "employee-shift-assignment.generate",
+      ) && {
+        label: i18nT("static.a0nkg3"),
+        icon: "pi pi-calendar-plus",
+        command: () => router.push("/setting/employee-schedule/generate"),
+      },
+      hasPermission(profileState.permissions, "employee-shift-rule.read") && {
+        label: i18nT("static.employeeScheduleMapping"),
+        icon: "pi pi-list",
+        command: () => router.push("/setting/employee-schedule/rules"),
+      },
+    ];
+    return items.filter((item): item is PrimeMenuItem => item !== false);
+  }, [i18nT, profileState.permissions, router]);
 
   const isProcessing = processingRowId !== null;
 
@@ -203,6 +251,13 @@ const EmployeeShiftAssignmentListPage = () => {
       return;
     }
 
+    if (range === "three_months") {
+      setDateFrom(today.startOf("month").toDate());
+      setDateTo(today.add(2, "month").endOf("month").toDate());
+
+      return;
+    }
+
     setDateFrom(today.startOf("month").toDate());
 
     setDateTo(today.endOf("month").toDate());
@@ -227,7 +282,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
     const keyword = search.trim().toLowerCase();
 
-    return rows.filter((item) => {
+    return (assignmentData ?? []).filter((item) => {
       const shiftDate = item.shift_date ? dayjs(item.shift_date) : null;
 
       if (shiftDate && !shiftDate.isValid()) {
@@ -267,7 +322,7 @@ const EmployeeShiftAssignmentListPage = () => {
 
       return matchSearch && matchDateFrom && matchDateTo;
     });
-  }, [rows, search, dateFrom, dateTo, hasInvalidDateRange]);
+  }, [assignmentData, search, dateFrom, dateTo, hasInvalidDateRange]);
 
   const visibleDates = useMemo(() => {
     if (!dateFrom || !dateTo || hasInvalidDateRange) {
@@ -739,6 +794,39 @@ const EmployeeShiftAssignmentListPage = () => {
     return <ErrorNotConnectedToApi mutateKey={currentKey} />;
   }
 
+  if (!canReadAssignments) {
+    return (
+      <Card className="border border-amber-200 shadow-sm">
+        <div className="flex flex-col gap-4 p-5">
+          <div className="flex items-start gap-3">
+            <i className="pi pi-lock mt-1 text-amber-600" />
+            <div>
+              <h1 className="m-0 text-xl font-semibold text-slate-800">
+                {i18nT("nav.employeeSchedule")}
+              </h1>
+              <p className="m-0 mt-1 text-sm text-slate-600">
+                {i18nT("static.employeeScheduleNoAccess")}
+              </p>
+            </div>
+          </div>
+          {hasPermission(
+            profileState.permissions,
+            "employee-shift-rule.read",
+          ) && (
+            <Button
+              type="button"
+              label={i18nT("static.employeeScheduleMapping")}
+              icon="pi pi-list"
+              outlined
+              className="w-full sm:w-fit"
+              onClick={() => router.push("/setting/employee-schedule/rules")}
+            />
+          )}
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <>
       <Card className="border border-slate-200 shadow-sm">
@@ -752,12 +840,25 @@ const EmployeeShiftAssignmentListPage = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  {i18nT("static.1c6l4uy")}{" "}
+                  {i18nT("nav.employeeSchedule")}{" "}
                 </h1>
 
-                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  {i18nT("static.xzgpeh")}{" "}
-                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="m-0 text-sm leading-6 text-slate-500">
+                    {i18nT("static.xzgpeh")}{" "}
+                  </p>
+                  <Button
+                    type="button"
+                    icon="pi pi-info-circle"
+                    rounded
+                    text
+                    severity="secondary"
+                    aria-label={i18nT("static.1x2sh5o")}
+                    tooltip={i18nT("static.1x2sh5o")}
+                    tooltipOptions={{ appendTo: getBody, position: "top" }}
+                    onClick={() => setShowHelp(true)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -775,33 +876,39 @@ const EmployeeShiftAssignmentListPage = () => {
                 onClick={handleRefresh}
               />
 
-              <Can allOf={MASS_SCHEDULE_CHANGE_PERMISSIONS}>
+              {MASS_SCHEDULE_CHANGE_PERMISSIONS.every((permission) =>
+                hasPermission(profileState.permissions, permission),
+              ) && (
                 <Button
                   type="button"
                   label={i18nT("static.15ge9fu")}
                   icon="pi pi-sliders-h"
-                  severity="secondary"
-                  outlined
+                  severity="success"
                   size="small"
                   disabled={isProcessing}
                   className="w-full sm:w-auto"
                   onClick={() =>
-                    router.push("/setting/employee-shift-rule/assign")
+                    router.push("/setting/employee-schedule/change")
                   }
                 />
-              </Can>
+              )}
 
-              <Button
-                type="button"
-                label={i18nT("static.a0nkg3")}
-                icon="pi pi-plus"
-                size="small"
-                disabled={isProcessing}
-                className="w-full sm:w-auto"
-                onClick={() =>
-                  router.push("/setting/employee-shift-assignment/generate")
-                }
-              />
+              {moreItems.length > 0 && (
+                <>
+                  <Button
+                    type="button"
+                    label={i18nT("static.employeeScheduleMoreActions")}
+                    icon="pi pi-ellipsis-h"
+                    severity="secondary"
+                    outlined
+                    size="small"
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto"
+                    onClick={(event) => moreMenuRef.current?.toggle(event)}
+                  />
+                  <Menu model={moreItems} popup ref={moreMenuRef} />
+                </>
+              )}
             </div>
           </div>
 
@@ -843,6 +950,15 @@ const EmployeeShiftAssignmentListPage = () => {
                 severity={quickRange === "this_month" ? "info" : "secondary"}
                 outlined={quickRange !== "this_month"}
                 onClick={() => applyQuickRange("this_month")}
+              />
+
+              <Button
+                type="button"
+                label={i18nT("static.employeeScheduleThreeMonths")}
+                size="small"
+                severity={quickRange === "three_months" ? "info" : "secondary"}
+                outlined={quickRange !== "three_months"}
+                onClick={() => applyQuickRange("three_months")}
               />
             </div>
 
@@ -1163,92 +1279,107 @@ const EmployeeShiftAssignmentListPage = () => {
           </section>
 
           {/* Selected Schedule Detail */}
-          {selectedCell && (
-            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                <div>
-                  <h2 className="m-0 text-sm font-semibold text-slate-800">
-                    {i18nT("static.1h1hbdh")}{" "}
-                  </h2>
+          <Dialog
+            visible={Boolean(selectedCell)}
+            onHide={() => setSelectedCell(null)}
+            modal
+            draggable={false}
+            resizable={false}
+            header={i18nT("static.1h1hbdh")}
+            style={{ width: "min(46rem, calc(100vw - 2rem))" }}
+          >
+            {selectedCell && (
+              <div>
+                <div className="flex flex-col gap-2 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                  <div>
+                    <h2 className="m-0 text-sm font-semibold text-slate-800">
+                      {i18nT("static.1h1hbdh")}{" "}
+                    </h2>
 
-                  <p className="m-0 mt-1 text-xs text-slate-500">
-                    {selectedCell.employeeName || i18nT("static.1drwniz")}{" "}
-                    {i18nT("static.19xoda3")}{" "}
-                    {formatWeekdayDate(selectedCell.dateKey)}
-                  </p>
+                    <p className="m-0 mt-1 text-xs text-slate-500">
+                      {selectedCell.employeeName || i18nT("static.1drwniz")}{" "}
+                      {i18nT("static.19xoda3")}{" "}
+                      {formatWeekdayDate(selectedCell.dateKey)}
+                    </p>
+                  </div>
+
+                  <Button
+                    type="button"
+                    icon="pi pi-times"
+                    text
+                    rounded
+                    severity="secondary"
+                    tooltip={i18nT("static.1w9iyg8")}
+                    tooltipOptions={{
+                      appendTo: getBody,
+                      position: "top",
+                    }}
+                    onClick={() => setSelectedCell(null)}
+                  />
                 </div>
 
-                <Button
-                  type="button"
-                  icon="pi pi-times"
-                  text
-                  rounded
-                  severity="secondary"
-                  tooltip={i18nT("static.1w9iyg8")}
-                  tooltipOptions={{
-                    appendTo: getBody,
-                    position: "top",
-                  }}
-                  onClick={() => setSelectedCell(null)}
-                />
-              </div>
+                <div className="p-4 sm:p-5">
+                  {selectedCellEntries.length === 0 ? (
+                    <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                      <i className="pi pi-info-circle mt-0.5 text-slate-400" />
 
-              <div className="p-4 sm:p-5">
-                {selectedCellEntries.length === 0 ? (
-                  <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                    <i className="pi pi-info-circle mt-0.5 text-slate-400" />
+                      <span>{i18nT("static.1bckc26")}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {selectedCellEntries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
+                        >
+                          <div className="min-w-0">
+                            <h3 className="m-0 truncate text-sm font-semibold text-slate-800">
+                              {entry.shift_name || i18nT("static.jp1eqx")}
+                            </h3>
 
-                    <span>{i18nT("static.1bckc26")}</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {selectedCellEntries.map((entry) => (
-                      <div
-                        key={entry.id}
-                        className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 md:flex-row md:items-center md:justify-between"
-                      >
-                        <div className="min-w-0">
-                          <h3 className="m-0 truncate text-sm font-semibold text-slate-800">
-                            {entry.shift_name || i18nT("static.jp1eqx")}
-                          </h3>
+                            <p className="m-0 mt-1 font-mono text-xs text-slate-500">
+                              {i18nT("static.1w91hwp")} {entry.id}
+                            </p>
 
-                          <p className="m-0 mt-1 font-mono text-xs text-slate-500">
-                            {i18nT("static.1w91hwp")} {entry.id}
-                          </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {renderStatusTag(entry)}
 
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {renderStatusTag(entry)}
+                              {entry.is_holiday && (
+                                <Tag
+                                  value={i18nT("static.ih7a2j")}
+                                  severity="warning"
+                                  rounded
+                                />
+                              )}
 
-                            {entry.is_holiday && (
-                              <Tag
-                                value={i18nT("static.ih7a2j")}
-                                severity="warning"
-                                rounded
-                              />
-                            )}
+                              {entry.is_day_off && (
+                                <Tag
+                                  value={i18nT("static.776hx0")}
+                                  severity="info"
+                                  rounded
+                                />
+                              )}
+                            </div>
+                          </div>
 
-                            {entry.is_day_off && (
-                              <Tag
-                                value={i18nT("static.776hx0")}
-                                severity="info"
-                                rounded
-                              />
-                            )}
+                          <div className="shrink-0">
+                            {renderActionButtons(entry)}
                           </div>
                         </div>
-
-                        <div className="shrink-0">
-                          {renderActionButtons(entry)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </section>
-          )}
+            )}
+          </Dialog>
         </div>
       </Card>
+
+      <EmployeeScheduleHelpDialog
+        visible={showHelp}
+        onHide={() => setShowHelp(false)}
+      />
     </>
   );
 };

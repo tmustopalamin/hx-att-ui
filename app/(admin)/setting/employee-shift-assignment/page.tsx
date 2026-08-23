@@ -1,17 +1,7 @@
-import React from "react";
-import EmployeeShiftAssignment from "./EmployeeShiftAssignment";
-
-export const metadata = {
-  title: "Assign Shift To Employee - PT. Hexing Technology",
-  description: "add, update, delete and generate shift employee",
-};
+import { redirect } from "next/navigation";
 
 const BankSettingPage = () => {
-  return (
-    <>
-      <EmployeeShiftAssignment />
-    </>
-  );
+  redirect("/setting/employee-schedule");
 };
 
 export default BankSettingPage;

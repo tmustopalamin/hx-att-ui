@@ -348,6 +348,18 @@ const zhPhrases: PhraseMap = [
 ];
 
 const additionalIdPhrases: PhraseMap = [
+  ["More actions", "Aksi lainnya"],
+  ["Before", "Sebelum"],
+  ["After", "Sesudah"],
+  ["Daily Schedule impact", "Dampak Jadwal Harian"],
+  [
+    "You do not have permission to view daily schedules.",
+    "Anda tidak memiliki izin untuk melihat jadwal harian.",
+  ],
+  ["Shift Rule Mapping", "Mapping Aturan Shift"],
+  ["Configure change", "Atur perubahan"],
+  ["Next", "Selanjutnya"],
+  ["3 Months", "3 Bulan"],
   // Employee-facing payroll, lifecycle, approval, and employee-management copy.
   [
     "Formal education created successfully",
@@ -2380,6 +2392,18 @@ const commonIdPhrases: PhraseMap = [
 ];
 
 const additionalZhPhrases: PhraseMap = [
+  ["More actions", "更多操作"],
+  ["Before", "之前"],
+  ["After", "之后"],
+  ["Daily Schedule impact", "每日排班影响"],
+  [
+    "You do not have permission to view daily schedules.",
+    "您无权查看每日排班。",
+  ],
+  ["Shift Rule Mapping", "班次规则映射"],
+  ["Configure change", "配置变更"],
+  ["Next", "下一步"],
+  ["3 Months", "3 个月"],
   // Employee-facing payroll, lifecycle, approval, and employee-management copy.
   ["Formal education created successfully", "正式教育记录创建成功"],
   ["Formal education updated successfully", "正式教育记录更新成功"],

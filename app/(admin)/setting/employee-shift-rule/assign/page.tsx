@@ -1,7 +1,7 @@
-import EmployeeShiftRuleAssignForm from "./EmployeeShiftRuleAssignForm";
+import { redirect } from "next/navigation";
 
 const EmployeeShiftRuleAssignPage = () => {
-  return <EmployeeShiftRuleAssignForm />;
+  redirect("/setting/employee-schedule/change");
 };
 
 export default EmployeeShiftRuleAssignPage;

@@ -3974,6 +3974,16 @@ const staticTextSources = {
   "static.zxmkfb": "Restore Role",
   "static.zyffce": "Restore this user account?",
   "static.zz1rb0": "Use a short and unique identity type code.",
+  "static.employeeScheduleMoreActions": "More actions",
+  "static.employeeScheduleBefore": "Before",
+  "static.employeeScheduleAfter": "After",
+  "static.employeeScheduleImpact": "Daily Schedule impact",
+  "static.employeeScheduleNoAccess":
+    "You do not have permission to view daily schedules.",
+  "static.employeeScheduleMapping": "Shift Rule Mapping",
+  "static.employeeScheduleConfigure": "Configure change",
+  "static.employeeScheduleNext": "Next",
+  "static.employeeScheduleThreeMonths": "3 Months",
 } as const;
 
 export default staticTextSources;

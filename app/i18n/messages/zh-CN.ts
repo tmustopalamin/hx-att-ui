@@ -162,6 +162,7 @@ const messages: Record<keyof typeof en, string> = {
   "nav.shiftRule": "班次规则",
   "nav.employeeShiftRule": "员工班次规则",
   "nav.dailySchedule": "每日计划",
+  "nav.employeeSchedule": "员工排班",
   "nav.attendanceSettings": "考勤设置",
   "nav.fingerprintDevices": "指纹设备",
   "nav.backgroundJobs": "后台任务",

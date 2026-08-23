@@ -170,6 +170,7 @@ const messages = {
   "nav.shiftRule": "Shift Rule",
   "nav.employeeShiftRule": "Employee Shift Rule",
   "nav.dailySchedule": "Daily Schedule",
+  "nav.employeeSchedule": "Employee Schedule",
   "nav.attendanceSettings": "Attendance Settings",
   "nav.fingerprintDevices": "Fingerprint Devices",
   "nav.backgroundJobs": "Background Jobs",

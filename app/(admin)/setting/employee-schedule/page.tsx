@@ -1,17 +1,12 @@
-import React from "react";
-import EmployeeScheduleTableData from "./EmployeeScheduleTableData";
+import EmployeeShiftAssignment from "../employee-shift-assignment/EmployeeShiftAssignment";
 
 export const metadata = {
-  title: "Manage Bank - PT. Hexing Technology",
-  description: "add, update, delete bank data",
+  title: "Employee Schedule - PT. Hexing Technology",
+  description: "Review employee daily schedules",
 };
 
 const EmployeeScheduleSettingPage = () => {
-  return (
-    <>
-      <EmployeeScheduleTableData />
-    </>
-  );
+  return <EmployeeShiftAssignment />;
 };
 
 export default EmployeeScheduleSettingPage;

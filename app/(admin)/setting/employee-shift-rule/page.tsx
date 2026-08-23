@@ -1,12 +1,7 @@
-import React from "react";
-import AssignShiftToEmployee from "./EmployeeShiftRule";
+import { redirect } from "next/navigation";
 
 const EmployeeShiftRulePage = () => {
-  return (
-    <>
-      <AssignShiftToEmployee />
-    </>
-  );
+  redirect("/setting/employee-schedule/rules");
 };
 
 export default EmployeeShiftRulePage;

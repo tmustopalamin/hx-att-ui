@@ -173,6 +173,7 @@ const messages: Record<keyof typeof en, string> = {
   "nav.shiftRule": "Aturan Shift",
   "nav.employeeShiftRule": "Aturan Shift Karyawan",
   "nav.dailySchedule": "Jadwal Harian",
+  "nav.employeeSchedule": "Jadwal Karyawan",
   "nav.attendanceSettings": "Pengaturan Absensi",
   "nav.fingerprintDevices": "Perangkat Fingerprint",
   "nav.backgroundJobs": "Pekerjaan Latar Belakang",

@@ -1,13 +1,7 @@
-import React from "react";
-import EmployeeShiftAssignmentGenerateForm from "./EmployeeShiftAssignmentGenerateForm";
-
-export const metadata = {
-  title: "Generate Employee Schedule - PT. Hexing Technology",
-  description: "generate schedule employee",
-};
+import { redirect } from "next/navigation";
 
 const EmployeeShiftAssignmentGeneratePage = () => {
-  return <EmployeeShiftAssignmentGenerateForm />;
+  redirect("/setting/employee-schedule/generate");
 };
 
 export default EmployeeShiftAssignmentGeneratePage;

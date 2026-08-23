@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
@@ -15,6 +15,8 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Checkbox } from "primereact/checkbox";
 import { Column } from "primereact/column";
+import { Menu } from "primereact/menu";
+import { MenuItem as PrimeMenuItem } from "primereact/menuitem";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { IconField } from "primereact/iconfield";
@@ -44,9 +46,11 @@ import {
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
+import { hasPermission } from "@/app/utils/permission-utils";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
+import EmployeeScheduleHelpDialog from "../employee-schedule/_components/EmployeeScheduleHelpDialog";
 
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
@@ -123,12 +127,14 @@ const EmployeeShiftRuleTableData = () => {
   const { t: i18nT } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
-
   const profileState = useSelector((state: RootState) => state.profile);
+  const moreMenuRef = useRef<Menu>(null);
+
   const archivedAccess = useArchivedDataAccess("employee-shift-rule");
 
   const [isShowDeletedDataChecked, setIsShowDeletedDataChecked] =
     useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const [globalFilterValue, setGlobalFilterValue] = useState("");
 
@@ -140,6 +146,23 @@ const EmployeeShiftRuleTableData = () => {
 
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
+
+  const moreItems = useMemo<PrimeMenuItem[]>(() => {
+    const items: Array<PrimeMenuItem | false> = [
+      hasPermission(profileState.permissions, "shift-rule.read") && {
+        label: i18nT("nav.shiftRule"),
+        icon: "pi pi-calendar",
+        command: () => router.push("/setting/shift-rule"),
+      },
+      hasPermission(profileState.permissions, "master-data.read") && {
+        label: i18nT("nav.shift"),
+        icon: "pi pi-calendar",
+        command: () => router.push("/setting/shift"),
+      },
+    ];
+
+    return items.filter((item): item is PrimeMenuItem => item !== false);
+  }, [i18nT, profileState.permissions, router]);
 
   const [filters, setFilters] = useState({
     global: {
@@ -487,57 +510,6 @@ const EmployeeShiftRuleTableData = () => {
     );
   };
 
-  const effectiveFromColumnBody = (rowData: EmployeeShiftRule) => {
-    if (!rowData.effective_from) {
-      return <span className="text-sm text-slate-400">-</span>;
-    }
-
-    const date = dayjs(rowData.effective_from);
-
-    if (!date.isValid()) {
-      return (
-        <span className="text-sm text-slate-400">
-          {i18nT("static.1c32dj8")}
-        </span>
-      );
-    }
-
-    return (
-      <span className="whitespace-nowrap text-sm text-slate-700">
-        {formatDisplayDate(date)}
-      </span>
-    );
-  };
-
-  const effectiveToColumnBody = (rowData: EmployeeShiftRule) => {
-    if (!rowData.effective_to) {
-      return (
-        <Tag
-          value={i18nT("static.uh2z1")}
-          severity="info"
-          icon="pi pi-infinity"
-          rounded
-        />
-      );
-    }
-
-    const date = dayjs(rowData.effective_to);
-
-    if (!date.isValid()) {
-      return (
-        <span className="text-sm text-slate-400">
-          {i18nT("static.1c32dj8")}
-        </span>
-      );
-    }
-
-    return (
-      <span className="whitespace-nowrap text-sm text-slate-700">
-        {formatDisplayDate(date)}
-      </span>
-    );
-  };
-
   const periodColumnBody = (rowData: EmployeeShiftRule) => {
     const effectiveFrom = rowData.effective_from
       ? dayjs(rowData.effective_from)
@@ -681,12 +653,25 @@ const EmployeeShiftRuleTableData = () => {
 
               <div className="min-w-0">
                 <h1 className="m-0 text-xl font-semibold tracking-tight text-slate-800 sm:text-2xl">
-                  {i18nT("static.fywzdp")}{" "}
+                  {i18nT("static.employeeScheduleMapping")}{" "}
                 </h1>
 
-                <p className="m-0 mt-1 text-sm leading-6 text-slate-500">
-                  {i18nT("static.11bj3wg")}{" "}
-                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="m-0 text-sm leading-6 text-slate-500">
+                    {i18nT("static.11bj3wg")}{" "}
+                  </p>
+                  <Button
+                    type="button"
+                    icon="pi pi-info-circle"
+                    rounded
+                    text
+                    severity="secondary"
+                    aria-label={i18nT("static.1x2sh5o")}
+                    tooltip={i18nT("static.1x2sh5o")}
+                    tooltipOptions={{ position: "top" }}
+                    onClick={() => setShowHelp(true)}
+                  />
+                </div>
               </div>
             </div>
 
@@ -706,15 +691,30 @@ const EmployeeShiftRuleTableData = () => {
 
               <Button
                 type="button"
-                label={i18nT("static.14il566")}
-                icon="pi pi-link"
+                label={i18nT("static.15ge9fu")}
+                icon="pi pi-sliders-h"
                 size="small"
                 disabled={isProcessing}
                 className="w-full sm:w-auto"
-                onClick={() =>
-                  router.push("/setting/employee-shift-rule/assign")
-                }
+                onClick={() => router.push("/setting/employee-schedule/change")}
               />
+
+              {moreItems.length > 0 && (
+                <>
+                  <Button
+                    type="button"
+                    label={i18nT("static.employeeScheduleMoreActions")}
+                    icon="pi pi-ellipsis-h"
+                    severity="secondary"
+                    outlined
+                    size="small"
+                    disabled={isProcessing}
+                    className="w-full sm:w-auto"
+                    onClick={(event) => moreMenuRef.current?.toggle(event)}
+                  />
+                  <Menu model={moreItems} popup ref={moreMenuRef} />
+                </>
+              )}
             </div>
           </div>
 
@@ -908,26 +908,6 @@ const EmployeeShiftRuleTableData = () => {
               />
 
               <Column
-                field="effective_from"
-                header={i18nT("static.ypbwia")}
-                sortable
-                body={effectiveFromColumnBody}
-                style={{
-                  minWidth: "13rem",
-                }}
-              />
-
-              <Column
-                field="effective_to"
-                header={i18nT("static.mtbgcr")}
-                sortable
-                body={effectiveToColumnBody}
-                style={{
-                  minWidth: "13rem",
-                }}
-              />
-
-              <Column
                 header={i18nT("static.1bwcvhr")}
                 body={periodColumnBody}
                 style={{
@@ -966,6 +946,11 @@ const EmployeeShiftRuleTableData = () => {
           </div>
         </div>
       </Card>
+
+      <EmployeeScheduleHelpDialog
+        visible={showHelp}
+        onHide={() => setShowHelp(false)}
+      />
     </>
   );
 };

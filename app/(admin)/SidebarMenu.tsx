@@ -15,6 +15,7 @@ type MenuItem = {
   label: string;
   icon: string;
   permission?: string;
+  anyOf?: string[];
   superadminOnly?: boolean;
 };
 type MenuSection = {
@@ -280,16 +281,10 @@ const settingSubMenus: SettingSubMenu[] = [
         permission: "shift-rule.read",
       },
       {
-        href: "/setting/employee-shift-rule",
-        label: "Employee Shift Rule",
-        icon: "pi-list",
-        permission: "employee-shift-rule.read",
-      },
-      {
-        href: "/setting/employee-shift-assignment",
-        label: "Daily Schedule",
-        icon: "pi-calendar-plus",
-        permission: "employee-shift-assignment.read",
+        href: "/setting/employee-schedule",
+        label: "Employee Schedule",
+        icon: "pi-calendar-clock",
+        anyOf: ["employee-shift-rule.read", "employee-shift-assignment.read"],
       },
       {
         href: "/setting/attendance",
@@ -553,8 +548,7 @@ const menuTranslationKeys: Record<string, string> = {
   Holiday: "nav.holiday",
   Shift: "nav.shift",
   "Shift Rule": "nav.shiftRule",
-  "Employee Shift Rule": "nav.employeeShiftRule",
-  "Daily Schedule": "nav.dailySchedule",
+  "Employee Schedule": "nav.employeeSchedule",
   "Attendance Settings": "nav.attendanceSettings",
   "Fingerprint Devices": "nav.fingerprintDevices",
   "Background Jobs": "nav.backgroundJobs",
@@ -604,9 +598,14 @@ export default function SidebarMenu() {
     [profileState.role],
   );
   const hasPermission = useCallback(
-    (permission?: string, superadminOnly = false) => {
+    (permission?: string, superadminOnly = false, anyOf?: string[]) => {
       if (superadminOnly && !isSuperadmin) {
         return false;
+      }
+      if (anyOf && anyOf.length > 0) {
+        return anyOf.some((item) =>
+          permissionSet.has(normalizePermissionCode(item)),
+        );
       }
       if (!permission) {
         return true;
@@ -618,7 +617,7 @@ export default function SidebarMenu() {
   const getVisibleItems = useCallback(
     (items: MenuItem[]) =>
       items.filter((item) =>
-        hasPermission(item.permission, item.superadminOnly),
+        hasPermission(item.permission, item.superadminOnly, item.anyOf),
       ),
     [hasPermission],
   );
