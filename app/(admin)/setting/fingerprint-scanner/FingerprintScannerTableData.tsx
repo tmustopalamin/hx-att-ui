@@ -1,7 +1,6 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
 
@@ -23,7 +22,7 @@ import { Password } from "primereact/password";
 import { Tag } from "primereact/tag";
 import { formatDateTimeWithSeconds } from "@/app/utils/date-format";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -54,9 +53,7 @@ import {
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
-import { hasAnyPermission } from "@/app/utils/permission-utils";
 
-import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
 type ProcessingAction = "delete" | "restore" | "purge" | null;
@@ -210,14 +207,8 @@ const getSyncLabel = (status?: string | null) => {
 };
 
 const FingerprintScannerTableData = () => {
-  const router = useRouter();
   const dispatch = useDispatch();
 
-  const profileState = useSelector((state: RootState) => state.profile);
-  const canReadBackgroundJobs = hasAnyPermission(profileState.permissions, [
-    "background-job.read",
-    "background-job.read-all",
-  ]);
   const archivedAccess = useArchivedDataAccess("master-data");
 
   const [selectedData, setSelectedData] = useState<FingerprintScanner | null>(
@@ -619,13 +610,9 @@ const FingerprintScannerTableData = () => {
           summary: response.data.deduplicated
             ? "Sync Already Queued"
             : "Sync Queued",
-          detail:
-            response.message || "Attendance log synchronization was queued.",
+          detail: `${response.message || "Attendance log synchronization was queued."} For details, go to Settings → Background Jobs.`,
         }),
       );
-      if (canReadBackgroundJobs) {
-        router.push(`/setting/background-jobs/${response.data.job_id}`);
-      }
     } catch (err: unknown) {
       showError(err);
     } finally {

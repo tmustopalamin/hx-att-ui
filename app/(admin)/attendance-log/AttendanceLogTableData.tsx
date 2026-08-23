@@ -1,7 +1,6 @@
 "use client";
 
 import { ChangeEvent, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import dayjs from "dayjs";
 import * as XLSX from "@e965/xlsx";
@@ -25,7 +24,7 @@ import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
 
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
@@ -45,9 +44,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
-import { hasAnyPermission } from "@/app/utils/permission-utils";
 
-import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
 type AttendanceLogRow = AttendanceLog & {
@@ -118,15 +115,7 @@ const getSecurityData = (row: AttendanceLogRow | null) => {
 };
 
 const AttendanceLogTableData = () => {
-  const router = useRouter();
   const dispatch = useDispatch();
-  const permissions = useSelector(
-    (state: RootState) => state.profile.permissions,
-  );
-  const canReadBackgroundJobs = hasAnyPermission(permissions, [
-    "background-job.read",
-    "background-job.read-all",
-  ]);
 
   const [syncLoading, setSyncLoading] = useState(false);
 
@@ -472,13 +461,9 @@ const AttendanceLogTableData = () => {
           summary: response.data.deduplicated
             ? "Sync Already Queued"
             : "Sync Queued",
-          detail:
-            response.message || "Attendance log synchronization was queued.",
+          detail: `${response.message || "Attendance log synchronization was queued."} For details, go to Settings → Background Jobs.`,
         }),
       );
-      if (canReadBackgroundJobs) {
-        router.push(`/setting/background-jobs/${response.data.job_id}`);
-      }
     } catch (err: unknown) {
       showError(err);
     } finally {
