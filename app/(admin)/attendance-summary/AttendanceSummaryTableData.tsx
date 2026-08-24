@@ -48,6 +48,9 @@ import { getBackgroundJobDetail } from "@/app/services/background-job-service";
 import { getAttendanceProcessingSetting } from "@/app/services/attendance-settings-service";
 import type { OvertimeProcessingMode } from "@/app/types/attendance-settings";
 
+const DEFAULT_OVERTIME_PROCESSING_MODE: OvertimeProcessingMode =
+  "ACTUAL_LOGS_AND_APPROVAL";
+
 interface FilterForm {
   startDate: Date | null;
   endDate: Date | null;
@@ -461,7 +464,7 @@ const AttendanceSummaryTableData = () => {
   const [processingJobId, setProcessingJobId] = useState<number | null>(null);
 
   const overtimeProcessingModeRef = useRef<OvertimeProcessingMode>(
-    "ACTUAL_LOGS_AND_APPROVAL",
+    DEFAULT_OVERTIME_PROCESSING_MODE,
   );
 
   const [isExporting, setIsExporting] = useState(false);
@@ -527,20 +530,34 @@ const AttendanceSummaryTableData = () => {
     { revalidateOnFocus: false },
   );
 
-  const savedOvertimeProcessingMode =
+  const savedOvertimeProcessingMode: unknown =
     processingSettingData?.data?.overtime_processing_mode;
+  const isLegacyProcessingSettingResponse =
+    Boolean(processingSettingData?.data) &&
+    (savedOvertimeProcessingMode === undefined ||
+      savedOvertimeProcessingMode === null);
+  const effectiveOvertimeProcessingMode = isOvertimeProcessingMode(
+    savedOvertimeProcessingMode,
+  )
+    ? savedOvertimeProcessingMode
+    : DEFAULT_OVERTIME_PROCESSING_MODE;
   const overtimeProcessingModeReady =
     !processingSettingLoading &&
     !processingSettingError &&
-    isOvertimeProcessingMode(savedOvertimeProcessingMode);
+    (isOvertimeProcessingMode(savedOvertimeProcessingMode) ||
+      isLegacyProcessingSettingResponse);
 
   useEffect(() => {
-    if (!isOvertimeProcessingMode(savedOvertimeProcessingMode)) {
+    if (!processingSettingData?.data || processingSettingError) {
       return;
     }
 
-    overtimeProcessingModeRef.current = savedOvertimeProcessingMode;
-  }, [savedOvertimeProcessingMode]);
+    overtimeProcessingModeRef.current = effectiveOvertimeProcessingMode;
+  }, [
+    effectiveOvertimeProcessingMode,
+    processingSettingData?.data,
+    processingSettingError,
+  ]);
 
   useEffect(() => {
     if (processingJobId === null) {
@@ -1081,10 +1098,7 @@ const AttendanceSummaryTableData = () => {
       return;
     }
 
-    if (
-      !overtimeProcessingModeReady ||
-      !isOvertimeProcessingMode(savedOvertimeProcessingMode)
-    ) {
+    if (!overtimeProcessingModeReady) {
       const message = i18nT("attendance.summary.overtime.settingsUnavailable");
 
       setActionError(message);
@@ -1092,7 +1106,7 @@ const AttendanceSummaryTableData = () => {
       return;
     }
 
-    overtimeProcessingModeRef.current = savedOvertimeProcessingMode;
+    overtimeProcessingModeRef.current = effectiveOvertimeProcessingMode;
 
     requestActionConfirmation({
       header: i18nT("static.1kq1p6x"),
@@ -1109,7 +1123,7 @@ const AttendanceSummaryTableData = () => {
           </span>
 
           <OvertimeProcessingModePicker
-            initialMode={savedOvertimeProcessingMode}
+            initialMode={effectiveOvertimeProcessingMode}
             onChange={(mode) => {
               overtimeProcessingModeRef.current = mode;
             }}
