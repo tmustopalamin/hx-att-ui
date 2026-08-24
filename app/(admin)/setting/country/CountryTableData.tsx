@@ -43,6 +43,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
@@ -778,7 +779,7 @@ const CountryTableData = () => {
                 required: i18nT("static.1unewyb"),
                 validate: {
                   noSpaces: (value) =>
-                    !/\s/.test(value) ||
+                    isWhitespaceFreeIdentifier(value) ||
                     "Country code must not contain spaces.",
                 },
                 maxLength: {

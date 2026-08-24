@@ -39,6 +39,7 @@ import type {
   LifecycleAssignmentSource,
 } from "@/app/types/employee-lifecycle-settings";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 const typeOptions: {
   labelKey: string;
@@ -186,6 +187,10 @@ export default function EmployeeLifecycleSettingsData() {
   };
 
   const saveItem = () => {
+    if (!isWhitespaceFreeIdentifier(itemDraft.code)) {
+      notify("error", i18nT("validation.codeNoWhitespace"));
+      return;
+    }
     if (!itemDraft.code.trim() || !itemDraft.name.trim()) {
       notify("error", i18nT("static.1yphguc"));
       return;
@@ -226,6 +231,10 @@ export default function EmployeeLifecycleSettingsData() {
   };
 
   const saveTemplate = async () => {
+    if (!isWhitespaceFreeIdentifier(draft.code)) {
+      notify("error", i18nT("validation.codeNoWhitespace"));
+      return;
+    }
     if (!draft.code.trim() || !draft.name.trim() || draft.items.length === 0) {
       notify("error", i18nT("static.j7vx3u"));
       return;

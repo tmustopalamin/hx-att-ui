@@ -37,6 +37,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -116,15 +117,15 @@ export default function PayrollFormulaDataTable() {
     setDialogVisible(true);
   };
   const submit = async () => {
+    if (!isWhitespaceFreeIdentifier(form.code)) {
+      notify("error", i18nT("validation.codeNoWhitespace"));
+      return;
+    }
     const code = form.code?.trim().toUpperCase() || "";
     const name = form.name.trim();
     const expression = form.expression.trim();
     if (!code || !name || !expression) {
       notify("error", i18nT("static.xyb2l9"));
-      return;
-    }
-    if (/\s/.test(code)) {
-      notify("error", i18nT("static.d2ke11"));
       return;
     }
     try {

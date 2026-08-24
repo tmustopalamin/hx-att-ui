@@ -42,6 +42,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
@@ -1003,7 +1004,7 @@ const BranchTableData = () => {
                     required: i18nT("static.1wibi47"),
                     validate: {
                       noSpaces: (value) =>
-                        !/\s/.test(value) ||
+                        isWhitespaceFreeIdentifier(value) ||
                         "Branch code must not contain spaces.",
                     },
                   }}

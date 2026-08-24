@@ -32,6 +32,7 @@ import type { PayrollSetting } from "@/app/types/payroll-configuration";
 import type { Frequency } from "@/app/types/frequency";
 import type { ResponseTypeError } from "@/app/types/response-type";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
@@ -557,6 +558,8 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                     () => createTaxProfile(employeeId, tax),
                     "Tax profile created.",
                   );
+                else if (!isWhitespaceFreeIdentifier(salary.currency_code))
+                  notify("error", i18nT("validation.codeNoWhitespace"));
                 else
                   void run(
                     () => createSalaryHistory(employeeId, salary),

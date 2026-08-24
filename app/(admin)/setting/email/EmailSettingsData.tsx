@@ -48,6 +48,7 @@ import type {
   NotificationRule,
 } from "@/app/types/email-admin";
 import { getErrorMessage } from "@/app/utils/error-messages";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { toPermissionSet } from "@/app/utils/permission-utils";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -362,6 +363,16 @@ const EmailSettingsData = () => {
 
   const saveTemplate = async () => {
     if (!canUpdateEmailTemplates || isSavingTemplate) return;
+    if (
+      !isWhitespaceFreeIdentifier(templateDraft.code) ||
+      !isWhitespaceFreeIdentifier(templateDraft.module_code)
+    ) {
+      showError({
+        code: "INVALID_CODE",
+        message: i18nT("validation.codeNoWhitespace"),
+      });
+      return;
+    }
     try {
       setIsSavingTemplate(true);
       const payload = {

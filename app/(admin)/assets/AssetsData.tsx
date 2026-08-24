@@ -38,6 +38,7 @@ import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
 import type { RootState } from "@/store/store";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 const emptyAsset = {
   asset_category_id: 0,
   asset_tag: "",
@@ -114,6 +115,14 @@ export default function AssetsData() {
     ]);
   };
   const createCategory = async () => {
+    if (!isWhitespaceFreeIdentifier(category.code)) {
+      toast(
+        "error",
+        i18nT("static.gy1qqi"),
+        i18nT("validation.codeNoWhitespace"),
+      );
+      return;
+    }
     if (!category.code.trim() || !category.name.trim()) {
       toast("error", i18nT("static.gy1qqi"), i18nT("static.u9zubr"));
       return;

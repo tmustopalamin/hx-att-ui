@@ -38,6 +38,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
@@ -280,6 +281,14 @@ export default function PositionAllowanceData() {
   };
 
   const buildPayload = (): PositionAllowancePolicyPayload | null => {
+    if (!isWhitespaceFreeIdentifier(form.code)) {
+      notify(
+        "error",
+        i18nT("static.gy1qqi"),
+        i18nT("validation.codeNoWhitespace"),
+      );
+      return null;
+    }
     const code = form.code.trim().toUpperCase();
     const name = form.name.trim();
     if (

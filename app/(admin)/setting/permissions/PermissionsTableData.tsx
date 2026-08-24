@@ -44,6 +44,7 @@ import {
 } from "@/app/utils/error-messages";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -970,7 +971,7 @@ const PermissionsTableData = () => {
                     required: i18nT("static.1f7dnvy"),
                     validate: {
                       noSpaces: (value) =>
-                        !/\s/.test(value.trim()) ||
+                        isWhitespaceFreeIdentifier(value) ||
                         "Resource must not contain spaces.",
                     },
                     maxLength: {
@@ -1035,7 +1036,7 @@ const PermissionsTableData = () => {
                     required: i18nT("static.obzx2s"),
                     validate: {
                       noSpaces: (value) =>
-                        !/\s/.test(value.trim()) ||
+                        isWhitespaceFreeIdentifier(value) ||
                         "Action must not contain spaces.",
                     },
                     maxLength: {

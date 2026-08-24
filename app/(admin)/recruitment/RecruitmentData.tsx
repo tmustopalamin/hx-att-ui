@@ -55,6 +55,7 @@ import {
   formatDateTime as formatDisplayDateTime,
 } from "@/app/utils/date-format";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 type DialogName =
   | "requisition"
@@ -1064,6 +1065,14 @@ export default function RecruitmentData() {
         style={{ width: "95vw", maxWidth: "40rem" }}
         onHide={close}
         footer={footer("Save", () => {
+          if (!isWhitespaceFreeIdentifier(requisition.code)) {
+            notify(
+              "error",
+              i18nT("static.gy1qqi"),
+              i18nT("validation.codeNoWhitespace"),
+            );
+            return;
+          }
           if (!requisition.code.trim() || !requisition.job_title.trim()) {
             notify("error", i18nT("static.gy1qqi"), i18nT("static.1itn6i7"));
             return;

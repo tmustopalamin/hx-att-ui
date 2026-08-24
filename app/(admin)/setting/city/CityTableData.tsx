@@ -45,6 +45,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
@@ -810,7 +811,8 @@ const CityTableData = () => {
                 required: i18nT("static.1lj4fu8"),
                 validate: {
                   noSpaces: (value) =>
-                    !/\s/.test(value) || "City code must not contain spaces.",
+                    isWhitespaceFreeIdentifier(value) ||
+                    "City code must not contain spaces.",
                 },
                 maxLength: {
                   value: 50,

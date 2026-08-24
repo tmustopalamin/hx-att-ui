@@ -34,6 +34,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import useSWR from "swr";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 type PositionOption = OptionItem & {
   department_id?: number | null;
@@ -272,6 +273,17 @@ const EmployeeDetailEmployment = () => {
   }, [employeeId, employmentData]);
 
   const onSubmit = async (data: FormData) => {
+    if (!isWhitespaceFreeIdentifier(data.code)) {
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT("validation.codeNoWhitespace"),
+        }),
+      );
+      return;
+    }
     if (
       data.supervisor_employee_id &&
       Number(data.supervisor_employee_id) === Number(employeeId)

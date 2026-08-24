@@ -31,6 +31,7 @@ import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
 import { formatStatusLabel } from "@/app/i18n/statusLabel";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 interface PayrollPaymentDialogProps {
   batch: PayrollBatch | null;
@@ -139,6 +140,13 @@ export default function PayrollPaymentDialog({
   const create = async () => {
     if (!batchId || !paymentBatchNo.trim() || !paymentDate) {
       onError("Payment batch number and payment date are required.");
+      return;
+    }
+    if (
+      !isWhitespaceFreeIdentifier(paymentBatchNo) ||
+      !isWhitespaceFreeIdentifier(bankCode)
+    ) {
+      onError(i18nT("validation.codeNoWhitespace"));
       return;
     }
     try {

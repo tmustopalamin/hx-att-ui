@@ -40,6 +40,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
@@ -870,7 +871,8 @@ const AgencyTableData = () => {
                 required: i18nT("static.zx9iy8"),
                 validate: {
                   noSpaces: (value) =>
-                    !/\s/.test(value) || "Agency code must not contain spaces.",
+                    isWhitespaceFreeIdentifier(value) ||
+                    "Agency code must not contain spaces.",
                 },
               }}
               render={({ field, fieldState }) => (

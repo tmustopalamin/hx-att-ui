@@ -1,6 +1,8 @@
 import type { ResponseTypeError } from "../types/response-type";
 
 export const ERROR_MESSAGES: Record<string, string> = {
+  INVALID_CODE:
+    "Code cannot contain whitespace. Use underscore (_) as a separator.",
   API_UNAVAILABLE:
     "The service is temporarily unavailable. Please try again later.",
   SESSION_REFRESH_RETRY:

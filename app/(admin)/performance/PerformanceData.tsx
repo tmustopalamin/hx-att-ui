@@ -47,6 +47,7 @@ import { showToast } from "@/store/ToastSlice";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 type DialogName =
   | "cycle"
@@ -820,6 +821,14 @@ export default function PerformanceData() {
         style={{ width: "95vw", maxWidth: "34rem" }}
         onHide={close}
         footer={footer("Save", () => {
+          if (!isWhitespaceFreeIdentifier(cycle.code)) {
+            notify(
+              "error",
+              i18nT("static.gy1qqi"),
+              i18nT("validation.codeNoWhitespace"),
+            );
+            return;
+          }
           if (
             !cycle.code.trim() ||
             !cycle.name.trim() ||
@@ -897,6 +906,14 @@ export default function PerformanceData() {
         style={{ width: "95vw", maxWidth: "52rem" }}
         onHide={close}
         footer={footer(editingPolicyId ? "Save Changes" : "Save Draft", () => {
+          if (!isWhitespaceFreeIdentifier(policy.code)) {
+            notify(
+              "error",
+              i18nT("static.gy1qqi"),
+              i18nT("validation.codeNoWhitespace"),
+            );
+            return;
+          }
           if (
             !policy.code.trim() ||
             !policy.name.trim() ||

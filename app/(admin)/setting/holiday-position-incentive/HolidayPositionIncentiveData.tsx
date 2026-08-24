@@ -34,6 +34,7 @@ import {
   getErrorMessage,
   isResponseTypeError,
 } from "@/app/utils/error-messages";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { fetcher } from "@/app/utils/fetcher";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -183,6 +184,14 @@ export default function HolidayPositionIncentiveData() {
   };
 
   const save = async () => {
+    if (!isWhitespaceFreeIdentifier(form.code)) {
+      notify(
+        "error",
+        i18nT("static.gy1qqi"),
+        i18nT("validation.codeNoWhitespace"),
+      );
+      return;
+    }
     const code = form.code.trim().toUpperCase();
     const name = form.name.trim();
     if (

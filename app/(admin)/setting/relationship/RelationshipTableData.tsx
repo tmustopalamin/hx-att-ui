@@ -43,6 +43,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 
 import { RootState } from "@/store/store";
@@ -783,7 +784,7 @@ const RelationshipTableData = () => {
                 required: i18nT("static.17sth6d"),
                 validate: {
                   noSpaces: (value) =>
-                    !/\s/.test(value) ||
+                    isWhitespaceFreeIdentifier(value) ||
                     "Relationship code must not contain spaces.",
                 },
                 maxLength: {

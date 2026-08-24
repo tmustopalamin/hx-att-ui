@@ -29,6 +29,8 @@ const messages = {
   "common.errors.requestFailed": "Request failed. Please try again.",
   "common.errors.unableToConnect":
     "Unable to connect to the server. Please try again later.",
+  "validation.codeNoWhitespace":
+    "Code cannot contain whitespace. Use underscore (_) as a separator.",
   "common.notifications.title": "Notifications",
   "common.notifications.markAllRead": "Mark all read",
   "common.notifications.noNotifications": "No notifications",

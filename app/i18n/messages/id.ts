@@ -32,6 +32,8 @@ const messages: Record<keyof typeof en, string> = {
   "common.errors.requestFailed": "Permintaan gagal. Silakan coba lagi.",
   "common.errors.unableToConnect":
     "Tidak dapat terhubung ke server. Silakan coba lagi nanti.",
+  "validation.codeNoWhitespace":
+    "Kode tidak boleh mengandung spasi atau whitespace. Gunakan underscore (_) sebagai pemisah.",
   "common.notifications.title": "Notifikasi",
   "common.notifications.markAllRead": "Tandai semua sudah dibaca",
   "common.notifications.noNotifications": "Tidak ada notifikasi",

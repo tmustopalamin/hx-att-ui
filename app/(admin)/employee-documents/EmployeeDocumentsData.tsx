@@ -39,6 +39,7 @@ import {
   setEmployeeDocumentActive,
   getEmployeeDocumentVersions,
 } from "@/app/services/employee-document-service";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 const emptyDocument = () => ({
   employee_id: 0,
@@ -149,6 +150,14 @@ export default function EmployeeDocumentsData() {
   };
 
   const createType = async () => {
+    if (!isWhitespaceFreeIdentifier(documentType.code)) {
+      toast(
+        "error",
+        i18nT("static.gy1qqi"),
+        i18nT("validation.codeNoWhitespace"),
+      );
+      return;
+    }
     if (!documentType.code.trim() || !documentType.name.trim()) {
       toast("error", i18nT("static.gy1qqi"), i18nT("static.u9zubr"));
       return;

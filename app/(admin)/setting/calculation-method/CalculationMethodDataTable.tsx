@@ -37,6 +37,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -126,6 +127,10 @@ export default function CalculationMethodDataTable() {
     value: CalculationMethodPayload[K],
   ) => setForm((current) => ({ ...current, [key]: value }));
   const submit = async () => {
+    if (!isWhitespaceFreeIdentifier(form.code)) {
+      notify("error", i18nT("validation.codeNoWhitespace"));
+      return;
+    }
     const code = form.code?.trim().toUpperCase() ?? "";
     const name = form.name.trim();
     if (!code || !name) {

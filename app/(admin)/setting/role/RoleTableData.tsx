@@ -45,6 +45,7 @@ import {
 } from "@/app/utils/error-messages";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -889,7 +890,8 @@ const RoleTableData = () => {
                   required: i18nT("static.79yjjv"),
                   validate: {
                     noSpaces: (value) =>
-                      !/\s/.test(value) || "Role code must not contain spaces.",
+                      isWhitespaceFreeIdentifier(value) ||
+                      "Role code must not contain spaces.",
                   },
                   maxLength: {
                     value: 50,

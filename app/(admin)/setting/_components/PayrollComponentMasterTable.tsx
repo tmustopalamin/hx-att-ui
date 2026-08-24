@@ -49,6 +49,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
@@ -231,14 +232,14 @@ export default function PayrollComponentMasterTable({
     setForm((current) => ({ ...current, [key]: value }));
   };
   const submit = async () => {
+    if (!isWhitespaceFreeIdentifier(form.code)) {
+      notify("error", i18nT("validation.codeNoWhitespace"));
+      return;
+    }
     const code = form.code.trim().toUpperCase();
     const name = form.name.trim();
     if (!code || !name || !form.category || !form.calculation_method) {
       notify("error", i18nT("static.1tbgkp9"));
-      return;
-    }
-    if (/\s/.test(code)) {
-      notify("error", i18nT("static.23gzo8"));
       return;
     }
     if (requiresFormula && !form.formula_id) {

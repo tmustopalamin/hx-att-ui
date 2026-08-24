@@ -30,6 +30,8 @@ const messages: Record<keyof typeof en, string> = {
   "common.errors.unavailable": "服务暂时不可用，请稍后重试。",
   "common.errors.requestFailed": "请求失败，请重试。",
   "common.errors.unableToConnect": "无法连接到服务器，请稍后重试。",
+  "validation.codeNoWhitespace":
+    "代码不能包含空白字符。请使用下划线 (_) 作为分隔符。",
   "common.notifications.title": "通知",
   "common.notifications.markAllRead": "全部标记为已读",
   "common.notifications.noNotifications": "暂无通知",

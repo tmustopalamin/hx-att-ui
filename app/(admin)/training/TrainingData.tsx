@@ -45,6 +45,7 @@ import { showToast } from "@/store/ToastSlice";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import type { ResponseTypeError } from "@/app/types/response-type";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 type DialogName =
   "course" | "session" | "enroll" | "enrollmentStatus" | "certification" | null;
 const severity = (s: string) =>
@@ -644,6 +645,14 @@ export default function TrainingData() {
         style={{ width: "95vw", maxWidth: "34rem" }}
         onHide={close}
         footer={footer("Save", () => {
+          if (!isWhitespaceFreeIdentifier(course.code)) {
+            notify(
+              "error",
+              i18nT("static.gy1qqi"),
+              i18nT("validation.codeNoWhitespace"),
+            );
+            return;
+          }
           if (!course.code.trim() || !course.name.trim()) {
             notify("error", i18nT("static.gy1qqi"), i18nT("static.b2cqka"));
             return;
@@ -732,6 +741,14 @@ export default function TrainingData() {
         style={{ width: "95vw", maxWidth: "34rem" }}
         onHide={close}
         footer={footer("Save", () => {
+          if (!isWhitespaceFreeIdentifier(session.code)) {
+            notify(
+              "error",
+              i18nT("static.gy1qqi"),
+              i18nT("validation.codeNoWhitespace"),
+            );
+            return;
+          }
           if (
             !session.training_course_id ||
             !session.code.trim() ||

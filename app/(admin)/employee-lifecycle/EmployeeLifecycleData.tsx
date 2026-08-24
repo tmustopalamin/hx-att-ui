@@ -55,6 +55,7 @@ import { showToast } from "@/store/ToastSlice";
 import type { RootState } from "@/store/store";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 const emptyForm = (): NewEmployeeLifecycleCase => ({
   employee_id: 0,
@@ -349,6 +350,14 @@ export default function EmployeeLifecycleData() {
   const createCase = async () => {
     if (!form.employee_id || !form.effective_date) {
       notify("error", i18nT("static.gy1qqi"), i18nT("static.1flvj5o"));
+      return;
+    }
+    if (!isWhitespaceFreeIdentifier(employmentChange.code)) {
+      notify(
+        "error",
+        i18nT("static.gy1qqi"),
+        i18nT("validation.codeNoWhitespace"),
+      );
       return;
     }
     const proposedJoinDate = employmentChange.join_date?.trim() || null;

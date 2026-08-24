@@ -31,6 +31,7 @@ import type {
 } from "@/app/types/payroll-configuration";
 import { fetcher } from "@/app/utils/fetcher";
 import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 interface Props {
   regulation: PayrollRegulationPackage | null;
@@ -217,6 +218,16 @@ export default function PayrollRegulationDetailDialog({
 
   const saveParameter = () => {
     if (!regulation) return;
+    if (
+      !isWhitespaceFreeIdentifier(parameter.program_code) ||
+      !isWhitespaceFreeIdentifier(parameter.parameter_code)
+    ) {
+      onError({
+        code: "INVALID_CODE",
+        message: i18nT("validation.codeNoWhitespace"),
+      });
+      return;
+    }
     const valueType = parameter.value_type;
     void execute(
       () =>
@@ -243,6 +254,16 @@ export default function PayrollRegulationDetailDialog({
 
   const saveBracket = () => {
     if (!regulation) return;
+    if (
+      !isWhitespaceFreeIdentifier(bracket.table_code) ||
+      !isWhitespaceFreeIdentifier(bracket.category_code)
+    ) {
+      onError({
+        code: "INVALID_CODE",
+        message: i18nT("validation.codeNoWhitespace"),
+      });
+      return;
+    }
     void execute(
       () => savePayrollRegulationRateBracket(regulation.id, bracket),
       "Rate bracket saved.",
@@ -341,8 +362,16 @@ export default function PayrollRegulationDetailDialog({
       const brackets: SavePayrollRegulationRateBracket[] = [];
       for (const row of rows.slice(headerIndex + 1)) {
         if (row.every((value) => String(value ?? "").trim() === "")) continue;
-        const table = String(row[tableIndex] ?? "").trim();
-        const category = String(row[categoryIndex] ?? "").trim() || "DEFAULT";
+        const rawTable = String(row[tableIndex] ?? "");
+        const rawCategory = String(row[categoryIndex] ?? "");
+        if (
+          !isWhitespaceFreeIdentifier(rawTable) ||
+          !isWhitespaceFreeIdentifier(rawCategory)
+        ) {
+          throw new Error(i18nT("validation.codeNoWhitespace"));
+        }
+        const table = rawTable.trim();
+        const category = rawCategory.trim() || "DEFAULT";
         const sequence = Number(row[sequenceIndex]);
         const upper = decimal(row[upperIndex]);
         const rate = parseRatePercent(row[rateIndex]);
@@ -421,6 +450,16 @@ export default function PayrollRegulationDetailDialog({
 
   const saveTestCase = () => {
     if (!regulation) return;
+    if (
+      !isWhitespaceFreeIdentifier(testCase.code) ||
+      !isWhitespaceFreeIdentifier(testCase.calculator_code)
+    ) {
+      onError({
+        code: "INVALID_CODE",
+        message: i18nT("validation.codeNoWhitespace"),
+      });
+      return;
+    }
     try {
       const parsedInput: unknown = JSON.parse(inputJson);
       const parsedExpected: unknown = JSON.parse(expectedJson);

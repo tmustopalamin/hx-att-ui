@@ -44,6 +44,7 @@ import type {
 } from "@/app/types/payroll-configuration";
 import { fetcher } from "@/app/utils/fetcher";
 import { getErrorMessage } from "@/app/utils/error-messages";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import PayrollRegulationDetailDialog from "./PayrollRegulationDetailDialog";
@@ -515,6 +516,14 @@ export default function PayrollConfiguration() {
   };
 
   const createRegulation = async () => {
+    if (!isWhitespaceFreeIdentifier(regulation.code)) {
+      toast(
+        "error",
+        i18nT("static.gy1qqi"),
+        i18nT("validation.codeNoWhitespace"),
+      );
+      return;
+    }
     if (
       !regulation.code.trim() ||
       !regulation.name.trim() ||

@@ -53,6 +53,7 @@ import {
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
+import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 
 import { showToast } from "@/store/ToastSlice";
 
@@ -1536,6 +1537,11 @@ const FingerprintScannerTableData = () => {
                   name="code"
                   control={control}
                   rules={{
+                    validate: {
+                      noWhitespace: (value) =>
+                        isWhitespaceFreeIdentifier(value) ||
+                        i18nT("validation.codeNoWhitespace"),
+                    },
                     maxLength: {
                       value: 50,
                       message: i18nT("static.64nkz2"),
