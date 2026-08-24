@@ -258,6 +258,7 @@ const MobileAttendancePage = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionIdRef = useRef<string | null>(null);
   const [lastSubmittedAt, setLastSubmittedAt] = useState<Date | null>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -549,9 +550,11 @@ const MobileAttendancePage = () => {
     setIsSubmitting(true);
 
     try {
+      submissionIdRef.current ??= crypto.randomUUID();
       await submitMobileAttendance({
         event_time_source_local: buildLocalTimestamp(),
         source_tz_offset_minutes: dayjs().utcOffset(),
+        submission_id: submissionIdRef.current,
         device_id: deviceId,
         photo_data_url: capturedPhoto,
         latitude: geoData.latitude,
@@ -571,6 +574,7 @@ const MobileAttendancePage = () => {
 
       setLastSubmittedAt(new Date());
       setCapturedPhoto(null);
+      submissionIdRef.current = null;
 
       dispatch(
         showToast({

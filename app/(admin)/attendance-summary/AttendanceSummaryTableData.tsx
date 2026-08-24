@@ -43,6 +43,7 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
+import { getBackgroundJobDetail } from "@/app/services/background-job-service";
 
 interface FilterForm {
   startDate: Date | null;
@@ -55,6 +56,9 @@ interface ProcessResponse {
   success: boolean;
   message?: string;
   data?: {
+    job_id?: number;
+    status?: string;
+    deduplicated?: boolean;
     processed_count?: number;
   };
 }
@@ -339,6 +343,8 @@ const AttendanceSummaryTableData = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const [processingJobId, setProcessingJobId] = useState<number | null>(null);
+
   const [isExporting, setIsExporting] = useState(false);
 
   const [actionError, setActionError] = useState<string | null>(null);
@@ -391,6 +397,70 @@ const AttendanceSummaryTableData = () => {
   } = useSWR<AttendanceSummary[]>(swrKey, fetcher, {
     revalidateOnFocus: false,
   });
+
+  useEffect(() => {
+    if (processingJobId === null) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const pollJob = async () => {
+      try {
+        const job = await getBackgroundJobDetail(processingJobId);
+        if (cancelled) {
+          return;
+        }
+
+        if (["SUCCEEDED", "PARTIAL_SUCCESS"].includes(job.status)) {
+          setProcessingJobId(null);
+          await refreshAttendanceSummaryData();
+          setActionSuccess(
+            `Attendance Summary selesai diproses oleh Background Job #${processingJobId}.`,
+          );
+          return;
+        }
+
+        if (["FAILED", "CANCELLED"].includes(job.status)) {
+          setProcessingJobId(null);
+          setActionError(
+            job.error_message ||
+              `Background Job #${processingJobId} berakhir dengan status ${job.status}.`,
+          );
+        }
+      } catch {
+        // Processing was already accepted, but this user may only have the
+        // permission to enqueue a job and not to read its details. Stop the
+        // timer and make the state recoverable instead of leaving Refresh
+        // disabled forever. The job can still be checked from Background
+        // Jobs or by refreshing the page when access is available.
+        if (cancelled) {
+          return;
+        }
+
+        const message = `Background Job #${processingJobId} sudah diterima, tetapi statusnya tidak dapat dipantau dari halaman ini. Buka menu Background Jobs atau lakukan refresh manual untuk memeriksa hasilnya.`;
+
+        setProcessingJobId(null);
+        setActionError(message);
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "warn",
+            summary: "Status job tidak tersedia",
+            detail: message,
+          }),
+        );
+      }
+    };
+
+    void pollJob();
+    const interval = window.setInterval(() => void pollJob(), 2000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [dispatch, processingJobId, refreshAttendanceSummaryData]);
 
   const rows = attendanceSummaryData ?? [];
 
@@ -657,7 +727,8 @@ const AttendanceSummaryTableData = () => {
     )}`;
   }, [appliedStartDate, appliedEndDate]);
 
-  const isActionRunning = isProcessing || isExporting;
+  const isActionRunning =
+    isProcessing || isExporting || processingJobId !== null;
 
   const showSuccess = (message: string) => {
     dispatch(
@@ -806,23 +877,30 @@ const AttendanceSummaryTableData = () => {
         appliedEndDate,
       );
 
-      await refreshAttendanceSummaryData();
-
-      const processedCount = result.data?.processed_count;
+      const jobId = result.data?.job_id;
 
       const message =
-        processedCount !== undefined
-          ? i18nT(
-              "Attendance summary processed successfully. {p0} row(s) updated.",
-              {
-                p0: processedCount,
-              },
-            )
-          : result.message ||
-            i18nT("Attendance summary processed successfully.");
+        jobId !== undefined
+          ? `Attendance Summary masuk antrean Background Job #${jobId}. Data akan diperbarui setelah job selesai.`
+          : result.message || "Attendance Summary berhasil diproses.";
 
       setActionSuccess(message);
-      showSuccess(message);
+      if (jobId !== undefined) {
+        setProcessingJobId(jobId);
+      }
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "info",
+          summary: result.data?.deduplicated
+            ? "Job sudah tersedia"
+            : "Job berhasil dibuat",
+          detail: message,
+        }),
+      );
+      if (jobId === undefined) {
+        await refreshAttendanceSummaryData();
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error

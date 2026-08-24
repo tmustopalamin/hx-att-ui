@@ -68,6 +68,9 @@ const EMPTY_SHIFT = {
   is_active: true,
   deleted_at: "",
   row_version: 0,
+  timezone_offset_minutes: 420,
+  duplicate_punch_tolerance_seconds: 60,
+  finalization_delay_minutes: 30,
 } as Shift;
 
 const getBody = () => document.body;
@@ -250,6 +253,9 @@ const ShiftTableData = () => {
         checkout_start: null,
         checkout_end: null,
         grace_period_minutes: 0,
+        timezone_offset_minutes: 420,
+        duplicate_punch_tolerance_seconds: 60,
+        finalization_delay_minutes: 30,
         is_night_shift: false,
       } as Shift;
     }
@@ -258,6 +264,11 @@ const ShiftTableData = () => {
       ...data,
       name: data.name.trim(),
       grace_period_minutes: Number(data.grace_period_minutes ?? 0),
+      timezone_offset_minutes: Number(data.timezone_offset_minutes ?? 420),
+      duplicate_punch_tolerance_seconds: Number(
+        data.duplicate_punch_tolerance_seconds ?? 60,
+      ),
+      finalization_delay_minutes: Number(data.finalization_delay_minutes ?? 30),
     };
   };
 
@@ -321,6 +332,11 @@ const ShiftTableData = () => {
       checkout_start: toTimeDate(data.checkout_start),
       checkout_end: toTimeDate(data.checkout_end),
       grace_period_minutes: Number(data.grace_period_minutes ?? 0),
+      timezone_offset_minutes: Number(data.timezone_offset_minutes ?? 420),
+      duplicate_punch_tolerance_seconds: Number(
+        data.duplicate_punch_tolerance_seconds ?? 60,
+      ),
+      finalization_delay_minutes: Number(data.finalization_delay_minutes ?? 30),
       deleted_at: data.deleted_at ?? "",
     } as Shift);
 
@@ -1602,6 +1618,155 @@ const ShiftTableData = () => {
                       </>
                     )}
                   />
+                </div>
+              </section>
+
+              {/* Attendance processing parameters */}
+              <section className="flex flex-col gap-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h2 className="m-0 text-sm font-semibold text-slate-800">
+                    Attendance Processing Parameters
+                  </h2>
+                  <p className="m-0 mt-1 text-xs text-slate-500">
+                    Parameter ini digunakan oleh Attendance Summary dan tidak
+                    digantikan nilai hardcoded.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="timezone_offset_minutes"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Timezone offset (menit)
+                    </label>
+                    <Controller
+                      name="timezone_offset_minutes"
+                      control={control}
+                      rules={{
+                        min: { value: -720, message: "Minimum -720 menit." },
+                        max: { value: 840, message: "Maksimum 840 menit." },
+                        validate: (value) =>
+                          Number.isInteger(value) ||
+                          "Harus berupa bilangan bulat.",
+                      }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <InputNumber
+                            id="timezone_offset_minutes"
+                            inputRef={field.ref}
+                            value={Number(field.value ?? 420)}
+                            min={-720}
+                            max={840}
+                            minFractionDigits={0}
+                            maxFractionDigits={0}
+                            step={1}
+                            useGrouping={false}
+                            suffix=" menit"
+                            className={fieldState.invalid ? "p-invalid" : ""}
+                            onBlur={field.onBlur}
+                            onValueChange={(event) =>
+                              field.onChange(event.value ?? 420)
+                            }
+                          />
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="duplicate_punch_tolerance_seconds"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Toleransi duplicate scan
+                    </label>
+                    <Controller
+                      name="duplicate_punch_tolerance_seconds"
+                      control={control}
+                      rules={{
+                        min: { value: 0, message: "Tidak boleh negatif." },
+                        validate: (value) =>
+                          Number.isInteger(value) ||
+                          "Harus berupa bilangan bulat.",
+                      }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <InputNumber
+                            id="duplicate_punch_tolerance_seconds"
+                            inputRef={field.ref}
+                            value={Number(field.value ?? 60)}
+                            min={0}
+                            minFractionDigits={0}
+                            maxFractionDigits={0}
+                            step={1}
+                            useGrouping={false}
+                            suffix=" detik"
+                            className={fieldState.invalid ? "p-invalid" : ""}
+                            onBlur={field.onBlur}
+                            onValueChange={(event) =>
+                              field.onChange(event.value ?? 60)
+                            }
+                          />
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="finalization_delay_minutes"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Delay finalisasi summary
+                    </label>
+                    <Controller
+                      name="finalization_delay_minutes"
+                      control={control}
+                      rules={{
+                        min: { value: 0, message: "Tidak boleh negatif." },
+                        validate: (value) =>
+                          Number.isInteger(value) ||
+                          "Harus berupa bilangan bulat.",
+                      }}
+                      render={({ field, fieldState }) => (
+                        <>
+                          <InputNumber
+                            id="finalization_delay_minutes"
+                            inputRef={field.ref}
+                            value={Number(field.value ?? 30)}
+                            min={0}
+                            minFractionDigits={0}
+                            maxFractionDigits={0}
+                            step={1}
+                            useGrouping={false}
+                            suffix=" menit"
+                            className={fieldState.invalid ? "p-invalid" : ""}
+                            onBlur={field.onBlur}
+                            onValueChange={(event) =>
+                              field.onChange(event.value ?? 30)
+                            }
+                          />
+                          {fieldState.error && (
+                            <small className="p-error">
+                              {fieldState.error.message}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    />
+                  </div>
                 </div>
               </section>
             </>

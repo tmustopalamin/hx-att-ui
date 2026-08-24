@@ -34,6 +34,11 @@ export const createShift = async (data: Shift) => {
 
   const reqData = {
     ...data,
+    timezone_offset_minutes: Number(data.timezone_offset_minutes ?? 420),
+    duplicate_punch_tolerance_seconds: Number(
+      data.duplicate_punch_tolerance_seconds ?? 60,
+    ),
+    finalization_delay_minutes: Number(data.finalization_delay_minutes ?? 30),
     work_start,
     work_end,
     break_start,
@@ -114,6 +119,11 @@ export const updateShift = async (
 
   const reqData = {
     ...data,
+    timezone_offset_minutes: Number(data.timezone_offset_minutes ?? 420),
+    duplicate_punch_tolerance_seconds: Number(
+      data.duplicate_punch_tolerance_seconds ?? 60,
+    ),
+    finalization_delay_minutes: Number(data.finalization_delay_minutes ?? 30),
     work_start,
     work_end,
     break_start,

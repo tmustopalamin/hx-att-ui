@@ -1,6 +1,7 @@
 export interface MobileAttendancePayload {
   event_time_source_local: string;
   source_tz_offset_minutes: number;
+  submission_id?: string;
 
   device_id: string | null;
   photo_data_url: string | null;

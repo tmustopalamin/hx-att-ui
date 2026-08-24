@@ -15,4 +15,7 @@ export interface Shift {
   deleted_at: string;
   row_version: number;
   is_day_off: boolean;
+  timezone_offset_minutes: number;
+  duplicate_punch_tolerance_seconds: number;
+  finalization_delay_minutes: number;
 }
