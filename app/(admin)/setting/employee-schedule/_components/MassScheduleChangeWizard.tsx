@@ -682,10 +682,36 @@ const MassScheduleChangeWizard = () => {
                                 )}
                               </td>
                               <td className="px-3 py-3 text-xs text-slate-600">
-                                {before.length > 0 ? before.join("; ") : "-"}
+                                {before.length > 0 ? (
+                                  <div className="flex flex-col gap-1">
+                                    {before.map((schedule, index) => (
+                                      <div
+                                        key={`${employeePreview.employee_id}-before-${index}`}
+                                        className="break-words"
+                                      >
+                                        {schedule}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  "-"
+                                )}
                               </td>
                               <td className="px-3 py-3 text-xs text-slate-600">
-                                {after.length > 0 ? after.join("; ") : "-"}
+                                {after.length > 0 ? (
+                                  <div className="flex flex-col gap-1">
+                                    {after.map((schedule, index) => (
+                                      <div
+                                        key={`${employeePreview.employee_id}-after-${index}`}
+                                        className="break-words"
+                                      >
+                                        {schedule}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  "-"
+                                )}
                               </td>
                               <td className="px-3 py-3 text-xs text-slate-600">
                                 {employeePreview.assignments_to_insert +

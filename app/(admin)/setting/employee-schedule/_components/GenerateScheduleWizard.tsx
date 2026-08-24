@@ -329,7 +329,10 @@ const GenerateScheduleWizard = () => {
           {employeePreview.rule_segments.length > 0 ? (
             <div className="flex flex-col gap-1">
               {employeePreview.rule_segments.map((segment) => (
-                <div key={`${segment.shift_rule_id}-${segment.effective_from}`}>
+                <div
+                  key={`${segment.shift_rule_id}-${segment.effective_from}`}
+                  className="break-words"
+                >
                   <span className="font-medium">
                     {segment.shift_rule_name || `#${segment.shift_rule_id}`}
                   </span>
