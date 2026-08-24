@@ -191,6 +191,41 @@ const messages = {
   "nav.roles": "Roles",
   "nav.permissions": "Permissions",
   "nav.rolePermissions": "Role Permissions",
+  "attendance.summary.overtime.processingMode": "Overtime processing mode",
+  "attendance.summary.overtime.actualLogsAndApproval":
+    "Actual attendance logs + approved overtime",
+  "attendance.summary.overtime.actualLogsAndApprovalDescription":
+    "Requires at least two valid punch boundaries and calculates the overlap.",
+  "attendance.summary.overtime.approvedRequestOnly":
+    "Approved overtime duration only",
+  "attendance.summary.overtime.approvedRequestOnlyDescription":
+    "Uses the normalized approved duration even without a log pair.",
+  "attendance.summary.overtime.settingsUnavailable":
+    "Overtime processing settings are not available yet. Refresh the page and try again.",
+  "attendance.summary.overtime.calculation": "Overtime calculation",
+  "attendance.summary.overtime.mode": "Mode",
+  "attendance.summary.overtime.status": "Status",
+  "attendance.summary.overtime.requestedWindow": "Requested window",
+  "attendance.summary.overtime.actualOverlap": "Actual overlap",
+  "attendance.summary.overtime.rawPayable": "Raw / payable",
+  "attendance.summary.overtime.validLogBoundaries": "Valid log boundaries",
+  "attendance.summary.overtime.logSources": "Log sources",
+  "attendance.summary.overtime.mode.actualLogsAndApproval":
+    "Actual logs + approved overtime",
+  "attendance.summary.overtime.mode.approvedRequestOnly":
+    "Approved overtime only",
+  "attendance.summary.overtime.mode.unknown": "Unknown",
+  "attendance.summary.overtime.status.noApprovedRequest": "No approved request",
+  "attendance.summary.overtime.status.approvedOnly": "Approved only",
+  "attendance.summary.overtime.status.missingLogPair": "Missing log pair",
+  "attendance.summary.overtime.status.noOverlap": "No overlap",
+  "attendance.summary.overtime.status.belowMinimum": "Below minimum",
+  "attendance.summary.overtime.status.matched": "Matched",
+  "attendance.summary.overtime.status.unknown": "Unknown",
+  "attendance.summary.overtime.source.machine": "Fingerprint",
+  "attendance.summary.overtime.source.web": "Web",
+  "attendance.summary.overtime.source.mobile": "Mobile",
+  "attendance.summary.overtime.source.unknown": "Unknown",
   "date.justNow": "Just now",
   "date.minutesAgo": "{count} minutes ago",
   "date.hoursAgo": "{count} hours ago",

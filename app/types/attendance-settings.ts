@@ -3,6 +3,7 @@ export interface AttendanceProcessingSetting {
   auto_process_enabled: boolean;
   process_interval_minutes: number;
   lookback_days: number;
+  overtime_processing_mode: OvertimeProcessingMode;
   last_process_at: string | null;
   last_process_status: string | null;
   last_process_error: string | null;
@@ -48,8 +49,14 @@ export interface AttendanceSubmissionPolicy {
 
 export type UpdateAttendanceProcessingSetting = Pick<
   AttendanceProcessingSetting,
-  "auto_process_enabled" | "process_interval_minutes" | "lookback_days"
+  | "auto_process_enabled"
+  | "process_interval_minutes"
+  | "lookback_days"
+  | "overtime_processing_mode"
 >;
+
+export type OvertimeProcessingMode =
+  "ACTUAL_LOGS_AND_APPROVAL" | "APPROVED_REQUEST_ONLY";
 
 export type UpdateAttendanceSubmissionPolicy = Pick<
   AttendanceSubmissionPolicy,

@@ -4,6 +4,8 @@ export interface AttendanceProcessSetting {
   auto_process_enabled: boolean;
   process_interval_minutes: number;
   lookback_days: number;
+  overtime_processing_mode:
+    "ACTUAL_LOGS_AND_APPROVAL" | "APPROVED_REQUEST_ONLY";
 
   mobile_attendance_enabled: boolean;
   mobile_attendance_require_photo: boolean;

@@ -23,6 +23,7 @@ import {
 import type {
   AttendanceProcessingSetting,
   AttendanceSubmissionPolicy,
+  OvertimeProcessingMode,
   UpdateAttendanceProcessingSetting,
   UpdateAttendanceSubmissionPolicy,
 } from "@/app/types/attendance-settings";
@@ -54,6 +55,20 @@ const lookbackOptions = [
   { labelKey: "Today + 7 days back", value: 7 },
 ];
 
+const overtimeProcessingOptions: Array<{
+  labelKey: string;
+  value: OvertimeProcessingMode;
+}> = [
+  {
+    labelKey: "attendance.summary.overtime.actualLogsAndApproval",
+    value: "ACTUAL_LOGS_AND_APPROVAL",
+  },
+  {
+    labelKey: "attendance.summary.overtime.approvedRequestOnly",
+    value: "APPROVED_REQUEST_ONLY",
+  },
+];
+
 const gpsPresets = [
   { labelKey: "Strict 50 m", value: 50 },
   { labelKey: "Standard 100 m", value: 100 },
@@ -64,6 +79,7 @@ const defaultProcessing: UpdateAttendanceProcessingSetting = {
   auto_process_enabled: false,
   process_interval_minutes: 10,
   lookback_days: 3,
+  overtime_processing_mode: "ACTUAL_LOGS_AND_APPROVAL",
 };
 
 const defaultPolicy: UpdateAttendanceSubmissionPolicy = {
@@ -208,6 +224,8 @@ const AttendanceSettingsPage = () => {
       auto_process_enabled: setting.auto_process_enabled,
       process_interval_minutes: setting.process_interval_minutes,
       lookback_days: setting.lookback_days,
+      overtime_processing_mode:
+        setting.overtime_processing_mode ?? "ACTUAL_LOGS_AND_APPROVAL",
     });
   }, [processingData]);
 
@@ -460,6 +478,37 @@ const AttendanceSettingsPage = () => {
                     />
                     <small className="mt-1 block text-xs text-slate-500">
                       {i18nT("static.17jzlqf")}{" "}
+                    </small>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
+                      {i18nT("attendance.summary.overtime.processingMode")}
+                    </label>
+                    <Dropdown
+                      className="w-full"
+                      value={processingForm.overtime_processing_mode}
+                      options={overtimeProcessingOptions.map((option) => ({
+                        label: i18nT(option.labelKey),
+                        value: option.value,
+                      }))}
+                      optionLabel="label"
+                      optionValue="value"
+                      onChange={(event) =>
+                        setProcessingForm((current) => ({
+                          ...current,
+                          overtime_processing_mode:
+                            event.value as OvertimeProcessingMode,
+                        }))
+                      }
+                    />
+                    <small className="mt-1 block text-xs leading-5 text-slate-500">
+                      {i18nT(
+                        "attendance.summary.overtime.actualLogsAndApprovalDescription",
+                      )}{" "}
+                      {i18nT(
+                        "attendance.summary.overtime.approvedRequestOnlyDescription",
+                      )}
                     </small>
                   </div>
                 </div>

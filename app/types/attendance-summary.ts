@@ -48,6 +48,15 @@ export interface AttendanceSummary {
   is_overtime: boolean;
   overtime_start_time: string | null;
   overtime_end_time: string | null;
+  overtime_processing_mode?: string | null;
+  overtime_processing_status?: string | null;
+  overtime_raw_seconds?: number;
+  overtime_actual_start_time?: string | null;
+  overtime_actual_end_time?: string | null;
+  overtime_first_log_id?: number | null;
+  overtime_last_log_id?: number | null;
+  overtime_log_count?: number;
+  overtime_log_source_types?: string[];
 
   leave_name: string | null;
   leave_status: string | null;

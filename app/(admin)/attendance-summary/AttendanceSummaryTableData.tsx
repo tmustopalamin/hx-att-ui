@@ -3,7 +3,7 @@ import { getClientLocale, translateStaticText, useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import useSWR from "swr";
 import dayjs from "dayjs";
@@ -28,6 +28,7 @@ import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
 import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
 import { Tag } from "primereact/tag";
+import { RadioButton } from "primereact/radiobutton";
 
 import { useDispatch } from "react-redux";
 
@@ -44,6 +45,8 @@ import { fetcher } from "@/app/utils/fetcher";
 
 import { showToast } from "@/store/ToastSlice";
 import { getBackgroundJobDetail } from "@/app/services/background-job-service";
+import { getAttendanceProcessingSetting } from "@/app/services/attendance-settings-service";
+import type { OvertimeProcessingMode } from "@/app/types/attendance-settings";
 
 interface FilterForm {
   startDate: Date | null;
@@ -116,6 +119,116 @@ const formatStatusLabel = (status?: string | null) => {
       return lower.charAt(0).toUpperCase() + lower.slice(1);
     })
     .join(" ");
+};
+
+const isOvertimeProcessingMode = (
+  value: unknown,
+): value is OvertimeProcessingMode =>
+  value === "ACTUAL_LOGS_AND_APPROVAL" || value === "APPROVED_REQUEST_ONLY";
+
+const getOvertimeModeTranslationKey = (mode?: string | null) => {
+  switch (normalizeStatus(mode)) {
+    case "ACTUAL_LOGS_AND_APPROVAL":
+      return "attendance.summary.overtime.mode.actualLogsAndApproval";
+    case "APPROVED_REQUEST_ONLY":
+      return "attendance.summary.overtime.mode.approvedRequestOnly";
+    default:
+      return "attendance.summary.overtime.mode.unknown";
+  }
+};
+
+const getOvertimeStatusTranslationKey = (status?: string | null) => {
+  switch (normalizeStatus(status)) {
+    case "NO_APPROVED_REQUEST":
+      return "attendance.summary.overtime.status.noApprovedRequest";
+    case "APPROVED_ONLY":
+      return "attendance.summary.overtime.status.approvedOnly";
+    case "MISSING_LOG_PAIR":
+      return "attendance.summary.overtime.status.missingLogPair";
+    case "NO_OVERLAP":
+      return "attendance.summary.overtime.status.noOverlap";
+    case "BELOW_MINIMUM":
+      return "attendance.summary.overtime.status.belowMinimum";
+    case "MATCHED":
+      return "attendance.summary.overtime.status.matched";
+    default:
+      return "attendance.summary.overtime.status.unknown";
+  }
+};
+
+const getOvertimeSourceTranslationKey = (source?: string | null) => {
+  switch (normalizeStatus(source)) {
+    case "MACHINE":
+      return "attendance.summary.overtime.source.machine";
+    case "WEB":
+      return "attendance.summary.overtime.source.web";
+    case "MOBILE":
+      return "attendance.summary.overtime.source.mobile";
+    default:
+      return "attendance.summary.overtime.source.unknown";
+  }
+};
+
+const OvertimeProcessingModePicker = ({
+  initialMode,
+  onChange,
+}: {
+  initialMode: OvertimeProcessingMode;
+  onChange: (mode: OvertimeProcessingMode) => void;
+}) => {
+  const { t: i18nT } = useI18n();
+  const [selectedMode, setSelectedMode] = useState(initialMode);
+
+  const selectMode = (mode: OvertimeProcessingMode) => {
+    setSelectedMode(mode);
+    onChange(mode);
+  };
+
+  return (
+    <div className="mt-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left">
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {i18nT("attendance.summary.overtime.processingMode")}
+      </span>
+      <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+        <RadioButton
+          inputId="process-overtime-actual"
+          name="process-overtime-mode"
+          value="ACTUAL_LOGS_AND_APPROVAL"
+          checked={selectedMode === "ACTUAL_LOGS_AND_APPROVAL"}
+          onChange={() => selectMode("ACTUAL_LOGS_AND_APPROVAL")}
+        />
+        <span>
+          <span className="font-medium">
+            {i18nT("attendance.summary.overtime.actualLogsAndApproval")}
+          </span>
+          <span className="mt-0.5 block text-xs text-slate-500">
+            {i18nT(
+              "attendance.summary.overtime.actualLogsAndApprovalDescription",
+            )}
+          </span>
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-start gap-2 text-sm text-slate-700">
+        <RadioButton
+          inputId="process-overtime-approved-only"
+          name="process-overtime-mode"
+          value="APPROVED_REQUEST_ONLY"
+          checked={selectedMode === "APPROVED_REQUEST_ONLY"}
+          onChange={() => selectMode("APPROVED_REQUEST_ONLY")}
+        />
+        <span>
+          <span className="font-medium">
+            {i18nT("attendance.summary.overtime.approvedRequestOnly")}
+          </span>
+          <span className="mt-0.5 block text-xs text-slate-500">
+            {i18nT(
+              "attendance.summary.overtime.approvedRequestOnlyDescription",
+            )}
+          </span>
+        </span>
+      </label>
+    </div>
+  );
 };
 
 const isIncompleteStatus = (status?: string | null) => {
@@ -257,6 +370,7 @@ const downloadAttendanceSummaryExcel = async (
 const processAttendanceSummary = async (
   startDate: Date,
   endDate: Date,
+  overtimeProcessingMode: OvertimeProcessingMode,
 ): Promise<ProcessResponse> => {
   const response = await apiFetchResponse("/api/attendance-summary/process", {
     method: "POST",
@@ -267,6 +381,7 @@ const processAttendanceSummary = async (
     body: JSON.stringify({
       start_date: dayjs(startDate).format("YYYY-MM-DD"),
       end_date: dayjs(endDate).format("YYYY-MM-DD"),
+      overtime_processing_mode: overtimeProcessingMode,
     }),
   });
 
@@ -345,6 +460,10 @@ const AttendanceSummaryTableData = () => {
 
   const [processingJobId, setProcessingJobId] = useState<number | null>(null);
 
+  const overtimeProcessingModeRef = useRef<OvertimeProcessingMode>(
+    "ACTUAL_LOGS_AND_APPROVAL",
+  );
+
   const [isExporting, setIsExporting] = useState(false);
 
   const [actionError, setActionError] = useState<string | null>(null);
@@ -397,6 +516,31 @@ const AttendanceSummaryTableData = () => {
   } = useSWR<AttendanceSummary[]>(swrKey, fetcher, {
     revalidateOnFocus: false,
   });
+
+  const {
+    data: processingSettingData,
+    error: processingSettingError,
+    isLoading: processingSettingLoading,
+  } = useSWR(
+    "/api/attendance-settings/processing",
+    getAttendanceProcessingSetting,
+    { revalidateOnFocus: false },
+  );
+
+  const savedOvertimeProcessingMode =
+    processingSettingData?.data?.overtime_processing_mode;
+  const overtimeProcessingModeReady =
+    !processingSettingLoading &&
+    !processingSettingError &&
+    isOvertimeProcessingMode(savedOvertimeProcessingMode);
+
+  useEffect(() => {
+    if (!isOvertimeProcessingMode(savedOvertimeProcessingMode)) {
+      return;
+    }
+
+    overtimeProcessingModeRef.current = savedOvertimeProcessingMode;
+  }, [savedOvertimeProcessingMode]);
 
   useEffect(() => {
     if (processingJobId === null) {
@@ -863,8 +1007,18 @@ const AttendanceSummaryTableData = () => {
     clearActionMessage();
   };
 
-  const handleProcessAttendance = async () => {
+  const handleProcessAttendance = async (
+    selectedOvertimeProcessingMode: OvertimeProcessingMode = overtimeProcessingModeRef.current,
+  ) => {
     if (!appliedStartDate || !appliedEndDate) {
+      return;
+    }
+
+    if (!overtimeProcessingModeReady) {
+      const message = i18nT("attendance.summary.overtime.settingsUnavailable");
+
+      setActionError(message);
+      showError(new Error(message));
       return;
     }
 
@@ -875,6 +1029,7 @@ const AttendanceSummaryTableData = () => {
       const result = await processAttendanceSummary(
         appliedStartDate,
         appliedEndDate,
+        selectedOvertimeProcessingMode,
       );
 
       const jobId = result.data?.job_id;
@@ -926,6 +1081,19 @@ const AttendanceSummaryTableData = () => {
       return;
     }
 
+    if (
+      !overtimeProcessingModeReady ||
+      !isOvertimeProcessingMode(savedOvertimeProcessingMode)
+    ) {
+      const message = i18nT("attendance.summary.overtime.settingsUnavailable");
+
+      setActionError(message);
+      showError(new Error(message));
+      return;
+    }
+
+    overtimeProcessingModeRef.current = savedOvertimeProcessingMode;
+
     requestActionConfirmation({
       header: i18nT("static.1kq1p6x"),
       message: (
@@ -939,12 +1107,19 @@ const AttendanceSummaryTableData = () => {
           <span className="text-sm text-slate-500">
             {i18nT("static.sdy1z")}{" "}
           </span>
+
+          <OvertimeProcessingModePicker
+            initialMode={savedOvertimeProcessingMode}
+            onChange={(mode) => {
+              overtimeProcessingModeRef.current = mode;
+            }}
+          />
         </div>
       ),
       icon: "pi pi-exclamation-triangle",
       defaultFocus: "reject",
       accept: () => {
-        void handleProcessAttendance();
+        void handleProcessAttendance(overtimeProcessingModeRef.current);
       },
       reject: () => undefined,
       footer: (options) => (
@@ -1179,6 +1354,29 @@ const AttendanceSummaryTableData = () => {
           rounded
         />,
       );
+
+      if (rowData.overtime_processing_status) {
+        const overtimeStatus = normalizeStatus(
+          rowData.overtime_processing_status,
+        );
+
+        flags.push(
+          <Tag
+            key="overtime-processing-status"
+            value={i18nT(
+              getOvertimeStatusTranslationKey(
+                rowData.overtime_processing_status,
+              ),
+            )}
+            severity={
+              overtimeStatus === "MATCHED" || overtimeStatus === "APPROVED_ONLY"
+                ? "success"
+                : "warning"
+            }
+            rounded
+          />,
+        );
+      }
     }
 
     if (rowData.is_missing_check_in) {
@@ -1512,6 +1710,93 @@ const AttendanceSummaryTableData = () => {
 
                 {renderCompactFlags(rowData)}
               </div>
+
+              {rowData.overtime_request_id && (
+                <div className="col-span-2 rounded-lg border border-blue-100 bg-blue-50 p-3">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-800">
+                    {i18nT("attendance.summary.overtime.calculation")}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs text-blue-950">
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT("attendance.summary.overtime.mode")}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {i18nT(
+                          getOvertimeModeTranslationKey(
+                            rowData.overtime_processing_mode,
+                          ),
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT("attendance.summary.overtime.status")}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {i18nT(
+                          getOvertimeStatusTranslationKey(
+                            rowData.overtime_processing_status,
+                          ),
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT("attendance.summary.overtime.requestedWindow")}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {formatDateTime(rowData.overtime_start_time)} –{" "}
+                        {formatDateTime(rowData.overtime_end_time)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT("attendance.summary.overtime.actualOverlap")}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {rowData.overtime_actual_start_time &&
+                        rowData.overtime_actual_end_time
+                          ? `${formatDateTime(rowData.overtime_actual_start_time)} – ${formatDateTime(rowData.overtime_actual_end_time)}`
+                          : "-"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT("attendance.summary.overtime.rawPayable")}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {formatSeconds(rowData.overtime_raw_seconds ?? 0)} /{" "}
+                        {formatSeconds(rowData.overtime_seconds)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT(
+                          "attendance.summary.overtime.validLogBoundaries",
+                        )}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {rowData.overtime_log_count ?? 0}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-blue-700">
+                        {i18nT("attendance.summary.overtime.logSources")}
+                      </div>
+                      <div className="mt-1 font-medium">
+                        {rowData.overtime_log_source_types?.length
+                          ? rowData.overtime_log_source_types
+                              .map((source) =>
+                                i18nT(getOvertimeSourceTranslationKey(source)),
+                              )
+                              .join(", ")
+                          : "-"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -1630,8 +1915,8 @@ const AttendanceSummaryTableData = () => {
                 icon="pi pi-cog"
                 severity="warning"
                 size="small"
-                loading={isProcessing}
-                disabled={isExporting}
+                loading={isProcessing || processingSettingLoading}
+                disabled={isExporting || !overtimeProcessingModeReady}
                 className="w-full sm:w-auto"
                 onClick={onClickProcessAttendance}
               />

@@ -194,6 +194,43 @@ const messages: Record<keyof typeof en, string> = {
   "nav.roles": "Peran",
   "nav.permissions": "Izin",
   "nav.rolePermissions": "Izin Peran",
+  "attendance.summary.overtime.processingMode": "Mode pemrosesan lembur",
+  "attendance.summary.overtime.actualLogsAndApproval":
+    "Log absensi aktual + lembur yang disetujui",
+  "attendance.summary.overtime.actualLogsAndApprovalDescription":
+    "Memerlukan setidaknya dua batas waktu pukulan yang valid dan menghitung irisan waktunya.",
+  "attendance.summary.overtime.approvedRequestOnly":
+    "Hanya durasi lembur yang disetujui",
+  "attendance.summary.overtime.approvedRequestOnlyDescription":
+    "Menggunakan durasi lembur yang disetujui dan dinormalisasi meskipun tidak ada pasangan log.",
+  "attendance.summary.overtime.settingsUnavailable":
+    "Pengaturan pemrosesan lembur belum tersedia. Muat ulang halaman dan coba lagi.",
+  "attendance.summary.overtime.calculation": "Perhitungan lembur",
+  "attendance.summary.overtime.mode": "Mode",
+  "attendance.summary.overtime.status": "Status",
+  "attendance.summary.overtime.requestedWindow": "Rentang waktu pengajuan",
+  "attendance.summary.overtime.actualOverlap": "Irisan waktu aktual",
+  "attendance.summary.overtime.rawPayable": "Mentah / dibayar",
+  "attendance.summary.overtime.validLogBoundaries": "Batas log yang valid",
+  "attendance.summary.overtime.logSources": "Sumber log",
+  "attendance.summary.overtime.mode.actualLogsAndApproval":
+    "Log aktual + lembur yang disetujui",
+  "attendance.summary.overtime.mode.approvedRequestOnly":
+    "Hanya lembur yang disetujui",
+  "attendance.summary.overtime.mode.unknown": "Tidak diketahui",
+  "attendance.summary.overtime.status.noApprovedRequest":
+    "Tidak ada pengajuan yang disetujui",
+  "attendance.summary.overtime.status.approvedOnly": "Hanya disetujui",
+  "attendance.summary.overtime.status.missingLogPair":
+    "Pasangan log tidak lengkap",
+  "attendance.summary.overtime.status.noOverlap": "Tidak ada irisan waktu",
+  "attendance.summary.overtime.status.belowMinimum": "Di bawah minimum",
+  "attendance.summary.overtime.status.matched": "Sesuai",
+  "attendance.summary.overtime.status.unknown": "Tidak diketahui",
+  "attendance.summary.overtime.source.machine": "Fingerprint",
+  "attendance.summary.overtime.source.web": "Web",
+  "attendance.summary.overtime.source.mobile": "Mobile",
+  "attendance.summary.overtime.source.unknown": "Tidak diketahui",
   "date.justNow": "Baru saja",
   "date.minutesAgo": "{count} menit lalu",
   "date.hoursAgo": "{count} jam lalu",
