@@ -40,7 +40,7 @@ const employeeName = (employee: EmployeeSelectionRow) =>
   [employee.first_name, employee.middle_name, employee.last_name]
     .filter(Boolean)
     .join(" ") ||
-  `Employee #${employee.id}`;
+  undefined;
 
 const EmployeeSelectionStep = ({
   employees,
@@ -94,7 +94,10 @@ const EmployeeSelectionStep = ({
       }
 
       return [
-        employeeName(employee),
+        employeeName(employee) ||
+          i18nT("static.iapzf0", {
+            p0: employee.id,
+          }),
         employee.code,
         employee.department_name,
         employee.position_name,
@@ -106,7 +109,7 @@ const EmployeeSelectionStep = ({
           .includes(keyword),
       );
     });
-  }, [department, employees, position, search]);
+  }, [department, employees, i18nT, position, search]);
 
   const visibleIds = filteredEmployees.map((employee) => employee.id);
   const selectedVisibleCount = visibleIds.filter((id) =>
@@ -244,7 +247,10 @@ const EmployeeSelectionStep = ({
           body={(employee: EmployeeSelectionRow) => (
             <input
               type="checkbox"
-              aria-label={employeeName(employee)}
+              aria-label={
+                employeeName(employee) ||
+                i18nT("static.iapzf0", { p0: employee.id })
+              }
               checked={selectedIds.has(employee.id)}
               disabled={disabled}
               onChange={() => onToggle(employee.id)}
@@ -260,7 +266,8 @@ const EmployeeSelectionStep = ({
           body={(employee: EmployeeSelectionRow) => (
             <div>
               <div className="font-semibold text-slate-800">
-                {employeeName(employee)}
+                {employeeName(employee) ||
+                  i18nT("static.iapzf0", { p0: employee.id })}
               </div>
               <div className="font-mono text-xs text-slate-500">
                 {employee.code || "-"}

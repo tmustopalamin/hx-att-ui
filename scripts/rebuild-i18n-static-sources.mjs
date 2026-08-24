@@ -162,6 +162,7 @@ const supplementalSources = new Map([
   ["static.1wtopll", "(0–100)"],
   ["static.hnl64v", "to"],
   ["static.syyan8", "·"],
+  ["static.employeeScheduleFilterSummary", "{p0} schedules · {p1} employees"],
 ]);
 
 const addSource = (value) => {

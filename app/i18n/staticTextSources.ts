@@ -4016,6 +4016,7 @@ const staticTextSources = {
   "static.employeeSchedulePartialConfiguration": "Partial configuration",
   "static.employeeScheduleNoActiveRule": "No active rule - skipped",
   "static.employeeScheduleSkippedReason": "This employee will not be changed.",
+  "static.employeeScheduleFilterSummary": "{p0} schedules · {p1} employees",
 } as const;
 
 export default staticTextSources;

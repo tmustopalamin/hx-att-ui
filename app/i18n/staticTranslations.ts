@@ -4298,6 +4298,228 @@ const commonZhPhrases: PhraseMap = [
 // table, placeholder, and empty-state text can be localized without loading a
 // second catalog or making a request to the API. Values supplied by the API
 // remain untouched; only known UI copy is translated here.
+const employeeScheduleIdPhrases: PhraseMap = [
+  [
+    "Schedule change applied successfully.",
+    "Perubahan jadwal berhasil diterapkan.",
+  ],
+  [
+    "Manage employee shift assignments and their effective periods.",
+    "Kelola penugasan shift karyawan dan periode berlakunya.",
+  ],
+  [
+    "The system splits overlapping Employee Shift Rules, keeps the original rotation anchor after an exception, and updates only generated Daily Schedule rows. Manual or locked rows are reported as conflicts.",
+    "Sistem memisahkan aturan shift karyawan yang tumpang tindih, mempertahankan titik acuan rotasi asli setelah pengecualian, dan hanya memperbarui baris Jadwal Harian yang dibuat otomatis. Baris manual atau terkunci akan dilaporkan sebagai konflik.",
+  ],
+  [
+    "Atomic rule and Daily Schedule change",
+    "Perubahan atomik Aturan dan Jadwal Harian",
+  ],
+  [
+    "Review daily employee schedules in a calendar-style matrix.",
+    "Tinjau jadwal harian karyawan dalam matriks bergaya kalender.",
+  ],
+  [
+    "The system checks each employee's active shift rule for every date in the selected period, then creates daily shift assignments used by attendance processing.",
+    "Sistem memeriksa aturan shift aktif setiap karyawan untuk setiap tanggal dalam periode yang dipilih, lalu membuat penugasan shift harian yang digunakan untuk pemrosesan absensi.",
+  ],
+  [
+    "Generate shift assignments using each employee's active shift rule?",
+    "Buat penugasan shift menggunakan aturan shift aktif setiap karyawan?",
+  ],
+  ["Generate Employee Schedule", "Buat Jadwal Karyawan"],
+  ["Schedule generated successfully.", "Jadwal berhasil dibuat."],
+  ["Employee Shift Assignment", "Penugasan Shift Karyawan"],
+  ["Daily Schedule updates", "Pembaruan Jadwal Harian"],
+  ["Rules archived", "Aturan diarsipkan"],
+  ["Attendance rows", "Baris Absensi"],
+  ["Schedule", "Jadwal"],
+  ["Delete Schedule", "Hapus Jadwal"],
+  ["Restore Schedule", "Pulihkan Jadwal"],
+  ["Schedule Filter", "Filter Jadwal"],
+  [
+    "Choose a period and search by employee, shift, holiday, or day off.",
+    "Pilih periode, lalu cari berdasarkan karyawan, shift, hari libur, atau hari tidak bekerja.",
+  ],
+  [
+    "Search employee, shift, holiday, or day off",
+    "Cari karyawan, shift, hari libur, atau hari tidak bekerja",
+  ],
+  [
+    "No schedule is assigned on this date.",
+    "Tidak ada jadwal yang ditetapkan pada tanggal ini.",
+  ],
+  [
+    "Change the search keyword or selected date range.",
+    "Ubah kata kunci pencarian atau rentang tanggal yang dipilih.",
+  ],
+  [
+    "The schedule changed after the preview. Generate a new preview before applying.",
+    "Jadwal berubah setelah pratinjau. Buat pratinjau baru sebelum menerapkan perubahan.",
+  ],
+  [
+    "Search employees, select employees by department or position, then adjust individual selections manually.",
+    "Cari karyawan, pilih karyawan berdasarkan departemen atau posisi, lalu sesuaikan pilihan satu per satu secara manual.",
+  ],
+  ["more", "lainnya"],
+  ["Schedule Detail", "Detail Jadwal"],
+  ["Schedule ID:", "ID Jadwal:"],
+  ["Close detail", "Tutup detail"],
+  ["No schedules found", "Jadwal tidak ditemukan"],
+  ["Select shift rule", "Pilih aturan shift"],
+  ["Delete Schedule Permanently", "Hapus Jadwal Secara Permanen"],
+  ["Schedule permanently deleted.", "Jadwal berhasil dihapus secara permanen."],
+  ["Schedule restored successfully.", "Jadwal berhasil dipulihkan."],
+  ["Schedule deleted successfully.", "Jadwal berhasil dihapus."],
+  [
+    "Are you sure you want to delete this daily schedule?",
+    "Apakah Anda yakin ingin menghapus jadwal harian ini?",
+  ],
+  [
+    "Are you sure you want to restore this daily schedule?",
+    "Apakah Anda yakin ingin memulihkan jadwal harian ini?",
+  ],
+  [
+    "Apply one Shift Rule to many employees and synchronize the Daily Schedule for the selected period.",
+    "Terapkan satu Aturan Shift kepada banyak karyawan dan sinkronkan Jadwal Harian untuk periode yang dipilih.",
+  ],
+  [
+    "Select the existing Shift Rule and the exact exception period. The server will preview every rule and Daily Schedule change.",
+    "Pilih Aturan Shift yang ada dan periode pengecualian yang tepat. Server akan menampilkan pratinjau setiap perubahan aturan dan Jadwal Harian.",
+  ],
+  [
+    "Overwrite Final Attendance and Reprocess",
+    "Timpa Absensi Final dan Proses Ulang",
+  ],
+  [
+    "Enable this only when HR explicitly wants final attendance rows in the selected period to be recalculated.",
+    "Aktifkan hanya jika HR secara eksplisit ingin baris absensi final dalam periode yang dipilih dihitung ulang.",
+  ],
+  [
+    "This snapshot is required for apply. If data changes after preview, the server rejects the stale fingerprint.",
+    "Snapshot ini wajib digunakan untuk menerapkan perubahan. Jika data berubah setelah pratinjau, server akan menolak fingerprint yang kedaluwarsa.",
+  ],
+  [
+    "Apply the previewed Shift Rule and regenerate the affected Daily Schedule rows?",
+    "Terapkan Aturan Shift dari pratinjau dan buat ulang baris Jadwal Harian yang terdampak?",
+  ],
+  ["Ready to apply", "Siap diterapkan"],
+  ["Preview Changes", "Pratinjau Perubahan"],
+  ["Mass Schedule Change", "Perubahan Jadwal Massal"],
+  ["Apply Schedule Change", "Terapkan Perubahan Jadwal"],
+  ["Generate Schedule", "Buat Jadwal"],
+  ["Generate Schedule Preview", "Pratinjau Pembuatan Jadwal"],
+  [
+    "Update existing generated schedules",
+    "Perbarui jadwal hasil pembuatan yang sudah ada",
+  ],
+  ["Shift Rule Mapping", "Pemetaan Aturan Shift"],
+  ["{p0} schedules · {p1} employees", "{p0} jadwal · {p1} karyawan"],
+];
+
+const employeeScheduleZhPhrases: PhraseMap = [
+  ["Schedule change applied successfully.", "排班变更已成功应用。"],
+  [
+    "Manage employee shift assignments and their effective periods.",
+    "管理员工班次分配及其生效周期。",
+  ],
+  [
+    "The system splits overlapping Employee Shift Rules, keeps the original rotation anchor after an exception, and updates only generated Daily Schedule rows. Manual or locked rows are reported as conflicts.",
+    "系统会拆分重叠的员工班次规则，在例外情况后保留原有轮换锚点，并仅更新自动生成的每日排班记录。手动或锁定的记录将作为冲突报告。",
+  ],
+  ["Atomic rule and Daily Schedule change", "规则和每日排班的原子变更"],
+  [
+    "Review daily employee schedules in a calendar-style matrix.",
+    "以日历矩阵查看员工每日排班。",
+  ],
+  [
+    "The system checks each employee's active shift rule for every date in the selected period, then creates daily shift assignments used by attendance processing.",
+    "系统会检查所选期间每个日期的员工有效班次规则，然后创建考勤处理所需的每日班次分配。",
+  ],
+  [
+    "Generate shift assignments using each employee's active shift rule?",
+    "是否使用每位员工的有效班次规则生成班次分配？",
+  ],
+  ["Generate Employee Schedule", "生成员工排班"],
+  ["Schedule generated successfully.", "排班生成成功。"],
+  ["Employee Shift Assignment", "员工班次分配"],
+  ["Daily Schedule updates", "每日排班更新"],
+  ["Rules archived", "规则已归档"],
+  ["Attendance rows", "考勤记录行"],
+  ["Schedule", "排班"],
+  ["Delete Schedule", "删除排班"],
+  ["Restore Schedule", "恢复排班"],
+  ["Schedule Filter", "排班筛选"],
+  [
+    "Choose a period and search by employee, shift, holiday, or day off.",
+    "选择日期范围，并按员工、班次、节假日或休息日搜索。",
+  ],
+  [
+    "Search employee, shift, holiday, or day off",
+    "搜索员工、班次、节假日或休息日",
+  ],
+  ["No schedule is assigned on this date.", "此日期未分配排班。"],
+  [
+    "Change the search keyword or selected date range.",
+    "请更改搜索关键字或所选日期范围。",
+  ],
+  [
+    "The schedule changed after the preview. Generate a new preview before applying.",
+    "预览后排班发生了变化。请先生成新的预览再应用。",
+  ],
+  [
+    "Search employees, select employees by department or position, then adjust individual selections manually.",
+    "搜索员工，按部门或职位选择员工，然后手动调整单个选择。",
+  ],
+  ["more", "更多"],
+  ["Schedule Detail", "排班详情"],
+  ["Schedule ID:", "排班 ID："],
+  ["Close detail", "关闭详情"],
+  ["No schedules found", "未找到排班"],
+  ["Select shift rule", "选择班次规则"],
+  ["Delete Schedule Permanently", "永久删除排班"],
+  ["Schedule permanently deleted.", "排班已永久删除。"],
+  ["Schedule restored successfully.", "排班恢复成功。"],
+  ["Schedule deleted successfully.", "排班删除成功。"],
+  [
+    "Are you sure you want to delete this daily schedule?",
+    "确定要删除此每日排班吗？",
+  ],
+  [
+    "Are you sure you want to restore this daily schedule?",
+    "确定要恢复此每日排班吗？",
+  ],
+  [
+    "Apply one Shift Rule to many employees and synchronize the Daily Schedule for the selected period.",
+    "将一个班次规则应用于多名员工，并同步所选期间的每日排班。",
+  ],
+  [
+    "Select the existing Shift Rule and the exact exception period. The server will preview every rule and Daily Schedule change.",
+    "选择现有的班次规则和准确的例外期间。服务器将预览每项规则和每日排班的变更。",
+  ],
+  ["Overwrite Final Attendance and Reprocess", "覆盖最终考勤并重新处理"],
+  [
+    "Enable this only when HR explicitly wants final attendance rows in the selected period to be recalculated.",
+    "仅当 HR 明确希望重新计算所选期间的最终考勤记录时启用。",
+  ],
+  [
+    "This snapshot is required for apply. If data changes after preview, the server rejects the stale fingerprint.",
+    "应用前必须保留此快照。如果预览后数据发生变化，服务器会拒绝过期的指纹。",
+  ],
+  [
+    "Apply the previewed Shift Rule and regenerate the affected Daily Schedule rows?",
+    "应用预览中的班次规则，并重新生成受影响的每日排班记录吗？",
+  ],
+  ["Ready to apply", "可以应用"],
+  ["Preview Changes", "预览更改"],
+  ["Mass Schedule Change", "批量排班变更"],
+  ["Apply Schedule Change", "应用排班变更"],
+  ["Generate Schedule", "生成排班"],
+  ["Generate Schedule Preview", "生成排班预览"],
+  ["Shift Rule Mapping", "班次规则映射"],
+  ["{p0} schedules · {p1} employees", "{p0} 个排班 · {p1} 名员工"],
+];
+
 const auditIdPhrases: PhraseMap = [
   ["Import Bank Result", "Hasil Impor Bank"],
   ["Bank Transfer Reference", "Referensi Transfer Bank"],
@@ -8373,6 +8595,7 @@ const decodeHtmlEntities = (value: string) =>
     .replace(/&amp;|&#38;/gi, "&");
 
 const compiledIdPhrases = compilePhrases([
+  ...employeeScheduleIdPhrases,
   ...idPhrases,
   ...additionalIdPhrases,
   ...auditIdPhrases,
@@ -8384,6 +8607,7 @@ const compiledIdPhrases = compilePhrases([
   ...commonIdPhrases,
 ]);
 const compiledZhPhrases = compilePhrases([
+  ...employeeScheduleZhPhrases,
   ...zhPhrases,
   ...additionalZhPhrases,
   ...auditZhPhrases,

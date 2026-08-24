@@ -1082,11 +1082,10 @@ const EmployeeShiftAssignmentListPage = () => {
                   />
 
                   <span className="text-xs text-slate-500">
-                    {filteredData.length} {i18nT("static.1b7lhos")}{" "}
-                    {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}{" "}
-                    {i18nT("static.19xoda3")} {employeeRows.length}{" "}
-                    {i18nT("static.5gxg69")}{" "}
-                    {employeeRows.length === 1 ? "" : i18nT("static.1w9pcoy")}
+                    {i18nT("static.employeeScheduleFilterSummary", {
+                      p0: filteredData.length,
+                      p1: employeeRows.length,
+                    })}
                   </span>
                 </div>
               )}

@@ -10,6 +10,7 @@ import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Tag } from "primereact/tag";
 import { useI18n } from "@/app/i18n";
+import { formatCompactDate } from "@/app/utils/date-format";
 import EmployeeSelectionStep, {
   EmployeeSelectionRow,
 } from "./EmployeeSelectionStep";
@@ -65,7 +66,7 @@ const employeeName = (employee?: EmployeeListRow) =>
   [employee?.first_name, employee?.middle_name, employee?.last_name]
     .filter(Boolean)
     .join(" ") ||
-  (employee ? `Employee #${employee.id}` : "Employee");
+  undefined;
 
 const GenerateScheduleWizard = () => {
   const { t: i18nT } = useI18n();
@@ -270,8 +271,7 @@ const GenerateScheduleWizard = () => {
               <strong>{preview.totals.assignments_to_update}</strong>
               <span>{i18nT("static.11hwh7o")}</span>
               <strong>
-                {dayjs(periodFrom).format("DD MMM YYYY")} –{" "}
-                {dayjs(actualTo).format("DD MMM YYYY")}
+                {formatCompactDate(periodFrom)} – {formatCompactDate(actualTo)}
               </strong>
               <span>{i18nT("static.141yy28")}</span>
               <strong>
@@ -303,7 +303,8 @@ const GenerateScheduleWizard = () => {
       >
         <td className="px-3 py-3 align-top">
           <div className="font-medium text-slate-800">
-            {employeeName(employee)}
+            {employeeName(employee) ||
+              i18nT("static.iapzf0", { p0: employeePreview.employee_id })}
           </div>
           {employee?.code && (
             <div className="mt-1 text-xs text-slate-500">{employee.code}</div>
@@ -337,9 +338,9 @@ const GenerateScheduleWizard = () => {
                     {segment.shift_rule_name || `#${segment.shift_rule_id}`}
                   </span>
                   <span className="ml-1 text-xs text-slate-500">
-                    ({dayjs(segment.effective_from).format("DD MMM YYYY")} -{" "}
+                    ({formatCompactDate(segment.effective_from)} -{" "}
                     {segment.effective_to
-                      ? dayjs(segment.effective_to).format("DD MMM YYYY")
+                      ? formatCompactDate(segment.effective_to)
                       : "..."}
                     )
                   </span>
@@ -586,7 +587,7 @@ const GenerateScheduleWizard = () => {
                   <span>{i18nT("static.11hwh7o")}</span>
                   <strong>
                     {periodFrom && actualTo
-                      ? `${dayjs(periodFrom).format("DD MMM YYYY")} – ${dayjs(actualTo).format("DD MMM YYYY")}`
+                      ? `${formatCompactDate(periodFrom)} – ${formatCompactDate(actualTo)}`
                       : "-"}
                   </strong>
                   <span>{i18nT("static.141yy28")}</span>

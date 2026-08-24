@@ -66,7 +66,7 @@ const employeeName = (employee?: EmployeeListRow) =>
   [employee?.first_name, employee?.middle_name, employee?.last_name]
     .filter(Boolean)
     .join(" ") ||
-  (employee ? `#${employee.id}` : "-");
+  undefined;
 
 const timelineOverlaps = (
   segment: { effective_from: string; effective_to: string | null },
@@ -88,7 +88,7 @@ const formatPeriod = (
 ) => `${format(new Date(from))} – ${to ? format(new Date(to)) : "∞"}`;
 
 const MassScheduleChangeWizard = () => {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, tText } = useI18n();
   const router = useRouter();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
@@ -131,7 +131,10 @@ const MassScheduleChangeWizard = () => {
           (employee) => !employee.deleted_at && employee.is_active !== false,
         )
         .sort((first, second) =>
-          employeeName(first).localeCompare(employeeName(second), "id"),
+          (employeeName(first) ?? "").localeCompare(
+            employeeName(second) ?? "",
+            "id",
+          ),
         ),
     [employeesData],
   );
@@ -282,7 +285,9 @@ const MassScheduleChangeWizard = () => {
           visible: true,
           severity: "success",
           summary: i18nT("static.udvru8"),
-          detail: response.message || i18nT("static.14lv1xk"),
+          detail: response.message
+            ? tText(response.message)
+            : i18nT("static.1wnk2rw"),
         }),
       );
       router.push(
@@ -679,7 +684,10 @@ const MassScheduleChangeWizard = () => {
                               <td className="px-3 py-3 font-semibold text-slate-800">
                                 {employeeName(
                                   employeeById.get(employeePreview.employee_id),
-                                )}
+                                ) ||
+                                  i18nT("static.iapzf0", {
+                                    p0: employeePreview.employee_id,
+                                  })}
                               </td>
                               <td className="px-3 py-3 text-xs text-slate-600">
                                 {before.length > 0 ? (

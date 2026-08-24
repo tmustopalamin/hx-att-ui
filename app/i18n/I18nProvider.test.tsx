@@ -71,4 +71,29 @@ describe("I18nProvider", () => {
     expect(translateStaticText("to", "id")).toBe("sampai");
     expect(translateStaticText("total records", "id")).toBe("total data");
   });
+
+  it("keeps employee schedule copy complete in all supported locales", () => {
+    const source =
+      "The schedule changed after the preview. Generate a new preview before applying.";
+
+    expect(translateStaticText(source, "en")).toBe(source);
+    expect(translateStaticText(source, "id")).toBe(
+      "Jadwal berubah setelah pratinjau. Buat pratinjau baru sebelum menerapkan perubahan.",
+    );
+    expect(translateStaticText(source, "zh-CN")).toBe(
+      "预览后排班发生了变化。请先生成新的预览再应用。",
+    );
+    expect(translateStaticText("{p0} schedules · {p1} employees", "id")).toBe(
+      "{p0} jadwal · {p1} karyawan",
+    );
+    expect(
+      translateStaticText("{p0} schedules · {p1} employees", "zh-CN"),
+    ).toBe("{p0} 个排班 · {p1} 名员工");
+    expect(
+      translateStaticText("Schedule change applied successfully.", "id"),
+    ).toBe("Perubahan jadwal berhasil diterapkan.");
+    expect(
+      translateStaticText("Schedule change applied successfully.", "zh-CN"),
+    ).toBe("排班变更已成功应用。");
+  });
 });
