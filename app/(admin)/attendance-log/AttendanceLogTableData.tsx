@@ -15,7 +15,6 @@ import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
-import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
@@ -23,6 +22,7 @@ import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
+import { MultiSelect } from "primereact/multiselect";
 import { Tag } from "primereact/tag";
 
 import { useDispatch } from "react-redux";
@@ -31,11 +31,12 @@ import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 import LoadingDataTable from "@/app/_components/LoadingDataTable";
 import Can from "@/app/_components/CanPermission";
 
+import { getBackgroundJobDetail } from "@/app/services/background-job-service";
 import {
-  AttendanceLogSyncResult,
-  remapEmployeeAttendanceLog,
+  AttendanceLogSyncOption,
+  getAttendanceLogSyncOptions,
   reviewMobileAttendanceSecurity,
-  syncAttendanceLog,
+  syncAttendanceLogSelected,
 } from "@/app/services/attendance-log-service";
 
 import { AttendanceLog } from "@/app/types/attendance-log";
@@ -45,6 +46,7 @@ import {
   isResponseTypeError,
 } from "@/app/utils/error-messages";
 import { fetcher } from "@/app/utils/fetcher";
+import { ResponseType } from "@/app/types/response-type";
 
 import { showToast } from "@/store/ToastSlice";
 import { formatStatusLabel } from "@/app/i18n/statusLabel";
@@ -65,8 +67,6 @@ type PaginatedAttendanceLogResponse = {
 type ProcessedFilter = "ALL" | "PROCESSED" | "UNPROCESSED";
 
 type QuickRange = "today" | "this_week" | "this_month" | null;
-
-type SyncDetail = AttendanceLogSyncResult["details"][number];
 
 const PROCESSED_OPTIONS = [
   {
@@ -100,6 +100,36 @@ const safeJsonStringify = (value: unknown) => {
   }
 };
 
+const BACKGROUND_JOB_TERMINAL_STATUSES = new Set([
+  "SUCCEEDED",
+  "PARTIAL_SUCCESS",
+  "FAILED",
+  "CANCELLED",
+]);
+
+const pollAttendanceSyncJob = async (
+  jobId: number,
+  refresh: () => Promise<unknown>,
+) => {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 2000);
+    });
+
+    try {
+      const job = await getBackgroundJobDetail(jobId);
+      if (!BACKGROUND_JOB_TERMINAL_STATUSES.has(job.status)) {
+        continue;
+      }
+
+      await refresh();
+      return;
+    } catch {
+      return;
+    }
+  }
+};
+
 const getSecurityData = (row: AttendanceLogRow | null) => {
   const extra = row?.extra_data;
   const security =
@@ -122,15 +152,11 @@ const AttendanceLogTableData = () => {
 
   const [syncLoading, setSyncLoading] = useState(false);
 
-  const [remapLoading, setRemapLoading] = useState(false);
-
   const [exportLoading, setExportLoading] = useState(false);
 
-  const [syncResultDialog, setSyncResultDialog] = useState(false);
+  const [syncSelectionDialog, setSyncSelectionDialog] = useState(false);
 
-  const [syncResult, setSyncResult] = useState<AttendanceLogSyncResult | null>(
-    null,
-  );
+  const [selectedScannerIds, setSelectedScannerIds] = useState<number[]>([]);
 
   const [dateFrom, setDateFrom] = useState<Date | null>(null);
 
@@ -184,6 +210,20 @@ const AttendanceLogTableData = () => {
     revalidateOnFocus: false,
     keepPreviousData: true,
   });
+
+  const syncOptionsKey = syncSelectionDialog
+    ? "attendance-log-sync-options"
+    : null;
+
+  const {
+    data: syncOptionsResponse,
+    error: syncOptionsError,
+    isLoading: syncOptionsLoading,
+  } = useSWR<ResponseType<AttendanceLogSyncOption[]>>(syncOptionsKey, () =>
+    getAttendanceLogSyncOptions(),
+  );
+
+  const syncOptions = syncOptionsResponse?.data ?? [];
 
   const rows = attendanceLogData?.data ?? [];
 
@@ -334,7 +374,7 @@ const AttendanceLogTableData = () => {
     Boolean(statusFilter) ||
     processedFilter !== "ALL";
 
-  const isActionRunning = syncLoading || remapLoading || exportLoading;
+  const isActionRunning = syncLoading || exportLoading;
 
   const showSuccess = (message: string) => {
     dispatch(
@@ -442,20 +482,30 @@ const AttendanceLogTableData = () => {
   };
 
   const handleSyncAttendanceLog = async () => {
+    if (!selectedScannerIds.length) {
+      return;
+    }
+
     try {
       setSyncLoading(true);
 
-      const response = await syncAttendanceLog();
+      const response = await syncAttendanceLogSelected(selectedScannerIds);
 
       if (!response.data?.job_id) {
         throw new Error("The synchronization job was not created.");
       }
 
-      returnToFirstPage();
+      const jobMessage = response.data.deduplicated
+        ? `Background Job #${response.data.job_id} is already running.`
+        : `Background Job #${response.data.job_id} has been queued.`;
 
-      if (first === 0) {
-        await refreshAttendanceLogData();
-      }
+      setSyncSelectionDialog(false);
+      setSelectedScannerIds([]);
+      await refreshAttendanceLogData();
+      void pollAttendanceSyncJob(
+        response.data.job_id,
+        refreshAttendanceLogData,
+      );
 
       dispatch(
         showToast({
@@ -465,7 +515,7 @@ const AttendanceLogTableData = () => {
             ? i18nT("static.12rl6qf")
             : i18nT("static.iag0jr"),
           detail: i18nT("static.11fc7sl", {
-            p0: response.message || i18nT("static.12wly34"),
+            p0: `${jobMessage} ${response.message || i18nT("static.12wly34")}`,
           }),
         }),
       );
@@ -477,113 +527,12 @@ const AttendanceLogTableData = () => {
   };
 
   const onClickSyncLog = () => {
-    requestActionConfirmation({
-      header: i18nT("static.60htrz"),
-      message: (
-        <div className="flex flex-col gap-2">
-          <span className="text-slate-600">{i18nT("static.1d0kg1t")} </span>
-
-          <span className="text-sm text-slate-500">
-            {i18nT("static.eos6df")}{" "}
-          </span>
-        </div>
-      ),
-      icon: "pi pi-sync",
-      defaultFocus: "reject",
-      accept: () => {
-        void handleSyncAttendanceLog();
-      },
-      reject: () => undefined,
-      footer: (options) => (
-        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
-          <Button
-            type="button"
-            label={i18nT("static.ew9em3")}
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            onClick={options.reject}
-          />
-
-          <Button
-            type="button"
-            label={i18nT("static.1wcvyci")}
-            icon="pi pi-sync"
-            severity="success"
-            onClick={options.accept}
-          />
-        </div>
-      ),
-    });
+    setSelectedScannerIds([]);
+    setSyncSelectionDialog(true);
   };
 
   const resetPagination = () => {
     setFirst(0);
-  };
-
-  const handleRemapEmployee = async () => {
-    try {
-      setRemapLoading(true);
-
-      await remapEmployeeAttendanceLog();
-
-      returnToFirstPage();
-
-      if (first === 0) {
-        await refreshAttendanceLogData();
-      }
-
-      showSuccess(i18nT("static.1egza5t"));
-    } catch (err: unknown) {
-      showError(err);
-    } finally {
-      setRemapLoading(false);
-    }
-  };
-
-  const returnToFirstPage = () => {
-    setFirst(0);
-  };
-
-  const onClickRemapEmployee = () => {
-    requestActionConfirmation({
-      header: i18nT("static.42np7r"),
-      message: (
-        <div className="flex flex-col gap-2">
-          <span className="text-slate-600">{i18nT("static.1mel9il")} </span>
-
-          <span className="text-sm text-slate-500">
-            {i18nT("static.2k78h2")}{" "}
-          </span>
-        </div>
-      ),
-      icon: "pi pi-user-edit",
-      defaultFocus: "reject",
-      accept: () => {
-        void handleRemapEmployee();
-      },
-      reject: () => undefined,
-      footer: (options) => (
-        <div className="flex flex-wrap justify-end gap-2 sm:gap-3">
-          <Button
-            type="button"
-            label={i18nT("static.ew9em3")}
-            icon="pi pi-times"
-            text
-            severity="secondary"
-            onClick={options.reject}
-          />
-
-          <Button
-            type="button"
-            label={i18nT("static.42np7r")}
-            icon="pi pi-user-edit"
-            severity="warning"
-            onClick={options.accept}
-          />
-        </div>
-      ),
-    });
   };
 
   const formatDisplayTime = (item: AttendanceLogRow) => {
@@ -1046,52 +995,6 @@ const AttendanceLogTableData = () => {
     return "";
   };
 
-  const syncDetailStatusBody = (rowData: SyncDetail) => {
-    const normalized = rowData.status?.toUpperCase();
-
-    if (normalized === "SUCCESS") {
-      return <Tag value={i18nT("static.udvru8")} severity="success" rounded />;
-    }
-
-    if (normalized === "PARTIAL") {
-      return <Tag value={i18nT("static.xcezp6")} severity="warning" rounded />;
-    }
-
-    if (normalized === "FAILED") {
-      return <Tag value={i18nT("static.npsixg")} severity="danger" rounded />;
-    }
-
-    return (
-      <Tag
-        value={i18nT(formatStatusLabel(rowData.status))}
-        severity="info"
-        rounded
-      />
-    );
-  };
-
-  const syncDetailMessageBody = (rowData: SyncDetail) => {
-    if (!rowData.error_message) {
-      return (
-        <span className="text-sm text-green-700">{i18nT("static.udvru8")}</span>
-      );
-    }
-
-    return (
-      <div className="max-w-md">
-        <div className="whitespace-normal text-sm font-medium text-red-600">
-          {rowData.error_message}
-        </div>
-
-        {rowData.suggestion && (
-          <div className="mt-1 whitespace-normal text-xs leading-5 text-slate-500">
-            {rowData.suggestion}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const selectedSecurity = getSecurityData(selectedLog);
 
   if (isLoading && !attendanceLogData) {
@@ -1138,30 +1041,19 @@ const AttendanceLogTableData = () => {
                 onClick={handleRefresh}
               />
 
-              <Button
-                type="button"
-                label={i18nT("static.d3bk7p")}
-                icon="pi pi-sync"
-                severity="success"
-                size="small"
-                loading={syncLoading}
-                disabled={remapLoading || exportLoading}
-                className="w-full sm:w-auto"
-                onClick={onClickSyncLog}
-              />
-
-              <Button
-                type="button"
-                label={i18nT("static.42np7r")}
-                icon="pi pi-user-edit"
-                severity="warning"
-                outlined
-                size="small"
-                loading={remapLoading}
-                disabled={syncLoading || exportLoading}
-                className="w-full sm:w-auto"
-                onClick={onClickRemapEmployee}
-              />
+              <Can permission="attendance-log.update">
+                <Button
+                  type="button"
+                  label={i18nT("static.d3bk7p")}
+                  icon="pi pi-sync"
+                  severity="success"
+                  size="small"
+                  loading={syncLoading}
+                  disabled={syncLoading || exportLoading}
+                  className="w-full sm:w-auto"
+                  onClick={onClickSyncLog}
+                />
+              </Can>
 
               <Button
                 type="button"
@@ -1171,7 +1063,7 @@ const AttendanceLogTableData = () => {
                 outlined
                 size="small"
                 loading={exportLoading}
-                disabled={!filteredData.length || syncLoading || remapLoading}
+                disabled={!filteredData.length || syncLoading}
                 className="w-full sm:w-auto"
                 onClick={() => {
                   void exportExcel();
@@ -1894,188 +1786,91 @@ const AttendanceLogTableData = () => {
         </div>
       </Dialog>
 
-      {/* Sync Result */}
+      {/* Sync selection */}
       <Dialog
-        header={i18nT("static.jcf2ys")}
-        visible={syncResultDialog}
-        style={{
-          width: "96vw",
-          maxWidth: "76rem",
-        }}
-        breakpoints={{
-          "960px": "95vw",
-        }}
+        header={i18nT("static.60htrz")}
+        visible={syncSelectionDialog}
+        style={{ width: "min(42rem, 94vw)" }}
         modal
         draggable={false}
         resizable={false}
+        closable={!syncLoading}
         onHide={() => {
-          setSyncResultDialog(false);
-          setSyncResult(null);
+          if (!syncLoading) {
+            setSyncSelectionDialog(false);
+            setSelectedScannerIds([]);
+          }
         }}
       >
-        {!syncResult ? (
-          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            <i className="pi pi-info-circle mt-0.5" />
+        <div className="flex flex-col gap-4">
+          <p className="m-0 text-sm leading-6 text-slate-600">
+            {i18nT("static.1c1iptj")}
+          </p>
 
-            <span>{i18nT("static.o3h7wg")}</span>
+          <MultiSelect
+            value={selectedScannerIds}
+            options={syncOptions}
+            optionLabel="name"
+            optionValue="id"
+            filter
+            display="chip"
+            className="w-full"
+            placeholder={i18nT("static.1c1iptj")}
+            loading={syncOptionsLoading}
+            disabled={
+              syncOptionsLoading || syncLoading || Boolean(syncOptionsError)
+            }
+            onChange={(event) => setSelectedScannerIds(event.value ?? [])}
+            itemTemplate={(option: AttendanceLogSyncOption) => (
+              <div className="flex min-w-0 flex-col">
+                <span className="font-medium text-slate-800">
+                  {option.name}
+                </span>
+                <span className="text-xs text-slate-500">{option.code}</span>
+              </div>
+            )}
+          />
+
+          {syncOptionsError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {getErrorMessage(syncOptionsError)}
+            </div>
+          )}
+
+          {!syncOptionsLoading && !syncOptionsError && !syncOptions.length && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+              {i18nT("static.1mgy3fc")}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              label={i18nT("static.ew9em3")}
+              severity="secondary"
+              text
+              disabled={syncLoading}
+              onClick={() => {
+                setSyncSelectionDialog(false);
+                setSelectedScannerIds([]);
+              }}
+            />
+            <Button
+              type="button"
+              label={i18nT("static.1wcvyci")}
+              icon="pi pi-sync"
+              severity="success"
+              loading={syncLoading}
+              disabled={
+                syncLoading ||
+                syncOptionsLoading ||
+                Boolean(syncOptionsError) ||
+                !selectedScannerIds.length
+              }
+              onClick={() => void handleSyncAttendanceLog()}
+            />
           </div>
-        ) : (
-          <div className="flex flex-col gap-5">
-            <div
-              className={`rounded-xl border p-4 ${
-                syncResult.scanner_failed > 0
-                  ? syncResult.scanner_success > 0
-                    ? "border-amber-200 bg-amber-50"
-                    : "border-red-200 bg-red-50"
-                  : "border-green-200 bg-green-50"
-              }`}
-            >
-              <h2 className="m-0 text-base font-semibold text-slate-800">
-                {syncResult.message || i18nT("static.1oapug5")}
-              </h2>
-
-              <p className="m-0 mt-1 text-sm text-slate-600">
-                {i18nT("static.1k6dje7")}{" "}
-                {i18nT(formatStatusLabel(syncResult.status))}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">
-                  {i18nT("static.1j0p99e")}
-                </p>
-
-                <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
-                  {syncResult.scanner_success}/{syncResult.scanner_total}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="m-0 text-xs text-slate-500">
-                  {i18nT("static.1k672yq")}
-                </p>
-
-                <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
-                  {syncResult.total_fetched.toLocaleString("id-ID")}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-                <p className="m-0 text-xs text-green-700">
-                  {i18nT("static.kx1wp5")}
-                </p>
-
-                <p className="m-0 mt-1 text-xl font-semibold text-green-800">
-                  {syncResult.total_inserted.toLocaleString("id-ID")}
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                <p className="m-0 text-xs text-amber-700">
-                  {i18nT("static.1xz5c1i")}
-                </p>
-
-                <p className="m-0 mt-1 text-xl font-semibold text-amber-800">
-                  {syncResult.total_duplicate.toLocaleString("id-ID")}
-                </p>
-              </div>
-
-              <div className="col-span-2 rounded-xl border border-red-200 bg-red-50 p-4 md:col-span-1">
-                <p className="m-0 text-xs text-red-700">
-                  {i18nT("static.jg801q")}
-                </p>
-
-                <p className="m-0 mt-1 text-xl font-semibold text-red-800">
-                  {syncResult.total_invalid_mapping.toLocaleString("id-ID")}
-                </p>
-              </div>
-            </div>
-
-            <div className="w-full overflow-hidden rounded-xl border border-slate-200">
-              <DataTable
-                value={syncResult.details ?? []}
-                paginator
-                rows={10}
-                rowsPerPageOptions={[10, 25, 50]}
-                stripedRows
-                rowHover
-                scrollable
-                responsiveLayout="scroll"
-                size="small"
-                tableStyle={{
-                  minWidth: "90rem",
-                }}
-                emptyMessage={i18nT("static.1mgy3fc")}
-              >
-                <Column
-                  field="scanner_name"
-                  header={i18nT("static.1bz37xh")}
-                  style={{
-                    minWidth: "16rem",
-                  }}
-                />
-
-                <Column
-                  field="scanner_ip"
-                  header={i18nT("static.1vjcbqs")}
-                  style={{
-                    minWidth: "12rem",
-                  }}
-                />
-
-                <Column
-                  field="status"
-                  header={i18nT("static.3pd73")}
-                  body={syncDetailStatusBody}
-                  style={{
-                    minWidth: "10rem",
-                  }}
-                />
-
-                <Column
-                  field="fetched"
-                  header={i18nT("static.1k672yq")}
-                  style={{
-                    minWidth: "8rem",
-                  }}
-                />
-
-                <Column
-                  field="inserted"
-                  header={i18nT("static.kx1wp5")}
-                  style={{
-                    minWidth: "8rem",
-                  }}
-                />
-
-                <Column
-                  field="duplicate"
-                  header={i18nT("static.1xz5c1i")}
-                  style={{
-                    minWidth: "9rem",
-                  }}
-                />
-
-                <Column
-                  field="invalid_mapping"
-                  header={i18nT("static.1y20ekw")}
-                  style={{
-                    minWidth: "9rem",
-                  }}
-                />
-
-                <Column
-                  header={i18nT("static.1cam7ic")}
-                  body={syncDetailMessageBody}
-                  style={{
-                    minWidth: "28rem",
-                  }}
-                />
-              </DataTable>
-            </div>
-          </div>
-        )}
+        </div>
       </Dialog>
     </>
   );

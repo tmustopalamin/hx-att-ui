@@ -15,6 +15,10 @@ import {
   cancelBackgroundJob,
   getBackgroundJobDetail,
 } from "@/app/services/background-job-service";
+import {
+  AttendanceLogSyncJobResult,
+  AttendanceLogSyncScannerResult,
+} from "@/app/services/attendance-log-service";
 import { BackgroundJobDetail } from "@/app/types/background-job";
 import { formatDateTimeWithSeconds } from "@/app/utils/date-format";
 import { hasPermission } from "@/app/utils/permission-utils";
@@ -77,6 +81,266 @@ const percent = (job: BackgroundJobDetail) =>
   (job.progress_total && job.progress_total > 0
     ? Math.min(100, (job.progress_current / job.progress_total) * 100)
     : null);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getAttendanceSyncResult = (
+  value: unknown,
+): AttendanceLogSyncJobResult | null => {
+  if (
+    !isRecord(value) ||
+    typeof value.scanner_total !== "number" ||
+    !Array.isArray(value.details)
+  ) {
+    return null;
+  }
+
+  return value as unknown as AttendanceLogSyncJobResult;
+};
+
+const formatCount = (value?: number | null) =>
+  (value ?? 0).toLocaleString("id-ID");
+
+const normalizeAttendanceSyncStatus = (status?: string | null) => {
+  if (status === "SUCCESS") return "SUCCEEDED";
+  if (status === "PARTIAL") return "PARTIAL_SUCCESS";
+  return status || "UNKNOWN";
+};
+
+const AttendanceSyncResultPanel = ({
+  result,
+  t,
+  tText,
+}: {
+  result: AttendanceLogSyncJobResult;
+  t: (
+    key: string,
+    params?: Record<string, string | number | null | undefined>,
+  ) => string;
+  tText: (
+    source: string,
+    params?: Record<string, string | number | null | undefined>,
+  ) => string;
+}) => {
+  const resultTone =
+    result.scanner_failed > 0
+      ? result.scanner_success > 0
+        ? "border-amber-200 bg-amber-50"
+        : "border-red-200 bg-red-50"
+      : "border-green-200 bg-green-50";
+
+  const scannerStatus = (detail: AttendanceLogSyncScannerResult) => (
+    <Tag
+      value={tText(
+        formatStatusLabel(normalizeAttendanceSyncStatus(detail.status)),
+      )}
+      severity={severity(normalizeAttendanceSyncStatus(detail.status))}
+      rounded
+    />
+  );
+
+  const syncMessage =
+    result.scanner_failed === 0
+      ? t("static.attendanceSyncCompletedSuccessfully")
+      : result.scanner_success > 0
+        ? t("static.attendanceSyncCompletedWithFailures", {
+            p0: result.scanner_failed,
+          })
+        : t("static.attendanceSyncFailedAll");
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className={`rounded-xl border p-4 ${resultTone}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="m-0 text-base font-semibold text-slate-800">
+            {syncMessage || result.message || t("static.attendanceSyncResult")}
+          </h3>
+          <Tag
+            value={tText(
+              formatStatusLabel(normalizeAttendanceSyncStatus(result.status)),
+            )}
+            severity={severity(normalizeAttendanceSyncStatus(result.status))}
+            rounded
+          />
+        </div>
+        <p className="m-0 mt-1 text-sm text-slate-600">
+          {t("static.attendanceSyncCompletedWithRemap")}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        {[
+          [
+            t("static.attendanceSyncSuccessfulScanners"),
+            `${result.scanner_success}/${result.scanner_total}`,
+          ],
+          [t("static.1k672yq"), formatCount(result.total_fetched)],
+          [t("static.kx1wp5"), formatCount(result.total_inserted)],
+          [
+            t("static.attendanceSyncDuplicates"),
+            formatCount(result.total_duplicate),
+          ],
+          [t("static.axbf59"), formatCount(result.total_invalid_mapping)],
+        ].map(([label, display]) => (
+          <div
+            key={label}
+            className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+          >
+            <p className="m-0 text-xs text-slate-500">{label}</p>
+            <p className="m-0 mt-1 text-xl font-semibold text-slate-800">
+              {display}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-slate-200">
+        <div className="border-b border-slate-200 px-4 py-3">
+          <h3 className="m-0 text-sm font-semibold text-slate-800">
+            {t("static.attendanceSyncScannerDetails")}
+          </h3>
+        </div>
+        <table className="w-full min-w-[56rem] text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <th className="px-3 py-2">{t("static.attendanceSyncDevice")}</th>
+              <th className="px-3 py-2">{t("static.3pd73")}</th>
+              <th className="px-3 py-2">{t("static.1k672yq")}</th>
+              <th className="px-3 py-2">{t("static.kx1wp5")}</th>
+              <th className="px-3 py-2">
+                {t("static.attendanceSyncDuplicates")}
+              </th>
+              <th className="px-3 py-2">{t("static.axbf59")}</th>
+              <th className="px-3 py-2">{t("static.1cam7ic")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.details.map((detail) => (
+              <tr
+                key={`${detail.scanner_id}-${detail.started_at}`}
+                className="border-b border-slate-100 align-top"
+              >
+                <td className="px-3 py-3">
+                  <div className="font-medium text-slate-800">
+                    {detail.scanner_name}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {detail.scanner_code || detail.scanner_ip}
+                  </div>
+                </td>
+                <td className="px-3 py-3">{scannerStatus(detail)}</td>
+                <td className="px-3 py-3">{formatCount(detail.fetched)}</td>
+                <td className="px-3 py-3">{formatCount(detail.inserted)}</td>
+                <td className="px-3 py-3">{formatCount(detail.duplicate)}</td>
+                <td className="px-3 py-3">
+                  {formatCount(detail.invalid_mapping)}
+                </td>
+                <td className="max-w-[20rem] whitespace-normal px-3 py-3 text-slate-600">
+                  {detail.error_message ||
+                    detail.suggestion ||
+                    t("static.1tmo59u")}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {result.remap && (
+        <div className="overflow-x-auto rounded-xl border border-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-3">
+            <h3 className="m-0 text-sm font-semibold text-slate-800">
+              {t("static.attendanceSyncEmployeeRemapping")}
+            </h3>
+            <span className="text-xs text-slate-500">
+              {t("static.rpvfkb")}: {result.remap.scope}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 p-4 md:grid-cols-5">
+            {[
+              [t("static.uojsmj"), result.remap.candidate_count],
+              [t("static.miz9ao"), result.remap.updated_count],
+              [
+                t("static.attendanceSyncMappedValid"),
+                result.remap.mapped_valid_count,
+              ],
+              [
+                t("static.attendanceSyncMarkedInvalid"),
+                result.remap.marked_invalid_count,
+              ],
+              [
+                t("static.attendanceSyncUnchanged"),
+                result.remap.skipped_unchanged_count,
+              ],
+            ].map(([label, display]) => (
+              <div key={label} className="rounded-lg bg-slate-50 p-3">
+                <p className="m-0 text-xs text-slate-500">{label}</p>
+                <p className="m-0 mt-1 text-lg font-semibold text-slate-800">
+                  {formatCount(Number(display))}
+                </p>
+              </div>
+            ))}
+          </div>
+          <table className="w-full min-w-[48rem] text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <th className="px-3 py-2">
+                  {t("static.attendanceSyncDevice")}
+                </th>
+                <th className="px-3 py-2">{t("static.uojsmj")}</th>
+                <th className="px-3 py-2">{t("static.miz9ao")}</th>
+                <th className="px-3 py-2">
+                  {t("static.attendanceSyncMappedValid")}
+                </th>
+                <th className="px-3 py-2">
+                  {t("static.attendanceSyncMarkedInvalid")}
+                </th>
+                <th className="px-3 py-2">
+                  {t("static.attendanceSyncUnchanged")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.remap.details.map((detail) => (
+                <tr
+                  key={detail.scanner_id}
+                  className="border-b border-slate-100"
+                >
+                  <td className="px-3 py-3 font-medium text-slate-800">
+                    {result.details.find(
+                      (scanner) => scanner.scanner_id === detail.scanner_id,
+                    )?.scanner_name || `#${detail.scanner_id}`}
+                  </td>
+                  <td className="px-3 py-3">
+                    {formatCount(detail.candidate_count)}
+                  </td>
+                  <td className="px-3 py-3">
+                    {formatCount(detail.updated_count)}
+                  </td>
+                  <td className="px-3 py-3">
+                    {formatCount(detail.mapped_valid_count)}
+                  </td>
+                  <td className="px-3 py-3">
+                    {formatCount(detail.marked_invalid_count)}
+                  </td>
+                  <td className="px-3 py-3">
+                    {formatCount(detail.skipped_unchanged_count)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {result.remap.details.length === 0 && (
+            <p className="m-0 px-4 pb-4 text-sm text-slate-500">
+              {t("static.attendanceSyncNoUnmappedLogs")}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function BackgroundJobDetailData() {
   const { t: i18nT, tText } = useI18n();
@@ -190,6 +454,14 @@ export default function BackgroundJobDetailData() {
   if (!job) return null;
 
   const value = percent(job);
+  const attendanceSyncResult = [
+    "ATTENDANCE_SYNC",
+    "ATTENDANCE_SYNC_SCANNER",
+    "ATTENDANCE_SYNC_BATCH",
+    "ATTENDANCE_SYNC_SELECTION",
+  ].includes(job.job_type)
+    ? getAttendanceSyncResult(job.result)
+    : null;
 
   return (
     <div className="space-y-4">
@@ -294,9 +566,19 @@ export default function BackgroundJobDetailData() {
           <h2 className="m-0 text-base font-bold text-slate-800">
             {i18nT("static.1170bdt")}{" "}
           </h2>
-          <pre className="mt-3 max-h-[28rem] overflow-auto rounded-xl bg-slate-900 p-4 text-xs leading-5 text-slate-100">
-            {JSON.stringify(job.result, null, 2)}
-          </pre>
+          {attendanceSyncResult ? (
+            <div className="mt-3">
+              <AttendanceSyncResultPanel
+                result={attendanceSyncResult}
+                t={i18nT}
+                tText={tText}
+              />
+            </div>
+          ) : (
+            <pre className="mt-3 max-h-[28rem] overflow-auto rounded-xl bg-slate-900 p-4 text-xs leading-5 text-slate-100">
+              {JSON.stringify(job.result, null, 2)}
+            </pre>
+          )}
         </Card>
       )}
 

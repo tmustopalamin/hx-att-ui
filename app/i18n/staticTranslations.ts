@@ -5128,6 +5128,35 @@ const auditZhPhrases: PhraseMap = [
 ];
 
 const attendanceIdPhrases: PhraseMap = [
+  ["Attendance synchronization result", "Hasil sinkronisasi absensi"],
+  [
+    "Attendance log sync completed successfully.",
+    "Sinkronisasi log absensi berhasil diselesaikan.",
+  ],
+  [
+    "Attendance log sync completed with {p0} failed scanner(s).",
+    "Sinkronisasi log absensi selesai dengan {p0} pemindai gagal.",
+  ],
+  [
+    "Attendance log sync failed for all scanners.",
+    "Sinkronisasi log absensi gagal untuk semua pemindai.",
+  ],
+  [
+    "Synchronization and employee remapping completed in this job.",
+    "Sinkronisasi dan pemetaan ulang karyawan selesai dalam pekerjaan ini.",
+  ],
+  ["Successful scanners", "Pemindai berhasil"],
+  ["Duplicates", "Duplikat"],
+  ["Scanner details", "Detail pemindai"],
+  ["Device", "Perangkat"],
+  ["Employee remapping", "Pemetaan ulang karyawan"],
+  ["Mapped valid", "Pemetaan valid"],
+  ["Marked invalid", "Ditandai tidak valid"],
+  ["Unchanged", "Tidak berubah"],
+  [
+    "No unmapped logs were found in the selected devices.",
+    "Tidak ada log tanpa pemetaan pada perangkat yang dipilih.",
+  ],
   ["Attendance rejected as invalid.", "Absensi ditolak sebagai tidak valid."],
   [
     "Filter raw logs by date, employee, scanner, processing state, or validation status.",
@@ -5276,6 +5305,32 @@ const attendanceIdPhrases: PhraseMap = [
 ];
 
 const attendanceZhPhrases: PhraseMap = [
+  ["Attendance synchronization result", "考勤同步结果"],
+  ["Attendance log sync completed successfully.", "考勤日志同步成功完成。"],
+  [
+    "Attendance log sync completed with {p0} failed scanner(s).",
+    "考勤日志同步完成，但有 {p0} 个扫描器失败。",
+  ],
+  [
+    "Attendance log sync failed for all scanners.",
+    "所有扫描器的考勤日志同步均失败。",
+  ],
+  [
+    "Synchronization and employee remapping completed in this job.",
+    "此任务中的考勤同步和员工重新映射已完成。",
+  ],
+  ["Successful scanners", "成功的扫描器"],
+  ["Duplicates", "重复项"],
+  ["Scanner details", "扫描器详情"],
+  ["Device", "设备"],
+  ["Employee remapping", "员工重新映射"],
+  ["Mapped valid", "有效映射"],
+  ["Marked invalid", "标记为无效"],
+  ["Unchanged", "未更改"],
+  [
+    "No unmapped logs were found in the selected devices.",
+    "所选设备中未找到未映射的考勤日志。",
+  ],
   ["Attendance rejected as invalid.", "考勤已拒绝并标记为无效。"],
   [
     "Filter raw logs by date, employee, scanner, processing state, or validation status.",

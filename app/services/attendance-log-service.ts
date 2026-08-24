@@ -1,8 +1,8 @@
-import { apiFetchResponse } from "@/app/utils/api-client";
+import { apiFetch, apiFetchResponse } from "@/app/utils/api-client";
 
 import { AttendanceLog } from "../types/attendance-log";
 import { BackgroundJobAccepted } from "../types/background-job";
-import { ResponseTypeError } from "../types/response-type";
+import { ResponseType, ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/attendance-log";
 
@@ -251,6 +251,51 @@ export interface AttendanceLogSyncResult {
 
   details: AttendanceLogSyncScannerResult[];
 }
+
+export interface AttendanceLogSyncOption {
+  id: number;
+  code: string;
+  name: string;
+  last_pull_time: string | null;
+  last_sync_at: string | null;
+  last_sync_status: string | null;
+}
+
+export interface AttendanceLogRemapScannerResult {
+  scanner_id: number;
+  candidate_count: number;
+  updated_count: number;
+  mapped_valid_count: number;
+  marked_invalid_count: number;
+  skipped_unchanged_count: number;
+}
+
+export interface AttendanceLogRemapStageResult {
+  scope: string;
+  scanner_ids: number[];
+  candidate_count: number;
+  updated_count: number;
+  mapped_valid_count: number;
+  marked_invalid_count: number;
+  skipped_unchanged_count: number;
+  details: AttendanceLogRemapScannerResult[];
+}
+
+export type AttendanceLogSyncJobResult = AttendanceLogSyncResult & {
+  remap?: AttendanceLogRemapStageResult;
+};
+
+export const getAttendanceLogSyncOptions = async () =>
+  apiFetch<ResponseType<AttendanceLogSyncOption[]>>(`${API_URL}/sync-options`);
+
+export const syncAttendanceLogSelected = async (scannerIds: number[]) =>
+  apiFetch<ResponseType<BackgroundJobAccepted>>(`${API_URL}/sync-selected`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ scanner_ids: scannerIds }),
+  });
 
 export const syncAttendanceLog = async (): Promise<{
   success: boolean;

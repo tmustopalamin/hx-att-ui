@@ -4016,6 +4016,25 @@ const staticTextSources = {
   "static.employeeSchedulePartialConfiguration": "Partial configuration",
   "static.employeeScheduleNoActiveRule": "No active rule - skipped",
   "static.employeeScheduleSkippedReason": "This employee will not be changed.",
+  "static.attendanceSyncResult": "Attendance synchronization result",
+  "static.attendanceSyncCompletedSuccessfully":
+    "Attendance log sync completed successfully.",
+  "static.attendanceSyncCompletedWithFailures":
+    "Attendance log sync completed with {p0} failed scanner(s).",
+  "static.attendanceSyncFailedAll":
+    "Attendance log sync failed for all scanners.",
+  "static.attendanceSyncCompletedWithRemap":
+    "Synchronization and employee remapping completed in this job.",
+  "static.attendanceSyncSuccessfulScanners": "Successful scanners",
+  "static.attendanceSyncDuplicates": "Duplicates",
+  "static.attendanceSyncScannerDetails": "Scanner details",
+  "static.attendanceSyncDevice": "Device",
+  "static.attendanceSyncEmployeeRemapping": "Employee remapping",
+  "static.attendanceSyncMappedValid": "Mapped valid",
+  "static.attendanceSyncMarkedInvalid": "Marked invalid",
+  "static.attendanceSyncUnchanged": "Unchanged",
+  "static.attendanceSyncNoUnmappedLogs":
+    "No unmapped logs were found in the selected devices.",
   "static.employeeScheduleFilterSummary": "{p0} schedules · {p1} employees",
 } as const;
 

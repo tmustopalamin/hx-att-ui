@@ -72,6 +72,39 @@ describe("I18nProvider", () => {
     expect(translateStaticText("total records", "id")).toBe("total data");
   });
 
+  it("translates attendance sync result copy in supported locales", () => {
+    expect(
+      translateStaticText(
+        "Synchronization and employee remapping completed in this job.",
+        "id",
+      ),
+    ).toBe(
+      "Sinkronisasi dan pemetaan ulang karyawan selesai dalam pekerjaan ini.",
+    );
+    expect(
+      translateStaticText(
+        "Synchronization and employee remapping completed in this job.",
+        "zh-CN",
+      ),
+    ).toBe("此任务中的考勤同步和员工重新映射已完成。");
+    expect(translateStaticText("Scanner details", "id")).toBe(
+      "Detail pemindai",
+    );
+    expect(translateStaticText("Scanner details", "zh-CN")).toBe("扫描器详情");
+    expect(
+      translateStaticText(
+        "Attendance log sync completed with {p0} failed scanner(s).",
+        "id",
+      ),
+    ).toBe("Sinkronisasi log absensi selesai dengan {p0} pemindai gagal.");
+    expect(
+      translateStaticText(
+        "Attendance log sync completed with {p0} failed scanner(s).",
+        "zh-CN",
+      ),
+    ).toBe("考勤日志同步完成，但有 {p0} 个扫描器失败。");
+  });
+
   it("keeps employee schedule copy complete in all supported locales", () => {
     const source =
       "The schedule changed after the preview. Generate a new preview before applying.";
