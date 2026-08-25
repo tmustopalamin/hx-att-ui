@@ -32,6 +32,12 @@ type MinimumSetupItem = {
   href?: string;
 };
 
+type OptionalPayrollItem = {
+  label: string;
+  description?: string;
+  href: string;
+};
+
 export default function EmployeeOverviewPage() {
   const { t: i18nT, tText } = useI18n();
   const params = useParams<{ id: string }>();
@@ -119,6 +125,22 @@ export default function EmployeeOverviewPage() {
       ],
     },
   ];
+  const optionalPayrollItems: OptionalPayrollItem[] = [
+    {
+      label: i18nT("static.14pnb2x"),
+      description: i18nT("static.1wmt3v6"),
+      href: `/employees/${employeeId}/payroll/income-component`,
+    },
+    {
+      label: i18nT("static.wfytj7"),
+      description: i18nT("static.1bt6l0u"),
+      href: `/employees/${employeeId}/payroll/deduction-component`,
+    },
+    {
+      label: i18nT("static.kbepee"),
+      href: `/employees/${employeeId}/payroll/bpjs`,
+    },
+  ];
   return (
     <div className="flex flex-col gap-5">
       <Card className="border border-slate-200 shadow-sm">
@@ -196,6 +218,49 @@ export default function EmployeeOverviewPage() {
                     </span>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {readiness && (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="m-0 text-sm font-semibold text-slate-900">
+                  {i18nT("static.11zzcwa")}
+                </h2>
+                <Tag value={i18nT("static.1yfbac9")} severity="info" rounded />
+              </div>
+
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                {optionalPayrollItems.map((item) => (
+                  <div
+                    key={item.href}
+                    className="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-4"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="m-0 text-sm font-medium text-slate-900">
+                        {item.label}
+                      </h3>
+                      <Tag
+                        value={i18nT("static.1yfbac9")}
+                        severity="info"
+                        rounded
+                      />
+                    </div>
+                    {item.description && (
+                      <p className="m-0 mt-2 text-xs leading-5 text-slate-600">
+                        {item.description}
+                      </p>
+                    )}
+                    <Link
+                      href={item.href}
+                      className="mt-auto pt-3 text-xs font-semibold text-blue-700 hover:underline"
+                    >
+                      {i18nT("static.n6hn1l")}
+                      <i className="pi pi-arrow-right ml-1 text-[0.65rem]" />
+                    </Link>
+                  </div>
+                ))}
               </div>
             </div>
           )}
