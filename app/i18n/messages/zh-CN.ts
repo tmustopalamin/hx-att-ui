@@ -119,6 +119,7 @@ const messages: Record<keyof typeof en, string> = {
   "nav.training": "培训",
   "nav.performance": "绩效",
   "nav.notificationCenter": "通知中心",
+  "nav.mobileApp": "移动应用",
   "nav.settings": "设置",
   "nav.trainingCertification": "培训与认证",
   "nav.hrAnalytics": "人力资源分析",

@@ -127,6 +127,7 @@ const messages = {
   "nav.training": "Training",
   "nav.performance": "Performance",
   "nav.notificationCenter": "Notification Center",
+  "nav.mobileApp": "Mobile App",
   "nav.settings": "Settings",
   "nav.trainingCertification": "Training & Certification",
   "nav.hrAnalytics": "HR Analytics",

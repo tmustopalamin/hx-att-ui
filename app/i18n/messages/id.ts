@@ -130,6 +130,7 @@ const messages: Record<keyof typeof en, string> = {
   "nav.training": "Pelatihan",
   "nav.performance": "Kinerja",
   "nav.notificationCenter": "Pusat Notifikasi",
+  "nav.mobileApp": "Aplikasi Mobile",
   "nav.settings": "Pengaturan",
   "nav.trainingCertification": "Pelatihan & Sertifikasi",
   "nav.hrAnalytics": "Analitik HR",

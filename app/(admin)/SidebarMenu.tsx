@@ -311,6 +311,12 @@ const settingSubMenus: SettingSubMenu[] = [
         icon: "pi-cog",
         permission: "background-job.read",
       },
+      {
+        href: "/setting/mobile-app",
+        label: "Mobile App",
+        icon: "pi-mobile",
+        permission: "master-data.read",
+      },
     ],
   },
   {
@@ -514,6 +520,7 @@ const menuTranslationKeys: Record<string, string> = {
   "Attendance Log": "nav.attendanceLog",
   "Attendance Summary": "nav.attendanceSummary",
   "Run Payroll": "nav.runPayroll",
+  "Mobile App": "nav.mobileApp",
   "Self Service": "nav.selfService",
   Approval: "nav.approval",
   "Employee Management": "nav.employeeManagement",

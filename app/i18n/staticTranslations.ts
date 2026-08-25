@@ -347,6 +347,103 @@ const zhPhrases: PhraseMap = [
   ["Berlaku sejak", "生效日期"],
 ];
 
+const mobileAppIdPhrases: PhraseMap = [
+  ["Open link", "Buka tautan"],
+  ["Download file", "Unduh file"],
+  ["Download Hexing HRIS Mobile", "Unduh Hexing HRIS Mobile"],
+  ["Download Android application", "Unduh aplikasi Android"],
+  ["Open mobile application link", "Buka tautan aplikasi mobile"],
+  ["Mobile App Configuration", "Konfigurasi Aplikasi Mobile"],
+  [
+    "Configure the Android application link displayed at the bottom of the profile sidebar.",
+    "Konfigurasikan tautan aplikasi Android yang ditampilkan di bagian bawah sidebar profil.",
+  ],
+  [
+    "The button is visible to authenticated users only when it is enabled and has a valid link.",
+    "Tombol hanya terlihat oleh pengguna yang terautentikasi jika diaktifkan dan memiliki tautan yang valid.",
+  ],
+  ["Button label", "Label tombol"],
+  ["Android application link", "Tautan aplikasi Android"],
+  [
+    "https://play.google.com/store/apps/details?id=...",
+    "https://play.google.com/store/apps/details?id=...",
+  ],
+  [
+    "Use an https:// Play Store URL or the direct APK download URL.",
+    "Gunakan URL Play Store https:// atau URL unduhan APK langsung.",
+  ],
+  ["The button label is required.", "Label tombol wajib diisi."],
+  [
+    "A link is required when the button is enabled.",
+    "Tautan wajib diisi saat tombol diaktifkan.",
+  ],
+  [
+    "Use a valid http:// or https:// URL.",
+    "Gunakan URL http:// atau https:// yang valid.",
+  ],
+  [
+    "Mobile app link configuration saved.",
+    "Konfigurasi tautan aplikasi mobile berhasil disimpan.",
+  ],
+  [
+    "Loading mobile app configuration...",
+    "Memuat konfigurasi aplikasi mobile...",
+  ],
+  [
+    "You have read-only access. Contact an administrator with master-data.update permission to change this link.",
+    "Anda memiliki akses hanya-baca. Hubungi administrator dengan izin master-data.update untuk mengubah tautan ini.",
+  ],
+  ["Refreshing configuration...", "Memuat ulang konfigurasi..."],
+  [
+    "Changes use optimistic concurrency protection.",
+    "Perubahan menggunakan perlindungan konkurensi optimistis.",
+  ],
+];
+
+const mobileAppZhPhrases: PhraseMap = [
+  ["Open link", "打开链接"],
+  ["Download file", "下载文件"],
+  ["Download Hexing HRIS Mobile", "下载 Hexing HRIS Mobile"],
+  ["Download Android application", "下载 Android 应用"],
+  ["Open mobile application link", "打开移动应用链接"],
+  ["Mobile App Configuration", "移动应用配置"],
+  [
+    "Configure the Android application link displayed at the bottom of the profile sidebar.",
+    "配置显示在个人资料侧边栏底部的 Android 应用链接。",
+  ],
+  [
+    "The button is visible to authenticated users only when it is enabled and has a valid link.",
+    "仅当按钮已启用且链接有效时，经过身份验证的用户才能看到该按钮。",
+  ],
+  ["Button label", "按钮标签"],
+  ["Android application link", "Android 应用链接"],
+  [
+    "https://play.google.com/store/apps/details?id=...",
+    "https://play.google.com/store/apps/details?id=...",
+  ],
+  [
+    "Use an https:// Play Store URL or the direct APK download URL.",
+    "使用 https:// Play 商店 URL 或直接 APK 下载 URL。",
+  ],
+  ["The button label is required.", "必须填写按钮标签。"],
+  [
+    "A link is required when the button is enabled.",
+    "启用按钮时必须填写链接。",
+  ],
+  [
+    "Use a valid http:// or https:// URL.",
+    "使用有效的 http:// 或 https:// URL。",
+  ],
+  ["Mobile app link configuration saved.", "移动应用链接配置已保存。"],
+  ["Loading mobile app configuration...", "正在加载移动应用配置..."],
+  [
+    "You have read-only access. Contact an administrator with master-data.update permission to change this link.",
+    "您只有只读权限。请联系拥有 master-data.update 权限的管理员来更改此链接。",
+  ],
+  ["Refreshing configuration...", "正在刷新配置..."],
+  ["Changes use optimistic concurrency protection.", "更改受乐观并发保护。"],
+];
+
 const additionalIdPhrases: PhraseMap = [
   ["More actions", "Aksi lainnya"],
   ["Before", "Sebelum"],
@@ -8652,6 +8749,7 @@ const decodeHtmlEntities = (value: string) =>
 const compiledIdPhrases = compilePhrases([
   ...employeeScheduleIdPhrases,
   ...idPhrases,
+  ...mobileAppIdPhrases,
   ...additionalIdPhrases,
   ...auditIdPhrases,
   ...attendanceIdPhrases,
@@ -8664,6 +8762,7 @@ const compiledIdPhrases = compilePhrases([
 const compiledZhPhrases = compilePhrases([
   ...employeeScheduleZhPhrases,
   ...zhPhrases,
+  ...mobileAppZhPhrases,
   ...additionalZhPhrases,
   ...auditZhPhrases,
   ...attendanceZhPhrases,
