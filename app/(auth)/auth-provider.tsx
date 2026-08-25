@@ -7,7 +7,7 @@ import { clearProfile, updateDataProfile } from "@/store/me/ProfileSlice";
 import { RootState } from "@/store/store";
 import { Me } from "../types/me";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/app/utils/api-client";
+import { apiFetch, isUnauthorizedError } from "@/app/utils/api-client";
 
 const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const dispatch = useDispatch();
@@ -32,13 +32,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       dispatch(updateDataProfile(data));
     }
 
-    const authError = error as
-      (Error & { code?: string; status?: number }) | undefined;
-    if (
-      authError?.status === 401 ||
-      authError?.code === "UNAUTHORIZED" ||
-      authError?.code === "SESSION_EXPIRED"
-    ) {
+    if (isUnauthorizedError(error)) {
       dispatch(clearProfile());
       router.replace("/login");
     }
