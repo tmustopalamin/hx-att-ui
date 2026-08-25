@@ -146,6 +146,23 @@ const getSecurityData = (row: AttendanceLogRow | null) => {
   return { reasons, evidence };
 };
 
+const getAttendanceSourceValue = (rowData: AttendanceLog) => {
+  const externalSystem = (rowData.external_system ?? "").toUpperCase();
+
+  if (externalSystem === "MOBILE_WEB") return "WEB";
+  if (externalSystem === "ANDROID_APP") return "MOBILE";
+  if (externalSystem === "FINGERPRINT_MACHINE") return "MACHINE";
+
+  const clientPlatform = rowData.extra_data?.client_platform;
+  if (typeof clientPlatform === "string") {
+    const normalizedPlatform = clientPlatform.toUpperCase();
+    if (normalizedPlatform === "WEB") return "WEB";
+    if (normalizedPlatform === "ANDROID") return "MOBILE";
+  }
+
+  return (rowData.source_type ?? "").toUpperCase();
+};
+
 const AttendanceLogTableData = () => {
   const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
@@ -585,7 +602,8 @@ const AttendanceLogTableData = () => {
       case "MOBILE":
         return "Mobile App";
       case "MACHINE":
-        return "Machine";
+      case "FINGERPRINT":
+        return "Fingerprint Scanner";
       case "WEB":
         return "Web";
       case "API":
@@ -946,13 +964,14 @@ const AttendanceLogTableData = () => {
   };
 
   const sourceBody = (rowData: AttendanceLogRow) => {
-    if (!rowData.source_type) {
+    const sourceValue = getAttendanceSourceValue(rowData);
+    if (!sourceValue) {
       return <span className="text-sm text-slate-400">-</span>;
     }
 
     return (
       <Tag
-        value={i18nT(formatSourceLabel(rowData.source_type))}
+        value={i18nT(formatSourceLabel(sourceValue))}
         severity="info"
         rounded
       />
