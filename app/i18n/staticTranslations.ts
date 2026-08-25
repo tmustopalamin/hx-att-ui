@@ -8055,6 +8055,63 @@ const modulePhrases: readonly (readonly [string, string, string])[] = [
   ["Normal", "Normal", "正常"],
   ["BPJS Kesehatan", "BPJS Kesehatan", "BPJS Kesehatan"],
   ["BPJS Ketenagakerjaan", "BPJS Ketenagakerjaan", "BPJS Ketenagakerjaan"],
+  [
+    "Minimum setup for attendance, overtime, leave, and payslip",
+    "Penyiapan minimum untuk absensi, lembur, cuti, dan slip gaji",
+    "考勤、加班、请假和工资单的最低配置",
+  ],
+  [
+    "Complete these employee and system records before expecting the full HRIS flow. Some items depend on the attendance source, leave type, and approval settings.",
+    "Lengkapi data karyawan dan sistem ini sebelum mengharapkan seluruh alur HRIS berjalan. Beberapa item bergantung pada sumber absensi, jenis cuti, dan pengaturan persetujuan.",
+    "在使用完整 HRIS 流程前，请完成以下员工和系统数据。部分项目取决于考勤来源、请假类型和审批设置。",
+  ],
+  [
+    "Employment assignment: join date, employment status, department, position, and supervisor.",
+    "Penugasan kerja: tanggal masuk, status kepegawaian, departemen, posisi, dan supervisor.",
+    "员工任职信息：入职日期、任职状态、部门、职位和主管。",
+  ],
+  [
+    "Assign a Shift Rule and generate the Daily Schedule for the employee's working period.",
+    "Tetapkan Aturan Shift dan buat Jadwal Harian untuk periode kerja karyawan.",
+    "必须为员工工作期间分配班次规则并生成每日排班。",
+  ],
+  [
+    "Make sure the attendance source is ready: fingerprint mapping for machine logs, or an active account for mobile/web attendance.",
+    "Pastikan sumber absensi siap: mapping fingerprint untuk log mesin, atau akun aktif untuk absensi mobile/web.",
+    "准备好考勤来源：设备考勤需要有效的指纹映射，移动端/网页考勤需要有效的用户账户。",
+  ],
+  [
+    "Configure the approval chain for overtime and leave. A supervisor or approver must be available when approval is required.",
+    "Konfigurasikan rantai persetujuan untuk lembur dan cuti. Supervisor atau approver harus tersedia jika persetujuan diperlukan.",
+    "配置加班和请假的审批链。需要审批时，必须存在主管或审批人。",
+  ],
+  [
+    "For deductible leave, create an active leave balance for the relevant leave type and period.",
+    "Untuk cuti yang mengurangi saldo, buat saldo cuti aktif untuk jenis dan periode cuti yang sesuai.",
+    "对于扣减余额的请假，需要为相应请假类型和期间创建有效的请假余额。",
+  ],
+  [
+    "Process attendance summaries before relying on actual overtime in payroll.",
+    "Proses ringkasan absensi sebelum mengandalkan lembur aktual dalam payroll.",
+    "在薪资处理中依赖实际加班前，请先处理考勤汇总。",
+  ],
+  ["Payroll payslip", "Payroll dan slip gaji", "薪资与工资单"],
+  [
+    "Payroll needs an active salary, primary bank account, active tax profile, and active statutory enrollment.",
+    "Payroll membutuhkan gaji aktif, rekening bank utama, profil pajak aktif, dan kepesertaan jaminan aktif.",
+    "薪资计算需要有效薪资、主要银行账户、有效税务档案和有效法定登记。",
+  ],
+  [
+    "After setup, attendance, approved leave/overtime, and a ready payroll batch still need to be processed before a payslip is published.",
+    "Setelah setup selesai, absensi, cuti/lembur yang disetujui, dan batch payroll yang siap tetap harus diproses sebelum slip gaji diterbitkan.",
+    "完成配置后，仍需处理考勤、已批准的请假/加班以及就绪的薪资批次，工资单才会发布。",
+  ],
+  ["Overtime & Leave", "Lembur & Cuti", "加班与请假"],
+  [
+    "Payroll setup is incomplete.",
+    "Setup payroll belum lengkap.",
+    "薪资设置尚未完成。",
+  ],
 ];
 
 const moduleIdPhrases: PhraseMap = modulePhrases.map(([source, id]) => [

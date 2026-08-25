@@ -92,7 +92,7 @@ type QuickCreateEmployeeForm = {
   user_is_active: boolean;
 };
 
-type ProcessingAction = "delete" | "restore" | "purge" | null;
+type ProcessingAction = "delete" | "restore" | "purge" | "open" | null;
 type OnboardingStep = 0 | 1 | 2;
 
 const ONBOARDING_STEPS = [
@@ -874,7 +874,9 @@ const EmployeesDataTable = () => {
       return;
     }
 
-    router.push(`/employees/${data.id}/general/personal`);
+    setProcessingRowId(data.id);
+    setProcessingAction("open");
+    router.push(`/employees/${data.id}/overview`);
   };
 
   const getInitials = (rowData: EmployeeListRow) => {
@@ -1102,6 +1104,7 @@ const EmployeesDataTable = () => {
               appendTo: getBody,
               position: "top",
             }}
+            loading={isCurrentRowProcessing && processingAction === "open"}
             disabled={isProcessing}
             onClick={() => openDetail(rowData)}
           />
@@ -1351,6 +1354,8 @@ const EmployeesDataTable = () => {
                 stripedRows
                 rowHover
                 scrollable
+                sortField="full_name"
+                sortOrder={1}
                 removableSort
                 responsiveLayout="scroll"
                 size="small"

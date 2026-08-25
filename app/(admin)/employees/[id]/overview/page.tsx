@@ -1,6 +1,7 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { Card } from "primereact/card";
@@ -26,8 +27,13 @@ const formatStatusLabel = (status?: string | null) => {
     .join(" ");
 };
 
+type MinimumSetupItem = {
+  text: string;
+  href?: string;
+};
+
 export default function EmployeeOverviewPage() {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, tText } = useI18n();
   const params = useParams<{ id: string }>();
   const employeeId = Number(params.id);
   const { data, isLoading } = useSWR<EmployeeOverview>(
@@ -37,6 +43,82 @@ export default function EmployeeOverviewPage() {
     fetcher,
   );
   const readiness = data?.payroll_readiness;
+  const payrollSetupPaths: Record<string, string> = {
+    "Active salary": `/employees/${employeeId}/payroll/salary-bank`,
+    "Primary bank account": `/employees/${employeeId}/payroll/bank`,
+    "Active tax profile": `/employees/${employeeId}/payroll/tax`,
+    "Active statutory enrollment": `/employees/${employeeId}/payroll/bpjs`,
+  };
+  const minimumSetupGroups: Array<{
+    title: string;
+    icon: string;
+    items: MinimumSetupItem[];
+  }> = [
+    {
+      title: tText("Attendance"),
+      icon: "pi pi-calendar-clock",
+      items: [
+        {
+          text: tText(
+            "Employment assignment: join date, employment status, department, position, and supervisor.",
+          ),
+          href: `/employees/${employeeId}/general/employment`,
+        },
+        {
+          text: tText(
+            "Assign a Shift Rule and generate the Daily Schedule for the employee's working period.",
+          ),
+          href: "/setting/employee-schedule",
+        },
+        {
+          text: tText(
+            "Make sure the attendance source is ready: fingerprint mapping for machine logs, or an active account for mobile/web attendance.",
+          ),
+          href: `/employees/${employeeId}/time/attendance`,
+        },
+      ],
+    },
+    {
+      title: tText("Overtime & Leave"),
+      icon: "pi pi-clock",
+      items: [
+        {
+          text: tText(
+            "Configure the approval chain for overtime and leave. A supervisor or approver must be available when approval is required.",
+          ),
+          href: "/setting/approval-settings",
+        },
+        {
+          text: tText(
+            "For deductible leave, create an active leave balance for the relevant leave type and period.",
+          ),
+          href: `/employees/${employeeId}/time/leave`,
+        },
+        {
+          text: tText(
+            "Process attendance summaries before relying on actual overtime in payroll.",
+          ),
+          href: `/employees/${employeeId}/time/overtime`,
+        },
+      ],
+    },
+    {
+      title: tText("Payroll payslip"),
+      icon: "pi pi-money-bill",
+      items: [
+        {
+          text: tText(
+            "Payroll needs an active salary, primary bank account, active tax profile, and active statutory enrollment.",
+          ),
+        },
+        {
+          text: tText(
+            "After setup, attendance, approved leave/overtime, and a ready payroll batch still need to be processed before a payslip is published.",
+          ),
+        },
+      ],
+    },
+  ];
   return (
     <div className="flex flex-col gap-5">
       <Card className="border border-slate-200 shadow-sm">
@@ -77,11 +159,100 @@ export default function EmployeeOverviewPage() {
             />
           </div>
           {readiness && !readiness.ready && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              {i18nT("static.fuuijg")}{" "}
-              {readiness.missing.map((item) => i18nT(item)).join(", ")}.
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <div className="flex items-start gap-3">
+                <i className="pi pi-exclamation-triangle mt-0.5 text-amber-700" />
+                <div className="min-w-0">
+                  <p className="m-0 font-semibold">
+                    {tText("Payroll setup is incomplete.")}
+                  </p>
+                  <p className="m-0 mt-1">
+                    {i18nT("static.fuuijg")}{" "}
+                    {readiness.missing.map((item) => i18nT(item)).join(", ")}.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {readiness.missing.map((item) => {
+                  const href = payrollSetupPaths[item];
+                  const label = i18nT(item);
+
+                  return href ? (
+                    <Link
+                      key={item}
+                      href={href}
+                      className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100"
+                    >
+                      {label}
+                      <i className="pi pi-arrow-up-right text-[0.65rem]" />
+                    </Link>
+                  ) : (
+                    <span
+                      key={item}
+                      className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900"
+                    >
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
             </div>
           )}
+
+          <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+            <div className="flex items-start gap-3">
+              <i className="pi pi-info-circle mt-0.5 text-blue-700" />
+              <div className="min-w-0">
+                <h2 className="m-0 text-sm font-semibold text-blue-950">
+                  {tText(
+                    "Minimum setup for attendance, overtime, leave, and payslip",
+                  )}
+                </h2>
+                <p className="m-0 mt-1 text-sm leading-6 text-blue-900/80">
+                  {tText(
+                    "Complete these employee and system records before expecting the full HRIS flow. Some items depend on the attendance source, leave type, and approval settings.",
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              {minimumSetupGroups.map((group) => (
+                <section
+                  key={group.title}
+                  className="rounded-lg border border-blue-100 bg-white p-4"
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                    <i className={`${group.icon} text-blue-600`} />
+                    <h3 className="m-0">{group.title}</h3>
+                  </div>
+
+                  <ul className="m-0 mt-3 flex list-none flex-col gap-3 p-0">
+                    {group.items.map((item) => (
+                      <li key={item.text} className="flex items-start gap-2">
+                        <i className="pi pi-circle-fill mt-1 shrink-0 text-[0.4rem] text-blue-600" />
+                        <div className="min-w-0">
+                          <p className="m-0 text-xs leading-5 text-slate-600">
+                            {item.text}
+                          </p>
+                          {item.href && (
+                            <Link
+                              href={item.href}
+                              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:underline"
+                            >
+                              {i18nT("static.n6hn1l")}
+                              <i className="pi pi-arrow-right text-[0.65rem]" />
+                            </Link>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </div>
         </div>
       </Card>
       <Card className="border border-slate-200 shadow-sm">
