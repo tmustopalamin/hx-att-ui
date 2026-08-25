@@ -150,6 +150,12 @@ const employeeItems: MenuItem[] = [
 ];
 const timeManagementItems: MenuItem[] = [
   {
+    href: "/setting/employee-schedule",
+    label: "Employee Schedule",
+    icon: "pi-calendar-clock",
+    anyOf: ["employee-shift-rule.read", "employee-shift-assignment.read"],
+  },
+  {
     href: "/attendance-log",
     label: "Attendance Log",
     icon: "pi-clock",
@@ -279,12 +285,6 @@ const settingSubMenus: SettingSubMenu[] = [
         label: "Shift Rule",
         icon: "pi-calendar",
         permission: "shift-rule.read",
-      },
-      {
-        href: "/setting/employee-schedule",
-        label: "Employee Schedule",
-        icon: "pi-calendar-clock",
-        anyOf: ["employee-shift-rule.read", "employee-shift-assignment.read"],
       },
       {
         href: "/setting/attendance",
