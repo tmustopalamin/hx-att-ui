@@ -12,6 +12,7 @@ import {
   MyProfileEmploymentData,
   MyProfilePersonalData,
 } from "../types/my-profile";
+import type { MyProfileHrRecords } from "../types/my-profile-hr-records";
 import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/my-profile";
@@ -142,6 +143,16 @@ export const getMyProfileLeaveBalance = async (): Promise<
   EmployeeLeaveBalance[]
 > => {
   const res = await apiFetchResponse(`${API_URL}/leave-balance`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  await ensureOk(res);
+  return res.json();
+};
+
+export const getMyProfileHrRecords = async (): Promise<MyProfileHrRecords> => {
+  const res = await apiFetchResponse(`${API_URL}/hr-records`, {
     method: "GET",
     credentials: "include",
   });

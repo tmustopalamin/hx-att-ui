@@ -23,10 +23,6 @@ import {
   EmployeeIdentityRow,
   EmployeeWorkExperienceRow,
 } from "@/app/types/employee-general";
-import {
-  MyProfileEmploymentData,
-  MyProfilePersonalData,
-} from "@/app/types/my-profile";
 import { EmployeeLeaveBalance } from "@/app/types/employee-leave-balance";
 import {
   getMyProfilePersonalData,
@@ -38,9 +34,15 @@ import {
   getMyProfileInformalEducationData,
   getMyProfileWorkExperienceData,
   getMyProfileLeaveBalance,
-} from "@/app/types/my-profile-service";
+  getMyProfileHrRecords,
+} from "@/app/services/my-profile-service";
+import type { MyProfileHrRecords as MyProfileHrRecordsData } from "@/app/types/my-profile-hr-records";
+import {
+  MyProfileHrRecords as MyProfileHrRecordsPanel,
+  MyProfileHrSnapshot,
+} from "./MyProfileHrRecords";
 
-type TabKey = "overview" | "personal" | "career" | "leave";
+type TabKey = "overview" | "personal" | "career" | "leave" | "hr-records";
 
 const tabs: Array<{
   key: TabKey;
@@ -71,6 +73,13 @@ const tabs: Array<{
     labelKey: "Leave Balance",
     icon: "pi pi-calendar",
     descriptionKey: "Available leave balance by period and leave type.",
+  },
+  {
+    key: "hr-records",
+    labelKey: "HR Records",
+    icon: "pi pi-briefcase",
+    descriptionKey:
+      "Documents, assigned assets, learning, and lifecycle tasks.",
   },
 ];
 
@@ -238,6 +247,17 @@ const MyProfilePage = () => {
     { revalidateOnFocus: false },
   );
 
+  const {
+    data: hrRecords,
+    isLoading: isHrRecordsLoading,
+    error: hrRecordsError,
+    mutate: mutateHrRecords,
+  } = useSWR<MyProfileHrRecordsData>(
+    "/api/my-profile/hr-records",
+    getMyProfileHrRecords,
+    { revalidateOnFocus: true },
+  );
+
   const activeTabMeta = useMemo(() => {
     return tabs.find((tab) => tab.key === activeTab) ?? tabs[0];
   }, [activeTab]);
@@ -353,7 +373,7 @@ const MyProfilePage = () => {
   };
 
   const renderPersonalData = () => {
-    const data = personalData as MyProfilePersonalData | undefined;
+    const data = personalData;
 
     return (
       <SectionCard
@@ -411,7 +431,7 @@ const MyProfilePage = () => {
   };
 
   const renderEmploymentData = () => {
-    const data = employmentData as MyProfileEmploymentData | null | undefined;
+    const data = employmentData;
 
     return (
       <SectionCard
@@ -877,6 +897,18 @@ const MyProfilePage = () => {
     if (activeTab === "personal") return renderPersonal();
     if (activeTab === "career") return renderCareer();
     if (activeTab === "leave") return renderLeaveBalance();
+    if (activeTab === "hr-records") {
+      return (
+        <MyProfileHrRecordsPanel
+          data={hrRecords}
+          isLoading={isHrRecordsLoading}
+          error={hrRecordsError}
+          onRetry={() => {
+            void mutateHrRecords();
+          }}
+        />
+      );
+    }
 
     return renderOverview();
   };
@@ -886,6 +918,15 @@ const MyProfilePage = () => {
       {renderError()}
 
       {renderProfileSummary()}
+
+      <MyProfileHrSnapshot
+        data={hrRecords}
+        isLoading={isHrRecordsLoading}
+        error={hrRecordsError}
+        onRetry={() => {
+          void mutateHrRecords();
+        }}
+      />
 
       <Card>
         <div className="flex flex-col gap-5">
