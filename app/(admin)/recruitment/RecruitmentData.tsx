@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "primereact/button";
 import { Card } from "primereact/card";
@@ -12,7 +12,8 @@ import { Dropdown } from "primereact/dropdown";
 import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { TabPanel, TabView } from "primereact/tabview";
+import { SelectButton } from "primereact/selectbutton";
+import { Sidebar } from "primereact/sidebar";
 import { Tag } from "primereact/tag";
 import { useDispatch, useSelector } from "react-redux";
 import type { Employee } from "@/app/types/employee";
@@ -56,6 +57,17 @@ import {
 } from "@/app/utils/date-format";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
+import {
+  ACTIVE_PIPELINE_STATUSES,
+  buildRecruitmentPipeline,
+  COMPLETED_PIPELINE_STATUSES,
+  getPipelineItemsForFilter,
+  getPipelinePrimaryAction,
+  getScheduledInterview,
+  type PipelineFilter,
+  type PipelinePrimaryAction,
+  type RecruitmentPipelineItem,
+} from "./recruitment-pipeline";
 
 type DialogName =
   | "requisition"
@@ -69,8 +81,11 @@ type DialogName =
   | "applicationActivity"
   | "cancelInterview"
   | "candidateResume"
+  | "candidateIntake"
   | null;
 type SelectOption = { label: string; value: number };
+type RecruitmentView = "pipeline" | "requisitions" | "candidates";
+type IntakeMode = "new" | "existing";
 
 const apiErrorMessage = (error: unknown, fallback: string): string => {
   if (typeof error === "object" && error !== null) {
@@ -137,7 +152,7 @@ const statusSeverity = (
 };
 
 export default function RecruitmentData() {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, tText } = useI18n();
   const dispatch = useDispatch();
   const permissions = useSelector(
     (state: RootState) => state.profile.permissions,
@@ -149,25 +164,30 @@ export default function RecruitmentData() {
     canLinkEmployee && permissions.includes("employee.create");
   const {
     data: requisitions = [],
+    error: requisitionsError,
     mutate: reloadRequisitions,
     isValidating: loadingRequisitions,
   } = useSWR("recruitment-requisitions", getRecruitmentRequisitions);
-  const { data: candidates = [], mutate: reloadCandidates } = useSWR(
-    "recruitment-candidates",
-    getRecruitmentCandidates,
-  );
-  const { data: applications = [], mutate: reloadApplications } = useSWR(
-    "recruitment-applications",
-    getRecruitmentApplications,
-  );
-  const { data: interviews = [], mutate: reloadInterviews } = useSWR(
-    "recruitment-interviews",
-    getRecruitmentInterviews,
-  );
-  const { data: offers = [], mutate: reloadOffers } = useSWR(
-    "recruitment-offers",
-    getRecruitmentOffers,
-  );
+  const {
+    data: candidates = [],
+    error: candidatesError,
+    mutate: reloadCandidates,
+  } = useSWR("recruitment-candidates", getRecruitmentCandidates);
+  const {
+    data: applications = [],
+    error: applicationsError,
+    mutate: reloadApplications,
+  } = useSWR("recruitment-applications", getRecruitmentApplications);
+  const {
+    data: interviews = [],
+    error: interviewsError,
+    mutate: reloadInterviews,
+  } = useSWR("recruitment-interviews", getRecruitmentInterviews);
+  const {
+    data: offers = [],
+    error: offersError,
+    mutate: reloadOffers,
+  } = useSWR("recruitment-offers", getRecruitmentOffers);
   const { data: employees = [] } = useSWR<Employee[]>(
     "/api/employees/list?show_all=false",
     fetcher,
@@ -190,13 +210,17 @@ export default function RecruitmentData() {
     status: Extract<ApplicationStatus, "SCREENING" | "REJECTED" | "WITHDRAWN">;
     reason: string;
   }>({ status: "SCREENING", reason: "" });
-  const { data: applicationActivities = [], isLoading: loadingActivities } =
-    useSWR<RecruitmentActivity[]>(
-      activityApplication
-        ? `recruitment-application-activities-${activityApplication.id}`
-        : null,
-      () => getRecruitmentApplicationActivities(activityApplication!.id),
-    );
+  const {
+    data: applicationActivities = [],
+    error: activitiesError,
+    isLoading: loadingActivities,
+    mutate: reloadActivities,
+  } = useSWR<RecruitmentActivity[]>(
+    activityApplication
+      ? `recruitment-application-activities-${activityApplication.id}`
+      : null,
+    () => getRecruitmentApplicationActivities(activityApplication!.id),
+  );
   const [requisition, setRequisition] = useState(emptyRequisition());
   const [candidate, setCandidate] = useState(emptyCandidate());
   const [application, setApplication] = useState(emptyApplication());
@@ -209,6 +233,24 @@ export default function RecruitmentData() {
     employee_id: 0,
     effective_date: "",
   });
+  const [activeView, setActiveView] = useState<RecruitmentView>("pipeline");
+  const [pipelineFilter, setPipelineFilter] =
+    useState<PipelineFilter>("ACTIVE");
+  const [pipelineSearch, setPipelineSearch] = useState("");
+  const [mobilePipelineStage, setMobilePipelineStage] =
+    useState<ApplicationStatus>("APPLIED");
+  const [selectedRequisitionId, setSelectedRequisitionId] = useState<
+    number | null
+  >(null);
+  const [selectedPipelineApplicationId, setSelectedPipelineApplicationId] =
+    useState<number | null>(null);
+  const [intakeMode, setIntakeMode] = useState<IntakeMode>("new");
+  const [intakeRequisitionId, setIntakeRequisitionId] = useState<number>(0);
+  const [intakeCandidate, setIntakeCandidate] = useState(emptyCandidate());
+  const [intakeCandidateId, setIntakeCandidateId] = useState<number>(0);
+  const [intakeResumeFile, setIntakeResumeFile] = useState<File | null>(null);
+  const [intakeError, setIntakeError] = useState("");
+  const [intakeResumeWarning, setIntakeResumeWarning] = useState("");
 
   const requisitionOptions = useMemo<SelectOption[]>(
     () =>
@@ -218,7 +260,7 @@ export default function RecruitmentData() {
           label: i18nT("static.1v0umq8", { p0: item.code, p1: item.job_title }),
           value: item.id,
         })),
-    [requisitions],
+    [i18nT, requisitions],
   );
   const candidateOptions = useMemo<SelectOption[]>(
     () =>
@@ -240,7 +282,7 @@ export default function RecruitmentData() {
           }),
           value: item.id,
         })),
-    [applications],
+    [applications, i18nT],
   );
   const employeeOptions = useMemo<SelectOption[]>(
     () =>
@@ -252,8 +294,114 @@ export default function RecruitmentData() {
       })),
     [employees],
   );
+  const openRequisitions = useMemo(
+    () => requisitions.filter((item) => item.status === "OPEN"),
+    [requisitions],
+  );
+  const selectedRequisition = useMemo(
+    () =>
+      openRequisitions.find((item) => item.id === selectedRequisitionId) ??
+      null,
+    [openRequisitions, selectedRequisitionId],
+  );
+  const pipelineItems = useMemo(
+    () =>
+      buildRecruitmentPipeline(
+        applications,
+        candidates,
+        interviews,
+        offers,
+        selectedRequisitionId,
+      ),
+    [applications, candidates, interviews, offers, selectedRequisitionId],
+  );
+  const visiblePipelineItems = useMemo(() => {
+    const search = pipelineSearch.trim().toLowerCase();
+    return getPipelineItemsForFilter(pipelineItems, pipelineFilter).filter(
+      (item) => {
+        if (!search) return true;
+        const candidateName =
+          item.candidate?.full_name || item.application.candidate_name;
+        return [
+          candidateName,
+          item.candidate?.email,
+          item.application.job_title,
+          item.application.requisition_code,
+        ]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(search));
+      },
+    );
+  }, [pipelineFilter, pipelineItems, pipelineSearch]);
+  const selectedPipelineItem = useMemo(
+    () =>
+      pipelineItems.find(
+        (item) => item.application.id === selectedPipelineApplicationId,
+      ) ?? null,
+    [pipelineItems, selectedPipelineApplicationId],
+  );
+  const assignedCandidateIds = useMemo(
+    () =>
+      new Set(
+        applications
+          .filter((item) => item.job_requisition_id === intakeRequisitionId)
+          .map((item) => item.candidate_id),
+      ),
+    [applications, intakeRequisitionId],
+  );
+  const intakeCandidateOptions = useMemo<SelectOption[]>(
+    () =>
+      candidates
+        .filter(
+          (item) =>
+            item.status === "ACTIVE" && !assignedCandidateIds.has(item.id),
+        )
+        .map((item) => ({ label: item.full_name, value: item.id })),
+    [assignedCandidateIds, candidates],
+  );
+  const selectedPipelineInterviews = selectedPipelineItem?.interviews ?? [];
+  const selectedPipelineOffer = selectedPipelineItem?.offer ?? null;
+  const recruitmentError =
+    requisitionsError ||
+    candidatesError ||
+    applicationsError ||
+    interviewsError ||
+    offersError;
+
+  useEffect(() => {
+    if (!openRequisitions.length) {
+      setSelectedRequisitionId(null);
+      return;
+    }
+    if (openRequisitions.some((item) => item.id === selectedRequisitionId)) {
+      return;
+    }
+    let storedId = 0;
+    try {
+      storedId = Number(
+        window.localStorage.getItem("recruitment:selected-requisition-id"),
+      );
+    } catch {
+      storedId = 0;
+    }
+    const stored = openRequisitions.find((item) => item.id === storedId);
+    setSelectedRequisitionId((stored ?? openRequisitions[0]).id);
+  }, [openRequisitions, selectedRequisitionId]);
+
+  useEffect(() => {
+    if (selectedRequisitionId !== null) {
+      try {
+        window.localStorage.setItem(
+          "recruitment:selected-requisition-id",
+          String(selectedRequisitionId),
+        );
+      } catch {
+        // Ignore storage restrictions; the pipeline still works for this session.
+      }
+    }
+  }, [selectedRequisitionId]);
   const notify = (
-    severity: "success" | "error",
+    severity: "success" | "error" | "warn",
     summary: string,
     detail: string,
   ) => dispatch(showToast({ visible: true, severity, summary, detail }));
@@ -270,6 +418,145 @@ export default function RecruitmentData() {
     if (!saving) setDialog(null);
   };
   const showDialog = (name: DialogName) => setDialog(name);
+
+  const resetIntake = () => {
+    setIntakeMode("new");
+    setIntakeRequisitionId(selectedRequisitionId ?? 0);
+    setIntakeCandidate(emptyCandidate());
+    setIntakeCandidateId(0);
+    setIntakeResumeFile(null);
+    setIntakeError("");
+    setIntakeResumeWarning("");
+  };
+
+  const openIntake = (requisitionId = selectedRequisitionId ?? 0) => {
+    resetIntake();
+    setIntakeRequisitionId(requisitionId);
+    showDialog("candidateIntake");
+  };
+
+  const submitIntake = async () => {
+    setIntakeError("");
+    setIntakeResumeWarning("");
+    if (!intakeRequisitionId) {
+      setIntakeError(tText("Select an open requisition first."));
+      return;
+    }
+    if (intakeMode === "existing" && !intakeCandidateId) {
+      setIntakeError(tText("Select a candidate first."));
+      return;
+    }
+    if (intakeMode === "new" && !intakeCandidate.full_name.trim()) {
+      setIntakeError(tText("Candidate name is required."));
+      return;
+    }
+    if (
+      intakeResumeFile &&
+      (intakeResumeFile.type !== "application/pdf" ||
+        intakeResumeFile.size > 10 * 1024 * 1024)
+    ) {
+      setIntakeError(tText("Only PDF resumes up to 10 MB are allowed."));
+      return;
+    }
+
+    setSaving(true);
+    let createdCandidateId = intakeMode === "new" ? 0 : intakeCandidateId;
+    let resumeWarning = "";
+    try {
+      if (intakeMode === "new") {
+        const created = await createRecruitmentCandidate({
+          ...intakeCandidate,
+          full_name: intakeCandidate.full_name.trim(),
+          email: intakeCandidate.email.trim() || null,
+          phone_number: intakeCandidate.phone_number.trim() || null,
+          source: intakeCandidate.source.trim() || null,
+        });
+        createdCandidateId = created.id;
+        setIntakeCandidateId(createdCandidateId);
+
+        const refreshedCandidates = await reloadCandidates();
+        const createdCandidate = refreshedCandidates?.find(
+          (item) => item.id === createdCandidateId,
+        );
+        if (intakeResumeFile) {
+          if (!createdCandidate) {
+            resumeWarning = tText(
+              "Candidate created, but the resume could not be uploaded yet.",
+            );
+            setIntakeResumeWarning(resumeWarning);
+          } else {
+            try {
+              await uploadRecruitmentCandidateResume(
+                createdCandidate.id,
+                createdCandidate.row_version,
+                intakeResumeFile,
+              );
+            } catch (error: unknown) {
+              resumeWarning = tText(
+                "Candidate created, but the resume upload failed: {p0}.",
+                {
+                  p0: apiErrorMessage(
+                    error,
+                    tText("upload it later from Talent Pool"),
+                  ),
+                },
+              );
+              setIntakeResumeWarning(resumeWarning);
+            }
+          }
+        }
+      }
+
+      await createRecruitmentApplication({
+        job_requisition_id: intakeRequisitionId,
+        candidate_id: createdCandidateId,
+      });
+      setDialog(null);
+      resetIntake();
+      try {
+        await refresh();
+      } catch {
+        notify(
+          "warn",
+          tText("Success"),
+          tText("Application created, but the list could not be refreshed."),
+        );
+        return;
+      }
+      notify(
+        resumeWarning ? "warn" : "success",
+        tText("Success"),
+        resumeWarning
+          ? tText("Application created, but the resume needs attention.")
+          : tText("Candidate added to the requisition."),
+      );
+    } catch (error: unknown) {
+      if (createdCandidateId && intakeMode === "new") {
+        setIntakeMode("existing");
+        setIntakeCandidateId(createdCandidateId);
+        setIntakeResumeFile(null);
+        setIntakeError(
+          tText(
+            "Candidate was created, but the application was not. Review the error and try again.",
+          ),
+        );
+      } else {
+        setIntakeError(
+          apiErrorMessage(
+            error,
+            tText("Unable to add the candidate to this requisition."),
+          ),
+        );
+      }
+      notify(
+        "error",
+        tText("Error"),
+        apiErrorMessage(error, tText("Review the data and try again.")),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const save = async (
     action: () => Promise<unknown>,
@@ -466,48 +753,6 @@ export default function RecruitmentData() {
     setApplicationTransition({ status, reason: "" });
     showDialog("applicationStatus");
   };
-  const applicationActions = (row: RecruitmentApplication) => (
-    <div className="flex flex-wrap gap-1">
-      <Button
-        label={i18nT("static.yugfpb")}
-        icon="pi pi-history"
-        text
-        severity="secondary"
-        size="small"
-        onClick={() => {
-          setActivityApplication(row);
-          showDialog("applicationActivity");
-        }}
-      />
-      {canManage && row.status === "APPLIED" ? (
-        <Button
-          label={i18nT("static.178pk4x")}
-          text
-          size="small"
-          onClick={() => openApplicationStatus(row, "SCREENING")}
-        />
-      ) : null}
-      {canManage &&
-      ["APPLIED", "SCREENING", "INTERVIEW", "OFFER"].includes(row.status) ? (
-        <>
-          <Button
-            label={i18nT("static.88y37b")}
-            text
-            severity="secondary"
-            size="small"
-            onClick={() => openApplicationStatus(row, "WITHDRAWN")}
-          />
-          <Button
-            label={i18nT("static.1kej36u")}
-            text
-            severity="danger"
-            size="small"
-            onClick={() => openApplicationStatus(row, "REJECTED")}
-          />
-        </>
-      ) : null}
-    </div>
-  );
   const requisitionActions = (row: RecruitmentRequisition) => (
     <div className="flex gap-1">
       {row.status === "DRAFT" ? (
@@ -664,6 +909,179 @@ export default function RecruitmentData() {
     </div>
   );
 
+  const openPipelineApplication = (item: RecruitmentPipelineItem) => {
+    setSelectedPipelineApplicationId(item.application.id);
+    setActivityApplication(item.application);
+  };
+
+  const openPipelineInterview = (item: RecruitmentPipelineItem) => {
+    setInterview({
+      ...emptyInterview(),
+      application_id: item.application.id,
+    });
+    showDialog("interview");
+  };
+
+  const openPipelineInterviewCompletion = (item: RecruitmentPipelineItem) => {
+    const scheduledInterview = getScheduledInterview(item.interviews);
+    if (!scheduledInterview) {
+      openPipelineInterview(item);
+      return;
+    }
+    setSelectedInterview(scheduledInterview);
+    setCompletion({
+      score: scheduledInterview.score?.toString() || "",
+      feedback: scheduledInterview.feedback || "",
+    });
+    showDialog("completeInterview");
+  };
+
+  const openPipelineOffer = (item: RecruitmentPipelineItem) => {
+    setOffer({
+      ...emptyOffer(),
+      application_id: item.application.id,
+    });
+    showDialog("offer");
+  };
+
+  const runPipelinePrimaryAction = (
+    item: RecruitmentPipelineItem,
+    action: PipelinePrimaryAction,
+  ) => {
+    if (!action) return;
+    setSelectedPipelineApplicationId(item.application.id);
+    switch (action) {
+      case "SCREENING":
+        openApplicationStatus(item.application, "SCREENING");
+        break;
+      case "SCHEDULE_INTERVIEW":
+        openPipelineInterview(item);
+        break;
+      case "COMPLETE_INTERVIEW":
+        openPipelineInterviewCompletion(item);
+        break;
+      case "CREATE_OFFER":
+        openPipelineOffer(item);
+        break;
+      case "SEND_OFFER":
+        if (item.offer) confirmOfferStatus(item.offer, "SENT");
+        break;
+      case "ACCEPT_OFFER":
+        if (item.offer) confirmOfferStatus(item.offer, "ACCEPTED");
+        break;
+      case "ONBOARD":
+        if (item.offer) {
+          if (canCreateEmployeeFromOffer && !item.offer.linked_employee_id) {
+            openQuickAddFromOffer(item.offer);
+          } else {
+            openLink(item.offer);
+          }
+        }
+        break;
+    }
+  };
+
+  const pipelineActionLabel = (action: PipelinePrimaryAction) => {
+    switch (action) {
+      case "SCREENING":
+        return tText("Move to Screening");
+      case "SCHEDULE_INTERVIEW":
+        return tText("Schedule Interview");
+      case "COMPLETE_INTERVIEW":
+        return tText("Complete Interview");
+      case "CREATE_OFFER":
+        return tText("New Offer");
+      case "SEND_OFFER":
+        return tText("Send Offer");
+      case "ACCEPT_OFFER":
+        return tText("Accept Offer");
+      case "ONBOARD":
+        return tText("Start Onboarding");
+      default:
+        return "";
+    }
+  };
+
+  const pipelineStatusLabel = (status: ApplicationStatus) => {
+    const labels: Record<ApplicationStatus, string> = {
+      APPLIED: tText("Applied"),
+      SCREENING: tText("Screening"),
+      INTERVIEW: tText("Interview"),
+      OFFER: tText("Offer"),
+      HIRED: tText("Hired"),
+      REJECTED: tText("Rejected"),
+      WITHDRAWN: tText("Withdrawn"),
+    };
+    return labels[status];
+  };
+
+  const renderPipelineCard = (item: RecruitmentPipelineItem) => {
+    const action = getPipelinePrimaryAction(item);
+    const scheduledInterview = getScheduledInterview(item.interviews);
+    const candidateName =
+      item.candidate?.full_name || item.application.candidate_name;
+    return (
+      <div
+        key={item.application.id}
+        className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+      >
+        <button
+          type="button"
+          className="w-full text-left"
+          onClick={() => openPipelineApplication(item)}
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="m-0 truncate font-semibold text-slate-800">
+                {candidateName}
+              </p>
+              <p className="m-0 mt-1 truncate text-xs text-slate-500">
+                {item.application.job_title}
+              </p>
+            </div>
+            <Tag
+              value={pipelineStatusLabel(item.application.status)}
+              severity={statusSeverity(item.application.status)}
+            />
+          </div>
+          <div className="mt-3 space-y-1 text-xs text-slate-500">
+            {item.candidate?.email ? (
+              <p className="m-0 truncate">{item.candidate.email}</p>
+            ) : null}
+            {item.candidate?.resume_original_file_name ? (
+              <p className="m-0 flex items-center gap-1 text-emerald-600">
+                <i className="pi pi-file-pdf" /> {tText("Resume available")}
+              </p>
+            ) : null}
+            {scheduledInterview ? (
+              <p className="m-0 flex items-center gap-1">
+                <i className="pi pi-calendar" />{" "}
+                {formatDisplayDateTime(scheduledInterview.scheduled_at)}
+              </p>
+            ) : null}
+            {item.offer ? (
+              <p className="m-0 flex items-center gap-1">
+                <i className="pi pi-send" /> {tText("Offer")}:{" "}
+                {item.offer.status}
+              </p>
+            ) : null}
+          </div>
+        </button>
+        {canManage && action ? (
+          <Button
+            label={pipelineActionLabel(action)}
+            icon="pi pi-arrow-right"
+            size="small"
+            text
+            className="mt-2 px-0"
+            onClick={() => runPipelinePrimaryAction(item, action)}
+            disabled={saving}
+          />
+        ) : null}
+      </div>
+    );
+  };
+
   const footer = (label: string, onSave: () => void) => (
     <div className="flex justify-end gap-2">
       <Button
@@ -765,8 +1183,200 @@ export default function RecruitmentData() {
             onClick={() => void refresh()}
           />
         </div>
-        <TabView>
-          <TabPanel header={i18nT("static.1244wus")}>
+        {recruitmentError ? (
+          <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {apiErrorMessage(
+                recruitmentError,
+                tText("Unable to load recruitment data."),
+              )}
+            </span>
+            <Button
+              label={tText("Retry")}
+              icon="pi pi-refresh"
+              outlined
+              severity="danger"
+              size="small"
+              onClick={() => void refresh()}
+            />
+          </div>
+        ) : null}
+        <SelectButton
+          value={activeView}
+          options={[
+            { label: tText("Pipeline"), value: "pipeline" },
+            { label: i18nT("static.1244wus"), value: "requisitions" },
+            { label: i18nT("static.uojsmj"), value: "candidates" },
+          ]}
+          optionLabel="label"
+          optionValue="value"
+          allowEmpty={false}
+          onChange={(event) => setActiveView(event.value as RecruitmentView)}
+        />
+
+        {activeView === "pipeline" ? (
+          <section className="grid gap-4">
+            <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-[minmax(0,1fr)_minmax(14rem,1fr)_auto_auto] md:items-end">
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {tText("Selected requisition")}
+                <Dropdown
+                  value={selectedRequisitionId}
+                  options={requisitionOptions}
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder={tText("Select an open requisition")}
+                  className="w-full"
+                  filter
+                  onChange={(event) =>
+                    setSelectedRequisitionId(event.value ?? null)
+                  }
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {tText("Search candidates")}
+                <span className="p-input-icon-left">
+                  <i className="pi pi-search" />
+                  <InputText
+                    value={pipelineSearch}
+                    placeholder={tText("Search candidates")}
+                    className="w-full"
+                    onChange={(event) => setPipelineSearch(event.target.value)}
+                  />
+                </span>
+              </label>
+              <SelectButton
+                value={pipelineFilter}
+                options={[
+                  { label: tText("Active"), value: "ACTIVE" },
+                  { label: tText("Completed"), value: "COMPLETED" },
+                ]}
+                optionLabel="label"
+                optionValue="value"
+                allowEmpty={false}
+                onChange={(event) => {
+                  const nextFilter = event.value as PipelineFilter;
+                  setPipelineFilter(nextFilter);
+                  setMobilePipelineStage(
+                    nextFilter === "ACTIVE" ? "APPLIED" : "HIRED",
+                  );
+                }}
+              />
+              {canManage ? (
+                <Button
+                  label={tText("Add Candidate")}
+                  icon="pi pi-user-plus"
+                  size="small"
+                  onClick={() => openIntake()}
+                  disabled={!selectedRequisition}
+                />
+              ) : null}
+            </div>
+
+            {!selectedRequisition ? (
+              <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+                <p className="m-0">
+                  {openRequisitions.length
+                    ? tText("Select an open requisition to view its pipeline.")
+                    : tText(
+                        "Create or open a requisition to start recruiting.",
+                      )}
+                </p>
+                {canManage && !openRequisitions.length ? (
+                  <Button
+                    label={tText("Manage requisitions")}
+                    icon="pi pi-arrow-right"
+                    text
+                    size="small"
+                    className="mt-3"
+                    onClick={() => setActiveView("requisitions")}
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h2 className="m-0 text-lg font-semibold text-slate-800">
+                      {selectedRequisition.code} —{" "}
+                      {selectedRequisition.job_title}
+                    </h2>
+                    <p className="m-0 mt-1 text-sm text-slate-500">
+                      {tText("{p0} candidates", {
+                        p0: visiblePipelineItems.length,
+                      })}
+                    </p>
+                  </div>
+                  <Tag
+                    value={
+                      pipelineFilter === "ACTIVE"
+                        ? tText("Active")
+                        : tText("Completed")
+                    }
+                    severity={
+                      pipelineFilter === "ACTIVE" ? "info" : "secondary"
+                    }
+                  />
+                </div>
+                <SelectButton
+                  className="md:hidden"
+                  value={mobilePipelineStage}
+                  options={(pipelineFilter === "ACTIVE"
+                    ? ACTIVE_PIPELINE_STATUSES
+                    : COMPLETED_PIPELINE_STATUSES
+                  ).map((status) => ({
+                    label: pipelineStatusLabel(status),
+                    value: status,
+                  }))}
+                  optionLabel="label"
+                  optionValue="value"
+                  allowEmpty={false}
+                  onChange={(event) =>
+                    setMobilePipelineStage(event.value as ApplicationStatus)
+                  }
+                />
+                <div className="grid gap-4 overflow-x-auto pb-2 md:grid-cols-4">
+                  {(pipelineFilter === "ACTIVE"
+                    ? ACTIVE_PIPELINE_STATUSES
+                    : COMPLETED_PIPELINE_STATUSES
+                  ).map((status) => {
+                    const stageItems = visiblePipelineItems.filter(
+                      (item) => item.application.status === status,
+                    );
+                    return (
+                      <div
+                        key={status}
+                        className={`min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 md:min-w-[16rem] ${
+                          status !== mobilePipelineStage
+                            ? "hidden md:block"
+                            : ""
+                        }`}
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <h3 className="m-0 text-sm font-semibold text-slate-700">
+                            {pipelineStatusLabel(status)}
+                          </h3>
+                          <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">
+                            {stageItems.length}
+                          </span>
+                        </div>
+                        <div className="grid gap-3">
+                          {stageItems.length ? (
+                            stageItems.map(renderPipelineCard)
+                          ) : (
+                            <p className="m-0 rounded-lg border border-dashed border-slate-200 bg-white p-4 text-center text-xs text-slate-400">
+                              {tText("No candidates in this stage.")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        ) : activeView === "requisitions" ? (
+          <section>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
@@ -813,15 +1423,16 @@ export default function RecruitmentData() {
                   />
                 )}
               />
-              {canManage && (
+              {canManage ? (
                 <Column
                   header={i18nT("static.2wk0tb")}
                   body={requisitionActions}
                 />
-              )}
+              ) : null}
             </DataTable>
-          </TabPanel>
-          <TabPanel header={i18nT("static.uojsmj")}>
+          </section>
+        ) : (
+          <section>
             <div className="mb-4 flex justify-end">
               {canManage && (
                 <Button
@@ -869,113 +1480,181 @@ export default function RecruitmentData() {
               />
               <Column header={i18nT("static.2wk0tb")} body={candidateActions} />
             </DataTable>
-          </TabPanel>
-          <TabPanel header={i18nT("static.d6g082")}>
-            <div className="mb-4 flex justify-end">
-              {canManage && (
-                <Button
-                  label={i18nT("static.1mt9atf")}
-                  icon="pi pi-plus"
-                  size="small"
-                  onClick={() => showDialog("application")}
+          </section>
+        )}
+      </div>
+      <Sidebar
+        visible={Boolean(selectedPipelineItem)}
+        position="right"
+        onHide={() => {
+          setSelectedPipelineApplicationId(null);
+          setActivityApplication(null);
+        }}
+        className="!w-full sm:!w-[34rem]"
+      >
+        {selectedPipelineItem ? (
+          <div className="flex h-full flex-col gap-5">
+            <div className="border-b border-slate-200 pb-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="m-0 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    {selectedPipelineItem.application.requisition_code}
+                  </p>
+                  <h2 className="m-0 mt-1 truncate text-xl font-semibold text-slate-900">
+                    {selectedPipelineItem.candidate?.full_name ||
+                      selectedPipelineItem.application.candidate_name}
+                  </h2>
+                  <p className="m-0 mt-1 truncate text-sm text-slate-500">
+                    {selectedPipelineItem.application.job_title}
+                  </p>
+                </div>
+                <Tag
+                  value={pipelineStatusLabel(
+                    selectedPipelineItem.application.status,
+                  )}
+                  severity={statusSeverity(
+                    selectedPipelineItem.application.status,
+                  )}
                 />
+              </div>
+            </div>
+
+            <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+              <div className="flex items-center justify-between gap-3">
+                <span>{i18nT("static.inbfc7")}</span>
+                <span className="truncate font-medium text-slate-800">
+                  {selectedPipelineItem.candidate?.email || "-"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>{i18nT("static.kb2lhr")}</span>
+                <span className="truncate font-medium text-slate-800">
+                  {selectedPipelineItem.candidate?.phone_number || "-"}
+                </span>
+              </div>
+              {selectedPipelineItem.candidate?.resume_original_file_name ? (
+                <Button
+                  label={i18nT("static.1o765y8")}
+                  icon="pi pi-file-pdf"
+                  text
+                  size="small"
+                  className="justify-start px-0"
+                  onClick={() =>
+                    window.open(
+                      `/api/recruitment/candidates/${selectedPipelineItem.candidate?.id}/resume`,
+                      "_blank",
+                    )
+                  }
+                />
+              ) : (
+                <span className="text-xs text-slate-400">
+                  {tText("No resume uploaded")}
+                </span>
               )}
             </div>
-            <DataTable
-              value={applications}
-              dataKey="id"
-              paginator
-              rows={10}
-              stripedRows
-              rowHover
-              size="small"
-              emptyMessage={i18nT("static.5s1h3e")}
-            >
-              <Column field="candidate_name" header={i18nT("static.1vb7im2")} />
-              <Column
-                field="requisition_code"
-                header={i18nT("static.juyien")}
-              />
-              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
-              <Column
-                header={i18nT("static.gpyu7e")}
-                body={(row: RecruitmentApplication) =>
-                  formatDisplayDate(row.applied_at)
-                }
-              />
-              <Column
-                header={i18nT("static.3pd73")}
-                body={(row: RecruitmentApplication) => (
-                  <Tag
-                    value={row.status}
-                    severity={statusSeverity(row.status)}
-                  />
+
+            {canManage && getPipelinePrimaryAction(selectedPipelineItem) ? (
+              <Button
+                label={pipelineActionLabel(
+                  getPipelinePrimaryAction(selectedPipelineItem),
                 )}
+                icon="pi pi-arrow-right"
+                onClick={() =>
+                  runPipelinePrimaryAction(
+                    selectedPipelineItem,
+                    getPipelinePrimaryAction(selectedPipelineItem),
+                  )
+                }
+                disabled={saving}
               />
-              <Column
-                header={i18nT("static.2wk0tb")}
-                body={applicationActions}
-              />
-            </DataTable>
-          </TabPanel>
-          <TabPanel header={i18nT("static.jxlebp")}>
-            <div className="mb-4 flex justify-end">
-              {canManage && (
-                <Button
-                  label={i18nT("static.1ugtb2n")}
-                  icon="pi pi-calendar-plus"
-                  size="small"
-                  onClick={() => showDialog("interview")}
-                />
-              )}
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              {canManage &&
+              ["APPLIED", "SCREENING", "INTERVIEW", "OFFER"].includes(
+                selectedPipelineItem.application.status,
+              ) ? (
+                <>
+                  <Button
+                    label={i18nT("static.4kf79x")}
+                    text
+                    severity="secondary"
+                    size="small"
+                    onClick={() =>
+                      openApplicationStatus(
+                        selectedPipelineItem.application,
+                        "WITHDRAWN",
+                      )
+                    }
+                  />
+                  <Button
+                    label={i18nT("static.198t1a8")}
+                    text
+                    severity="danger"
+                    size="small"
+                    onClick={() =>
+                      openApplicationStatus(
+                        selectedPipelineItem.application,
+                        "REJECTED",
+                      )
+                    }
+                  />
+                </>
+              ) : null}
             </div>
-            <DataTable
-              value={interviews}
-              dataKey="id"
-              paginator
-              rows={10}
-              stripedRows
-              rowHover
-              size="small"
-              emptyMessage={i18nT("static.17e5tfp")}
-            >
-              <Column field="candidate_name" header={i18nT("static.1vb7im2")} />
-              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
-              <Column field="interview_type" header={i18nT("static.1m2zofh")} />
-              <Column
-                header={i18nT("static.19hwlpo")}
-                body={(row: RecruitmentInterview) =>
-                  formatDisplayDateTime(row.scheduled_at)
-                }
-              />
-              <Column
-                field="interviewer_name"
-                header={i18nT("static.1j5tv1f")}
-              />
-              <Column
-                header={i18nT("static.3pd73")}
-                body={(row: RecruitmentInterview) => (
-                  <Tag
-                    value={row.status}
-                    severity={statusSeverity(row.status)}
+
+            <section className="grid gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="m-0 text-sm font-semibold text-slate-800">
+                  {i18nT("static.jxlebp")}
+                </h3>
+                {canManage ? (
+                  <Button
+                    label={i18nT("static.1ugtb2n")}
+                    icon="pi pi-plus"
+                    text
+                    size="small"
+                    onClick={() => openPipelineInterview(selectedPipelineItem)}
                   />
-                )}
-              />
-              {canManage && (
-                <Column
-                  header={i18nT("static.2wk0tb")}
-                  body={(row: RecruitmentInterview) =>
-                    row.status === "SCHEDULED" ? (
-                      <div className="flex gap-1">
+                ) : null}
+              </div>
+              {selectedPipelineInterviews.length ? (
+                selectedPipelineInterviews.map((interview) => (
+                  <div
+                    key={interview.id}
+                    className="rounded-lg border border-slate-200 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="m-0 text-sm font-medium text-slate-800">
+                          {interview.interview_type}
+                        </p>
+                        <p className="m-0 mt-1 text-xs text-slate-500">
+                          {formatDisplayDateTime(interview.scheduled_at)} ·{" "}
+                          {interview.interviewer_name}
+                        </p>
+                      </div>
+                      <Tag
+                        value={interview.status}
+                        severity={statusSeverity(interview.status)}
+                      />
+                    </div>
+                    {interview.feedback ? (
+                      <p className="m-0 mt-2 text-sm text-slate-600">
+                        {interview.feedback}
+                      </p>
+                    ) : null}
+                    {canManage && interview.status === "SCHEDULED" ? (
+                      <div className="mt-2 flex gap-2">
                         <Button
                           label={i18nT("static.rcgk2q")}
                           text
                           size="small"
                           onClick={() => {
-                            setSelectedInterview(row);
+                            setSelectedInterview(interview);
                             setCompletion({
-                              score: row.score?.toString() || "",
-                              feedback: row.feedback || "",
+                              score: interview.score?.toString() || "",
+                              feedback: interview.feedback || "",
                             });
                             showDialog("completeInterview");
                           }}
@@ -986,76 +1665,137 @@ export default function RecruitmentData() {
                           severity="danger"
                           size="small"
                           onClick={() => {
-                            setSelectedInterview(row);
+                            setSelectedInterview(interview);
                             setInterviewCancellationReason("");
                             showDialog("cancelInterview");
                           }}
                         />
                       </div>
-                    ) : null
-                  }
-                />
+                    ) : null}
+                  </div>
+                ))
+              ) : (
+                <p className="m-0 text-sm text-slate-500">
+                  {tText("No interviews scheduled.")}
+                </p>
               )}
-            </DataTable>
-          </TabPanel>
-          <TabPanel header={i18nT("static.kkuebu")}>
-            <div className="mb-4 flex justify-end">
-              {canManage && (
-                <Button
-                  label={i18nT("static.1blyqlz")}
-                  icon="pi pi-send"
-                  size="small"
-                  onClick={() => showDialog("offer")}
-                />
-              )}
-            </div>
-            <DataTable
-              value={offers}
-              dataKey="id"
-              paginator
-              rows={10}
-              stripedRows
-              rowHover
-              size="small"
-              emptyMessage={i18nT("static.1xin6va")}
-            >
-              <Column field="candidate_name" header={i18nT("static.1vb7im2")} />
-              <Column field="job_title" header={i18nT("static.1kwmmbm")} />
-              <Column
-                header={i18nT("static.12knp7n")}
-                body={(row: RecruitmentOffer) =>
-                  row.offered_salary
-                    ? new Intl.NumberFormat("id-ID", {
-                        style: "currency",
-                        currency: "IDR",
-                        maximumFractionDigits: 0,
-                      }).format(Number(row.offered_salary))
-                    : "-"
-                }
-              />
-              <Column
-                field="proposed_start_date"
-                header={i18nT("static.7bl5hd")}
-                body={(row: RecruitmentOffer) =>
-                  formatDisplayDate(row.proposed_start_date)
-                }
-              />
-              <Column
-                header={i18nT("static.3pd73")}
-                body={(row: RecruitmentOffer) => (
-                  <Tag
-                    value={row.status}
-                    severity={statusSeverity(row.status)}
+            </section>
+
+            <section className="grid gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="m-0 text-sm font-semibold text-slate-800">
+                  {i18nT("static.kkuebu")}
+                </h3>
+                {canManage && !selectedPipelineOffer ? (
+                  <Button
+                    label={i18nT("static.1blyqlz")}
+                    icon="pi pi-plus"
+                    text
+                    size="small"
+                    onClick={() => openPipelineOffer(selectedPipelineItem)}
                   />
-                )}
-              />
-              {canManage && (
-                <Column header={i18nT("static.2wk0tb")} body={offerActions} />
+                ) : null}
+              </div>
+              {selectedPipelineOffer ? (
+                <div className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-slate-600">
+                      {selectedPipelineOffer.offered_salary
+                        ? new Intl.NumberFormat("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                            maximumFractionDigits: 0,
+                          }).format(
+                            Number(selectedPipelineOffer.offered_salary),
+                          )
+                        : "-"}
+                    </span>
+                    <Tag
+                      value={selectedPipelineOffer.status}
+                      severity={statusSeverity(selectedPipelineOffer.status)}
+                    />
+                  </div>
+                  {selectedPipelineOffer.proposed_start_date ? (
+                    <p className="m-0 mt-1 text-xs text-slate-500">
+                      {i18nT("static.7bl5hd")}:{" "}
+                      {formatDisplayDate(
+                        selectedPipelineOffer.proposed_start_date,
+                      )}
+                    </p>
+                  ) : null}
+                  {canManage ? offerActions(selectedPipelineOffer) : null}
+                </div>
+              ) : (
+                <p className="m-0 text-sm text-slate-500">
+                  {tText("No offer created yet.")}
+                </p>
               )}
-            </DataTable>
-          </TabPanel>
-        </TabView>
-      </div>
+            </section>
+
+            <section className="grid gap-3 pb-4">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="m-0 text-sm font-semibold text-slate-800">
+                  {i18nT("static.yugfpb")}
+                </h3>
+                <Button
+                  label={tText("View all")}
+                  text
+                  size="small"
+                  onClick={() => showDialog("applicationActivity")}
+                />
+              </div>
+              {activitiesError ? (
+                <div className="flex items-center justify-between gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  <span>
+                    {apiErrorMessage(
+                      activitiesError,
+                      tText("Unable to load activity."),
+                    )}
+                  </span>
+                  <Button
+                    label={tText("Retry")}
+                    text
+                    size="small"
+                    severity="danger"
+                    onClick={() => void reloadActivities()}
+                  />
+                </div>
+              ) : loadingActivities ? (
+                <p className="m-0 text-sm text-slate-500">
+                  {tText("Loading...")}
+                </p>
+              ) : applicationActivities.length ? (
+                <div className="grid gap-2">
+                  {applicationActivities.slice(0, 5).map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="rounded-lg border border-slate-100 bg-slate-50 p-2 text-xs"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-slate-700">
+                          {activity.activity_type}
+                        </span>
+                        <span className="text-slate-400">
+                          {formatDisplayDateTime(activity.occurred_at)}
+                        </span>
+                      </div>
+                      {activity.notes ? (
+                        <p className="m-0 mt-1 text-slate-500">
+                          {activity.notes}
+                        </p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="m-0 text-sm text-slate-500">
+                  {tText("No activity found.")}
+                </p>
+              )}
+            </section>
+          </div>
+        ) : null}
+      </Sidebar>
       <Dialog
         header={i18nT("static.whgb9t")}
         visible={dialog === "requisition"}
@@ -1151,6 +1891,141 @@ export default function RecruitmentData() {
               }
             />
           </label>
+        </div>
+      </Dialog>
+      <Dialog
+        header={tText("Add candidate to requisition")}
+        visible={dialog === "candidateIntake"}
+        modal
+        draggable={false}
+        resizable={false}
+        style={{ width: "95vw", maxWidth: "40rem" }}
+        onHide={close}
+        footer={footer(tText("Add to pipeline"), () => void submitIntake())}
+      >
+        <div className="grid gap-4 py-2">
+          <label className="grid gap-2 text-sm font-medium text-slate-700">
+            {tText("Requisition")}
+            <Dropdown
+              value={intakeRequisitionId || null}
+              options={requisitionOptions}
+              optionLabel="label"
+              optionValue="value"
+              placeholder={tText("Select an open requisition")}
+              className="w-full"
+              filter
+              onChange={(event) => setIntakeRequisitionId(event.value ?? 0)}
+            />
+          </label>
+          <SelectButton
+            value={intakeMode}
+            options={[
+              { label: tText("New candidate"), value: "new" },
+              { label: tText("Existing candidate"), value: "existing" },
+            ]}
+            optionLabel="label"
+            optionValue="value"
+            allowEmpty={false}
+            onChange={(event) => {
+              const nextMode = event.value as IntakeMode;
+              setIntakeMode(nextMode);
+              if (nextMode === "new") setIntakeCandidateId(0);
+              setIntakeError("");
+            }}
+          />
+          {intakeMode === "existing" ? (
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              {i18nT("static.1vb7im2")}
+              <Dropdown
+                value={intakeCandidateId || null}
+                options={intakeCandidateOptions}
+                optionLabel="label"
+                optionValue="value"
+                placeholder={i18nT("static.1mlhopk")}
+                className="w-full"
+                filter
+                onChange={(event) => setIntakeCandidateId(event.value ?? 0)}
+              />
+            </label>
+          ) : (
+            <>
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {i18nT("static.4eocnj")}
+                <InputText
+                  value={intakeCandidate.full_name}
+                  onChange={(event) =>
+                    setIntakeCandidate({
+                      ...intakeCandidate,
+                      full_name: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  {i18nT("static.inbfc7")}
+                  <InputText
+                    type="email"
+                    value={intakeCandidate.email}
+                    onChange={(event) =>
+                      setIntakeCandidate({
+                        ...intakeCandidate,
+                        email: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="grid gap-2 text-sm font-medium text-slate-700">
+                  {i18nT("static.kb2lhr")}
+                  <InputText
+                    value={intakeCandidate.phone_number}
+                    onChange={(event) =>
+                      setIntakeCandidate({
+                        ...intakeCandidate,
+                        phone_number: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {i18nT("static.r5qyuw")}
+                <InputText
+                  value={intakeCandidate.source}
+                  onChange={(event) =>
+                    setIntakeCandidate({
+                      ...intakeCandidate,
+                      source: event.target.value,
+                    })
+                  }
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {tText("Resume")}
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="block w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-700"
+                  onChange={(event) =>
+                    setIntakeResumeFile(event.target.files?.[0] || null)
+                  }
+                />
+                <span className="text-xs font-normal text-slate-400">
+                  {tText("PDF only, maximum 10 MB")}
+                </span>
+              </label>
+            </>
+          )}
+          {intakeError ? (
+            <p className="m-0 rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {intakeError}
+            </p>
+          ) : null}
+          {intakeResumeWarning ? (
+            <p className="m-0 rounded-md bg-amber-50 p-3 text-sm text-amber-700">
+              {intakeResumeWarning}
+            </p>
+          ) : null}
         </div>
       </Dialog>
       <Dialog
