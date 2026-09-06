@@ -85,6 +85,27 @@ describe("parseApiError", () => {
       "The service is temporarily unavailable. Please try again later.",
     );
   });
+
+  it("maps approval and supervisor failures to actionable instructions", () => {
+    expect(
+      getErrorMessage(
+        {
+          code: "ApprovalChainNotConfigured",
+          message: "approval chain is not configured",
+        },
+        "code",
+      ),
+    ).toContain("active supervisor/manager");
+    expect(
+      getErrorMessage(
+        {
+          code: "SUPERVISOR_HIERARCHY_CYCLE",
+          message: "invalid hierarchy",
+        },
+        "code",
+      ),
+    ).toContain("reporting loop");
+  });
 });
 
 describe("apiFetch", () => {

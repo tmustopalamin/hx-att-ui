@@ -7,7 +7,55 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "The service is temporarily unavailable. Please try again later.",
   SESSION_REFRESH_RETRY:
     "Your session is being refreshed. Please retry the request.",
-  DatabaseError: "There is a problem with the database connection",
+  APPROVAL_CHAIN_NOT_CONFIGURED:
+    "The approval chain is incomplete. Assign an active supervisor/manager with an active Employee and Approver account for every required level, or reduce the required approval steps.",
+  ApprovalChainNotConfigured:
+    "The approval chain is incomplete. Assign an active supervisor/manager with an active Employee and Approver account for every required level, or reduce the required approval steps.",
+  WORKFLOW_NOT_FOUND:
+    "No active approval workflow is configured for this request type. Ask an administrator to activate it in Approval Settings.",
+  INVALID_STATUS:
+    "This approval is no longer pending or was changed by another user. Refresh the inbox and review its latest status.",
+  InvalidStatus:
+    "This request is no longer in a state that allows this action. Refresh and review its latest status.",
+  REQUEST_NOT_FOUND:
+    "This approval request no longer exists. Refresh the inbox to remove the outdated item.",
+  STEP_NOT_FOUND:
+    "This approval step is no longer active. Refresh the inbox and review the latest approval step.",
+  PERMISSION_DENIED:
+    "You are not the active approver for this request, or your approval permission has changed. Refresh the inbox; contact an administrator if this is unexpected.",
+  PermissionDenied:
+    "You do not have permission to perform this action. Contact an administrator if this is unexpected.",
+  VALIDATION_ERROR:
+    "The approval action could not be validated. Review the request and note, refresh the latest data, then try again.",
+  ValidationError:
+    "Some submitted data is invalid. Review the highlighted fields and try again.",
+  APPROVAL_NOTE_TOO_LONG:
+    "The approval note is too long. Shorten it to 1,000 characters or fewer.",
+  REJECTION_REASON_REQUIRED:
+    "Enter a rejection reason so the requester knows what must be corrected.",
+  APPROVAL_WORKFLOW_NAME_REQUIRED: "Enter a workflow name.",
+  APPROVAL_WORKFLOW_NAME_TOO_LONG:
+    "The workflow name is too long. Shorten it to 100 characters or fewer.",
+  APPROVAL_REQUIRED_STEPS_INVALID:
+    "Required approval steps must be a whole number from 0 to 10.",
+  PreconditionFailed:
+    "This data changed while you were editing it. Refresh the latest data and try again.",
+  SUPERVISOR_SELF_REFERENCE:
+    "An employee cannot be their own supervisor. Select another eligible approver.",
+  SupervisorSelfReference:
+    "An employee cannot be their own supervisor. Select another eligible approver.",
+  SUPERVISOR_NOT_ELIGIBLE:
+    "The selected supervisor is inactive or does not have an active user account with both Employee and Approver roles. Update the account or select another supervisor.",
+  SupervisorNotEligible:
+    "The selected supervisor is inactive or does not have an active user account with both Employee and Approver roles. Update the account or select another supervisor.",
+  SUPERVISOR_HIERARCHY_CYCLE:
+    "This supervisor assignment would create a reporting loop. Review the supervisor hierarchy and select a manager outside the employee's reporting chain.",
+  SupervisorHierarchyCycle:
+    "This supervisor assignment would create a reporting loop. Review the supervisor hierarchy and select a manager outside the employee's reporting chain.",
+  EmploymentChangeRequired:
+    "Existing employment assignments must be changed through Employee Lifecycle > Employment Change so the change can be reviewed and approved.",
+  DatabaseError:
+    "A server error occurred. Try again; contact an administrator if it persists.",
   DATABASE_ERROR:
     "A server error occurred. Try again; contact an administrator if it persists.",
   PINAlreadyUsed: "Pin Already Used",

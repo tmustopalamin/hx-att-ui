@@ -1,5 +1,4 @@
-import React from "react";
-import ApprovalTableData from "./ApprovalTableData";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Approval Task - PT. Hexing Technology",
@@ -7,7 +6,7 @@ export const metadata = {
 };
 
 const ApprovalTaskPage = () => {
-  return <ApprovalTableData />;
+  redirect("/approval");
 };
 
 export default ApprovalTaskPage;

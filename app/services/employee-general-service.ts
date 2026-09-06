@@ -1,4 +1,4 @@
-import { apiFetchResponse } from "@/app/utils/api-client";
+import { apiFetchResponse, parseApiError } from "@/app/utils/api-client";
 
 import dayjs from "dayjs";
 import {
@@ -13,33 +13,9 @@ import {
   OptionItem,
 } from "../types/employee-general";
 import type { EmployeeApprovalOption } from "../types/employee";
-import { ResponseTypeError } from "../types/response-type";
-
-const parseError = async (res: Response): Promise<ResponseTypeError> => {
-  const contentType = res.headers.get("Content-Type");
-
-  try {
-    if (contentType && contentType.includes("application/json")) {
-      return (await res.json()) as ResponseTypeError;
-    }
-
-    return {
-      success: false,
-      code: String(res.status),
-      message: await res.text(),
-    };
-  } catch {
-    return {
-      success: false,
-      code: String(res.status),
-      message: "Unknown error",
-    };
-  }
-};
-
 const ensureOk = async (res: Response) => {
   if (!res.ok) {
-    throw await parseError(res);
+    throw await parseApiError(res);
   }
 };
 

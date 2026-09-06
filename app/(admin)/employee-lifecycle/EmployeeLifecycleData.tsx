@@ -139,7 +139,12 @@ export default function EmployeeLifecycleData() {
     "/api/employees/list?show_all=false",
     fetcher,
   );
-  const { data: approvalEmployees = [] } = useSWR<EmployeeApprovalOption[]>(
+  const {
+    data: approvalEmployees = [],
+    error: approvalEmployeesError,
+    isLoading: isLoadingApprovalEmployees,
+    mutate: refreshApprovalEmployees,
+  } = useSWR<EmployeeApprovalOption[]>(
     "employee-lifecycle/approval-options",
     getApprovalEmployeeOptions,
   );
@@ -352,6 +357,27 @@ export default function EmployeeLifecycleData() {
       notify("error", i18nT("static.gy1qqi"), i18nT("static.1flvj5o"));
       return;
     }
+    if (
+      form.lifecycle_type === "EMPLOYMENT_CHANGE" &&
+      employmentChange.supervisor_employee_id !== null &&
+      approvalEmployeesError
+    ) {
+      notify(
+        "error",
+        i18nT("static.gy1qqi"),
+        `${getErrorMessage(approvalEmployeesError, "code")} ${i18nT(
+          "Refresh the approver list before creating this employment change.",
+        )}`,
+      );
+      return;
+    }
+    if (
+      form.lifecycle_type === "EMPLOYMENT_CHANGE" &&
+      employmentChange.supervisor_employee_id === form.employee_id
+    ) {
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.1215kan"));
+      return;
+    }
     if (!isWhitespaceFreeIdentifier(employmentChange.code)) {
       notify(
         "error",
@@ -395,7 +421,7 @@ export default function EmployeeLifecycleData() {
         "error",
         i18nT("static.1nvorn3"),
         isResponseTypeError(error)
-          ? getErrorMessage(error, "message")
+          ? getErrorMessage(error, "code")
           : error instanceof Error
             ? error.message
             : i18nT("static.o4lwju"),
@@ -435,7 +461,7 @@ export default function EmployeeLifecycleData() {
         "error",
         i18nT("static.1nvorn3"),
         isResponseTypeError(error)
-          ? getErrorMessage(error, "message")
+          ? getErrorMessage(error, "code")
           : error instanceof Error
             ? error.message
             : i18nT("static.16ypw6a"),
@@ -888,6 +914,11 @@ export default function EmployeeLifecycleData() {
                     filter
                     placeholder={i18nT("static.xhzk5d")}
                     emptyMessage={i18nT("static.1j4mgrb")}
+                    disabled={
+                      isLoadingApprovalEmployees ||
+                      Boolean(approvalEmployeesError)
+                    }
+                    loading={isLoadingApprovalEmployees}
                     className="w-full"
                     onChange={(event) =>
                       setEmploymentChange({
@@ -897,6 +928,18 @@ export default function EmployeeLifecycleData() {
                       })
                     }
                   />
+                  {approvalEmployeesError && (
+                    <small className="font-normal text-red-600">
+                      {getErrorMessage(approvalEmployeesError, "code")}{" "}
+                      <button
+                        type="button"
+                        className="underline"
+                        onClick={() => void refreshApprovalEmployees()}
+                      >
+                        {i18nT("static.28r6qc")}
+                      </button>
+                    </small>
+                  )}
                 </label>
                 <label className="grid gap-2 text-sm font-medium text-slate-700">
                   {i18nT("static.t3xfbi")}{" "}

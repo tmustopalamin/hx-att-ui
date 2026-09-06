@@ -35,6 +35,7 @@ import { RootState } from "@/store/store";
 import useSWR from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
+import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
 
 type PositionOption = OptionItem & {
   department_id?: number | null;
@@ -75,8 +76,12 @@ const EmployeeDetailEmployment = () => {
   const params = useParams();
   const employeeId = Number(params.id);
   const employmentDataKey = `/api/employees/${employeeId}/employment-data`;
-  const { data: employmentData, mutate: refreshEmploymentData } =
-    useSWR<EmployeeEmploymentData | null>(employmentDataKey, fetcher);
+  const {
+    data: employmentData,
+    error: employmentError,
+    isLoading: isLoadingEmployment,
+    mutate: refreshEmploymentData,
+  } = useSWR<EmployeeEmploymentData | null>(employmentDataKey, fetcher);
 
   const { control, handleSubmit, reset, setValue } = useForm<FormData>({
     defaultValues: {
@@ -95,7 +100,9 @@ const EmployeeDetailEmployment = () => {
   });
 
   const [isPageEdit, setIsPageEdit] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const hasEmploymentHistory = employmentData !== null;
 
   const [departments, setDepartments] = useState<OptionItem[]>([]);
@@ -175,6 +182,7 @@ const EmployeeDetailEmployment = () => {
     }
 
     setLoading(true);
+    setLoadError(null);
 
     try {
       const [
@@ -240,13 +248,16 @@ const EmployeeDetailEmployment = () => {
         });
       }
     } catch (err: unknown) {
+      const detail = getErrorMessage(err, "code");
+      setLoadError(detail);
+
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
             severity: "error",
             summary: i18nT("static.1vks92p"),
-            detail: getErrorMessage(err, "message"),
+            detail,
           }),
         );
       } else if (err instanceof Error) {
@@ -255,7 +266,7 @@ const EmployeeDetailEmployment = () => {
             visible: true,
             severity: "error",
             summary: i18nT("static.1vks92p"),
-            detail: err.message,
+            detail,
           }),
         );
       }
@@ -273,6 +284,10 @@ const EmployeeDetailEmployment = () => {
   }, [employeeId, employmentData]);
 
   const onSubmit = async (data: FormData) => {
+    if (isSaving) {
+      return;
+    }
+
     if (!isWhitespaceFreeIdentifier(data.code)) {
       dispatch(
         showToast({
@@ -325,6 +340,7 @@ const EmployeeDetailEmployment = () => {
     };
 
     try {
+      setIsSaving(true);
       await updateEmployeeEmploymentData(employeeId, payload);
 
       dispatch(
@@ -339,13 +355,15 @@ const EmployeeDetailEmployment = () => {
       setIsPageEdit(false);
       await refreshEmploymentData();
     } catch (err: unknown) {
+      const detail = getErrorMessage(err, "code");
+
       if (isResponseTypeError(err)) {
         dispatch(
           showToast({
             visible: true,
             severity: "error",
             summary: i18nT("static.1vks92p"),
-            detail: getErrorMessage(err, "message"),
+            detail,
           }),
         );
       } else if (err instanceof Error) {
@@ -354,17 +372,52 @@ const EmployeeDetailEmployment = () => {
             visible: true,
             severity: "error",
             summary: i18nT("static.1vks92p"),
-            detail: err.message,
+            detail,
+          }),
+        );
+      } else {
+        dispatch(
+          showToast({
+            visible: true,
+            severity: "error",
+            summary: i18nT("static.1vks92p"),
+            detail,
           }),
         );
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  if (loading) {
+  if (employmentError && employmentData === undefined) {
+    return <ErrorNotConnectedToApi mutateKey={employmentDataKey} />;
+  }
+
+  if (isLoadingEmployment || loading) {
     return (
       <div className="py-8 text-sm text-slate-500">
         {i18nT("static.whl66l")}{" "}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+        <p className="m-0 text-sm font-semibold text-red-800">
+          {i18nT("Unable to load employment options")}
+        </p>
+        <p className="m-0 mt-2 text-sm leading-6 text-red-700">{loadError}</p>
+        <Button
+          type="button"
+          label={i18nT("static.28r6qc")}
+          icon="pi pi-refresh"
+          severity="danger"
+          outlined
+          className="mt-4"
+          onClick={() => void loadData()}
+        />
       </div>
     );
   }
@@ -391,6 +444,7 @@ const EmployeeDetailEmployment = () => {
                     severity="secondary"
                     size="small"
                     className="w-full sm:w-auto"
+                    disabled={isSaving}
                     onClick={() => {
                       setIsPageEdit(false);
                       void loadData();
@@ -402,6 +456,8 @@ const EmployeeDetailEmployment = () => {
                     icon="pi pi-check"
                     size="small"
                     className="w-full sm:w-auto"
+                    loading={isSaving}
+                    disabled={isSaving}
                   />
                 </>
               ) : hasEmploymentHistory ? (

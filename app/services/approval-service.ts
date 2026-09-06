@@ -1,41 +1,18 @@
-import { apiFetchResponse } from "@/app/utils/api-client";
+import { apiFetchResponse, parseApiError } from "@/app/utils/api-client";
 
 import {
   ApprovalActionPayload,
   ApprovalWorkflowSettingForm,
 } from "../types/approval";
 import { LifecycleApprovalDetail } from "../types/employee-lifecycle";
-import { ResponseTypeError } from "../types/response-type";
 
 const API_URL = "/api/approval";
 
-const parseErrorResponse = async (
-  res: Response,
-): Promise<ResponseTypeError> => {
-  const contentType = res.headers.get("Content-Type");
-
-  try {
-    if (contentType && contentType.includes("application/json")) {
-      return (await res.json()) as ResponseTypeError;
-    }
-
-    return {
-      success: false,
-      code: String(res.status),
-      message: await res.text(),
-    };
-  } catch {
-    return {
-      success: false,
-      code: String(res.status),
-      message: "Unknown error",
-    };
-  }
-};
-
-const validateRowVersion = (rowVersion: number) => {
-  if (rowVersion <= 0 || Number.isNaN(rowVersion)) {
-    throw new Error("rowVersion is required");
+const validatePositiveInteger = (value: number, fieldName: string) => {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(
+      `${fieldName} is missing or invalid. Refresh and try again.`,
+    );
   }
 };
 
@@ -52,7 +29,8 @@ export const approveApprovalRequest = async (
   rowVersion: number,
   note?: string | null,
 ) => {
-  validateRowVersion(rowVersion);
+  validatePositiveInteger(approvalRequestId, "Approval request");
+  validatePositiveInteger(rowVersion, "Approval version");
 
   const res = await apiFetchResponse(
     `${API_URL}/${approvalRequestId}/approve`,
@@ -68,7 +46,7 @@ export const approveApprovalRequest = async (
   );
 
   if (!res.ok) {
-    throw await parseErrorResponse(res);
+    throw await parseApiError(res);
   }
 
   return res.json();
@@ -79,7 +57,8 @@ export const rejectApprovalRequest = async (
   rowVersion: number,
   note?: string | null,
 ) => {
-  validateRowVersion(rowVersion);
+  validatePositiveInteger(approvalRequestId, "Approval request");
+  validatePositiveInteger(rowVersion, "Approval version");
 
   const res = await apiFetchResponse(`${API_URL}/${approvalRequestId}/reject`, {
     method: "POST",
@@ -92,7 +71,7 @@ export const rejectApprovalRequest = async (
   });
 
   if (!res.ok) {
-    throw await parseErrorResponse(res);
+    throw await parseApiError(res);
   }
 
   return res.json();
@@ -101,13 +80,15 @@ export const rejectApprovalRequest = async (
 export const getPendingLifecycleApprovalDetail = async (
   approvalRequestId: number,
 ): Promise<LifecycleApprovalDetail> => {
+  validatePositiveInteger(approvalRequestId, "Approval request");
+
   const res = await apiFetchResponse(
     `${API_URL}/pending/${approvalRequestId}/lifecycle-detail`,
     { credentials: "include" },
   );
 
   if (!res.ok) {
-    throw await parseErrorResponse(res);
+    throw await parseApiError(res);
   }
 
   const response: { data: LifecycleApprovalDetail } = await res.json();
@@ -119,7 +100,8 @@ export const updateApprovalWorkflowSetting = async (
   rowVersion: number,
   data: ApprovalWorkflowSettingForm,
 ) => {
-  validateRowVersion(rowVersion);
+  validatePositiveInteger(id, "Approval workflow");
+  validatePositiveInteger(rowVersion, "Approval workflow version");
 
   const payload = {
     name: data.name.trim(),
@@ -138,7 +120,7 @@ export const updateApprovalWorkflowSetting = async (
   });
 
   if (!res.ok) {
-    throw await parseErrorResponse(res);
+    throw await parseApiError(res);
   }
 
   return res.json();

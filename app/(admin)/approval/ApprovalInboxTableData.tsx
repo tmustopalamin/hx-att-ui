@@ -70,6 +70,15 @@ const API_KEY = "/api/approval/pending";
 
 const MAX_NOTE_LENGTH = 1000;
 
+const OBSOLETE_APPROVAL_ERROR_CODES = new Set([
+  "INVALID_STATUS",
+  "InvalidStatus",
+  "REQUEST_NOT_FOUND",
+  "STEP_NOT_FOUND",
+  "PERMISSION_DENIED",
+  "PermissionDenied",
+]);
+
 const employmentChangeFields: Array<{
   key: keyof EmployeeLifecycleEmploymentSnapshot;
   labelKey: string;
@@ -514,14 +523,14 @@ const ApprovalInboxTableData = () => {
     );
   };
 
-  const showError = (err: unknown) => {
+  const showError = (err: unknown, preferInstruction = false) => {
     if (isResponseTypeError(err)) {
       dispatch(
         showToast({
           visible: true,
           severity: "error",
           summary: i18nT("static.1vks92p"),
-          detail: getErrorMessage(err, "message"),
+          detail: getErrorMessage(err, preferInstruction ? "code" : "message"),
         }),
       );
 
@@ -776,7 +785,15 @@ const ApprovalInboxTableData = () => {
        */
       resetActionDialogState();
     } catch (err: unknown) {
-      showError(err);
+      showError(err, true);
+      await refreshApprovalData().catch(() => undefined);
+
+      if (
+        isResponseTypeError(err) &&
+        OBSOLETE_APPROVAL_ERROR_CODES.has(err.code)
+      ) {
+        resetActionDialogState();
+      }
     } finally {
       setIsSaving(false);
     }

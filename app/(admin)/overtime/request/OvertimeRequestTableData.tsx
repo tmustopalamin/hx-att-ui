@@ -293,7 +293,7 @@ const OvertimeRequestTableData = () => {
           visible: true,
           severity: "error",
           summary: i18nT("static.1vks92p"),
-          detail: getErrorMessage(err, "message"),
+          detail: getErrorMessage(err, "code"),
         }),
       );
       return;
