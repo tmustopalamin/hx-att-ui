@@ -516,31 +516,16 @@ const EmployeeDetailEmployment = () => {
                   </span>
                 )
               ) : canUpdate ? (
-                <>
-                  <Button
-                    type="button"
-                    label={i18nT("static.1i1lcq9")}
-                    icon="pi pi-pencil"
-                    severity="secondary"
-                    outlined
-                    size="small"
-                    className="w-full sm:w-auto"
-                    onClick={() => setIsPageEdit(true)}
-                  />
-                  {canCreateLifecycle && (
-                    <Link href={lifecycleHref} className="w-full sm:w-auto">
-                      <Button
-                        type="button"
-                        label={i18nT("static.14hifi8")}
-                        icon="pi pi-send"
-                        severity="secondary"
-                        text
-                        size="small"
-                        className="w-full sm:w-auto"
-                      />
-                    </Link>
-                  )}
-                </>
+                <Button
+                  type="button"
+                  label={i18nT("static.1i1lcq9")}
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  className="w-full sm:w-auto"
+                  onClick={() => setIsPageEdit(true)}
+                />
               ) : null}
             </div>
           }
