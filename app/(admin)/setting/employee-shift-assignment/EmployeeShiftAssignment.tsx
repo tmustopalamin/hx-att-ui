@@ -49,6 +49,7 @@ import {
 import { fetcher } from "@/app/utils/fetcher";
 import { useArchivedDataAccess } from "@/app/utils/archived-data-access";
 import { hasPermission } from "@/app/utils/permission-utils";
+import { hasRole } from "@/app/utils/role-utils";
 import { RootState } from "@/store/store";
 import EmployeeScheduleHelpDialog from "../employee-schedule/_components/EmployeeScheduleHelpDialog";
 
@@ -169,9 +170,18 @@ const EmployeeShiftAssignmentListPage = () => {
         icon: "pi pi-list",
         command: () => router.push("/setting/employee-schedule/rules"),
       },
+      hasRole(profileState.role, ["superadmin"]) &&
+        hasPermission(
+          profileState.permissions,
+          "employee-schedule-change-log.read",
+        ) && {
+          label: i18nT("Mass Shift Change Log"),
+          icon: "pi pi-history",
+          command: () => router.push("/setting/employee-schedule/change-log"),
+        },
     ];
     return items.filter((item): item is PrimeMenuItem => item !== false);
-  }, [i18nT, profileState.permissions, router]);
+  }, [i18nT, profileState.permissions, profileState.role, router]);
 
   const isProcessing = processingRowId !== null;
 

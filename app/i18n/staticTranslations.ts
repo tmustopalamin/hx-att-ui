@@ -4662,6 +4662,52 @@ const commonZhPhrases: PhraseMap = [
 // remain untouched; only known UI copy is translated here.
 const employeeScheduleIdPhrases: PhraseMap = [
   [
+    "Unable to load mass schedule change logs.",
+    "Log perubahan jadwal massal tidak dapat dimuat.",
+  ],
+  [
+    "Unable to load mass schedule change detail.",
+    "Detail perubahan jadwal massal tidak dapat dimuat.",
+  ],
+  [
+    "Only superadmin can view the mass schedule change log.",
+    "Hanya superadmin yang dapat melihat log perubahan jadwal massal.",
+  ],
+  ["Mass Shift Change Log", "Log Perubahan Shift Massal"],
+  [
+    "Review who applied each mass shift change and the exact employee shift transitions.",
+    "Tinjau siapa yang menerapkan setiap perubahan shift massal dan perpindahan shift karyawan secara tepat.",
+  ],
+  ["Performed from", "Dilakukan dari"],
+  ["Performed to", "Dilakukan sampai"],
+  ["Actor employee ID", "ID karyawan pelaksana"],
+  ["All actors", "Semua pelaksana"],
+  ["Changed employee ID", "ID karyawan yang diubah"],
+  ["All employees", "Semua karyawan"],
+  [
+    "No mass schedule change logs found.",
+    "Log perubahan jadwal massal tidak ditemukan.",
+  ],
+  [
+    "Showing {first} to {last} of {totalRecords}",
+    "Menampilkan {first} sampai {last} dari {totalRecords}",
+  ],
+  ["Performed at", "Dilakukan pada"],
+  ["Performed by", "Dilakukan oleh"],
+  ["Target Shift Rule", "Aturan Shift Tujuan"],
+  ["Employees / changed rows", "Karyawan / baris berubah"],
+  ["Mass Shift Change Detail", "Detail Perubahan Shift Massal"],
+  ["Loading detail...", "Memuat detail..."],
+  ["Employee shift transitions", "Perpindahan shift karyawan"],
+  ["From shift", "Dari shift"],
+  ["To shift", "Ke shift"],
+  [
+    "No daily assignment changed; this operation changed the employee rule timeline only.",
+    "Tidak ada penugasan harian yang berubah; operasi ini hanya mengubah timeline aturan karyawan.",
+  ],
+  ["Preview snapshot", "Snapshot Pratinjau"],
+  ["Rule timeline", "Timeline aturan"],
+  [
     "Schedule change applied successfully.",
     "Perubahan jadwal berhasil diterapkan.",
   ],
@@ -4780,6 +4826,43 @@ const employeeScheduleIdPhrases: PhraseMap = [
 ];
 
 const employeeScheduleZhPhrases: PhraseMap = [
+  ["Unable to load mass schedule change logs.", "无法加载批量排班变更日志。"],
+  ["Unable to load mass schedule change detail.", "无法加载批量排班变更详情。"],
+  [
+    "Only superadmin can view the mass schedule change log.",
+    "只有超级管理员可以查看批量排班变更日志。",
+  ],
+  ["Mass Shift Change Log", "批量排班变更日志"],
+  [
+    "Review who applied each mass shift change and the exact employee shift transitions.",
+    "查看每次批量排班变更的执行人及员工准确的班次变更。",
+  ],
+  ["Performed from", "执行时间从"],
+  ["Performed to", "执行时间至"],
+  ["Actor employee ID", "执行员工 ID"],
+  ["All actors", "全部执行人"],
+  ["Changed employee ID", "变更员工 ID"],
+  ["All employees", "全部员工"],
+  ["No mass schedule change logs found.", "未找到批量排班变更日志。"],
+  [
+    "Showing {first} to {last} of {totalRecords}",
+    "显示 {first} 至 {last}，共 {totalRecords} 条",
+  ],
+  ["Performed at", "执行时间"],
+  ["Performed by", "执行人"],
+  ["Target Shift Rule", "目标班次规则"],
+  ["Employees / changed rows", "员工 / 变更行"],
+  ["Mass Shift Change Detail", "批量排班变更详情"],
+  ["Loading detail...", "正在加载详情..."],
+  ["Employee shift transitions", "员工班次变更"],
+  ["From shift", "原班次"],
+  ["To shift", "新班次"],
+  [
+    "No daily assignment changed; this operation changed the employee rule timeline only.",
+    "没有每日排班发生变化；此次操作仅更改员工规则时间线。",
+  ],
+  ["Preview snapshot", "预览快照"],
+  ["Rule timeline", "规则时间线"],
   ["Schedule change applied successfully.", "排班变更已成功应用。"],
   [
     "Manage employee shift assignments and their effective periods.",
