@@ -4,7 +4,7 @@ export interface ShiftRule {
   id: number;
   name: string;
   schedule_type: string;
-  base_shift_id: number;
+  base_shift_id: number | null;
   is_active: boolean;
   deleted_at: string;
   row_version: number;

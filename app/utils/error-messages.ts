@@ -58,6 +58,20 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "A server error occurred. Try again; contact an administrator if it persists.",
   DATABASE_ERROR:
     "A server error occurred. Try again; contact an administrator if it persists.",
+  SCHEDULE_CHANGE_INVALID_REQUEST:
+    "The schedule change request is invalid. Review the selected employees, Shift Rule, and effective dates, then try again.",
+  SCHEDULE_CHANGE_NOT_FOUND:
+    "The selected employee or Shift Rule is no longer available. Refresh the data and select an active record.",
+  SCHEDULE_CHANGE_INVALID_CONFIGURATION:
+    "The schedule configuration is invalid. Review Settings > Shift, Settings > Shift Rule, or Settings > Employee Schedule > Rules, then try again.",
+  SCHEDULE_CHANGE_DATA_INTEGRITY:
+    "The schedule configuration contains an internal data error. Contact your system administrator.",
+  SCHEDULE_CHANGE_CONFLICT:
+    "The schedule change has conflicts. Review the preview and resolve the listed attendance, payroll, or protected-schedule conflicts.",
+  SCHEDULE_CHANGE_DATABASE_ERROR:
+    "The schedule change could not be completed because of a system error. Try again; contact an administrator if it persists.",
+  SCHEDULE_CHANGE_ATTENDANCE_PROCESS_ERROR:
+    "The schedule change was not completed because attendance reprocessing failed. Try again; contact an administrator if it persists.",
   PINAlreadyUsed: "Pin Already Used",
   PAYROLL_BATCH_ALREADY_EXISTS:
     "A payroll batch with this number already exists. Use a different batch number.",

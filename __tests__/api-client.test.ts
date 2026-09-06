@@ -106,6 +106,27 @@ describe("parseApiError", () => {
       ),
     ).toContain("reporting loop");
   });
+
+  it("keeps schedule configuration errors actionable and data errors general", () => {
+    expect(
+      getErrorMessage(
+        {
+          code: "SCHEDULE_CHANGE_INVALID_CONFIGURATION",
+          message: "Request failed. Please try again.",
+        },
+        "code",
+      ),
+    ).toContain("Settings > Shift Rule");
+    expect(
+      getErrorMessage(
+        {
+          code: "SCHEDULE_CHANGE_DATA_INTEGRITY",
+          message: "Request failed. Please try again.",
+        },
+        "code",
+      ),
+    ).toContain("internal data error");
+  });
 });
 
 describe("apiFetch", () => {

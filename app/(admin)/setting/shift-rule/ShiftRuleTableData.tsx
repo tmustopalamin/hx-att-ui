@@ -98,7 +98,7 @@ const EMPTY_SHIFT_RULE = {
   id: 0,
   name: "",
   schedule_type: "",
-  base_shift_id: 0,
+  base_shift_id: null,
   is_active: true,
   rotation_mode: "ROLLING",
   change_day: null,
@@ -356,7 +356,7 @@ const ShiftRuleTableData = () => {
 
     return {
       ...payload,
-      base_shift_id: 0,
+      base_shift_id: null,
       change_day:
         payload.rotation_mode === "CHANGE_ON_DAY" ? payload.change_day : null,
       rules: orderedRules,
@@ -428,7 +428,7 @@ const ShiftRuleTableData = () => {
 
     reset({
       ...rowData,
-      base_shift_id: rowData.base_shift_id ?? 0,
+      base_shift_id: rowData.base_shift_id ?? null,
       rotation_mode: rowData.rotation_mode ?? "ROLLING",
       change_day: rowData.change_day ?? null,
       rules: orderedRules,
@@ -1381,7 +1381,7 @@ const ShiftRuleTableData = () => {
                           onChange={() => {
                             field.onChange("ROTATION");
 
-                            setValue("base_shift_id", 0, {
+                            setValue("base_shift_id", null, {
                               shouldDirty: true,
                             });
 
