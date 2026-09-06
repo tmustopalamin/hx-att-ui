@@ -53,7 +53,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   SupervisorHierarchyCycle:
     "This supervisor assignment would create a reporting loop. Review the supervisor hierarchy and select a manager outside the employee's reporting chain.",
   EmploymentChangeRequired:
-    "Existing employment assignments must be changed through Employee Lifecycle > Employment Change so the change can be reviewed and approved.",
+    "Employment assignments must be changed through Employee Lifecycle > Employment Change so the change can be reviewed and approved.",
   DatabaseError:
     "A server error occurred. Try again; contact an administrator if it persists.",
   DATABASE_ERROR:

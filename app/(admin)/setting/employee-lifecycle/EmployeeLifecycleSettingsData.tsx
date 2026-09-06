@@ -23,6 +23,7 @@ import {
   createEmployeeLifecycleTemplateVersion,
   getEmployeeLifecycleAssignees,
   setEmployeeLifecycleTemplateActive,
+  updateEmployeeLifecycleTypePolicy,
 } from "@/app/services/employee-lifecycle-settings-service";
 import type { ResponseType } from "@/app/types/response-type";
 import {
@@ -36,6 +37,7 @@ import type {
   EmployeeLifecycleChecklistTemplateInput,
   EmployeeLifecycleChecklistTemplateSetting,
   EmployeeLifecycleSettings,
+  EmployeeLifecycleTypeSetting,
   LifecycleAssignmentSource,
 } from "@/app/types/employee-lifecycle-settings";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
@@ -145,6 +147,9 @@ export default function EmployeeLifecycleSettingsData() {
   const [itemDraft, setItemDraft] =
     useState<EmployeeLifecycleChecklistItemInput>(emptyItem);
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [policyTarget, setPolicyTarget] =
+    useState<EmployeeLifecycleTypeSetting | null>(null);
+  const [policyReason, setPolicyReason] = useState("");
   const [saving, setSaving] = useState(false);
 
   const notify = (severity: "success" | "error", detail: string) =>
@@ -287,6 +292,52 @@ export default function EmployeeLifecycleSettingsData() {
     }
   };
 
+  const openPolicyDialog = (setting: EmployeeLifecycleTypeSetting) => {
+    setPolicyTarget(setting);
+    setPolicyReason("");
+  };
+
+  const savePolicy = async () => {
+    if (!policyTarget) {
+      return;
+    }
+    const reason = policyReason.trim();
+    if (!reason || reason.length > 500) {
+      notify(
+        "error",
+        i18nT(
+          "A policy change reason is required and must be 500 characters or fewer.",
+        ),
+      );
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await updateEmployeeLifecycleTypePolicy(
+        policyTarget.lifecycle_type,
+        policyTarget.row_version,
+        !policyTarget.requires_lifecycle,
+        reason,
+      );
+      setPolicyTarget(null);
+      setPolicyReason("");
+      await mutate();
+      notify("success", i18nT("Lifecycle policy updated."));
+    } catch (caught: unknown) {
+      notify(
+        "error",
+        isResponseTypeError(caught)
+          ? getErrorMessage(caught, "message")
+          : caught instanceof Error
+            ? caught.message
+            : i18nT("Unable to update lifecycle policy."),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (error) {
     return (
       <Card className="border border-red-200">
@@ -348,8 +399,84 @@ export default function EmployeeLifecycleSettingsData() {
               />
             )}
           />
+          <Column
+            header={i18nT("Lifecycle enforcement")}
+            body={(row: EmployeeLifecycleTypeSetting) => (
+              <div className="flex items-center gap-2">
+                <InputSwitch
+                  checked={row.requires_lifecycle}
+                  disabled={!canManage || saving}
+                  onChange={() => openPolicyDialog(row)}
+                />
+                <Tag
+                  value={
+                    row.requires_lifecycle
+                      ? i18nT("Lifecycle required")
+                      : i18nT("Direct edit allowed")
+                  }
+                  severity={row.requires_lifecycle ? "warning" : "success"}
+                />
+              </div>
+            )}
+          />
         </DataTable>
       </Card>
+
+      <Dialog
+        header={i18nT("Update lifecycle enforcement")}
+        visible={policyTarget !== null}
+        modal
+        draggable={false}
+        resizable={false}
+        style={{ width: "95vw", maxWidth: "34rem" }}
+        onHide={() => !saving && setPolicyTarget(null)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button
+              label={i18nT("static.ew9em3")}
+              text
+              severity="secondary"
+              disabled={saving}
+              onClick={() => setPolicyTarget(null)}
+            />
+            <Button
+              label={i18nT("static.7t7ri5")}
+              icon="pi pi-check"
+              loading={saving}
+              disabled={!policyReason.trim() || policyReason.length > 500}
+              onClick={() => void savePolicy()}
+            />
+          </div>
+        }
+      >
+        {policyTarget && (
+          <div className="grid gap-4">
+            <p className="m-0 text-sm leading-6 text-slate-600">
+              {policyTarget.requires_lifecycle
+                ? i18nT(
+                    "Turning this off allows direct employment edits. Existing lifecycle cases are not changed.",
+                  )
+                : i18nT(
+                    "Turning this on requires future changes of this lifecycle type to use lifecycle and approval.",
+                  )}
+            </p>
+            <label className="grid gap-2 text-sm font-medium text-slate-700">
+              {i18nT("Reason")}
+              <InputTextarea
+                value={policyReason}
+                rows={4}
+                autoResize
+                maxLength={500}
+                placeholder={i18nT("Explain why this policy is changing")}
+                onChange={(event) => setPolicyReason(event.target.value)}
+              />
+              <span className="text-xs font-normal text-slate-500">
+                {policyReason.length}/500
+              </span>
+            </label>
+          </div>
+        )}
+      </Dialog>
 
       <Card
         title={i18nT("static.ic24fk")}

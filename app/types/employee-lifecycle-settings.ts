@@ -6,6 +6,8 @@ export interface EmployeeLifecycleTypeSetting {
   name: string;
   description: string | null;
   is_active: boolean;
+  requires_lifecycle: boolean;
+  row_version: number;
 }
 
 export interface EmployeeLifecycleAssigneeOption {

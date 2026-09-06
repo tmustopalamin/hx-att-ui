@@ -3,6 +3,7 @@ import type { ResponseType } from "@/app/types/response-type";
 import type {
   EmployeeLifecycleAssigneeOption,
   EmployeeLifecycleChecklistTemplateInput,
+  EmployeeLifecycleTypeSetting,
   EmployeeLifecycleSettings,
 } from "@/app/types/employee-lifecycle-settings";
 
@@ -38,3 +39,24 @@ export const setEmployeeLifecycleTemplateActive = (
     },
     body: JSON.stringify({ is_active: isActive }),
   });
+
+export const updateEmployeeLifecycleTypePolicy = (
+  lifecycleType: EmployeeLifecycleTypeSetting["lifecycle_type"],
+  rowVersion: number,
+  requiresLifecycle: boolean,
+  reason: string,
+) =>
+  apiFetch<ResponseType<EmployeeLifecycleTypeSetting>>(
+    `${baseUrl}/types/${lifecycleType}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
+      },
+      body: JSON.stringify({
+        requires_lifecycle: requiresLifecycle,
+        reason: reason.trim(),
+      }),
+    },
+  );

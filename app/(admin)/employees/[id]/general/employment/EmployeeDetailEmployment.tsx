@@ -36,6 +36,8 @@ import useSWR from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
 import ErrorNotConnectedToApi from "@/app/_components/ErrorNotConnectedToApi";
+import type { ResponseType } from "@/app/types/response-type";
+import type { EmployeeLifecycleSettings } from "@/app/types/employee-lifecycle-settings";
 
 type PositionOption = OptionItem & {
   department_id?: number | null;
@@ -70,9 +72,14 @@ const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
 const EmployeeDetailEmployment = () => {
   const { t: i18nT } = useI18n();
   const dispatch = useDispatch();
-  const canUpdate = useSelector((state: RootState) =>
-    state.profile.permissions.includes("employee.update"),
+  const permissions = useSelector(
+    (state: RootState) => state.profile.permissions,
   );
+  const canUpdate = permissions.includes("employee.update");
+  const canCreateLifecycle = permissions.includes("employee-lifecycle.create");
+  const canReadLifecycleSettings =
+    permissions.includes("employee-lifecycle.settings.read") ||
+    permissions.includes("employee-lifecycle.settings.manage");
   const params = useParams();
   const employeeId = Number(params.id);
   const employmentDataKey = `/api/employees/${employeeId}/employment-data`;
@@ -82,6 +89,12 @@ const EmployeeDetailEmployment = () => {
     isLoading: isLoadingEmployment,
     mutate: refreshEmploymentData,
   } = useSWR<EmployeeEmploymentData | null>(employmentDataKey, fetcher);
+  const { data: lifecycleSettingsResponse } = useSWR<
+    ResponseType<EmployeeLifecycleSettings>
+  >(
+    canReadLifecycleSettings ? "/api/employee-lifecycle/settings" : null,
+    fetcher,
+  );
 
   const { control, handleSubmit, reset, setValue } = useForm<FormData>({
     defaultValues: {
@@ -104,6 +117,13 @@ const EmployeeDetailEmployment = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const hasEmploymentHistory = employmentData !== null;
+  const employmentChangePolicy = lifecycleSettingsResponse?.data.types.find(
+    (setting) => setting.lifecycle_type === "EMPLOYMENT_CHANGE",
+  );
+  const requiresEmploymentLifecycle = canReadLifecycleSettings
+    ? (employmentChangePolicy?.requires_lifecycle ?? true)
+    : hasEmploymentHistory;
+  const lifecycleHref = `/employee-lifecycle?employee_id=${employeeId}&type=EMPLOYMENT_CHANGE`;
 
   const [departments, setDepartments] = useState<OptionItem[]>([]);
   const [positions, setPositions] = useState<PositionOption[]>([]);
@@ -288,6 +308,21 @@ const EmployeeDetailEmployment = () => {
       return;
     }
 
+    if (requiresEmploymentLifecycle) {
+      setIsPageEdit(false);
+      dispatch(
+        showToast({
+          visible: true,
+          severity: "error",
+          summary: i18nT("static.1vks92p"),
+          detail: i18nT(
+            "Employment changes must be submitted through Employee Lifecycle.",
+          ),
+        }),
+      );
+      return;
+    }
+
     if (!isWhitespaceFreeIdentifier(data.code)) {
       dispatch(
         showToast({
@@ -460,32 +495,52 @@ const EmployeeDetailEmployment = () => {
                     disabled={isSaving}
                   />
                 </>
-              ) : hasEmploymentHistory ? (
-                <Link
-                  href={`/employee-lifecycle?employee_id=${employeeId}&type=EMPLOYMENT_CHANGE`}
-                  className="w-full sm:w-auto"
-                >
+              ) : requiresEmploymentLifecycle ? (
+                canCreateLifecycle ? (
+                  <Link href={lifecycleHref} className="w-full sm:w-auto">
+                    <Button
+                      type="button"
+                      label={i18nT("static.14hifi8")}
+                      icon="pi pi-send"
+                      severity="secondary"
+                      outlined
+                      size="small"
+                      className="w-full sm:w-auto"
+                    />
+                  </Link>
+                ) : (
+                  <span className="text-sm text-slate-500">
+                    {i18nT(
+                      "Employment changes require Employee Lifecycle access.",
+                    )}
+                  </span>
+                )
+              ) : canUpdate ? (
+                <>
                   <Button
                     type="button"
-                    label={i18nT("static.14hifi8")}
-                    icon="pi pi-send"
+                    label={i18nT("static.1i1lcq9")}
+                    icon="pi pi-pencil"
                     severity="secondary"
                     outlined
                     size="small"
                     className="w-full sm:w-auto"
+                    onClick={() => setIsPageEdit(true)}
                   />
-                </Link>
-              ) : canUpdate ? (
-                <Button
-                  type="button"
-                  label={i18nT("static.1i1lcq9")}
-                  icon="pi pi-pencil"
-                  severity="secondary"
-                  outlined
-                  size="small"
-                  className="w-full sm:w-auto"
-                  onClick={() => setIsPageEdit(true)}
-                />
+                  {canCreateLifecycle && (
+                    <Link href={lifecycleHref} className="w-full sm:w-auto">
+                      <Button
+                        type="button"
+                        label={i18nT("static.14hifi8")}
+                        icon="pi pi-send"
+                        severity="secondary"
+                        text
+                        size="small"
+                        className="w-full sm:w-auto"
+                      />
+                    </Link>
+                  )}
+                </>
               ) : null}
             </div>
           }
