@@ -48,12 +48,14 @@ export type EmployeeIdentityRow = {
   employee_id: number;
   identity_type_id: number;
   identity_type_name?: string | null;
+  identity_type_code?: string | null;
   number: string;
   citizen_address: string;
   expire_date?: string | null;
   residential_address: string;
   is_permanent: boolean;
   is_active: boolean;
+  is_primary: boolean;
   created_at: string;
   created_by?: number | null;
   updated_at: string;
@@ -71,6 +73,7 @@ export type EmployeeIdentityPayload = {
   residential_address: string;
   is_permanent: boolean;
   is_active: boolean;
+  is_primary?: boolean;
 };
 
 export type EmployeeFamilyRow = {

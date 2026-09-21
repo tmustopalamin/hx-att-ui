@@ -21,6 +21,7 @@ import {
   createStatutoryWage,
   createTaxProfile,
 } from "@/app/services/employee-payroll-profile-service";
+import { getEmployeeIdentities } from "@/app/services/employee-general-service";
 import type {
   EmployeePayrollProfile,
   NewSalaryHistory,
@@ -226,6 +227,64 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
     }
   };
 
+  const openTaxDialog = async () => {
+    let initialNik: string | null = null;
+    let initialNpwp: string | null = null;
+
+    if (Number.isFinite(employeeId)) {
+      try {
+        const identities = await getEmployeeIdentities(employeeId);
+        const activeIdentities = identities.filter((i) => i.is_active);
+
+        const ktp =
+          activeIdentities.find(
+            (i) =>
+              i.is_primary &&
+              (i.identity_type_code?.toUpperCase() === "KTP" ||
+                i.identity_type_code?.toUpperCase() === "NIK" ||
+                i.identity_type_name?.toUpperCase().includes("KTP") ||
+                i.identity_type_name?.toUpperCase().includes("NIK")),
+          ) ??
+          activeIdentities.find(
+            (i) =>
+              i.identity_type_code?.toUpperCase() === "KTP" ||
+              i.identity_type_code?.toUpperCase() === "NIK" ||
+              i.identity_type_name?.toUpperCase().includes("KTP") ||
+              i.identity_type_name?.toUpperCase().includes("NIK"),
+          );
+
+        const npwp =
+          activeIdentities.find(
+            (i) =>
+              i.is_primary &&
+              (i.identity_type_code?.toUpperCase() === "NPWP" ||
+                i.identity_type_name?.toUpperCase().includes("NPWP")),
+          ) ??
+          activeIdentities.find(
+            (i) =>
+              i.identity_type_code?.toUpperCase() === "NPWP" ||
+              i.identity_type_name?.toUpperCase().includes("NPWP"),
+          );
+
+        if (ktp?.number) {
+          initialNik = ktp.number;
+        }
+        if (npwp?.number) {
+          initialNpwp = npwp.number;
+        }
+      } catch {
+        // Fallback silently if fetching identities fails
+      }
+    }
+
+    setTax({
+      ...TAX,
+      nik: initialNik,
+      npwp: initialNpwp,
+    });
+    setDialog("primary");
+  };
+
   const title =
     mode === "bpjs"
       ? "BPJS & Statutory"
@@ -284,7 +343,13 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                   icon="pi pi-plus"
                   size="small"
                   className="w-full sm:w-auto"
-                  onClick={() => setDialog("primary")}
+                  onClick={() => {
+                    if (mode === "tax") {
+                      void openTaxDialog();
+                    } else {
+                      setDialog("primary");
+                    }
+                  }}
                 />
               )}
             </>
@@ -600,14 +665,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
 function Field({
   label,
   children,
+  helper,
 }: {
   label: string;
   children: React.ReactNode;
+  helper?: React.ReactNode;
 }) {
   return (
     <label className="flex flex-col gap-2">
       <span className="text-sm font-medium text-slate-700">{label}</span>
       {children}
+      {helper && <span className="text-xs text-slate-500">{helper}</span>}
     </label>
   );
 }
@@ -753,7 +821,18 @@ function TaxForm({
   );
   return (
     <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-      <Field label={i18nT("static.lvt3nd")}>
+      <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-800 sm:col-span-2 flex items-start gap-2">
+        <i className="pi pi-info-circle mt-0.5 text-blue-600 shrink-0" />
+        <span>
+          {i18nT(
+            "NIK and NPWP below are automatically retrieved from Identity & Address. You can still modify them manually if needed.",
+          )}
+        </span>
+      </div>
+      <Field
+        label={i18nT("static.lvt3nd")}
+        helper={i18nT("Retrieved from KTP/NIK in Identity & Address")}
+      >
         <InputText
           value={value.nik ?? ""}
           onChange={(e) =>
@@ -761,7 +840,10 @@ function TaxForm({
           }
         />
       </Field>
-      <Field label={i18nT("static.4f980k")}>
+      <Field
+        label={i18nT("static.4f980k")}
+        helper={i18nT("Retrieved from NPWP in Identity & Address")}
+      >
         <InputText
           value={value.npwp ?? ""}
           onChange={(e) =>

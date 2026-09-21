@@ -48,6 +48,7 @@ type FormData = {
   residential_address: string;
   is_permanent: boolean;
   is_active: boolean;
+  is_primary: boolean;
 };
 
 const getBody = () => document.body;
@@ -60,6 +61,7 @@ const emptyFormValues: FormData = {
   residential_address: "",
   is_permanent: false,
   is_active: true,
+  is_primary: false,
 };
 
 const fieldLabelClass = "mb-2 block text-sm font-medium text-slate-700";
@@ -156,6 +158,7 @@ const PersonalIdentityAndAddress = () => {
       residential_address: row.residential_address,
       is_permanent: row.is_permanent,
       is_active: row.is_active,
+      is_primary: row.is_primary ?? false,
     });
 
     setVisible(true);
@@ -173,6 +176,7 @@ const PersonalIdentityAndAddress = () => {
       residential_address: data.residential_address.trim(),
       is_permanent: data.is_permanent,
       is_active: data.is_active,
+      is_primary: data.is_active ? data.is_primary : false,
     };
 
     try {
@@ -483,6 +487,21 @@ const PersonalIdentityAndAddress = () => {
             style={{ minWidth: "220px" }}
           />
           <Column
+            header={i18nT("static.1jcui61")}
+            body={(row: EmployeeIdentityRow) => (
+              <Tag
+                value={
+                  row.is_primary
+                    ? i18nT("static.1jcui61")
+                    : i18nT("static.75qooh")
+                }
+                severity={row.is_primary ? "success" : "secondary"}
+                rounded
+              />
+            )}
+            style={{ minWidth: "110px" }}
+          />
+          <Column
             header={i18nT("static.8qzyhb")}
             body={activeBodyTemplate}
             style={{ minWidth: "110px" }}
@@ -566,7 +585,28 @@ const PersonalIdentityAndAddress = () => {
           />
 
           <div className="md:col-span-2">
-            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
+              <Controller
+                name="is_primary"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-start justify-between gap-4 rounded-xl bg-white p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {i18nT("static.1jcui61")}{" "}
+                      </p>
+                      <p className={helperTextClass}>
+                        {i18nT("Tandai sebagai dokumen utama.")}{" "}
+                      </p>
+                    </div>
+                    <InputSwitch
+                      checked={!!field.value}
+                      onChange={(e) => field.onChange(e.value)}
+                    />
+                  </div>
+                )}
+              />
+
               <Controller
                 name="is_permanent"
                 control={control}

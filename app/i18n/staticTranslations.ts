@@ -11,6 +11,19 @@ type CompiledPhraseMap = ReadonlyMap<string, CompiledPhrase>;
 // remain untouched (components may translate a normalized status label when it
 // is a known UI status).
 const idPhrases: PhraseMap = [
+  [
+    "NIK and NPWP below are automatically retrieved from Identity & Address. You can still modify them manually if needed.",
+    "Data NIK dan NPWP di bawah ini otomatis diambil dari Identitas & Alamat (Identity & Address). Anda tetap dapat mengubahnya secara manual jika diperlukan.",
+  ],
+  [
+    "Retrieved from KTP/NIK in Identity & Address",
+    "Diambil dari KTP/NIK di Identitas & Alamat",
+  ],
+  [
+    "Retrieved from NPWP in Identity & Address",
+    "Diambil dari NPWP di Identitas & Alamat",
+  ],
+  ["Tandai sebagai dokumen utama.", "Tandai sebagai dokumen utama."],
   ["Account Settings", "Pengaturan Akun"],
   ["Copyright", "Hak Cipta"],
   ["Not available", "Tidak tersedia"],
@@ -310,6 +323,16 @@ const idPhrases: PhraseMap = [
 ];
 
 const zhPhrases: PhraseMap = [
+  [
+    "NIK and NPWP below are automatically retrieved from Identity & Address. You can still modify them manually if needed.",
+    "下方 NIK 和 NPWP 会自动从身份与地址 (Identity & Address) 获取。如需要，您仍可手动修改。",
+  ],
+  [
+    "Retrieved from KTP/NIK in Identity & Address",
+    "从身份与地址中的 KTP/NIK 获取",
+  ],
+  ["Retrieved from NPWP in Identity & Address", "从身份与地址中的 NPWP 获取"],
+  ["Tandai sebagai dokumen utama.", "标记为主要证件。"],
   ["Account Settings", "账户设置"],
   ["Copyright", "版权"],
   ["Not available", "不可用"],
