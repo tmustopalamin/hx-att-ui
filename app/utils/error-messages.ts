@@ -150,8 +150,44 @@ export const ERROR_MESSAGES: Record<string, string> = {
 const FALLBACK_ERROR_MESSAGE =
   "A system error has occurred, please contact the administrator";
 
+const DB_ERROR_PATTERNS = [
+  /database error/i,
+  /sqlx/i,
+  /syntax error at or near/i,
+  /violates.*constraint/i,
+  /relation.*does not exist/i,
+  /null value in column/i,
+  /column.*does not exist/i,
+  /duplicate key value violates unique constraint/i,
+  /foreign key constraint/i,
+  /check constraint/i,
+  /pgdatabaseerror/i,
+];
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
+
+export function isDatabaseError(err: unknown): boolean {
+  if (!err) return false;
+  if (typeof err === "string") {
+    return DB_ERROR_PATTERNS.some((pattern) => pattern.test(err));
+  }
+  if (err instanceof Error) {
+    return DB_ERROR_PATTERNS.some((pattern) => pattern.test(err.message));
+  }
+  if (isRecord(err)) {
+    const code = String(err.code ?? "");
+    const msg = String(err.message ?? err.error ?? "");
+    return (
+      code === "DatabaseError" ||
+      code === "DATABASE_ERROR" ||
+      DB_ERROR_PATTERNS.some(
+        (pattern) => pattern.test(code) || pattern.test(msg),
+      )
+    );
+  }
+  return false;
+}
 
 const isTransportOrParseError = (err: unknown): boolean => {
   if (err instanceof SyntaxError) {
@@ -163,6 +199,15 @@ const isTransportOrParseError = (err: unknown): boolean => {
   );
 };
 
+const extractArrayErrorMessage = (errors: unknown): string => {
+  if (!Array.isArray(errors) || errors.length === 0) return "";
+  const first = errors[0];
+  if (typeof first === "string") return first;
+  if (isRecord(first) && typeof first.message === "string")
+    return first.message;
+  return "";
+};
+
 const getErrorDetails = (err: unknown): { code: string; message: string } => {
   if (err instanceof Error) {
     return { code: "", message: err.message };
@@ -170,9 +215,18 @@ const getErrorDetails = (err: unknown): { code: string; message: string } => {
   if (!isRecord(err)) {
     return { code: "", message: "" };
   }
+  const code =
+    typeof err.code === "string"
+      ? err.code
+      : typeof err.status === "number"
+        ? String(err.status)
+        : "";
+  const rawMsg =
+    err.message ?? err.error ?? extractArrayErrorMessage(err.errors);
+  const message = typeof rawMsg === "string" ? rawMsg : "";
   return {
-    code: typeof err.code === "string" ? err.code : "",
-    message: typeof err.message === "string" ? err.message : "",
+    code,
+    message,
   };
 };
 
@@ -182,6 +236,10 @@ export function getErrorMessage(
 ): string {
   if (isTransportOrParseError(err)) {
     return ERROR_MESSAGES.API_UNAVAILABLE;
+  }
+
+  if (isDatabaseError(err)) {
+    return ERROR_MESSAGES.DATABASE_ERROR;
   }
 
   const { code, message } = getErrorDetails(err);

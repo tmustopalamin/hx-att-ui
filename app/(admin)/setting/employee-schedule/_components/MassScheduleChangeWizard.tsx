@@ -142,7 +142,9 @@ const MassScheduleChangeWizard = () => {
     () =>
       (shiftRulesData ?? [])
         .filter((rule) => !rule.deleted_at && rule.is_active !== false)
-        .sort((first, second) => first.name.localeCompare(second.name, "id")),
+        .sort((first, second) =>
+          (first.name ?? "").localeCompare(second.name ?? "", "id"),
+        ),
     [shiftRulesData],
   );
   const employeeById = useMemo(

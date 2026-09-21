@@ -1,5 +1,9 @@
 import type { ResponseTypeError } from "@/app/types/response-type";
-import { getErrorMessage } from "./error-messages";
+import {
+  ERROR_MESSAGES,
+  getErrorMessage,
+  isDatabaseError,
+} from "./error-messages";
 
 const DEFAULT_ERROR_MESSAGE = "Request failed. Please try again.";
 const MAX_ERROR_MESSAGE_LENGTH = 500;
@@ -155,6 +159,15 @@ export async function parseApiError(
   const isHtmlResponse =
     contentType.includes("text/html") ||
     (typeof payload === "string" && HTML_RESPONSE_PATTERN.test(payload));
+
+  if (isDatabaseError(payload) || isDatabaseError(data)) {
+    return {
+      success: false,
+      code: "DATABASE_ERROR",
+      message: ERROR_MESSAGES.DATABASE_ERROR,
+    };
+  }
+
   const code = isHtmlResponse
     ? "API_UNAVAILABLE"
     : typeof data.code === "string" && data.code.trim()
@@ -189,5 +202,9 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return undefined as T;
+  }
 }

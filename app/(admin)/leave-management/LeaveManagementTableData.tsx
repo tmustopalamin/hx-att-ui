@@ -742,17 +742,17 @@ const LeaveManagementTableData = () => {
           </div>
 
           {/* Summary */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="m-0 text-xs text-slate-500">
                 {i18nT("static.j9j9tg")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-slate-800 sm:text-2xl">
                 {summaryStats.total}
               </p>
 
-              <p className="m-0 mt-1 text-xs text-slate-400">
+              <p className="m-0 mt-1 truncate text-xs text-slate-400">
                 {rows.length} {i18nT("static.tmqg87")}{" "}
               </p>
             </div>
@@ -762,7 +762,7 @@ const LeaveManagementTableData = () => {
                 {i18nT("static.e8nfto")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-amber-800 sm:text-2xl">
                 {summaryStats.pending}
               </p>
             </div>
@@ -772,7 +772,7 @@ const LeaveManagementTableData = () => {
                 {i18nT("static.1j3qly2")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-green-800 sm:text-2xl">
                 {summaryStats.approved}
               </p>
             </div>
@@ -782,17 +782,17 @@ const LeaveManagementTableData = () => {
                 {i18nT("static.1uofzaf")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-red-800 sm:text-2xl">
                 {summaryStats.rejected}
               </p>
             </div>
 
-            <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-1">
+            <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-1">
               <p className="m-0 text-xs text-slate-600">
                 {i18nT("static.1a3t1vg")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-slate-800 sm:text-2xl">
                 {summaryStats.cancelled}
               </p>
             </div>
@@ -810,7 +810,7 @@ const LeaveManagementTableData = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(18rem,2fr)_minmax(13rem,1fr)_minmax(12rem,1fr)_minmax(12rem,1fr)]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <IconField iconPosition="left" className="w-full">
                 <InputIcon className="pi pi-search" />
 

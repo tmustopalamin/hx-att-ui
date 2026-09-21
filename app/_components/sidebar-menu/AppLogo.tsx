@@ -6,20 +6,21 @@ import Link from "next/link";
 const AppLogo = () => {
   const { t: i18nT } = useI18n();
   return (
-    <>
-      <div className="flex justify-center items-center pt-[1rem] p-0">
-        <Link href="/dashboard">
-          <Image
-            src="/images/logo.png"
-            alt={i18nT("static.ufdz22")}
-            width={150}
-            height={35}
-            priority
-            className="rounded-full mt-4"
-          />
-        </Link>
-      </div>
-    </>
+    <div className="flex items-center justify-center">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
+      >
+        <Image
+          src="/images/logo.png"
+          alt={i18nT("static.ufdz22")}
+          width={150}
+          height={38}
+          priority
+          className="h-9 w-auto max-w-[155px] object-contain sm:h-[38px]"
+        />
+      </Link>
+    </div>
   );
 };
 

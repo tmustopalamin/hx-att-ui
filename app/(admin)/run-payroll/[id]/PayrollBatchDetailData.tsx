@@ -73,8 +73,10 @@ export default function PayrollBatchDetailData({
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
   const selectedResult = useMemo(
     () =>
-      data?.employee_results.find((result) => result.id === selectedResultId) ??
-      data?.employee_results[0] ??
+      data?.employee_results?.find(
+        (result) => result.id === selectedResultId,
+      ) ??
+      data?.employee_results?.[0] ??
       null,
     [data?.employee_results, selectedResultId],
   );

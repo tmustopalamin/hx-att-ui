@@ -495,19 +495,44 @@ const ForgotPasswordPage = () => {
               }}
               render={({ field, fieldState }) => (
                 <>
-                  <Password
-                    inputId="password"
-                    value={field.value}
-                    onChange={(event) => field.onChange(event.target.value)}
-                    toggleMask
-                    feedback={false}
-                    autoComplete="new-password"
-                    disabled={submitting}
-                    className="w-full"
-                    inputClassName={`${inputBaseClass} ${
-                      fieldState.invalid ? inputErrorClass : ""
-                    }`}
-                  />
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+                      <i className="pi pi-lock text-sm" />
+                    </span>
+                    <Password
+                      inputId="password"
+                      value={field.value}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      toggleMask
+                      feedback={false}
+                      autoComplete="new-password"
+                      placeholder={t("auth.reset.newPassword")}
+                      disabled={submitting}
+                      className="w-full"
+                      inputClassName={`${inputBaseClass} pl-11 pr-11 ${
+                        fieldState.invalid ? inputErrorClass : ""
+                      }`}
+                      pt={{
+                        root: {
+                          className: "w-full",
+                        },
+                        input: {
+                          className: "w-full",
+                        },
+                        iconField: {
+                          root: {
+                            className: "w-full",
+                          },
+                        },
+                        hideIcon: {
+                          className: "right-4 text-slate-400",
+                        },
+                        showIcon: {
+                          className: "right-4 text-slate-400",
+                        },
+                      }}
+                    />
+                  </div>
                   {fieldState.error && (
                     <p className="text-xs font-medium text-red-500">
                       {fieldState.error.message}
@@ -531,19 +556,44 @@ const ForgotPasswordPage = () => {
               rules={{ required: t("auth.reset.confirmationRequired") }}
               render={({ field, fieldState }) => (
                 <>
-                  <Password
-                    inputId="confirmPassword"
-                    value={field.value}
-                    onChange={(event) => field.onChange(event.target.value)}
-                    toggleMask
-                    feedback={false}
-                    autoComplete="new-password"
-                    disabled={submitting}
-                    className="w-full"
-                    inputClassName={`${inputBaseClass} ${
-                      fieldState.invalid ? inputErrorClass : ""
-                    }`}
-                  />
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">
+                      <i className="pi pi-lock text-sm" />
+                    </span>
+                    <Password
+                      inputId="confirmPassword"
+                      value={field.value}
+                      onChange={(event) => field.onChange(event.target.value)}
+                      toggleMask
+                      feedback={false}
+                      autoComplete="new-password"
+                      placeholder={t("auth.reset.confirmPassword")}
+                      disabled={submitting}
+                      className="w-full"
+                      inputClassName={`${inputBaseClass} pl-11 pr-11 ${
+                        fieldState.invalid ? inputErrorClass : ""
+                      }`}
+                      pt={{
+                        root: {
+                          className: "w-full",
+                        },
+                        input: {
+                          className: "w-full",
+                        },
+                        iconField: {
+                          root: {
+                            className: "w-full",
+                          },
+                        },
+                        hideIcon: {
+                          className: "right-4 text-slate-400",
+                        },
+                        showIcon: {
+                          className: "right-4 text-slate-400",
+                        },
+                      }}
+                    />
+                  </div>
                   {fieldState.error && (
                     <p className="text-xs font-medium text-red-500">
                       {fieldState.error.message}
@@ -582,14 +632,15 @@ const ForgotPasswordPage = () => {
         <div className="rounded-[28px] border border-white/70 bg-white/90 p-6 shadow-2xl shadow-slate-300/60 backdrop-blur md:p-8">
           <div className="mb-7 text-center">
             <div className="mb-5 flex justify-center">
-              <div className="flex h-28 w-28 items-center justify-center rounded-3xl border border-slate-200 bg-slate-50 shadow-sm md:h-32 md:w-32">
+              <div className="flex h-20 w-full max-w-[250px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-5 shadow-sm sm:h-24">
                 <Image
                   src="/images/logo.png"
                   alt={t("static.kvg22y")}
-                  width={104}
-                  height={24}
+                  width={475}
+                  height={110}
                   priority
-                  className="object-contain"
+                  sizes="(max-width: 640px) 210px, 225px"
+                  className="h-auto w-full max-w-[225px] object-contain"
                 />
               </div>
             </div>

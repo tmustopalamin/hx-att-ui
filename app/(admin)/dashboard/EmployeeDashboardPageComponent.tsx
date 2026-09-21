@@ -165,7 +165,7 @@ const EmployeeDashboardPageComponent = () => {
   );
 
   const quickAccessWithApproval = useMemo(() => {
-    if (!data?.approval_summary.is_approver) {
+    if (!data?.approval_summary?.is_approver) {
       return permittedQuickAccessItems;
     }
 

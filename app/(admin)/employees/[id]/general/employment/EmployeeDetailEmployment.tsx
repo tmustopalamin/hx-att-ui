@@ -117,7 +117,7 @@ const EmployeeDetailEmployment = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const hasEmploymentHistory = employmentData !== null;
-  const employmentChangePolicy = lifecycleSettingsResponse?.data.types.find(
+  const employmentChangePolicy = lifecycleSettingsResponse?.data?.types?.find(
     (setting) => setting.lifecycle_type === "EMPLOYMENT_CHANGE",
   );
   const requiresEmploymentLifecycle = canReadLifecycleSettings

@@ -491,7 +491,7 @@ export default function EmployeeLifecycleData() {
     employeeId: number | null,
     dueDate: string | null,
   ): Promise<boolean> => {
-    if (!selected || detail.data?.case.status !== "DRAFT") {
+    if (!selected || detail.data?.case?.status !== "DRAFT") {
       notify("error", i18nT("static.2ed3hr"), i18nT("static.1y4e1q7"));
       return false;
     }
@@ -1154,7 +1154,7 @@ export default function EmployeeLifecycleData() {
                         size="small"
                         disabled={
                           saving ||
-                          detail.data?.case.status !== "DRAFT" ||
+                          detail.data?.case?.status !== "DRAFT" ||
                           row.status !== "PENDING"
                         }
                         onClick={() => openAssignment(row)}
@@ -1196,7 +1196,7 @@ export default function EmployeeLifecycleData() {
               label={i18nT("static.1mwuwmp")}
               icon="pi pi-check"
               loading={saving}
-              disabled={saving || detail.data?.case.status !== "DRAFT"}
+              disabled={saving || detail.data?.case?.status !== "DRAFT"}
               onClick={() => {
                 if (!assignmentTask) return;
                 requestActionConfirmation({
@@ -1240,7 +1240,7 @@ export default function EmployeeLifecycleData() {
               className="w-full"
               disabled={
                 saving ||
-                detail.data?.case.status !== "DRAFT" ||
+                detail.data?.case?.status !== "DRAFT" ||
                 assignmentTask?.assignment_source === "EMPLOYEE"
               }
               onChange={(event) =>
@@ -1259,7 +1259,7 @@ export default function EmployeeLifecycleData() {
             <PrimeDatePicker
               value={taskAssignment.dueDate}
               className="w-full"
-              disabled={saving || detail.data?.case.status !== "DRAFT"}
+              disabled={saving || detail.data?.case?.status !== "DRAFT"}
               onValueChange={(value) =>
                 setTaskAssignment({ ...taskAssignment, dueDate: value })
               }

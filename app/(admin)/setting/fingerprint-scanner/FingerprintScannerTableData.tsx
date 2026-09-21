@@ -449,23 +449,25 @@ const FingerprintScannerTableData = () => {
 
   const openEdit = (data: FingerprintScanner) => {
     clearErrors();
-    setSelectedData(data);
+    const latest =
+      fingerprintScannerData?.find((item) => item.id === data.id) ?? data;
+    setSelectedData(latest);
     setIsAddNew(false);
 
     setPopupHeaderTitle("Edit Fingerprint Scanner");
 
     reset({
-      ...data,
-      code: data.code ?? "",
-      name: data.name ?? "",
-      ip: data.ip ?? "",
-      port: String(data.port ?? ""),
+      ...latest,
+      code: latest.code ?? "",
+      name: latest.name ?? "",
+      ip: latest.ip ?? "",
+      port: String(latest.port ?? ""),
       password: "",
-      timezone_offset_minutes: data.timezone_offset_minutes ?? 420,
-      auto_sync_enabled: data.auto_sync_enabled ?? true,
-      sync_interval_minutes: data.sync_interval_minutes ?? 5,
-      is_active: data.is_active ?? true,
-      deleted_at: data.deleted_at ?? null,
+      timezone_offset_minutes: latest.timezone_offset_minutes ?? 420,
+      auto_sync_enabled: latest.auto_sync_enabled ?? true,
+      sync_interval_minutes: latest.sync_interval_minutes ?? 5,
+      is_active: latest.is_active ?? true,
+      deleted_at: latest.deleted_at ?? null,
     });
 
     setVisible(true);
@@ -518,6 +520,27 @@ const FingerprintScannerTableData = () => {
 
       showSuccess(response.message || i18nT("static.kp5ktz"));
     } catch (err: unknown) {
+      if (
+        isResponseTypeError(err) &&
+        (err.code === "PRECONDITION_FAILED" ||
+          err.code === "412" ||
+          err.message?.includes("row_version") ||
+          err.message?.includes("ETag"))
+      ) {
+        try {
+          const freshList = await refreshFingerprintScannerData();
+          if (Array.isArray(freshList)) {
+            const freshItem = freshList.find(
+              (item) => item.id === selectedData.id,
+            );
+            if (freshItem) {
+              setSelectedData(freshItem);
+            }
+          }
+        } catch {
+          // Ignore background refresh failure
+        }
+      }
       showError(err);
     } finally {
       setIsSaving(false);

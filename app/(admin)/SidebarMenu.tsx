@@ -586,7 +586,11 @@ const getProfilePermissions = (profileState: unknown): string[] => {
     (permission): permission is string => typeof permission === "string",
   );
 };
-export default function SidebarMenu() {
+export default function SidebarMenu({
+  onClose,
+}: {
+  onClose?: () => void;
+} = {}) {
   const { t } = useI18n();
   const pathname = usePathname();
   const profileState = useSelector((state: RootState) => state.profile);
@@ -792,9 +796,18 @@ export default function SidebarMenu() {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       {" "}
-      <div className="shrink-0 border-b border-slate-200 px-4 py-4">
-        {" "}
-        <AppLogo />{" "}
+      <div className="relative flex shrink-0 items-center justify-center border-b border-slate-200 px-4 py-3.5">
+        <AppLogo />
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-1/2 -translate-y-1/2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+            aria-label={t("common.actions.close") || "Close menu"}
+          >
+            <i className="pi pi-times text-sm" />
+          </button>
+        )}
       </div>{" "}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
         {" "}

@@ -157,11 +157,11 @@ const DashboardPageComponent = () => {
     return permissionSet.has(permission);
   };
 
-  const activeEmployees = data?.today_overview.active_employees ?? 0;
-  const presentToday = data?.today_overview.present_today ?? 0;
-  const absentToday = data?.today_overview.absent_today ?? 0;
-  const lateToday = data?.today_overview.late_today ?? 0;
-  const onLeaveToday = data?.today_overview.on_leave_today ?? 0;
+  const activeEmployees = data?.today_overview?.active_employees ?? 0;
+  const presentToday = data?.today_overview?.present_today ?? 0;
+  const absentToday = data?.today_overview?.absent_today ?? 0;
+  const lateToday = data?.today_overview?.late_today ?? 0;
+  const onLeaveToday = data?.today_overview?.on_leave_today ?? 0;
 
   const attendanceRate = getRate(presentToday, activeEmployees);
   const absenceRate = getRate(absentToday, activeEmployees);
@@ -313,7 +313,7 @@ const DashboardPageComponent = () => {
     return [
       {
         label: i18nT("static.ei3vmk"),
-        value: data?.organization_snapshot.total_employees ?? 0,
+        value: data?.organization_snapshot?.total_employees ?? 0,
         icon: "pi-users",
         iconBg: "bg-blue-50",
         iconColor: "text-blue-600",
@@ -324,7 +324,7 @@ const DashboardPageComponent = () => {
       },
       {
         label: i18nT("static.zcmjcs"),
-        value: data?.organization_snapshot.departments ?? 0,
+        value: data?.organization_snapshot?.departments ?? 0,
         icon: "pi-briefcase",
         iconBg: "bg-purple-50",
         iconColor: "text-purple-600",
@@ -335,7 +335,7 @@ const DashboardPageComponent = () => {
       },
       {
         label: i18nT("static.10dqi2x"),
-        value: data?.organization_snapshot.branches ?? 0,
+        value: data?.organization_snapshot?.branches ?? 0,
         icon: "pi-sitemap",
         iconBg: "bg-cyan-50",
         iconColor: "text-cyan-600",
@@ -346,7 +346,7 @@ const DashboardPageComponent = () => {
       },
       {
         label: i18nT("static.1u1gjv1"),
-        value: data?.people_admin_notes.birthdays_this_week ?? 0,
+        value: data?.people_admin_notes?.birthdays_this_week ?? 0,
         icon: "pi-gift",
         iconBg: "bg-pink-50",
         iconColor: "text-pink-600",
@@ -361,7 +361,7 @@ const DashboardPageComponent = () => {
   }, [data, i18nT, tText]);
 
   const attendanceTrendData = useMemo(() => {
-    const rows = data?.charts.attendance_trend ?? [];
+    const rows = data?.charts?.attendance_trend ?? [];
     const labels = rows.map((item) => item.label);
 
     return {
@@ -388,7 +388,7 @@ const DashboardPageComponent = () => {
   }, [data, i18nT]);
 
   const lateTrendData = useMemo(() => {
-    const rows = data?.charts.late_trend ?? [];
+    const rows = data?.charts?.late_trend ?? [];
     const labels = rows.map((item) => item.label);
 
     return {
@@ -405,7 +405,7 @@ const DashboardPageComponent = () => {
   }, [data, i18nT]);
 
   const departmentData = useMemo(() => {
-    const rows = data?.charts.employees_by_department ?? [];
+    const rows = data?.charts?.employees_by_department ?? [];
 
     if (rows.length === 0) {
       return {
@@ -626,7 +626,7 @@ const DashboardPageComponent = () => {
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {renderMetricCards(todayCards)}
       </div>
 
@@ -659,7 +659,7 @@ const DashboardPageComponent = () => {
                 )}
               </div>
 
-              <div className="h-[320px] w-full">
+              <div className="h-[260px] w-full sm:h-[300px] lg:h-[320px]">
                 <Chart
                   type="line"
                   data={attendanceTrendData}
@@ -812,7 +812,7 @@ const DashboardPageComponent = () => {
                 )}
               </div>
 
-              <div className="h-[300px] w-full">
+              <div className="h-[250px] w-full sm:h-[280px] lg:h-[300px]">
                 <Chart
                   type="bar"
                   data={lateTrendData}
@@ -852,7 +852,7 @@ const DashboardPageComponent = () => {
                 )}
               </div>
 
-              <div className="h-[300px] w-full">
+              <div className="h-[250px] w-full sm:h-[280px] lg:h-[300px]">
                 <Chart
                   type="doughnut"
                   data={departmentData}
@@ -873,7 +873,7 @@ const DashboardPageComponent = () => {
           <InfoHint text={i18nT("static.13ixpwe")} />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {renderMetricCards(organizationCards)}
         </div>
       </div>

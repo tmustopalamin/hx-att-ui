@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import {
   formatDate as formatDisplayDate,
   formatDateTimeWithSeconds,
+  formatApiDate,
 } from "@/app/utils/date-format";
 
 import { Button } from "primereact/button";
@@ -300,10 +301,11 @@ const downloadAttendanceSummaryExcel = async (
   startDate: Date,
   endDate: Date,
 ): Promise<string> => {
-  const query = new URLSearchParams({
-    start_date: dayjs(startDate).format("YYYY-MM-DD"),
-    end_date: dayjs(endDate).format("YYYY-MM-DD"),
-  });
+  const query = new URLSearchParams();
+  const startStr = formatApiDate(startDate);
+  if (startStr) query.set("start_date", startStr);
+  const endStr = formatApiDate(endDate);
+  if (endStr) query.set("end_date", endStr);
 
   const response = await apiFetchResponse(
     `/api/attendance-summary/export-excel?${query.toString()}`,
@@ -495,12 +497,14 @@ const AttendanceSummaryTableData = () => {
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
 
-    if (appliedStartDate) {
-      params.set("start_date", dayjs(appliedStartDate).format("YYYY-MM-DD"));
+    const startDateStr = formatApiDate(appliedStartDate);
+    if (startDateStr) {
+      params.set("start_date", startDateStr);
     }
 
-    if (appliedEndDate) {
-      params.set("end_date", dayjs(appliedEndDate).format("YYYY-MM-DD"));
+    const endDateStr = formatApiDate(appliedEndDate);
+    if (endDateStr) {
+      params.set("end_date", endDateStr);
     }
 
     const text = params.toString();
@@ -1989,17 +1993,17 @@ const AttendanceSummaryTableData = () => {
           )}
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-            <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 md:col-span-2">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-7">
+            <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-3 xl:col-span-2">
               <p className="m-0 text-xs text-slate-500">
                 {i18nT("static.1k1zuej")}
               </p>
 
-              <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+              <p className="m-0 mt-1 truncate text-sm font-semibold text-slate-800">
                 {i18nT(currentRangeLabel)}
               </p>
 
-              <p className="m-0 mt-1 text-xs text-slate-400">
+              <p className="m-0 mt-1 truncate text-xs text-slate-400">
                 {summaryStats.total} {i18nT("static.16lj2ws")}{" "}
               </p>
             </div>
@@ -2009,7 +2013,7 @@ const AttendanceSummaryTableData = () => {
                 {i18nT("static.1m3e00c")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-green-800 sm:text-2xl">
                 {summaryStats.present}
               </p>
             </div>
@@ -2019,7 +2023,7 @@ const AttendanceSummaryTableData = () => {
                 {i18nT("static.w3n5x")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-blue-800 sm:text-2xl">
                 {summaryStats.inProgress}
               </p>
             </div>
@@ -2029,7 +2033,7 @@ const AttendanceSummaryTableData = () => {
                 {i18nT("static.t03g3p")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-amber-800 sm:text-2xl">
                 {summaryStats.incomplete}
               </p>
             </div>
@@ -2039,17 +2043,17 @@ const AttendanceSummaryTableData = () => {
                 {i18nT("static.meu720")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-red-800 sm:text-2xl">
                 {summaryStats.absent}
               </p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div className="col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2 xl:col-span-1">
               <p className="m-0 text-xs text-slate-600">
                 {i18nT("static.j4km6m")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-slate-800 sm:text-2xl">
                 {summaryStats.dayOff + summaryStats.leave}
               </p>
             </div>
@@ -2067,7 +2071,7 @@ const AttendanceSummaryTableData = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
               {(
                 [
                   {
@@ -2113,7 +2117,7 @@ const AttendanceSummaryTableData = () => {
               })}
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(11rem,1fr)_minmax(11rem,1fr)_minmax(18rem,2fr)_minmax(13rem,1fr)]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="flex flex-col gap-2">
                 <label
                   htmlFor="summary_start_date"

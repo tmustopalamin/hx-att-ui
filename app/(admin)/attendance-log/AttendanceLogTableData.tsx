@@ -10,6 +10,7 @@ import {
   formatDate as formatDisplayDate,
   formatDateTimeWithSeconds,
 } from "@/app/utils/date-format";
+import { sanitizeSheetData } from "@/app/utils/spreadsheet-sanitizer";
 
 import { Button } from "primereact/button";
 import { Calendar } from "primereact/calendar";
@@ -731,9 +732,10 @@ const AttendanceLogTableData = () => {
 
       const workbook = XLSX.utils.book_new();
 
-      const summarySheet = XLSX.utils.json_to_sheet(summarySheetRows);
+      const sanitizedSummaryRows = sanitizeSheetData(summarySheetRows);
+      const summarySheet = XLSX.utils.json_to_sheet(sanitizedSummaryRows);
 
-      autoFitColumns(summarySheet, summarySheetRows);
+      autoFitColumns(summarySheet, sanitizedSummaryRows);
 
       if (summarySheet["!ref"]) {
         summarySheet["!autofilter"] = {
@@ -743,9 +745,10 @@ const AttendanceLogTableData = () => {
 
       XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
 
-      const detailSheet = XLSX.utils.json_to_sheet(detailSheetRows);
+      const sanitizedDetailRows = sanitizeSheetData(detailSheetRows);
+      const detailSheet = XLSX.utils.json_to_sheet(sanitizedDetailRows);
 
-      autoFitColumns(detailSheet, detailSheetRows);
+      autoFitColumns(detailSheet, sanitizedDetailRows);
 
       if (detailSheet["!ref"]) {
         detailSheet["!autofilter"] = {
@@ -1092,17 +1095,17 @@ const AttendanceLogTableData = () => {
           </div>
 
           {/* Summary */}
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <p className="m-0 text-xs text-slate-500">
                 {i18nT("static.7chzvl")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-slate-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-slate-800 sm:text-2xl">
                 {summaryStats.total}
               </p>
 
-              <p className="m-0 mt-1 text-xs text-slate-400">
+              <p className="m-0 mt-1 truncate text-xs text-slate-400">
                 {i18nT("static.1sfsa6u")} {currentPage} {i18nT("static.t6uqnc")}{" "}
                 {totalPages || 1} {i18nT("static.syyan8")}{" "}
                 {totalRecords.toLocaleString("id-ID")}{" "}
@@ -1115,7 +1118,7 @@ const AttendanceLogTableData = () => {
                 {i18nT("static.1k5drjf")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-green-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-green-800 sm:text-2xl">
                 {summaryStats.processed}
               </p>
             </div>
@@ -1125,7 +1128,7 @@ const AttendanceLogTableData = () => {
                 {i18nT("static.14gnciu")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-amber-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-amber-800 sm:text-2xl">
                 {summaryStats.unprocessed}
               </p>
             </div>
@@ -1135,17 +1138,17 @@ const AttendanceLogTableData = () => {
                 {i18nT("static.1y20ekw")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-red-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-red-800 sm:text-2xl">
                 {summaryStats.invalid}
               </p>
             </div>
 
-            <div className="col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-4 md:col-span-1">
+            <div className="col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-4 sm:col-span-1">
               <p className="m-0 text-xs text-blue-700">
                 {i18nT("static.f4bo3a")}
               </p>
 
-              <p className="m-0 mt-1 text-2xl font-semibold text-blue-800">
+              <p className="m-0 mt-1 truncate text-xl font-bold text-blue-800 sm:text-2xl">
                 {summaryStats.employees}
               </p>
             </div>
@@ -1163,7 +1166,7 @@ const AttendanceLogTableData = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
               <Button
                 type="button"
                 label={i18nT("static.1sawk0u")}
@@ -1192,8 +1195,11 @@ const AttendanceLogTableData = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(18rem,1.5fr)_minmax(11rem,1fr)_minmax(11rem,1fr)_minmax(12rem,1fr)_minmax(14rem,1fr)]">
-              <IconField iconPosition="left" className="w-full">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              <IconField
+                iconPosition="left"
+                className="w-full sm:col-span-2 lg:col-span-1 xl:col-span-1"
+              >
                 <InputIcon className="pi pi-search" />
 
                 <InputText
@@ -1299,7 +1305,7 @@ const AttendanceLogTableData = () => {
           </section>
 
           {/* Legend */}
-          <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <div className="flex items-start gap-3">
               {renderStatusTag("VALID")}
 

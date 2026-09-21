@@ -125,3 +125,28 @@ export const formatRelativeNotificationTime = (
 
   return formatDate(value, "-");
 };
+
+/**
+ * Safely formats a date value to YYYY-MM-DD for backend API query params or payloads.
+ * Returns null if the value is missing, empty, or invalid, preventing "Invalid Date"
+ * strings from being sent to backend endpoints.
+ */
+export const formatApiDate = (
+  value: ConfigType | null | undefined,
+): string | null => {
+  if (!value) return null;
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : null;
+};
+
+/**
+ * Safely formats a date-time value to YYYY-MM-DD HH:mm:ss for backend API.
+ * Returns null if invalid or missing.
+ */
+export const formatApiDateTime = (
+  value: ConfigType | null | undefined,
+): string | null => {
+  if (!value) return null;
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD HH:mm:ss") : null;
+};

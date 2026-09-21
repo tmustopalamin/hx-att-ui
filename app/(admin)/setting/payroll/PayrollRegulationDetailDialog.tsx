@@ -532,7 +532,7 @@ export default function PayrollRegulationDetailDialog({
         <TabPanel
           header={i18nT("static.14r9r1n", {
             p0: advanced ? i18nT("static.1yc4h6h") : i18nT("static.s0ct7f"),
-            p1: data?.parameters.length ?? 0,
+            p1: data?.parameters?.length ?? 0,
           })}
         >
           {editable && advanced && (
@@ -651,7 +651,7 @@ export default function PayrollRegulationDetailDialog({
         <TabPanel
           header={i18nT("static.14r9r1n", {
             p0: advanced ? i18nT("static.r72qkg") : i18nT("static.1t92np0"),
-            p1: data?.rate_brackets.length ?? 0,
+            p1: data?.rate_brackets?.length ?? 0,
           })}
         >
           {editable && (
@@ -826,7 +826,7 @@ export default function PayrollRegulationDetailDialog({
         {advanced && (
           <TabPanel
             header={i18nT("static.1p27x87", {
-              p0: data?.test_cases.length ?? 0,
+              p0: data?.test_cases?.length ?? 0,
             })}
           >
             {editable && (

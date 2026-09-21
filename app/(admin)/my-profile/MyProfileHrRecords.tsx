@@ -162,15 +162,16 @@ export function MyProfileHrSnapshot({
   );
 
   const attentionDocumentCount =
-    data?.documents.filter(isDocumentAttentionRequired).length ?? 0;
-  const assignedAssetCount = data?.asset_assignments.length ?? 0;
+    data?.documents?.filter(isDocumentAttentionRequired)?.length ?? 0;
+  const assignedAssetCount = data?.asset_assignments?.length ?? 0;
   const activeTrainingCount =
-    data?.training_enrollments.filter((row) =>
-      ["ENROLLED", "ATTENDED"].includes(row.status.toUpperCase()),
-    ).length ?? 0;
+    data?.training_enrollments?.filter((row) =>
+      ["ENROLLED", "ATTENDED"].includes((row.status ?? "").toUpperCase()),
+    )?.length ?? 0;
   const activeCertificationCount =
-    data?.certifications.filter((row) => row.status.toUpperCase() === "ACTIVE")
-      .length ?? 0;
+    data?.certifications?.filter(
+      (row) => (row.status ?? "").toUpperCase() === "ACTIVE",
+    )?.length ?? 0;
   const pendingTaskCount = data?.pending_lifecycle_task_count ?? 0;
 
   const quickLinks: QuickLink[] = [

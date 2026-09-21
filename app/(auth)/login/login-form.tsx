@@ -88,15 +88,6 @@ const LoginForm = () => {
 
       setFormError(errorMessage);
       setSubmitting(false);
-
-      dispatch(
-        showToast({
-          visible: true,
-          severity: "error",
-          summary: t("auth.login.failed"),
-          detail: errorMessage,
-        }),
-      );
     }
   };
 
@@ -277,11 +268,7 @@ const LoginForm = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-slate-500">
-                {t("static.1u675u")}{" "}
-              </div>
-
+            <div className="flex items-center justify-end">
               <Link
                 href="/forgot-password"
                 className="text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 hover:underline"

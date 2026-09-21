@@ -9,6 +9,7 @@ import useSWR from "swr";
 import dayjs from "dayjs";
 import * as XLSX from "@e965/xlsx";
 import { saveAs } from "file-saver";
+import { sanitizeSheetData } from "@/app/utils/spreadsheet-sanitizer";
 
 import { FilterMatchMode } from "primereact/api";
 import { Button } from "primereact/button";
@@ -518,7 +519,9 @@ const UserTableData = () => {
           value: employee.id,
         };
       })
-      .sort((first, second) => first.label.localeCompare(second.label, "id"));
+      .sort((first, second) =>
+        (first.label ?? "").localeCompare(second.label ?? "", "id"),
+      );
   }, [employeeRows]);
 
   const roleOptions = useMemo(() => {
@@ -537,7 +540,9 @@ const UserTableData = () => {
         };
       })
       .filter((role) => role.value.trim() !== "")
-      .sort((first, second) => first.label.localeCompare(second.label));
+      .sort((first, second) =>
+        (first.label ?? "").localeCompare(second.label ?? ""),
+      );
   }, [roleRows]);
 
   const summary = useMemo(() => {
@@ -1016,7 +1021,7 @@ const UserTableData = () => {
         Email: user.email || "-",
       }));
 
-      const worksheet = XLSX.utils.json_to_sheet(excelRows);
+      const worksheet = XLSX.utils.json_to_sheet(sanitizeSheetData(excelRows));
 
       worksheet["!cols"] = [
         { wch: 6 },

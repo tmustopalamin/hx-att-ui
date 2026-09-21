@@ -844,7 +844,7 @@ export default function PositionAllowanceData() {
                 {i18nT("static.zdl2qg")}{" "}
               </div>
               {form.positions.map((position, index) => {
-                const option = options?.positions.find(
+                const option = options?.positions?.find(
                   (item) => item.id === position.position_id,
                 );
                 return (
@@ -927,7 +927,7 @@ export default function PositionAllowanceData() {
                 {i18nT("static.1yfgx5q")}{" "}
               </div>
               {form.exclusions.map((exclusion, index) => {
-                const option = options?.employees.find(
+                const option = options?.employees?.find(
                   (item) => item.id === exclusion.employee_id,
                 );
                 return (

@@ -36,28 +36,48 @@ const Breadcrumb = ({
   };
 
   return (
-    <nav className="flex column items-center gap-5 text-sm text-gray-600">
+    <nav className="flex items-center gap-2 sm:gap-3 text-sm text-gray-600 min-w-0">
       <Button
         icon="pi pi-bars"
         rounded
         text
+        className="shrink-0"
         aria-label={t("common.navigation.toggleSidebar")}
         tooltip={t("common.navigation.toggleSidebar")}
         onClick={() => onClickSidebar(!sidebarVisible)}
       />
-      <ol className="flex gap-2">
-        <li>
+
+      {/* Mobile view: show current active page title cleanly without overflow */}
+      {segments.length > 0 ? (
+        <span className="truncate text-sm font-semibold text-slate-800 sm:hidden">
+          {translateSegment(segments[segments.length - 1])}
+        </span>
+      ) : (
+        <span className="truncate text-sm font-semibold text-slate-800 sm:hidden">
+          {t("common.navigation.home")}
+        </span>
+      )}
+
+      {/* Tablet and Desktop: show full breadcrumb trail */}
+      <ol className="hidden sm:flex items-center gap-2 min-w-0 overflow-hidden text-sm">
+        <li className="shrink-0">
           <Link href="/" className="hover:underline">
             {t("common.navigation.home")}
           </Link>
         </li>
         {segments.map((seg, idx) => {
           const href = "/" + segments.slice(0, idx + 1).join("/");
+          const isLast = idx === segments.length - 1;
 
           return (
-            <li key={href} className="flex gap-2">
-              <span>/</span>
-              <Link href={href} className="hover:underline">
+            <li key={href} className="flex items-center gap-2 min-w-0">
+              <span className="text-slate-400">/</span>
+              <Link
+                href={href}
+                className={`truncate hover:underline ${
+                  isLast ? "font-semibold text-slate-800" : "text-slate-600"
+                }`}
+              >
                 {translateSegment(seg)}
               </Link>
             </li>

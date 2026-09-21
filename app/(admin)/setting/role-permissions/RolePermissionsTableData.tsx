@@ -141,7 +141,9 @@ const RolePermissionsTableData = () => {
         ...role,
         option_value: String(role.code),
       }))
-      .sort((first, second) => first.name.localeCompare(second.name));
+      .sort((first, second) =>
+        (first.name ?? "").localeCompare(second.name ?? ""),
+      );
   }, [roleData]);
 
   const selectedRole = useMemo(() => {
@@ -253,11 +255,11 @@ const RolePermissionsTableData = () => {
       .map((group) => ({
         ...group,
         permissions: [...group.permissions].sort((first, second) =>
-          first.label.localeCompare(second.label),
+          (first.label ?? "").localeCompare(second.label ?? ""),
         ),
       }))
       .sort((first, second) =>
-        first.group_name.localeCompare(second.group_name),
+        (first.group_name ?? "").localeCompare(second.group_name ?? ""),
       );
   }, [permissionData, assignedPermissionCodes]);
 

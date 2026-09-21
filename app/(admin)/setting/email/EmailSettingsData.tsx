@@ -503,12 +503,12 @@ const EmailSettingsData = () => {
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
-          [tText("Pending"), health?.outbox.pending_count ?? 0, "amber"],
-          [tText("Processing"), health?.outbox.processing_count ?? 0, "blue"],
-          [tText("Failed"), health?.outbox.failed_count ?? 0, "rose"],
+          [tText("Pending"), health?.outbox?.pending_count ?? 0, "amber"],
+          [tText("Processing"), health?.outbox?.processing_count ?? 0, "blue"],
+          [tText("Failed"), health?.outbox?.failed_count ?? 0, "rose"],
           [
             tText("Sent / 24h"),
-            health?.outbox.sent_last_24h_count ?? 0,
+            health?.outbox?.sent_last_24h_count ?? 0,
             "emerald",
           ],
           [tText("Concurrency"), settings?.max_concurrency ?? 0, "slate"],

@@ -103,8 +103,6 @@ const NotificationBell = () => {
         offset: 0,
       });
 
-      console.log("NOTIFICATION RESULT", result);
-
       setNotifications(result);
     } catch {
       setNotifications([]);

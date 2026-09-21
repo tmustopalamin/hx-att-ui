@@ -68,7 +68,7 @@ export default function EmployeeSummaryCards({
                 {i18nT(item.labelKey)}
               </p>
               <p
-                className={`m-0 mt-2 text-2xl font-semibold ${item.valueClass}`}
+                className={`m-0 mt-2 truncate text-xl font-bold sm:text-2xl ${item.valueClass}`}
               >
                 {summary[item.key]}
               </p>

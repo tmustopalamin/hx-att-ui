@@ -799,6 +799,7 @@ export default function RecruitmentData() {
             window.open(
               `/api/recruitment/candidates/${row.id}/resume`,
               "_blank",
+              "noopener,noreferrer",
             )
           }
         />
@@ -1539,12 +1540,16 @@ export default function RecruitmentData() {
                   text
                   size="small"
                   className="justify-start px-0"
-                  onClick={() =>
-                    window.open(
-                      `/api/recruitment/candidates/${selectedPipelineItem.candidate?.id}/resume`,
-                      "_blank",
-                    )
-                  }
+                  onClick={() => {
+                    const candidateId = selectedPipelineItem.candidate?.id;
+                    if (candidateId) {
+                      window.open(
+                        `/api/recruitment/candidates/${candidateId}/resume`,
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                    }
+                  }}
                 />
               ) : (
                 <span className="text-xs text-slate-400">

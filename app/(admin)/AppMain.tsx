@@ -27,7 +27,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const syncViewport = () => {
-      const isMobile = window.innerWidth < 768;
+      const isMobile = window.innerWidth < 1024;
       setIsMobileViewport(isMobile);
 
       if (!isMobile) {
@@ -64,7 +64,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
     <main className="flex h-screen w-full overflow-hidden bg-slate-100">
       {/* Desktop sidebar */}
       <aside
-        className={`hidden h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out md:block ${
+        className={`hidden h-full shrink-0 overflow-hidden transition-all duration-300 ease-in-out lg:block ${
           isDesktopSidebarCollapsed
             ? "w-0 border-r-0 opacity-0"
             : "w-[17rem] border-r border-slate-200 opacity-100"
@@ -78,9 +78,9 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
       {/* Main content */}
       <div className="min-w-0 flex-1">
         <div className="flex h-full flex-col overflow-hidden">
-          <div className="shrink-0 px-4 pt-4 sm:px-6 lg:px-8 lg:pt-6">
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5">
-              <div className="flex items-center justify-between gap-4">
+          <div className="shrink-0 px-3 pt-3 sm:px-5 sm:pt-4 lg:px-8 lg:pt-6">
+            <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm sm:px-5 sm:py-3">
+              <div className="flex items-center justify-between gap-3 sm:gap-4">
                 <div className="min-w-0 flex-1">
                   <Breadcrumb
                     sidebarVisible={currentSidebarVisible}
@@ -88,7 +88,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
                   />
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
                   <LanguageSwitcher compact />
                   <NotificationBell />
                   <AvatarWithSidebar />
@@ -97,7 +97,7 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 sm:pb-6 lg:px-8 lg:pb-8">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-3 sm:px-5 sm:pb-5 sm:pt-4 lg:px-8 lg:pb-8 lg:pt-5">
             <div className="w-full">
               <SWRConfig
                 value={{
@@ -127,10 +127,10 @@ const AppMain = ({ children }: { children: React.ReactNode }) => {
         blockScroll
         position="left"
         baseZIndex={1200}
-        className="!w-[18rem] !border-none !shadow-2xl md:!hidden"
+        className="!w-[18rem] !max-w-[85vw] !border-none !shadow-2xl lg:!hidden"
       >
         <div className="h-full bg-white">
-          <SidebarMenu />
+          <SidebarMenu onClose={() => setIsMobileSidebarOpen(false)} />
         </div>
       </Sidebar>
     </main>

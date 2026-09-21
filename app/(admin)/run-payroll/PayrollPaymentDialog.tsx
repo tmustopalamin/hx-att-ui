@@ -204,7 +204,7 @@ export default function PayrollPaymentDialog({
   const confirmSettle = () => {
     requestActionConfirmation({
       action: i18nT("static.4e8rul"),
-      target: paymentDetail?.batch.payment_batch_no,
+      target: paymentDetail?.batch?.payment_batch_no,
       severity: "danger",
       confirmLabel: i18nT("static.1mf1pgy"),
       confirmIcon: "pi pi-check-circle",
@@ -214,7 +214,7 @@ export default function PayrollPaymentDialog({
   };
 
   const exportFile = async () => {
-    if (!detail || !canExport) return;
+    if (!detail?.batch || !canExport) return;
     try {
       const blob = await exportPayrollPaymentBatch(detail.batch.id);
       const url = URL.createObjectURL(blob);
@@ -268,7 +268,7 @@ export default function PayrollPaymentDialog({
   };
 
   const detail = paymentDetail;
-  const isDraft = detail?.batch.status === "DRAFT";
+  const isDraft = detail?.batch?.status === "DRAFT";
 
   return (
     <Dialog

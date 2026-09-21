@@ -1459,6 +1459,7 @@ const EmployeesDataTable = () => {
           "960px": "92vw",
           "640px": "96vw",
         }}
+        contentClassName="max-h-[75vh] overflow-y-auto pr-1"
         footer={quickCreateDialogFooter}
         modal
         draggable={false}
@@ -1472,7 +1473,29 @@ const EmployeesDataTable = () => {
           onSubmit={handleSubmit(handleQuickCreate)}
           className="flex flex-col gap-6 pt-2"
         >
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {/* Mobile Step Indicator */}
+          <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 sm:hidden">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-blue-700">
+                {onboardingStep + 1} / {ONBOARDING_STEPS.length}:{" "}
+                {i18nT(ONBOARDING_STEPS[onboardingStep].labelKey)}
+              </span>
+              <span className="text-slate-500">
+                {i18nT(ONBOARDING_STEPS[onboardingStep].descriptionKey)}
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                style={{
+                  width: `${((onboardingStep + 1) / ONBOARDING_STEPS.length) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Desktop/Tablet Step Cards */}
+          <div className="hidden sm:grid sm:grid-cols-3 gap-2">
             {ONBOARDING_STEPS.map((step, index) => {
               const isActive = onboardingStep === index;
               const isComplete = onboardingStep > index;

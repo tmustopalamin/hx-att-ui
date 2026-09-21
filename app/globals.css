@@ -52,6 +52,25 @@ body {
   right: 2rem !important; /* geser sedikit ke kiri */
 }
 
+/* PrimeReact Password full width helper */
+.p-password.w-full {
+  display: flex !important;
+  width: 100% !important;
+}
+.p-password.w-full .p-icon-field,
+.p-password.w-full .p-password-input {
+  width: 100% !important;
+}
+
+/* Utilitas scroll horizontal tanpa scrollbar yang mengganggu */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @media print {
   @page {
     margin: 12mm;

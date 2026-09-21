@@ -97,7 +97,12 @@ const apiRequest = async <T>(
     return fallback;
   }
 
-  const json = JSON.parse(text) as unknown;
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    return fallback;
+  }
 
   if (
     typeof json === "object" &&

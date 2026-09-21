@@ -37,9 +37,10 @@ const publishedSources = (packages: PayrollRegulationPackage[]) =>
   packages
     .filter((packageItem) => packageItem.status === "PUBLISHED")
     .sort((left, right) => {
-      const codeOrder = left.code.localeCompare(right.code);
+      const codeOrder = (left.code ?? "").localeCompare(right.code ?? "");
       return (
-        codeOrder || right.effective_from.localeCompare(left.effective_from)
+        codeOrder ||
+        (right.effective_from ?? "").localeCompare(left.effective_from ?? "")
       );
     });
 
