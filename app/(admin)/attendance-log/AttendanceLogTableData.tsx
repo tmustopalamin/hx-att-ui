@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, useDeferredValue, useMemo, useState } from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
 import * as XLSX from "@e965/xlsx";
@@ -204,19 +204,50 @@ const AttendanceLogTableData = () => {
 
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
+  const deferredKeyword = useDeferredValue(keyword);
+
+  const hasInvalidDateRange = Boolean(
+    dateFrom &&
+    dateTo &&
+    dayjs(dateFrom).startOf("day").isAfter(dayjs(dateTo).endOf("day")),
+  );
+
   const currentPage = Math.floor(first / rowsPerPage) + 1;
 
   const swrKey = useMemo(() => {
+    if (hasInvalidDateRange) {
+      return null;
+    }
+
     const params = new URLSearchParams();
 
     params.set("page", String(currentPage));
 
     params.set("page_size", String(rowsPerPage));
 
+    const trimmedKeyword = deferredKeyword.trim();
+    if (trimmedKeyword) params.set("search", trimmedKeyword);
+
+    if (dateFrom) params.set("date_from", dayjs(dateFrom).format("YYYY-MM-DD"));
+    if (dateTo) params.set("date_to", dayjs(dateTo).format("YYYY-MM-DD"));
+
     if (statusFilter) params.set("status", statusFilter);
 
+    if (processedFilter !== "ALL") {
+      params.set("processed", processedFilter);
+    }
+
     return `/api/attendance-log?${params.toString()}`;
-  }, [currentPage, rowsPerPage, statusFilter]);
+  }, [
+    currentPage,
+    rowsPerPage,
+    deferredKeyword,
+    dateFrom,
+    dateTo,
+    statusFilter,
+    processedFilter,
+    hasInvalidDateRange,
+  ]);
 
   const {
     data: attendanceLogData,
@@ -243,11 +274,20 @@ const AttendanceLogTableData = () => {
 
   const syncOptions = syncOptionsResponse?.data ?? [];
 
-  const rows = attendanceLogData?.data ?? [];
+  const rows = useMemo(
+    () => (hasInvalidDateRange ? [] : (attendanceLogData?.data ?? [])),
+    [hasInvalidDateRange, attendanceLogData?.data],
+  );
 
-  const totalRecords = attendanceLogData?.total_records ?? 0;
+  const totalRecords = hasInvalidDateRange
+    ? 0
+    : (attendanceLogData?.total_records ?? 0);
 
-  const totalPages = attendanceLogData?.total_pages ?? 0;
+  const totalPages = hasInvalidDateRange
+    ? 0
+    : (attendanceLogData?.total_pages ?? 0);
+
+  const filteredData = rows;
 
   const statusOptions = useMemo(() => {
     const statuses = Array.from(
@@ -269,109 +309,22 @@ const AttendanceLogTableData = () => {
     }));
   }, [i18nT, rows]);
 
-  const hasInvalidDateRange = Boolean(
-    dateFrom &&
-    dateTo &&
-    dayjs(dateFrom).startOf("day").isAfter(dayjs(dateTo).endOf("day")),
-  );
-
-  const filteredData = useMemo(() => {
-    if (hasInvalidDateRange) {
-      return [];
-    }
-
-    const search = keyword.trim().toLowerCase();
-
-    return rows.filter((item) => {
-      const displayDate = item.event_time_source_local
-        ? dayjs(item.event_time_source_local)
-        : item.event_time
-          ? dayjs(item.event_time)
-          : null;
-
-      const employeeDisplay =
-        item.employee_name ??
-        (item.employee_id ? `Employee #${item.employee_id}` : "Unmapped");
-
-      const machineDisplay = item.machine_name ?? "Unknown machine";
-
-      const matchKeyword =
-        !search ||
-        employeeDisplay.toLowerCase().includes(search) ||
-        machineDisplay.toLowerCase().includes(search) ||
-        String(item.machine_pin ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(item.status ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(item.source_type ?? "")
-          .toLowerCase()
-          .includes(search) ||
-        String(item.external_system ?? "")
-          .toLowerCase()
-          .includes(search);
-
-      const validDisplayDate = displayDate?.isValid() ? displayDate : null;
-
-      const matchDateFrom =
-        !dateFrom ||
-        Boolean(
-          validDisplayDate &&
-          validDisplayDate.startOf("day").valueOf() >=
-            dayjs(dateFrom).startOf("day").valueOf(),
-        );
-
-      const matchDateTo =
-        !dateTo ||
-        Boolean(
-          validDisplayDate &&
-          validDisplayDate.endOf("day").valueOf() <=
-            dayjs(dateTo).endOf("day").valueOf(),
-        );
-
-      const matchStatus = !statusFilter || item.status === statusFilter;
-
-      const matchProcessed =
-        processedFilter === "ALL" ||
-        (processedFilter === "PROCESSED" && item.processed) ||
-        (processedFilter === "UNPROCESSED" && !item.processed);
-
-      return (
-        matchKeyword &&
-        matchDateFrom &&
-        matchDateTo &&
-        matchStatus &&
-        matchProcessed
-      );
-    });
-  }, [
-    rows,
-    keyword,
-    dateFrom,
-    dateTo,
-    statusFilter,
-    processedFilter,
-    hasInvalidDateRange,
-  ]);
-
   const summaryStats = useMemo(() => {
     return {
-      total: filteredData.length,
-      processed: filteredData.filter((item) => item.processed).length,
-      unprocessed: filteredData.filter((item) => !item.processed).length,
-      invalid: filteredData.filter(
-        (item) => item.status?.toUpperCase() === "INVALID",
-      ).length,
+      total: totalRecords,
+      processed: rows.filter((item) => item.processed).length,
+      unprocessed: rows.filter((item) => !item.processed).length,
+      invalid: rows.filter((item) => item.status?.toUpperCase() === "INVALID")
+        .length,
       employees: new Set(
-        filteredData
+        rows
           .map((item) => item.employee_id)
           .filter(
             (value): value is number => value !== null && value !== undefined,
           ),
       ).size,
     };
-  }, [filteredData]);
+  }, [rows, totalRecords]);
 
   const dateRangeLabel = useMemo(() => {
     if (!dateFrom && !dateTo) {
@@ -1024,7 +977,9 @@ const AttendanceLogTableData = () => {
   }
 
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey={swrKey} />;
+    return (
+      <ErrorNotConnectedToApi mutateKey={swrKey ?? "/api/attendance-log"} />
+    );
   }
 
   return (
@@ -1285,8 +1240,9 @@ const AttendanceLogTableData = () => {
                 />
 
                 <span className="text-xs text-slate-500">
-                  {filteredData.length} {i18nT("static.9xnbwb")}{" "}
-                  {filteredData.length === 1 ? "" : i18nT("static.1w9pcoy")}
+                  {totalRecords.toLocaleString("id-ID")}{" "}
+                  {i18nT("static.9xnbwb")}{" "}
+                  {totalRecords === 1 ? "" : i18nT("static.1w9pcoy")}
                 </span>
               </div>
 
