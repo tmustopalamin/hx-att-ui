@@ -96,6 +96,16 @@ const VerticalTabview = () => {
           permission: "payroll.read",
         },
         {
+          label: i18nT("static.14pnb2x"),
+          href: `/employees/${employeeId}/payroll/income-component`,
+          permission: "payroll.read",
+        },
+        {
+          label: i18nT("static.wfytj7"),
+          href: `/employees/${employeeId}/payroll/deduction-component`,
+          permission: "payroll.read",
+        },
+        {
           label: i18nT("static.2l50pf"),
           href: `/employees/${employeeId}/payroll/bpjs`,
           permission: "payroll.read",
@@ -115,16 +125,6 @@ const VerticalTabview = () => {
           href: `/employees/${employeeId}/payroll/history`,
           permission: "payroll.read",
         },
-        {
-          label: i18nT("static.14pnb2x"),
-          href: `/employees/${employeeId}/payroll/income-component`,
-          permission: "payroll.read",
-        },
-        {
-          label: i18nT("static.wfytj7"),
-          href: `/employees/${employeeId}/payroll/deduction-component`,
-          permission: "payroll.read",
-        },
       ],
     },
     {
@@ -132,6 +132,11 @@ const VerticalTabview = () => {
       label: i18nT("static.1gyeted"),
       icon: "pi pi-briefcase",
       items: [
+        {
+          label: i18nT("static.1nvorn3"),
+          href: `/employees/${employeeId}/hr/lifecycle`,
+          permission: "employee-lifecycle.read",
+        },
         {
           label: i18nT("static.oz47lx"),
           href: `/employees/${employeeId}/hr/documents`,
@@ -141,11 +146,6 @@ const VerticalTabview = () => {
           label: i18nT("static.1shidso"),
           href: `/employees/${employeeId}/hr/assets`,
           permission: "asset.read",
-        },
-        {
-          label: i18nT("static.1nvorn3"),
-          href: `/employees/${employeeId}/hr/lifecycle`,
-          permission: "employee-lifecycle.read",
         },
         {
           label: i18nT("static.13rkbwl"),

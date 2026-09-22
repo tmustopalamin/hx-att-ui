@@ -11,6 +11,7 @@ import type {
   NewTaxProfile,
   PayrollProfileSection,
   UpdateEmployeeBankAccount,
+  UpdateStatutoryEnrollment,
 } from "@/app/types/employee-payroll-profile";
 import { apiFetch } from "@/app/utils/api-client";
 
@@ -30,6 +31,23 @@ export const createStatutoryEnrollment = (
   employeeId: number,
   data: NewStatutoryEnrollment,
 ) => create<EmployeeStatutoryEnrollment>(employeeId, "enrollments", data);
+export const updateStatutoryEnrollment = (
+  employeeId: number,
+  id: number,
+  rowVersion: number,
+  data: UpdateStatutoryEnrollment,
+) =>
+  apiFetch<EmployeeStatutoryEnrollment>(
+    `${url(employeeId)}/enrollments/${id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "If-Match": String(rowVersion),
+      },
+      body: JSON.stringify(data),
+    },
+  );
 export const createStatutoryWage = (
   employeeId: number,
   data: NewStatutoryWage,

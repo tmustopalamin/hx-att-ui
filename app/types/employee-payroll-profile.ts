@@ -120,6 +120,16 @@ export type NewStatutoryEnrollment = Pick<
   | "company_registration_number"
   | "notes"
 >;
+export type UpdateStatutoryEnrollment = Pick<
+  EmployeeStatutoryEnrollment,
+  | "participant_number"
+  | "enrollment_status"
+  | "effective_from"
+  | "effective_to"
+  | "bpjs_risk_class_id"
+  | "company_registration_number"
+  | "notes"
+>;
 export type NewStatutoryWage = Pick<
   EmployeeStatutoryWage,
   | "program_group"

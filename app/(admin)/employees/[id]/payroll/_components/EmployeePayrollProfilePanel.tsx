@@ -20,10 +20,12 @@ import {
   createStatutoryEnrollment,
   createStatutoryWage,
   createTaxProfile,
+  updateStatutoryEnrollment,
 } from "@/app/services/employee-payroll-profile-service";
 import { getEmployeeIdentities } from "@/app/services/employee-general-service";
 import type {
   EmployeePayrollProfile,
+  EmployeeStatutoryEnrollment,
   NewSalaryHistory,
   NewStatutoryEnrollment,
   NewStatutoryWage,
@@ -137,6 +139,25 @@ const formatIdr = (value: string | null | undefined) => {
       }).format(amount)
     : "—";
 };
+
+const formatProgramLabel = (name: string, code?: string | null) => {
+  if (!name) return code ?? "—";
+  const upperCode = (code ?? "").toUpperCase();
+  if (upperCode.includes("JHT") && !name.includes("JHT"))
+    return `${name} (JHT)`;
+  if (upperCode.includes("JKK") && !name.includes("JKK"))
+    return `${name} (JKK)`;
+  if (upperCode.includes("JKM") && !name.includes("JKM"))
+    return `${name} (JKM)`;
+  if (upperCode.includes("JKP") && !name.includes("JKP"))
+    return `${name} (JKP)`;
+  if (
+    (upperCode.includes("JP") || upperCode.endsWith("_JP")) &&
+    !name.includes("JP")
+  )
+    return `${name} (JP)`;
+  return name;
+};
 const SALARY: NewSalaryHistory = {
   base_salary: "0",
   currency_code: "IDR",
@@ -175,6 +196,12 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
   const [dialog, setDialog] = useState<"primary" | "wage" | null>(null);
   const [saving, setSaving] = useState(false);
   const [enrollment, setEnrollment] = useState(ENROLLMENT);
+  const [isEditingEnrollment, setIsEditingEnrollment] = useState(false);
+  const [editingEnrollmentId, setEditingEnrollmentId] = useState<number | null>(
+    null,
+  );
+  const [editingEnrollmentRowVersion, setEditingEnrollmentRowVersion] =
+    useState<number | null>(null);
   const [wage, setWage] = useState(WAGE);
   const [tax, setTax] = useState(TAX);
   const [salary, setSalary] = useState(SALARY);
@@ -346,6 +373,27 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                   onClick={() => {
                     if (mode === "tax") {
                       void openTaxDialog();
+                      const enrolledProgramIds = new Set(
+                        (data?.enrollments ?? [])
+                          .filter((e) => e.effective_to === null)
+                          .map((e) => e.statutory_program_id),
+                      );
+                      const allPrograms = data?.statutory_programs ?? [];
+                      const availablePrograms = allPrograms.filter(
+                        (p) => !enrolledProgramIds.has(p.id),
+                      );
+                      const defaultProgramId =
+                        availablePrograms[0]?.id ?? allPrograms[0]?.id ?? 0;
+
+                      setIsEditingEnrollment(false);
+                      setEditingEnrollmentId(null);
+                      setEditingEnrollmentRowVersion(null);
+                      setEnrollment({
+                        ...ENROLLMENT,
+                        statutory_program_id: defaultProgramId,
+                        effective_from: new Date().toISOString().slice(0, 10),
+                      });
+                      setDialog("primary");
                     } else {
                       setDialog("primary");
                     }
@@ -372,7 +420,20 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               currentPageReportTemplate={i18nT("static.1kqh8lr")}
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
             >
-              <Column field="program_code" header={i18nT("static.1if8prf")} />
+              <Column
+                field="program_code"
+                header={i18nT("static.1if8prf")}
+                body={(row) => (
+                  <div className="flex flex-col">
+                    <span className="font-medium text-slate-800">
+                      {formatProgramLabel(row.program_name, row.program_code)}
+                    </span>
+                    <small className="text-slate-500 font-mono text-xs">
+                      {row.program_code}
+                    </small>
+                  </div>
+                )}
+              />
               <Column
                 field="participant_number"
                 header={i18nT("static.zpx5hx")}
@@ -403,6 +464,45 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                 body={(row) =>
                   formatDisplayDate(row.effective_to, "Open ended")
                 }
+              />
+              <Column
+                header={i18nT("static.4q4x6t")}
+                body={(row: EmployeeStatutoryEnrollment) => (
+                  <div className="flex items-center justify-center">
+                    {canCreate && (
+                      <Button
+                        type="button"
+                        icon="pi pi-pencil"
+                        rounded
+                        text
+                        severity="secondary"
+                        size="small"
+                        tooltip="Perbarui Kepesertaan"
+                        tooltipOptions={{ position: "top" }}
+                        onClick={() => {
+                          setEnrollment({
+                            statutory_program_id: row.statutory_program_id,
+                            participant_number: row.participant_number,
+                            enrollment_status: row.enrollment_status,
+                            effective_from:
+                              row.effective_from ||
+                              new Date().toISOString().slice(0, 10),
+                            effective_to: row.effective_to,
+                            bpjs_risk_class_id: row.bpjs_risk_class_id,
+                            company_registration_number:
+                              row.company_registration_number,
+                            notes: row.notes,
+                          });
+                          setEditingEnrollmentId(row.id);
+                          setEditingEnrollmentRowVersion(row.row_version);
+                          setIsEditingEnrollment(true);
+                          setDialog("primary");
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+                style={{ width: "4.5rem", textAlign: "center" }}
               />
             </DataTable>
             <h2 className="text-base font-semibold text-slate-800">
@@ -575,19 +675,27 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
           dialog === "wage"
             ? i18nT("static.xlzi20")
             : mode === "bpjs"
-              ? i18nT("static.11h459n")
+              ? isEditingEnrollment
+                ? "Perbarui Kepesertaan BPJS"
+                : i18nT("static.11h459n")
               : mode === "tax"
                 ? i18nT("static.1ygaxld")
                 : i18nT("static.j1dh25")
         }
         visible={dialog !== null}
-        onHide={() => setDialog(null)}
+        onHide={() => {
+          setDialog(null);
+          setIsEditingEnrollment(false);
+          setEditingEnrollmentId(null);
+          setEditingEnrollmentRowVersion(null);
+        }}
         modal
         draggable={false}
         resizable={false}
         closeOnEscape={!saving}
         closable={!saving}
         style={{ width: "95vw", maxWidth: "46rem" }}
+        breakpoints={{ "640px": "95vw" }}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
@@ -598,11 +706,20 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               text
               disabled={saving}
               className="w-full sm:w-auto"
-              onClick={() => setDialog(null)}
+              onClick={() => {
+                setDialog(null);
+                setIsEditingEnrollment(false);
+                setEditingEnrollmentId(null);
+                setEditingEnrollmentRowVersion(null);
+              }}
             />
             <Button
               type="button"
-              label={i18nT("static.opuo55")}
+              label={
+                mode === "bpjs" && isEditingEnrollment
+                  ? "Simpan Perubahan"
+                  : i18nT("static.opuo55")
+              }
               icon="pi pi-check"
               loading={saving}
               disabled={saving}
@@ -613,12 +730,71 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                     () => createStatutoryWage(employeeId, wage),
                     "Statutory wage created.",
                   );
-                else if (mode === "bpjs")
-                  void run(
-                    () => createStatutoryEnrollment(employeeId, enrollment),
-                    "Enrollment created.",
-                  );
-                else if (mode === "tax")
+                else if (mode === "bpjs") {
+                  if (
+                    !enrollment.statutory_program_id ||
+                    enrollment.statutory_program_id <= 0
+                  ) {
+                    notify(
+                      "error",
+                      "Silakan pilih Program BPJS terlebih dahulu.",
+                    );
+                    return;
+                  }
+                  if (
+                    !enrollment.effective_from ||
+                    enrollment.effective_from.trim() === ""
+                  ) {
+                    notify("error", "Tanggal mulai berlaku wajib diisi.");
+                    return;
+                  }
+                  if (
+                    isEditingEnrollment &&
+                    editingEnrollmentId &&
+                    editingEnrollmentRowVersion !== null
+                  ) {
+                    void run(
+                      () =>
+                        updateStatutoryEnrollment(
+                          employeeId,
+                          editingEnrollmentId,
+                          editingEnrollmentRowVersion,
+                          {
+                            participant_number: enrollment.participant_number,
+                            enrollment_status: enrollment.enrollment_status,
+                            effective_from: enrollment.effective_from,
+                            effective_to: enrollment.effective_to,
+                            bpjs_risk_class_id: enrollment.bpjs_risk_class_id,
+                            company_registration_number:
+                              enrollment.company_registration_number,
+                            notes: enrollment.notes,
+                          },
+                        ),
+                      "Data kepesertaan berhasil diperbarui.",
+                    );
+                  } else {
+                    const existingActive = (data?.enrollments ?? []).find(
+                      (e) =>
+                        e.statutory_program_id ===
+                          enrollment.statutory_program_id &&
+                        e.effective_to === null,
+                    );
+                    if (
+                      existingActive &&
+                      enrollment.effective_from <= existingActive.effective_from
+                    ) {
+                      notify(
+                        "error",
+                        `Program ini sudah aktif terdaftar sejak ${existingActive.effective_from}. Tanggal mulai periode baru harus lebih besar dari ${existingActive.effective_from}, atau gunakan tombol pensil di tabel untuk mengedit data saat ini.`,
+                      );
+                      return;
+                    }
+                    void run(
+                      () => createStatutoryEnrollment(employeeId, enrollment),
+                      "Kepesertaan berhasil didaftarkan.",
+                    );
+                  }
+                } else if (mode === "tax")
                   void run(
                     () => createTaxProfile(employeeId, tax),
                     "Tax profile created.",
@@ -642,6 +818,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
             value={enrollment}
             change={setEnrollment}
             profile={data}
+            isEdit={isEditingEnrollment}
           />
         ) : mode === "tax" ? (
           <TaxForm
@@ -663,88 +840,442 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
 }
 
 function Field({
+  id,
   label,
-  children,
+  required = false,
+  hint,
   helper,
+  error,
+  children,
+  className = "",
 }: {
-  label: string;
-  children: React.ReactNode;
+  id?: string;
+  label: React.ReactNode;
+  required?: boolean;
+  hint?: React.ReactNode;
   helper?: React.ReactNode;
+  error?: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
+  const displayHint = hint ?? helper;
   return (
-    <label className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      <label
+        htmlFor={id}
+        className="text-sm font-medium text-slate-700 flex items-center gap-1"
+      >
+        <span>{label}</span>
+        {required && <span className="text-red-500 font-bold">*</span>}
+      </label>
       {children}
-      {helper && <span className="text-xs text-slate-500">{helper}</span>}
-    </label>
+      {error ? (
+        <small className="p-error text-xs">{error}</small>
+      ) : (
+        displayHint && (
+          <small className="text-slate-500 text-xs">{displayHint}</small>
+        )
+      )}
+    </div>
   );
 }
 function EnrollmentForm({
   value,
   change,
   profile,
+  isEdit = false,
 }: {
   value: NewStatutoryEnrollment;
   change: React.Dispatch<React.SetStateAction<NewStatutoryEnrollment>>;
   profile?: EmployeePayrollProfile;
+  isEdit?: boolean;
 }) {
   const { t: i18nT } = useI18n();
+  const [riskInfoOpen, setRiskInfoOpen] = useState(false);
+
+  const selectedProgram = (profile?.statutory_programs ?? []).find(
+    (p) => p.id === value.statutory_program_id,
+  );
+  const isJkk = selectedProgram?.code === "BPJS_TK_JKK";
+  const isBpjsKes = selectedProgram?.code === "BPJS_KESEHATAN";
+
+  const enrolledProgramIds = new Set(
+    (profile?.enrollments ?? [])
+      .filter((e) => e.effective_to === null)
+      .map((e) => e.statutory_program_id),
+  );
+
+  const isSelectedProgramAlreadyEnrolled =
+    !isEdit && enrolledProgramIds.has(value.statutory_program_id);
+
+  const existingActiveForSelected = isSelectedProgramAlreadyEnrolled
+    ? (profile?.enrollments ?? []).find(
+        (e) =>
+          e.statutory_program_id === value.statutory_program_id &&
+          e.effective_to === null,
+      )
+    : null;
+
+  const programOptions = (profile?.statutory_programs ?? []).map((program) => {
+    const isEnrolled = !isEdit && enrolledProgramIds.has(program.id);
+    const baseLabel = formatProgramLabel(program.name, program.code);
+    return {
+      ...program,
+      displayName: isEnrolled ? `${baseLabel} (Sudah Aktif)` : baseLabel,
+    };
+  });
+
+  const statusOptions = [
+    { label: "ACTIVE — Aktif", value: "ACTIVE" },
+    { label: "PENDING — Menunggu Registrasi", value: "PENDING" },
+    { label: "INACTIVE — Tidak Aktif", value: "INACTIVE" },
+    { label: "TERMINATED — Berhenti / Nonaktif", value: "TERMINATED" },
+  ];
+
   return (
-    <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
-      <Field label={i18nT("static.1vqe40x")}>
-        <Dropdown
-          value={value.statutory_program_id || null}
-          options={profile?.statutory_programs ?? []}
-          optionLabel="name"
-          optionValue="id"
-          onChange={(e) =>
-            change((v) => ({ ...v, statutory_program_id: Number(e.value) }))
+    <>
+      <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
+        {isSelectedProgramAlreadyEnrolled && existingActiveForSelected && (
+          <div className="sm:col-span-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200 flex items-start gap-2">
+            <i className="pi pi-exclamation-triangle text-amber-600 mt-0.5 text-sm" />
+            <div>
+              <p className="font-semibold m-0 mb-1">
+                Program ini sudah terdaftar aktif sejak{" "}
+                {existingActiveForSelected.effective_from}
+              </p>
+              <p className="m-0 text-amber-700 leading-relaxed">
+                Pendaftaran periode baru akan menutup periode aktif secara
+                otomatis. Tanggal mulai periode baru harus lebih besar dari{" "}
+                <strong>{existingActiveForSelected.effective_from}</strong>.
+                Jika Anda hanya ingin mengoreksi data periode saat ini (seperti
+                nomor kartu, kelas risiko, dsb.), gunakan tombol edit (pensil)
+                pada tabel.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Row 1: Program BPJS (Full width sm:col-span-2) */}
+        <Field
+          id="enrollment-program"
+          label={i18nT("static.1vqe40x")}
+          required
+          className="sm:col-span-2"
+          hint={
+            isEdit
+              ? "Program kepesertaan yang sedang diperbarui datanya"
+              : isSelectedProgramAlreadyEnrolled
+                ? `Program ini sudah aktif sejak ${existingActiveForSelected?.effective_from}. Periode baru harus dimulai setelah tanggal tersebut.`
+                : "Pilih salah satu program jaminan sosial wajib"
           }
-        />
-      </Field>
-      <Field label={i18nT("static.3yqbxz")}>
-        <InputText
-          value={value.participant_number ?? ""}
-          onChange={(e) =>
-            change((v) => ({
-              ...v,
-              participant_number: e.target.value || null,
-            }))
+        >
+          <Dropdown
+            inputId="enrollment-program"
+            value={value.statutory_program_id || null}
+            options={programOptions}
+            optionLabel="displayName"
+            optionValue="id"
+            placeholder="Pilih Program BPJS"
+            className="w-full"
+            disabled={isEdit}
+            onChange={(e) => {
+              const programId = Number(e.value);
+              const prog = (profile?.statutory_programs ?? []).find(
+                (p) => p.id === programId,
+              );
+              change((v) => ({
+                ...v,
+                statutory_program_id: programId,
+                bpjs_risk_class_id:
+                  prog?.code === "BPJS_KESEHATAN" ? null : v.bpjs_risk_class_id,
+              }));
+            }}
+          />
+        </Field>
+
+        {/* Row 2: Nomor Peserta & Kelas Risiko JKK */}
+        <Field
+          id="enrollment-participant-number"
+          label={i18nT("static.3yqbxz")}
+          hint="Nomor kartu BPJS Kesehatan (13 digit) atau KPJ (11 digit)"
+        >
+          <InputText
+            id="enrollment-participant-number"
+            value={value.participant_number ?? ""}
+            placeholder="Contoh: 0001234567890 atau 12345678901"
+            className="w-full"
+            onChange={(e) =>
+              change((v) => ({
+                ...v,
+                participant_number: e.target.value || null,
+              }))
+            }
+          />
+        </Field>
+
+        <Field
+          id="enrollment-risk-class"
+          label={
+            <span className="inline-flex items-center gap-1.5">
+              <span>{i18nT("static.psbfa6")}</span>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 focus:outline-none transition-colors"
+                title="Lihat panduan & tarif kelas risiko JKK"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setRiskInfoOpen(true);
+                }}
+              >
+                <i className="pi pi-info-circle text-xs" />
+              </button>
+            </span>
           }
-        />
-      </Field>
-      <Field label={i18nT("static.3pd73")}>
-        <Dropdown
-          value={value.enrollment_status}
-          options={["PENDING", "ACTIVE", "INACTIVE", "TERMINATED"]}
-          onChange={(e) =>
-            change((v) => ({ ...v, enrollment_status: String(e.value) }))
+          required={isJkk}
+          hint={
+            isBpjsKes
+              ? "Tidak berlaku untuk BPJS Kesehatan"
+              : isJkk
+                ? "Wajib dipilih untuk menentukan tarif iuran JKK"
+                : "Khusus program BPJS Ketenagakerjaan (JKK)"
           }
-        />
-      </Field>
-      <Field label={i18nT("static.psbfa6")}>
-        <Dropdown
-          value={value.bpjs_risk_class_id}
-          options={profile?.bpjs_risk_classes ?? []}
-          optionLabel="name"
-          optionValue="id"
-          showClear
-          onChange={(e) =>
-            change((v) => ({
-              ...v,
-              bpjs_risk_class_id: e.value ? Number(e.value) : null,
-            }))
-          }
-        />
-      </Field>
-      <Dates
-        from={value.effective_from}
-        to={value.effective_to}
-        set={(from, to) =>
-          change((v) => ({ ...v, effective_from: from, effective_to: to }))
+        >
+          <Dropdown
+            inputId="enrollment-risk-class"
+            value={value.bpjs_risk_class_id}
+            options={profile?.bpjs_risk_classes ?? []}
+            optionLabel="name"
+            optionValue="id"
+            showClear
+            disabled={isBpjsKes}
+            placeholder={
+              isBpjsKes
+                ? "Tidak berlaku (BPJS Kesehatan)"
+                : "Pilih Kelas Risiko JKK"
+            }
+            className="w-full"
+            onChange={(e) =>
+              change((v) => ({
+                ...v,
+                bpjs_risk_class_id: e.value ? Number(e.value) : null,
+              }))
+            }
+          />
+        </Field>
+
+        {/* Row 3: Status Kepesertaan & NPP Perusahaan */}
+        <Field
+          id="enrollment-status"
+          label={i18nT("static.3pd73")}
+          required
+          hint="Hanya status ACTIVE yang diproses dalam payroll"
+        >
+          <Dropdown
+            inputId="enrollment-status"
+            value={value.enrollment_status}
+            options={statusOptions}
+            optionLabel="label"
+            optionValue="value"
+            className="w-full"
+            onChange={(e) =>
+              change((v) => ({ ...v, enrollment_status: String(e.value) }))
+            }
+          />
+        </Field>
+
+        <Field
+          id="enrollment-company-reg"
+          label="No. Registrasi Perusahaan / NPP"
+          hint="Opsional jika entitas/cabang memiliki NPP terpisah"
+        >
+          <InputText
+            id="enrollment-company-reg"
+            value={value.company_registration_number ?? ""}
+            placeholder="Contoh: NPP Cabang / Kode Badan Usaha"
+            className="w-full"
+            onChange={(e) =>
+              change((v) => ({
+                ...v,
+                company_registration_number: e.target.value || null,
+              }))
+            }
+          />
+        </Field>
+
+        {/* Row 4: Masa Berlaku (Tanggal Mulai & Berakhir) */}
+        <Field
+          id="enrollment-effective-from"
+          label={i18nT("static.8lx39w")}
+          required
+          hint="Tanggal mulai berlakunya kepesertaan"
+        >
+          <PrimeDatePicker
+            value={value.effective_from}
+            onValueChange={(date) =>
+              change((v) => ({ ...v, effective_from: date }))
+            }
+          />
+        </Field>
+
+        <Field
+          id="enrollment-effective-to"
+          label={i18nT("static.mtbgcr")}
+          hint="Kosongkan jika kepesertaan masih aktif (terbuka)"
+        >
+          <PrimeDatePicker
+            value={value.effective_to}
+            onValueChange={(date) =>
+              change((v) => ({ ...v, effective_to: date || null }))
+            }
+          />
+        </Field>
+
+        {/* Row 5: Catatan (Full width sm:col-span-2) */}
+        <Field
+          id="enrollment-notes"
+          label="Catatan"
+          className="sm:col-span-2"
+          hint="Catatan internal atau referensi mutasi kepesertaan jika ada"
+        >
+          <InputText
+            id="enrollment-notes"
+            value={value.notes ?? ""}
+            placeholder="Contoh: Pendaftaran baru batch onboarding, mutasi cabang, dll."
+            className="w-full"
+            onChange={(e) =>
+              change((v) => ({
+                ...v,
+                notes: e.target.value || null,
+              }))
+            }
+          />
+        </Field>
+      </div>
+
+      <Dialog
+        header={
+          <div className="flex items-center gap-2">
+            <i className="pi pi-shield text-blue-600 text-base" />
+            <span className="font-semibold text-slate-800 text-base">
+              Detail Kelas Risiko JKK (Jaminan Kecelakaan Kerja)
+            </span>
+          </div>
         }
-      />
-    </div>
+        visible={riskInfoOpen}
+        onHide={() => setRiskInfoOpen(false)}
+        modal
+        dismissableMask
+        draggable={false}
+        resizable={false}
+        style={{ width: "95vw", maxWidth: "44rem" }}
+      >
+        <div className="flex flex-col gap-3.5 text-sm text-slate-600 pt-1">
+          <p className="leading-relaxed text-slate-600 m-0">
+            Sesuai <strong>PP No. 44 Tahun 2015</strong>, iuran JKK dibayarkan{" "}
+            <strong>100% oleh pemberi kerja (perusahaan)</strong> berdasarkan
+            tingkat risiko lingkungan kerja:
+          </p>
+
+          <div className="overflow-hidden rounded-lg border border-slate-200">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+                <tr>
+                  <th className="p-2.5 sm:p-3">Opsi</th>
+                  <th className="p-2.5 sm:p-3 text-center">Tarif</th>
+                  <th className="p-2.5 sm:p-3">
+                    Tingkat Risiko & Contoh Pekerjaan
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <tr className="hover:bg-slate-50/60">
+                  <td className="p-2.5 sm:p-3 font-semibold text-slate-800 whitespace-nowrap">
+                    JKK Risk I
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-center whitespace-nowrap">
+                    <span className="inline-block px-2 py-0.5 font-bold rounded text-emerald-700 bg-emerald-50 border border-emerald-200 text-xs">
+                      0,24%
+                    </span>
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-slate-600">
+                    <strong>Sangat Rendah</strong> — Pekerjaan administrasi
+                    kantor, perbankan/keuangan, pendidikan, riset, IT.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/60">
+                  <td className="p-2.5 sm:p-3 font-semibold text-slate-800 whitespace-nowrap">
+                    JKK Risk II
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-center whitespace-nowrap">
+                    <span className="inline-block px-2 py-0.5 font-bold rounded text-teal-700 bg-teal-50 border border-teal-200 text-xs">
+                      0,54%
+                    </span>
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-slate-600">
+                    <strong>Rendah</strong> — Industri pakaian/garmen,
+                    percetakan, retail, perdagangan, perhotelan & restoran.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/60">
+                  <td className="p-2.5 sm:p-3 font-semibold text-slate-800 whitespace-nowrap">
+                    JKK Risk III
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-center whitespace-nowrap">
+                    <span className="inline-block px-2 py-0.5 font-bold rounded text-amber-700 bg-amber-50 border border-amber-200 text-xs">
+                      0,89%
+                    </span>
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-slate-600">
+                    <strong>Sedang</strong> — Manufaktur umum, transportasi
+                    darat, pergudangan, perakitan mesin ringan, makanan &
+                    minuman.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/60">
+                  <td className="p-2.5 sm:p-3 font-semibold text-slate-800 whitespace-nowrap">
+                    JKK Risk IV
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-center whitespace-nowrap">
+                    <span className="inline-block px-2 py-0.5 font-bold rounded text-orange-700 bg-orange-50 border border-orange-200 text-xs">
+                      1,27%
+                    </span>
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-slate-600">
+                    <strong>Tinggi</strong> — Konstruksi umum, pengolahan logam,
+                    industri kimia, pengolahan kayu, perikanan laut.
+                  </td>
+                </tr>
+                <tr className="hover:bg-slate-50/60">
+                  <td className="p-2.5 sm:p-3 font-semibold text-slate-800 whitespace-nowrap">
+                    JKK Risk V
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-center whitespace-nowrap">
+                    <span className="inline-block px-2 py-0.5 font-bold rounded text-rose-700 bg-rose-50 border border-rose-200 text-xs">
+                      1,74%
+                    </span>
+                  </td>
+                  <td className="p-2.5 sm:p-3 text-slate-600">
+                    <strong>Sangat Tinggi</strong> — Pertambangan migas/batu
+                    bara, peledakan (*blasting*), pengeboran lepas pantai,
+                    ketinggian/bawah tanah ekstrem.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="rounded-md bg-blue-50/80 p-3 border border-blue-100 flex items-start gap-2.5 text-xs text-blue-800">
+            <i className="pi pi-info-circle text-blue-600 text-sm mt-0.5" />
+            <span>
+              Iuran JKK ini dibayarkan perusahaan dan menjadi penambah
+              penghasilan bruto karyawan untuk dasar perhitungan pajak PPh 21
+              bulanan (TER).
+            </span>
+          </div>
+        </div>
+      </Dialog>
+    </>
   );
 }
 function WageForm({
@@ -760,7 +1291,10 @@ function WageForm({
   const programGroups = [
     { label: i18nT("static.16km7xr"), value: "ALL" },
     ...(profile?.statutory_programs ?? []).map((program) => ({
-      label: i18nT("static.14r9r1n", { p0: program.name, p1: program.code }),
+      label: i18nT("static.14r9r1n", {
+        p0: formatProgramLabel(program.name, program.code),
+        p1: program.code,
+      }),
       value: program.code,
     })),
   ];
