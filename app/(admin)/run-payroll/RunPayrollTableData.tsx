@@ -178,10 +178,11 @@ export default function RunPayrollTableData() {
     severity: "success" | "error",
     summary: string,
     detail: string,
-  ) => dispatch(showToast({ visible: true, severity, summary, detail }));
+    life?: number,
+  ) => dispatch(showToast({ visible: true, severity, summary, detail, life }));
 
   const showError = (error: unknown) => {
-    toast("error", i18nT("static.ghd2d6"), getErrorMessage(error));
+    toast("error", i18nT("static.ghd2d6"), getErrorMessage(error), 8000);
   };
 
   const openCreate = () => {
