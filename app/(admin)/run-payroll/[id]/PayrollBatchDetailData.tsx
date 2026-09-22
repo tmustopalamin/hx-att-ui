@@ -327,12 +327,48 @@ function EmployeeResultPanel({
               </span>
             </h2>
             {result.error_message && (
-              <div className="mt-1 flex flex-col gap-0.5 text-sm text-red-600">
-                <p className="m-0">{result.error_message}</p>
-                {result.error_code && (
-                  <small className="text-xs text-red-500">
-                    {i18nT("static.gsq7ai")} {result.error_code}
-                  </small>
+              <div
+                className={`mt-2 flex flex-col gap-1.5 rounded-lg border p-3 ${
+                  result.status === "WARNING"
+                    ? "border-amber-200 bg-amber-50/70 text-amber-900"
+                    : "border-red-200 bg-red-50/70 text-red-900"
+                }`}
+              >
+                <div className="flex items-start gap-2">
+                  <i
+                    className={`mt-0.5 shrink-0 pi ${
+                      result.status === "WARNING"
+                        ? "pi-exclamation-triangle text-amber-600"
+                        : "pi-times-circle text-red-600"
+                    }`}
+                  />
+                  <div className="flex flex-col gap-0.5">
+                    <p className="m-0 text-sm font-medium leading-5">
+                      {result.error_message}
+                    </p>
+                    {result.error_code && (
+                      <small
+                        className={`text-xs font-mono ${
+                          result.status === "WARNING"
+                            ? "text-amber-700"
+                            : "text-red-700"
+                        }`}
+                      >
+                        {i18nT("static.gsq7ai")} {result.error_code}
+                      </small>
+                    )}
+                  </div>
+                </div>
+                {result.error_code === "ATTENDANCE_NOT_FINAL" && (
+                  <div className="mt-0.5 flex justify-end">
+                    <Link
+                      href="/attendance-summary"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      <span>{i18nT("nav.attendanceSummary")}</span>
+                      <i className="pi pi-arrow-right text-[10px]" />
+                    </Link>
+                  </div>
                 )}
               </div>
             )}
