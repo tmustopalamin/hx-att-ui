@@ -3,8 +3,15 @@ import { getClientLocale, translateStaticText, useI18n } from "@/app/i18n";
 
 import { apiFetchResponse } from "@/app/utils/api-client";
 
-import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import {
+  ChangeEvent,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useDeferredValue,
+} from "react";
 import useSWR from "swr";
 import dayjs from "dayjs";
 import {
@@ -51,13 +58,6 @@ import type { OvertimeProcessingMode } from "@/app/types/attendance-settings";
 
 const DEFAULT_OVERTIME_PROCESSING_MODE: OvertimeProcessingMode =
   "ACTUAL_LOGS_AND_APPROVAL";
-
-interface FilterForm {
-  startDate: Date | null;
-  endDate: Date | null;
-  keyword: string;
-  status: string | null;
-}
 
 interface ProcessResponse {
   success: boolean;
@@ -428,37 +428,30 @@ const AttendanceSummaryTableData = () => {
     };
   }, []);
 
-  const { control, getValues, reset, setValue } = useForm<FilterForm>({
-    defaultValues: {
-      startDate: defaultRange.startDate,
-      endDate: defaultRange.endDate,
-      keyword: "",
-      status: null,
-    },
-  });
-
-  const keyword =
-    useWatch({
-      control,
-      name: "keyword",
-    }) ?? "";
-
-  const statusFilter =
-    useWatch({
-      control,
-      name: "status",
-    }) ?? null;
-
-  const [appliedStartDate, setAppliedStartDate] = useState<Date | null>(
+  const [startDate, setStartDate] = useState<Date | null>(
     defaultRange.startDate,
   );
 
-  const [appliedEndDate, setAppliedEndDate] = useState<Date | null>(
-    defaultRange.endDate,
-  );
+  const [endDate, setEndDate] = useState<Date | null>(defaultRange.endDate);
 
   const [activeDatePreset, setActiveDatePreset] = useState<DatePreset | null>(
     "THIS_MONTH",
+  );
+
+  const [keyword, setKeyword] = useState("");
+
+  const deferredKeyword = useDeferredValue(keyword);
+
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
+  const isStartDateInvalid = Boolean(startDate && !dayjs(startDate).isValid());
+  const isEndDateInvalid = Boolean(endDate && !dayjs(endDate).isValid());
+  const hasInvalidDateRange = Boolean(
+    isStartDateInvalid ||
+    isEndDateInvalid ||
+    (startDate &&
+      endDate &&
+      dayjs(startDate).startOf("day").isAfter(dayjs(endDate).endOf("day"))),
   );
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -494,15 +487,24 @@ const AttendanceSummaryTableData = () => {
 
   const [detailEmployeeSearch, setDetailEmployeeSearch] = useState("");
 
+  const [isOverviewCollapsed, setIsOverviewCollapsed] = useState(false);
+
+  const overviewSectionRef = useRef<HTMLElement | null>(null);
+  const detailSectionRef = useRef<HTMLElement | null>(null);
+
   const queryString = useMemo(() => {
+    if (hasInvalidDateRange) {
+      return null;
+    }
+
     const params = new URLSearchParams();
 
-    const startDateStr = formatApiDate(appliedStartDate);
+    const startDateStr = formatApiDate(startDate);
     if (startDateStr) {
       params.set("start_date", startDateStr);
     }
 
-    const endDateStr = formatApiDate(appliedEndDate);
+    const endDateStr = formatApiDate(endDate);
     if (endDateStr) {
       params.set("end_date", endDateStr);
     }
@@ -510,9 +512,10 @@ const AttendanceSummaryTableData = () => {
     const text = params.toString();
 
     return text ? `?${text}` : "";
-  }, [appliedStartDate, appliedEndDate]);
+  }, [startDate, endDate, hasInvalidDateRange]);
 
-  const swrKey = `/api/attendance-summary${queryString}`;
+  const swrKey =
+    queryString === null ? null : `/api/attendance-summary${queryString}`;
 
   const {
     data: attendanceSummaryData,
@@ -627,7 +630,10 @@ const AttendanceSummaryTableData = () => {
     };
   }, [dispatch, processingJobId, refreshAttendanceSummaryData]);
 
-  const rows = attendanceSummaryData ?? [];
+  const rows = useMemo(
+    () => (hasInvalidDateRange ? [] : (attendanceSummaryData ?? [])),
+    [hasInvalidDateRange, attendanceSummaryData],
+  );
 
   const statusOptions = useMemo(() => {
     const values = Array.from(
@@ -641,7 +647,7 @@ const AttendanceSummaryTableData = () => {
   }, [i18nT, rows]);
 
   const filteredRows = useMemo<AttendanceSummaryRowView[]>(() => {
-    const search = keyword.trim().toLowerCase();
+    const search = deferredKeyword.trim().toLowerCase();
 
     return rows
       .map((item) => {
@@ -682,6 +688,7 @@ const AttendanceSummaryTableData = () => {
         const matchKeyword =
           !search ||
           item.employee_search_name.includes(search) ||
+          String(item.employee_id ?? "").includes(search) ||
           shift.toLowerCase().includes(search) ||
           normalizedStatus.toLowerCase().includes(search) ||
           leaveText.toLowerCase().includes(search) ||
@@ -706,7 +713,7 @@ const AttendanceSummaryTableData = () => {
           second.employee_display_name,
         );
       });
-  }, [i18nT, rows, keyword, statusFilter]);
+  }, [i18nT, rows, deferredKeyword, statusFilter]);
 
   const groupedData = useMemo<AttendanceSummaryDateGroup[]>(() => {
     const groups = new Map<string, AttendanceSummaryRowView[]>();
@@ -776,6 +783,7 @@ const AttendanceSummaryTableData = () => {
   }, [groupedData.length, groupFirst, groupsPerPage]);
 
   useEffect(() => {
+    setGroupFirst(0);
     setEmployeeFirst(0);
     setExpandedRows(undefined);
   }, [keyword, statusFilter]);
@@ -883,14 +891,23 @@ const AttendanceSummaryTableData = () => {
   }, [selectedGroup]);
 
   const currentRangeLabel = useMemo(() => {
-    if (!appliedStartDate || !appliedEndDate) {
+    if (!startDate && !endDate) {
       return "All dates";
     }
 
-    return `${formatDisplayDate(appliedStartDate)} – ${formatDisplayDate(
-      appliedEndDate,
-    )}`;
-  }, [appliedStartDate, appliedEndDate]);
+    const startLabel = startDate ? formatDisplayDate(startDate, "...") : "...";
+
+    const endLabel = endDate ? formatDisplayDate(endDate, "...") : "...";
+
+    return `${startLabel} – ${endLabel}`;
+  }, [startDate, endDate]);
+
+  const hasActiveFilter =
+    Boolean(keyword.trim()) ||
+    Boolean(statusFilter) ||
+    activeDatePreset !== "THIS_MONTH" ||
+    startDate?.getTime() !== defaultRange.startDate.getTime() ||
+    endDate?.getTime() !== defaultRange.endDate.getTime();
 
   const isActionRunning =
     isProcessing || isExporting || processingJobId !== null;
@@ -966,62 +983,37 @@ const AttendanceSummaryTableData = () => {
   };
 
   const applyDatePreset = (preset: DatePreset) => {
-    const [startDate, endDate] = getDatePresetRange(preset);
+    const [start, end] = getDatePresetRange(preset);
 
-    setValue("startDate", startDate);
-
-    setValue("endDate", endDate);
-
-    setAppliedStartDate(startDate);
-
-    setAppliedEndDate(endDate);
+    setStartDate(start);
+    setEndDate(end);
     setActiveDatePreset(preset);
 
     resetViewState();
     clearActionMessage();
   };
 
-  const onApplyFilter = () => {
-    clearActionMessage();
-
-    const { startDate, endDate } = getValues();
-
-    if (!startDate || !endDate) {
-      const message = i18nT("Start Date and End Date are required.");
-
-      setActionError(message);
-      showError(new Error(message));
-      return;
-    }
-
-    if (dayjs(startDate).isAfter(dayjs(endDate), "day")) {
-      const message = i18nT("Start Date cannot be later than End Date.");
-
-      setActionError(message);
-      showError(new Error(message));
-      return;
-    }
-
-    setAppliedStartDate(startDate);
-
-    setAppliedEndDate(endDate);
+  const onStartDateChange = (value: Date | null) => {
+    setStartDate(value);
     setActiveDatePreset(null);
 
     resetViewState();
+    clearActionMessage();
+  };
+
+  const onEndDateChange = (value: Date | null) => {
+    setEndDate(value);
+    setActiveDatePreset(null);
+
+    resetViewState();
+    clearActionMessage();
   };
 
   const onResetFilter = () => {
-    reset({
-      startDate: defaultRange.startDate,
-      endDate: defaultRange.endDate,
-      keyword: "",
-      status: null,
-    });
-
-    setAppliedStartDate(defaultRange.startDate);
-
-    setAppliedEndDate(defaultRange.endDate);
-
+    setStartDate(defaultRange.startDate);
+    setEndDate(defaultRange.endDate);
+    setKeyword("");
+    setStatusFilter(null);
     setActiveDatePreset("THIS_MONTH");
 
     resetViewState();
@@ -1031,7 +1023,7 @@ const AttendanceSummaryTableData = () => {
   const handleProcessAttendance = async (
     selectedOvertimeProcessingMode: OvertimeProcessingMode = overtimeProcessingModeRef.current,
   ) => {
-    if (!appliedStartDate || !appliedEndDate) {
+    if (!startDate || !endDate || hasInvalidDateRange) {
       return;
     }
 
@@ -1048,8 +1040,8 @@ const AttendanceSummaryTableData = () => {
       clearActionMessage();
 
       const result = await processAttendanceSummary(
-        appliedStartDate,
-        appliedEndDate,
+        startDate,
+        endDate,
         selectedOvertimeProcessingMode,
       );
 
@@ -1093,8 +1085,17 @@ const AttendanceSummaryTableData = () => {
   const onClickProcessAttendance = () => {
     clearActionMessage();
 
-    if (!appliedStartDate || !appliedEndDate) {
-      const message = i18nT("Apply Start Date and End Date before processing.");
+    if (!startDate || !endDate) {
+      const message = i18nT("Start Date and End Date are required.");
+
+      setActionError(message);
+      showError(new Error(message));
+
+      return;
+    }
+
+    if (hasInvalidDateRange) {
+      const message = i18nT("static.1k8q7ax");
 
       setActionError(message);
       showError(new Error(message));
@@ -1166,8 +1167,8 @@ const AttendanceSummaryTableData = () => {
   const exportExcel = async () => {
     clearActionMessage();
 
-    if (!appliedStartDate || !appliedEndDate) {
-      const message = i18nT("Apply Start Date and End Date before exporting.");
+    if (!startDate || !endDate) {
+      const message = i18nT("Start Date and End Date are required.");
 
       setActionError(message);
       showError(new Error(message));
@@ -1175,8 +1176,8 @@ const AttendanceSummaryTableData = () => {
       return;
     }
 
-    if (dayjs(appliedStartDate).isAfter(dayjs(appliedEndDate), "day")) {
-      const message = i18nT("Start Date cannot be later than End Date.");
+    if (hasInvalidDateRange) {
+      const message = i18nT("static.1k8q7ax");
 
       setActionError(message);
       showError(new Error(message));
@@ -1187,10 +1188,7 @@ const AttendanceSummaryTableData = () => {
     try {
       setIsExporting(true);
 
-      const fileName = await downloadAttendanceSummaryExcel(
-        appliedStartDate,
-        appliedEndDate,
-      );
+      const fileName = await downloadAttendanceSummaryExcel(startDate, endDate);
 
       const message = i18nT("Attendance summary exported successfully: {p0}", {
         p0: fileName,
@@ -1833,7 +1831,61 @@ const AttendanceSummaryTableData = () => {
     setExpandedRows(undefined);
     setDetailQuickFilter("ALL");
     setDetailEmployeeSearch("");
+
+    const targetIndex = groupedData.findIndex((g) => g.dateKey === dateKey);
+    if (targetIndex >= 0) {
+      const targetPageFirst =
+        Math.floor(targetIndex / groupsPerPage) * groupsPerPage;
+      if (targetPageFirst !== groupFirst) {
+        setGroupFirst(targetPageFirst);
+      }
+    }
   };
+
+  const onOpenDetail = (dateKey: string) => {
+    onSelectDateGroup(dateKey);
+    setTimeout(() => {
+      detailSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 60);
+  };
+
+  const selectedGroupIndex = useMemo(() => {
+    if (!selectedGroup) return -1;
+    return groupedData.findIndex((g) => g.dateKey === selectedGroup.dateKey);
+  }, [groupedData, selectedGroup]);
+
+  const hasPrevDate = selectedGroupIndex > 0;
+  const hasNextDate =
+    selectedGroupIndex >= 0 && selectedGroupIndex < groupedData.length - 1;
+
+  const onGoToPrevDate = () => {
+    if (!hasPrevDate) return;
+    const prevDateKey = groupedData[selectedGroupIndex - 1].dateKey;
+    onSelectDateGroup(prevDateKey);
+  };
+
+  const onGoToNextDate = () => {
+    if (!hasNextDate) return;
+    const nextDateKey = groupedData[selectedGroupIndex + 1].dateKey;
+    onSelectDateGroup(nextDateKey);
+  };
+
+  const onScrollToOverview = () => {
+    overviewSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
+  const dateOptions = useMemo(() => {
+    return groupedData.map((g) => ({
+      label: `${g.dateLabel} (${g.rows.length} ${i18nT("static.1h11q02")})`,
+      value: g.dateKey,
+    }));
+  }, [groupedData, i18nT]);
 
   const onSelectDetailQuickFilter = (filter: DetailQuickFilter) => {
     setDetailQuickFilter(filter);
@@ -1888,7 +1940,9 @@ const AttendanceSummaryTableData = () => {
   }
 
   if (error) {
-    return <ErrorNotConnectedToApi mutateKey={swrKey} />;
+    return (
+      <ErrorNotConnectedToApi mutateKey={swrKey ?? "/api/attendance-summary"} />
+    );
   }
 
   return (
@@ -1934,7 +1988,13 @@ const AttendanceSummaryTableData = () => {
                 severity="warning"
                 size="small"
                 loading={isProcessing || processingSettingLoading}
-                disabled={isExporting || !overtimeProcessingModeReady}
+                disabled={
+                  isExporting ||
+                  !overtimeProcessingModeReady ||
+                  !startDate ||
+                  !endDate ||
+                  hasInvalidDateRange
+                }
                 className="w-full sm:w-auto"
                 onClick={onClickProcessAttendance}
               />
@@ -1947,7 +2007,9 @@ const AttendanceSummaryTableData = () => {
                 outlined
                 size="small"
                 loading={isExporting}
-                disabled={isProcessing || !appliedStartDate || !appliedEndDate}
+                disabled={
+                  isProcessing || !startDate || !endDate || hasInvalidDateRange
+                }
                 className="w-full sm:w-auto"
                 onClick={() => {
                   void exportExcel();
@@ -2126,25 +2188,17 @@ const AttendanceSummaryTableData = () => {
                   {i18nT("static.7bl5hd")}{" "}
                 </label>
 
-                <Controller
-                  name="startDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Calendar
-                      id="summary_start_date"
-                      appendTo={getBody}
-                      value={field.value}
-                      dateFormat="dd MM yy"
-                      showIcon
-                      placeholder={i18nT("static.7bl5hd")}
-                      className="w-full"
-                      onChange={(event) => {
-                        field.onChange(event.value ?? null);
-
-                        setActiveDatePreset(null);
-                      }}
-                    />
-                  )}
+                <Calendar
+                  id="summary_start_date"
+                  appendTo={getBody}
+                  value={startDate}
+                  dateFormat="dd MM yy"
+                  showIcon
+                  placeholder={i18nT("static.7bl5hd")}
+                  className="w-full"
+                  onChange={(event) =>
+                    onStartDateChange((event.value as Date | null) ?? null)
+                  }
                 />
               </div>
 
@@ -2156,25 +2210,17 @@ const AttendanceSummaryTableData = () => {
                   {i18nT("static.1j4m31m")}{" "}
                 </label>
 
-                <Controller
-                  name="endDate"
-                  control={control}
-                  render={({ field }) => (
-                    <Calendar
-                      id="summary_end_date"
-                      appendTo={getBody}
-                      value={field.value}
-                      dateFormat="dd MM yy"
-                      showIcon
-                      placeholder={i18nT("static.1j4m31m")}
-                      className="w-full"
-                      onChange={(event) => {
-                        field.onChange(event.value ?? null);
-
-                        setActiveDatePreset(null);
-                      }}
-                    />
-                  )}
+                <Calendar
+                  id="summary_end_date"
+                  appendTo={getBody}
+                  value={endDate}
+                  dateFormat="dd MM yy"
+                  showIcon
+                  placeholder={i18nT("static.1j4m31m")}
+                  className="w-full"
+                  onChange={(event) =>
+                    onEndDateChange((event.value as Date | null) ?? null)
+                  }
                 />
               </div>
 
@@ -2186,23 +2232,19 @@ const AttendanceSummaryTableData = () => {
                   {i18nT("static.1j0itop")}{" "}
                 </label>
 
-                <Controller
-                  name="keyword"
-                  control={control}
-                  render={({ field }) => (
-                    <IconField iconPosition="left" className="w-full">
-                      <InputIcon className="pi pi-search" />
+                <IconField iconPosition="left" className="w-full">
+                  <InputIcon className="pi pi-search" />
 
-                      <InputText
-                        {...field}
-                        value={field.value ?? ""}
-                        id="summary_keyword"
-                        placeholder={i18nT("static.sin5v2")}
-                        className="w-full"
-                      />
-                    </IconField>
-                  )}
-                />
+                  <InputText
+                    value={keyword}
+                    id="summary_keyword"
+                    placeholder={i18nT("static.sin5v2")}
+                    className="w-full"
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setKeyword(event.target.value);
+                    }}
+                  />
+                </IconField>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -2213,42 +2255,55 @@ const AttendanceSummaryTableData = () => {
                   {i18nT("static.3pd73")}{" "}
                 </label>
 
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <Dropdown
-                      id="summary_status"
-                      appendTo={getBody}
-                      value={field.value}
-                      options={statusOptions}
-                      placeholder={i18nT("static.18zxnji")}
-                      showClear
-                      className="w-full"
-                      onChange={(event) => field.onChange(event.value ?? null)}
-                    />
-                  )}
+                <Dropdown
+                  id="summary_status"
+                  appendTo={getBody}
+                  value={statusFilter}
+                  options={statusOptions}
+                  placeholder={i18nT("static.18zxnji")}
+                  showClear
+                  className="w-full"
+                  onChange={(event) => {
+                    setStatusFilter(event.value ?? null);
+                  }}
                 />
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+            {hasInvalidDateRange && (
+              <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <i className="pi pi-exclamation-circle mt-0.5" />
+
+                <span>{i18nT("static.1k8q7ax")}</span>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <Tag
+                  value={i18nT(currentRangeLabel)}
+                  severity="info"
+                  icon="pi pi-calendar"
+                  rounded
+                />
+
+                <span className="text-xs text-slate-500">
+                  {summaryStats.total.toLocaleString("id-ID")}{" "}
+                  {i18nT("static.9xnbwb")}{" "}
+                  {summaryStats.total === 1 ? "" : i18nT("static.1w9pcoy")}
+                </span>
+              </div>
+
               <Button
                 type="button"
                 label={i18nT("static.1ljj5w3")}
                 icon="pi pi-filter-slash"
                 severity="secondary"
                 outlined
+                size="small"
+                disabled={!hasActiveFilter}
                 className="w-full sm:w-auto"
                 onClick={onResetFilter}
-              />
-
-              <Button
-                type="button"
-                label={i18nT("static.vcbuap")}
-                icon="pi pi-filter"
-                className="w-full sm:w-auto"
-                onClick={onApplyFilter}
               />
             </div>
           </section>
@@ -2258,17 +2313,24 @@ const AttendanceSummaryTableData = () => {
               <i className="pi pi-calendar-times mb-3 text-3xl text-slate-400" />
 
               <p className="m-0 text-sm font-semibold text-slate-700">
-                {i18nT("static.6ot065")}{" "}
+                {hasInvalidDateRange
+                  ? i18nT("static.1k8q7ax")
+                  : i18nT("static.6ot065")}
               </p>
 
               <p className="m-0 mt-1 text-xs text-slate-500">
-                {i18nT("static.j2fqrf")}{" "}
+                {hasInvalidDateRange
+                  ? i18nT("static.1k8q7ax")
+                  : i18nT("static.j2fqrf")}
               </p>
             </div>
           ) : (
             <div className="flex flex-col gap-5">
               {/* Daily Overview */}
-              <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <section
+                ref={overviewSectionRef}
+                className="scroll-mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white"
+              >
                 <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <h2 className="m-0 text-base font-semibold text-slate-800">
@@ -2280,137 +2342,188 @@ const AttendanceSummaryTableData = () => {
                     </p>
                   </div>
 
-                  <Tag
-                    value={i18nT("static.hfmgvu", {
-                      p0: groupedData.length,
-                      p1:
-                        groupedData.length === 1 ? "" : i18nT("static.1w9pcoy"),
-                    })}
-                    severity="secondary"
-                    rounded
-                  />
+                  <div className="flex items-center gap-2">
+                    <Tag
+                      value={i18nT("static.hfmgvu", {
+                        p0: groupedData.length,
+                        p1:
+                          groupedData.length === 1
+                            ? ""
+                            : i18nT("static.1w9pcoy"),
+                      })}
+                      severity="secondary"
+                      rounded
+                    />
+
+                    <Button
+                      type="button"
+                      icon={
+                        isOverviewCollapsed
+                          ? "pi pi-chevron-down"
+                          : "pi pi-chevron-up"
+                      }
+                      label={isOverviewCollapsed ? "Tampilkan" : "Ciutkan"}
+                      size="small"
+                      text
+                      severity="secondary"
+                      className="text-xs"
+                      onClick={() => setIsOverviewCollapsed((prev) => !prev)}
+                    />
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {pagedGroups.map((group) => {
-                    const isSelected = selectedGroup?.dateKey === group.dateKey;
+                {!isOverviewCollapsed && (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                      {pagedGroups.map((group) => {
+                        const isSelected =
+                          selectedGroup?.dateKey === group.dateKey;
 
-                    const hasAbsent = group.absentCount > 0;
+                        const hasAbsent = group.absentCount > 0;
 
-                    return (
-                      <button
-                        key={group.dateKey}
-                        type="button"
-                        onClick={() => onSelectDateGroup(group.dateKey)}
-                        className={`rounded-xl border p-4 text-left transition hover:shadow-sm ${
-                          isSelected
-                            ? "border-blue-300 bg-blue-50 ring-2 ring-blue-100"
-                            : hasAbsent
-                              ? "border-red-200 bg-red-50/40 hover:border-red-300"
-                              : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="text-base font-semibold text-slate-800">
-                              {group.dateLabel}
+                        return (
+                          <div
+                            key={group.dateKey}
+                            onClick={() => onSelectDateGroup(group.dateKey)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onSelectDateGroup(group.dateKey);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className={`rounded-xl border p-4 text-left transition cursor-pointer hover:shadow-sm ${
+                              isSelected
+                                ? "border-blue-300 bg-blue-50 ring-2 ring-blue-100"
+                                : hasAbsent
+                                  ? "border-red-200 bg-red-50/40 hover:border-red-300"
+                                  : "border-slate-200 bg-white hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="text-base font-semibold text-slate-800">
+                                  {group.dateLabel}
+                                </div>
+
+                                <div className="mt-1 text-xs text-slate-500">
+                                  {group.rows.length} {i18nT("static.1h11q02")}{" "}
+                                  {group.rows.length === 1
+                                    ? ""
+                                    : i18nT("static.1w9pcoy")}
+                                </div>
+                              </div>
+
+                              {isSelected && (
+                                <i className="pi pi-check-circle text-blue-600" />
+                              )}
                             </div>
 
-                            <div className="mt-1 text-xs text-slate-500">
-                              {group.rows.length} {i18nT("static.1h11q02")}{" "}
-                              {group.rows.length === 1
-                                ? ""
-                                : i18nT("static.1w9pcoy")}
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                              <div className="rounded-lg border border-green-100 bg-green-50 px-3 py-2">
+                                <div className="text-xs text-green-700">
+                                  {i18nT("static.1m3e00c")}{" "}
+                                </div>
+
+                                <div className="text-base font-semibold text-green-800">
+                                  {group.presentCount}
+                                </div>
+                              </div>
+
+                              <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+                                <div className="text-xs text-blue-700">
+                                  {i18nT("static.79u6hy")}{" "}
+                                </div>
+
+                                <div className="text-base font-semibold text-blue-800">
+                                  {group.inProgressCount}
+                                </div>
+                              </div>
+
+                              <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
+                                <div className="text-xs text-amber-700">
+                                  {i18nT("static.t03g3p")}{" "}
+                                </div>
+
+                                <div className="text-base font-semibold text-amber-800">
+                                  {group.incompleteCount}
+                                </div>
+                              </div>
+
+                              <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2">
+                                <div className="text-xs text-red-700">
+                                  {i18nT("static.meu720")}
+                                </div>
+
+                                <div className="text-base font-semibold text-red-800">
+                                  {group.absentCount}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                              <div className="flex flex-wrap gap-1">
+                                <Tag
+                                  value={i18nT("static.dsk4nq", {
+                                    p0: group.dayOffCount,
+                                  })}
+                                  severity="secondary"
+                                  rounded
+                                />
+
+                                {group.leaveCount > 0 && (
+                                  <Tag
+                                    value={i18nT("static.f27o62", {
+                                      p0: group.leaveCount,
+                                    })}
+                                    severity="warning"
+                                    rounded
+                                  />
+                                )}
+                              </div>
+
+                              <Button
+                                type="button"
+                                label={i18nT("static.ei31dg")}
+                                icon="pi pi-arrow-down"
+                                iconPos="right"
+                                size="small"
+                                severity={isSelected ? undefined : "secondary"}
+                                outlined={!isSelected}
+                                className="text-xs px-2.5 py-1 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenDetail(group.dateKey);
+                                }}
+                              />
                             </div>
                           </div>
+                        );
+                      })}
+                    </div>
 
-                          {isSelected && (
-                            <i className="pi pi-check-circle text-blue-600" />
-                          )}
-                        </div>
-
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                          <div className="rounded-lg border border-green-100 bg-green-50 px-3 py-2">
-                            <div className="text-xs text-green-700">
-                              {i18nT("static.1m3e00c")}{" "}
-                            </div>
-
-                            <div className="text-base font-semibold text-green-800">
-                              {group.presentCount}
-                            </div>
-                          </div>
-
-                          <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
-                            <div className="text-xs text-blue-700">
-                              {i18nT("static.79u6hy")}{" "}
-                            </div>
-
-                            <div className="text-base font-semibold text-blue-800">
-                              {group.inProgressCount}
-                            </div>
-                          </div>
-
-                          <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-2">
-                            <div className="text-xs text-amber-700">
-                              {i18nT("static.t03g3p")}{" "}
-                            </div>
-
-                            <div className="text-base font-semibold text-amber-800">
-                              {group.incompleteCount}
-                            </div>
-                          </div>
-
-                          <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2">
-                            <div className="text-xs text-red-700">
-                              {i18nT("static.meu720")}
-                            </div>
-
-                            <div className="text-base font-semibold text-red-800">
-                              {group.absentCount}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-1">
-                          <Tag
-                            value={i18nT("static.dsk4nq", {
-                              p0: group.dayOffCount,
-                            })}
-                            severity="secondary"
-                            rounded
-                          />
-
-                          {group.leaveCount > 0 && (
-                            <Tag
-                              value={i18nT("static.f27o62", {
-                                p0: group.leaveCount,
-                              })}
-                              severity="warning"
-                              rounded
-                            />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="border-t border-slate-200">
-                  <Paginator
-                    first={groupFirst}
-                    rows={groupsPerPage}
-                    totalRecords={groupedData.length}
-                    rowsPerPageOptions={[7, 14, 31, 62]}
-                    onPageChange={onDateOverviewPageChange}
-                  />
-                </div>
+                    <div className="border-t border-slate-200">
+                      <Paginator
+                        first={groupFirst}
+                        rows={groupsPerPage}
+                        totalRecords={groupedData.length}
+                        rowsPerPageOptions={[7, 14, 31, 62]}
+                        onPageChange={onDateOverviewPageChange}
+                      />
+                    </div>
+                  </>
+                )}
               </section>
 
               {/* Employee Detail */}
               {selectedGroup && (
-                <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <section
+                  ref={detailSectionRef}
+                  className="scroll-mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white"
+                >
                   <div className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-5">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                       <div>
                         <h2 className="m-0 text-base font-semibold text-slate-800">
                           {i18nT("static.h89fcm")} {selectedGroup.dateLabel}
@@ -2423,7 +2536,56 @@ const AttendanceSummaryTableData = () => {
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {/* Quick Date Switcher */}
+                        <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                          <Button
+                            type="button"
+                            icon="pi pi-chevron-left"
+                            text
+                            size="small"
+                            disabled={!hasPrevDate}
+                            tooltip="Hari Sebelumnya"
+                            tooltipOptions={{ position: "top" }}
+                            onClick={onGoToPrevDate}
+                            className="h-8 w-8 !p-0"
+                          />
+
+                          <Dropdown
+                            value={selectedGroup.dateKey}
+                            options={dateOptions}
+                            onChange={(e) => onSelectDateGroup(e.value)}
+                            appendTo={getBody}
+                            className="border-0 !shadow-none text-xs"
+                            panelClassName="text-xs"
+                          />
+
+                          <Button
+                            type="button"
+                            icon="pi pi-chevron-right"
+                            text
+                            size="small"
+                            disabled={!hasNextDate}
+                            tooltip="Hari Berikutnya"
+                            tooltipOptions={{ position: "top" }}
+                            onClick={onGoToNextDate}
+                            className="h-8 w-8 !p-0"
+                          />
+                        </div>
+
+                        <Button
+                          type="button"
+                          icon="pi pi-arrow-up"
+                          label="Ringkasan"
+                          outlined
+                          severity="secondary"
+                          size="small"
+                          className="h-8 text-xs"
+                          tooltip="Scroll ke Ringkasan Harian"
+                          tooltipOptions={{ position: "top" }}
+                          onClick={onScrollToOverview}
+                        />
+
                         <Tag
                           value={i18nT("static.1lmpux2", {
                             p0: selectedGroupSummary.present,
