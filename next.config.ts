@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
+const apiBaseUrl = (
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3050"
+).replace(/\/$/, "");
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -8,9 +12,9 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  `img-src 'self' data: blob: ${apiBaseUrl}`.trim(),
   "font-src 'self' data:",
-  "connect-src 'self'",
+  `connect-src 'self' ${apiBaseUrl}`.trim(),
   "form-action 'self'",
 ].join("; ");
 
@@ -23,6 +27,15 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   output: "standalone",
+
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${apiBaseUrl}/api/:path*`,
+      },
+    ];
+  },
 
   async headers() {
     const headers = [

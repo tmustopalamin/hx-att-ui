@@ -57,14 +57,13 @@ const AvatarWithSidebar = () => {
     if (!profileData?.photo_url) {
       return undefined;
     }
-    const apiBaseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(
-      /\/$/,
-      "",
-    );
-    if (!apiBaseUrl) {
-      return `/api/public/images/uploads/${profileData.photo_url}`;
+    if (profileData.photo_url.startsWith("/api/")) {
+      return profileData.photo_url;
     }
-    return `${apiBaseUrl}/api/public/images/uploads/${profileData.photo_url}`;
+    const filename = profileData.photo_url.split(/[\\/]/).pop();
+    return filename
+      ? `/api/public/images/uploads/${encodeURIComponent(filename)}`
+      : undefined;
   }, [profileData?.photo_url]);
   const mobileAppUrl = useMemo(
     () => getSafeExternalUrl(mobileAppSettings?.target_url),
