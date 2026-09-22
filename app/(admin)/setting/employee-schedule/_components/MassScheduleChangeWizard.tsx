@@ -15,6 +15,7 @@ import { Tag } from "primereact/tag";
 
 import { useI18n } from "@/app/i18n";
 import EmployeeScheduleHelpDialog from "./EmployeeScheduleHelpDialog";
+import ScheduleChangeConflictDetails from "./ScheduleChangeConflictDetails";
 import EmployeeSelectionStep, {
   EmployeeSelectionRow,
 } from "./EmployeeSelectionStep";
@@ -36,6 +37,7 @@ import { Employee } from "@/app/types/employee";
 import { EmployeeShiftRule } from "@/app/types/employee-shift-rule";
 import { ShiftRule } from "@/app/types/shift-rule";
 import {
+  EmployeeScheduleChangeConflict,
   EmployeeScheduleChangePreviewResponse,
   EmployeeScheduleChangeRequest,
   EmployeeScheduleChangeTimelineSegment,
@@ -88,7 +90,8 @@ const formatPeriod = (
 ) => `${format(new Date(from))} – ${to ? format(new Date(to)) : "∞"}`;
 
 const MassScheduleChangeWizard = () => {
-  const { t: i18nT, tText } = useI18n();
+  const { t: i18nT, tText, locale } = useI18n();
+  const isId = locale === "id";
   const router = useRouter();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
@@ -211,8 +214,13 @@ const MassScheduleChangeWizard = () => {
     return true;
   };
 
-  const buildRequest = (previewFingerprint?: string | null) => {
+  const buildRequest = (
+    previewFingerprint?: string | null,
+    overrideOverwrite?: boolean,
+  ) => {
     if (!shiftRuleId || !effectiveFrom || !effectiveTo) return null;
+    const isOverwrite =
+      overrideOverwrite !== undefined ? overrideOverwrite : overwrite;
     const request: EmployeeScheduleChangeRequest = {
       employee_ids: Array.from(selectedIds).sort(
         (first, second) => first - second,
@@ -220,7 +228,7 @@ const MassScheduleChangeWizard = () => {
       shift_rule_id: shiftRuleId,
       effective_from: dayjs(effectiveFrom).format("YYYY-MM-DD"),
       effective_to: dayjs(effectiveTo).format("YYYY-MM-DD"),
-      attendance_conflict_policy: overwrite
+      attendance_conflict_policy: isOverwrite
         ? "OVERWRITE_AND_REPROCESS"
         : "BLOCK",
       generate_through: null,
@@ -229,9 +237,9 @@ const MassScheduleChangeWizard = () => {
     return request;
   };
 
-  const loadPreview = async () => {
+  const loadPreview = async (overrideOverwrite?: boolean) => {
     if (!validateConfiguration()) return false;
-    const request = buildRequest();
+    const request = buildRequest(undefined, overrideOverwrite);
     if (!request) return false;
 
     setIsBusy(true);
@@ -247,6 +255,11 @@ const MassScheduleChangeWizard = () => {
     } finally {
       setIsBusy(false);
     }
+  };
+
+  const handleEnableOverwriteAndReload = async () => {
+    setOverwrite(true);
+    await loadPreview(true);
   };
 
   const goNext = async () => {
@@ -350,6 +363,19 @@ const MassScheduleChangeWizard = () => {
     }
     return map;
   }, [beforeRules, effectiveFrom, effectiveTo, selectedIds]);
+
+  const conflictsByEmployee = useMemo(() => {
+    const map = new Map<number, EmployeeScheduleChangeConflict[]>();
+    if (!preview?.conflicts) return map;
+    for (const conflict of preview.conflicts) {
+      if (conflict.employee_id != null) {
+        const current = map.get(conflict.employee_id) ?? [];
+        current.push(conflict);
+        map.set(conflict.employee_id, current);
+      }
+    }
+    return map;
+  }, [preview?.conflicts]);
 
   const formatTimeline = (timeline: EmployeeScheduleChangeTimelineSegment[]) =>
     timeline.map((segment) => {
@@ -631,21 +657,16 @@ const MassScheduleChangeWizard = () => {
                   </div>
 
                   {preview.conflicts.length > 0 && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                      <div className="font-semibold">
-                        {i18nT("static.1c5yboc")}
-                        {preview.conflicts.length})
-                      </div>
-                      <div className="mt-2 flex max-h-48 flex-col gap-2 overflow-y-auto text-xs">
-                        {preview.conflicts.map((conflict, index) => (
-                          <div
-                            key={`${conflict.code}-${conflict.employee_id ?? "all"}-${index}`}
-                          >
-                            <strong>{conflict.code}</strong> {conflict.message}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    <ScheduleChangeConflictDetails
+                      conflicts={preview.conflicts}
+                      employeeById={employeeById}
+                      canOverwrite={canOverwrite}
+                      overwrite={overwrite}
+                      onEnableOverwrite={() =>
+                        void handleEnableOverwriteAndReload()
+                      }
+                      isBusy={isBusy}
+                    />
                   )}
 
                   <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -678,18 +699,43 @@ const MassScheduleChangeWizard = () => {
                           const after = formatTimeline(
                             employeePreview.timeline,
                           );
+                          const conflictsForEmployee = conflictsByEmployee.get(
+                            employeePreview.employee_id,
+                          );
+                          const hasConflict = Boolean(
+                            conflictsForEmployee &&
+                            conflictsForEmployee.length > 0,
+                          );
                           return (
                             <tr
                               key={employeePreview.employee_id}
-                              className="border-t border-slate-100 align-top"
+                              className={`border-t border-slate-100 align-top ${
+                                hasConflict ? "bg-red-50/40" : ""
+                              }`}
                             >
                               <td className="px-3 py-3 font-semibold text-slate-800">
-                                {employeeName(
-                                  employeeById.get(employeePreview.employee_id),
-                                ) ||
-                                  i18nT("static.iapzf0", {
-                                    p0: employeePreview.employee_id,
-                                  })}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <span>
+                                    {employeeName(
+                                      employeeById.get(
+                                        employeePreview.employee_id,
+                                      ),
+                                    ) ||
+                                      i18nT("static.iapzf0", {
+                                        p0: employeePreview.employee_id,
+                                      })}
+                                  </span>
+                                  {hasConflict && (
+                                    <Tag
+                                      severity="danger"
+                                      value={`${conflictsForEmployee?.length} ${
+                                        isId ? "Konflik" : "Conflict"
+                                      }`}
+                                      rounded
+                                      className="text-3xs px-1.5 py-0.5"
+                                    />
+                                  )}
+                                </div>
                               </td>
                               <td className="px-3 py-3 text-xs text-slate-600">
                                 {before.length > 0 ? (
