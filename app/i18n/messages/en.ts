@@ -116,6 +116,7 @@ const messages = {
   "nav.overtimeRequest": "Overtime Request",
   "nav.myPayslips": "My Payslips",
   "nav.myLifecycleTasks": "My Lifecycle Tasks",
+  "nav.myPerformance": "My Performance",
   "nav.approvalInbox": "Approval Inbox",
   "nav.approvalSettings": "Approval Settings",
   "nav.manageEmployee": "Manage Employee",

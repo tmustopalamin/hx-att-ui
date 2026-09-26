@@ -115,6 +115,17 @@ export default function PerformanceData() {
     goalsKey ? `performance-goals-${goalsKey}` : null,
     () => getPerformanceGoals(goalsKey!),
   );
+  const [cycleDateFrom, setCycleDateFrom] = useState("");
+  const [cycleDateTo, setCycleDateTo] = useState("");
+  const [reviewEmployeeFilter, setReviewEmployeeFilter] = useState<
+    number | null
+  >(null);
+  const [reviewCycleFilter, setReviewCycleFilter] = useState<number | null>(
+    null,
+  );
+  const [reviewStatusFilter, setReviewStatusFilter] = useState<string | null>(
+    null,
+  );
   const [cycle, setCycle] = useState({
     code: "",
     name: "",
@@ -230,6 +241,98 @@ export default function PerformanceData() {
       employeeOptions.filter((option) => option.value !== review.employee_id),
     [employeeOptions, review.employee_id],
   );
+
+  const allCycleFilterOptions = useMemo(
+    () =>
+      cycles.map((c) => ({
+        label: `${c.code} · ${c.name}`,
+        value: c.id,
+      })),
+    [cycles],
+  );
+
+  const reviewStatusOptions = useMemo(
+    () => [
+      { label: "DRAFT", value: "DRAFT" },
+      { label: "SUBMITTED", value: "SUBMITTED" },
+      { label: "ACKNOWLEDGED", value: "ACKNOWLEDGED" },
+      { label: "FINALIZED", value: "FINALIZED" },
+      { label: "CANCELLED", value: "CANCELLED" },
+    ],
+    [],
+  );
+
+  const filteredCycles = useMemo(() => {
+    return cycles.filter((c) => {
+      if (cycleDateFrom && c.end_date < cycleDateFrom) return false;
+      if (cycleDateTo && c.start_date > cycleDateTo) return false;
+      return true;
+    });
+  }, [cycles, cycleDateFrom, cycleDateTo]);
+
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((r) => {
+      if (
+        reviewEmployeeFilter !== null &&
+        r.employee_id !== reviewEmployeeFilter
+      )
+        return false;
+      if (
+        reviewCycleFilter !== null &&
+        r.performance_cycle_id !== reviewCycleFilter
+      )
+        return false;
+      if (reviewStatusFilter !== null && r.status !== reviewStatusFilter)
+        return false;
+      return true;
+    });
+  }, [reviews, reviewEmployeeFilter, reviewCycleFilter, reviewStatusFilter]);
+
+  const activeSubmitGoals = useMemo(
+    () =>
+      dialog === "submit" && selectedReview && goalsKey === selectedReview.id
+        ? goals.filter((g) => g.status !== "CANCELLED")
+        : [],
+    [dialog, selectedReview, goalsKey, goals],
+  );
+  const hasActiveGoals = activeSubmitGoals.length > 0;
+  const totalGoalWeight = useMemo(
+    () =>
+      activeSubmitGoals.reduce((sum, g) => sum + (Number(g.weight) || 0), 0),
+    [activeSubmitGoals],
+  );
+  const allGoalsHaveScore = useMemo(
+    () =>
+      hasActiveGoals &&
+      activeSubmitGoals.every(
+        (g) =>
+          g.score !== null &&
+          g.score !== undefined &&
+          !Number.isNaN(Number(g.score)),
+      ),
+    [hasActiveGoals, activeSubmitGoals],
+  );
+  const isWeightValid = useMemo(
+    () => Math.abs(totalGoalWeight - 100) < 0.001,
+    [totalGoalWeight],
+  );
+  const calculatedGoalScore = useMemo(() => {
+    if (!hasActiveGoals || totalGoalWeight <= 0) return null;
+    const weightedSum = activeSubmitGoals.reduce(
+      (sum, g) => sum + (Number(g.weight) || 0) * (Number(g.score) || 0),
+      0,
+    );
+    return Math.round((weightedSum / totalGoalWeight) * 100) / 100;
+  }, [hasActiveGoals, activeSubmitGoals, totalGoalWeight]);
+
+  useEffect(() => {
+    if (dialog === "submit" && hasActiveGoals && calculatedGoalScore !== null) {
+      setSubmission((prev) => ({
+        ...prev,
+        overall_score: calculatedGoalScore,
+      }));
+    }
+  }, [dialog, hasActiveGoals, calculatedGoalScore]);
   useEffect(() => {
     if (
       !review.employee_id ||
@@ -272,7 +375,7 @@ export default function PerformanceData() {
   const close = () => {
     if (!saving) setDialog(null);
   };
-  const footer = (label: string, onClick: () => void) => (
+  const footer = (label: string, onClick: () => void, disabled = false) => (
     <div className="flex justify-end gap-2">
       <Button
         label={i18nT("static.ew9em3")}
@@ -285,6 +388,7 @@ export default function PerformanceData() {
         label={label}
         icon="pi pi-check"
         loading={saving}
+        disabled={disabled || saving}
         onClick={onClick}
       />
     </div>
@@ -426,6 +530,19 @@ export default function PerformanceData() {
   };
   const confirmSubmitReview = () => {
     if (!selectedReview) return;
+    if (hasActiveGoals) {
+      if (!isWeightValid || !allGoalsHaveScore) {
+        notify("error", i18nT("static.gy1qqi"), i18nT("static.1shr12f"));
+        return;
+      }
+    } else if (
+      submission.overall_score === null ||
+      submission.overall_score < 0 ||
+      submission.overall_score > 100
+    ) {
+      notify("error", i18nT("static.gy1qqi"), i18nT("static.rd1hxc"));
+      return;
+    }
     requestActionConfirmation({
       action: i18nT("static.s6u7ed"),
       target: `${selectedReview.employee_name} · ${selectedReview.cycle_name}`,
@@ -561,7 +678,43 @@ export default function PerformanceData() {
         </div>
         <TabView>
           <TabPanel header={i18nT("static.17x6nw8")}>
-            <div className="mb-4 flex justify-end">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-medium text-slate-500">
+                  {i18nT("static.30xvgf")}:
+                </span>
+                <div className="w-36">
+                  <PrimeDatePicker
+                    value={cycleDateFrom}
+                    onValueChange={setCycleDateFrom}
+                    placeholder={i18nT("static.30xvgf")}
+                  />
+                </div>
+                <span className="text-xs text-slate-400">-</span>
+                <span className="text-xs font-medium text-slate-500">
+                  {i18nT("static.1llf32i")}:
+                </span>
+                <div className="w-36">
+                  <PrimeDatePicker
+                    value={cycleDateTo}
+                    onValueChange={setCycleDateTo}
+                    placeholder={i18nT("static.1llf32i")}
+                  />
+                </div>
+                {(cycleDateFrom || cycleDateTo) && (
+                  <Button
+                    icon="pi pi-times"
+                    label={i18nT("static.2zps2o")}
+                    text
+                    size="small"
+                    severity="secondary"
+                    onClick={() => {
+                      setCycleDateFrom("");
+                      setCycleDateTo("");
+                    }}
+                  />
+                )}
+              </div>
               {canManage && (
                 <Button
                   label={i18nT("static.1vnwzxn")}
@@ -572,7 +725,7 @@ export default function PerformanceData() {
               )}
             </div>
             <DataTable
-              value={cycles}
+              value={filteredCycles}
               dataKey="id"
               paginator
               rows={10}
@@ -638,7 +791,57 @@ export default function PerformanceData() {
             </DataTable>
           </TabPanel>
           <TabPanel header={i18nT("static.1fc6u0m")}>
-            <div className="mb-4 flex justify-end">
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:items-center">
+                <Dropdown
+                  value={reviewEmployeeFilter}
+                  options={employeeOptions}
+                  onChange={(e) =>
+                    setReviewEmployeeFilter((e.value as number | null) ?? null)
+                  }
+                  placeholder={i18nT("static.douq59")}
+                  showClear
+                  filter
+                  className="w-full sm:w-56 text-sm"
+                />
+                <Dropdown
+                  value={reviewCycleFilter}
+                  options={allCycleFilterOptions}
+                  onChange={(e) =>
+                    setReviewCycleFilter((e.value as number | null) ?? null)
+                  }
+                  placeholder={i18nT("static.17x6nw8")}
+                  showClear
+                  filter
+                  className="w-full sm:w-52 text-sm"
+                />
+                <Dropdown
+                  value={reviewStatusFilter}
+                  options={reviewStatusOptions}
+                  onChange={(e) =>
+                    setReviewStatusFilter((e.value as string | null) ?? null)
+                  }
+                  placeholder={i18nT("static.18zxnji")}
+                  showClear
+                  className="w-full sm:w-44 text-sm"
+                />
+                {(reviewEmployeeFilter !== null ||
+                  reviewCycleFilter !== null ||
+                  reviewStatusFilter !== null) && (
+                  <Button
+                    icon="pi pi-times"
+                    label={i18nT("static.2zps2o")}
+                    text
+                    size="small"
+                    severity="secondary"
+                    onClick={() => {
+                      setReviewEmployeeFilter(null);
+                      setReviewCycleFilter(null);
+                      setReviewStatusFilter(null);
+                    }}
+                  />
+                )}
+              </div>
               {canManage && (
                 <Button
                   label={i18nT("static.re0nsr")}
@@ -649,7 +852,7 @@ export default function PerformanceData() {
               )}
             </div>
             <DataTable
-              value={reviews}
+              value={filteredReviews}
               dataKey="id"
               paginator
               rows={10}
@@ -694,6 +897,7 @@ export default function PerformanceData() {
                         size="small"
                         onClick={() => {
                           setSelectedReview(r);
+                          setGoalsKey(r.id);
                           setSubmission({
                             overall_score: r.overall_score,
                             reviewer_comment: r.reviewer_comment || "",
@@ -752,9 +956,24 @@ export default function PerformanceData() {
                 <Column field="name" header={i18nT("static.1g6zau7")} />
                 <Column
                   header={i18nT("static.rpvfkb")}
-                  body={(row: PerformanceEarningPolicy) =>
-                    row.position_name || row.department_name || "-"
-                  }
+                  body={(row: PerformanceEarningPolicy) => {
+                    if (row.position_name && row.department_name) {
+                      return `${row.position_name} (${row.department_name})`;
+                    }
+                    if (row.position_name) {
+                      return row.position_name;
+                    }
+                    if (row.department_name) {
+                      return `${row.department_name} (Semua Posisi)`;
+                    }
+                    return (
+                      <Tag
+                        value="Semua Departemen (Global)"
+                        severity="info"
+                        className="text-xs font-normal"
+                      />
+                    );
+                  }}
                 />
                 <Column
                   header={i18nT("static.bvqo3k")}
@@ -897,13 +1116,29 @@ export default function PerformanceData() {
       </Dialog>
       <Dialog
         header={
-          editingPolicyId ? i18nT("static.12kzrh") : i18nT("static.13rn8r1")
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+              <i className="pi pi-sliders-h text-base" />
+            </div>
+            <div>
+              <h3 className="m-0 text-base font-semibold text-slate-800">
+                {editingPolicyId
+                  ? i18nT("static.12kzrh")
+                  : i18nT("static.13rn8r1")}
+              </h3>
+              <p className="m-0 text-xs text-slate-500">
+                {editingPolicyId
+                  ? "Perbarui konfigurasi dan aturan kebijakan pendapatan kinerja"
+                  : "Konfigurasi aturan konversi skor KPI kinerja ke komponen pendapatan gaji"}
+              </p>
+            </div>
+          </div>
         }
         visible={dialog === "policy"}
         modal
         draggable={false}
         resizable={false}
-        style={{ width: "95vw", maxWidth: "52rem" }}
+        style={{ width: "95vw", maxWidth: "56rem" }}
         onHide={close}
         footer={footer(editingPolicyId ? "Save Changes" : "Save Draft", () => {
           if (!isWhitespaceFreeIdentifier(policy.code)) {
@@ -919,7 +1154,6 @@ export default function PerformanceData() {
             !policy.name.trim() ||
             !policy.income_component_id ||
             !policy.effective_from ||
-            (!policy.department_id && !policy.position_id) ||
             policyRules.length === 0
           ) {
             notify("error", i18nT("static.gy1qqi"), i18nT("static.pyt764"));
@@ -947,264 +1181,207 @@ export default function PerformanceData() {
           );
         })}
       >
-        <div className="grid gap-4 py-2">
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.yyofws")}{" "}
-              <InputText
-                value={policy.code}
-                onChange={(event) =>
-                  setPolicy({ ...policy, code: event.target.value })
-                }
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.4el6o6")}{" "}
-              <InputText
-                value={policy.name}
-                onChange={(event) =>
-                  setPolicy({ ...policy, name: event.target.value })
-                }
-              />
-            </label>
+        <div className="flex flex-col gap-4 py-2">
+          {/* Section 1: Basic Info */}
+          <div className="rounded-lg border border-slate-200/80 bg-white p-4 shadow-xs">
+            <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
+              <i className="pi pi-tag text-xs text-slate-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Informasi Dasar
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.yyofws")}{" "}
+                  <span className="text-red-500">*</span>
+                </span>
+                <InputText
+                  value={policy.code}
+                  placeholder="Contoh: KPI_BONUS_2026"
+                  className="w-full font-mono text-sm uppercase"
+                  onChange={(event) =>
+                    setPolicy({
+                      ...policy,
+                      code: event.target.value.toUpperCase(),
+                    })
+                  }
+                />
+                <span className="text-[11px] text-slate-400">
+                  Kode unik tanpa spasi
+                </span>
+              </label>
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.4el6o6")}{" "}
+                  <span className="text-red-500">*</span>
+                </span>
+                <InputText
+                  value={policy.name}
+                  placeholder="Contoh: Bonus Kinerja Tahunan 2026"
+                  className="w-full text-sm"
+                  onChange={(event) =>
+                    setPolicy({ ...policy, name: event.target.value })
+                  }
+                />
+                <span className="text-[11px] text-slate-400">
+                  Nama deskriptif kebijakan
+                </span>
+              </label>
+            </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.173kkr")}{" "}
-              <Dropdown
-                value={policy.department_id}
-                options={departments.map((item) => ({
-                  label: item.name,
-                  value: item.id,
-                }))}
-                filter
-                showClear
-                className="w-full"
-                placeholder={i18nT("static.y4yt11")}
-                onChange={(event) =>
-                  setPolicy({
-                    ...policy,
-                    department_id: (event.value as number | null) ?? null,
-                    position_id: null,
-                  })
-                }
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.12n22je")}{" "}
-              <Dropdown
-                value={policy.position_id}
-                options={positions
-                  .filter(
-                    (item) =>
-                      !policy.department_id ||
-                      item.department_id === policy.department_id,
-                  )
-                  .map((item) => ({ label: item.name, value: item.id }))}
-                filter
-                showClear
-                className="w-full"
-                placeholder={i18nT("static.1wtf6d4")}
-                onChange={(event) =>
-                  setPolicy({
-                    ...policy,
-                    position_id: (event.value as number | null) ?? null,
-                  })
-                }
-              />
-            </label>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.zdk34u")}{" "}
-              <Dropdown
-                value={policy.income_component_id}
-                options={incomeComponents
-                  .filter((item) => item.is_active)
-                  .map((item) => ({
-                    label: i18nT("static.gu0us5", {
-                      p0: item.code,
-                      p1: item.name,
-                    }),
+
+          {/* Section 2: Scope (Optional) */}
+          <div className="rounded-lg border border-blue-100 bg-blue-50/40 p-4 shadow-xs">
+            <div className="mb-2 flex items-center justify-between border-b border-blue-100/80 pb-2">
+              <div className="flex items-center gap-2">
+                <i className="pi pi-sitemap text-xs text-blue-600" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-900">
+                  Cakupan Kebijakan (Scope)
+                </span>
+              </div>
+              <span className="rounded bg-blue-100/80 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                Default: Semua Departemen (Global)
+              </span>
+            </div>
+            <p className="m-0 mb-3 text-xs text-slate-600">
+              Kosongkan Departemen dan Jabatan jika kebijakan berlaku untuk{" "}
+              <strong>seluruh departemen</strong>. Pilih Departemen atau Jabatan
+              tertentu jika kebijakan ini hanya berlaku spesifik.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.173kkr")}{" "}
+                  <span className="font-normal text-slate-400">(Opsional)</span>
+                </span>
+                <Dropdown
+                  value={policy.department_id}
+                  options={departments.map((item) => ({
+                    label: item.name,
                     value: item.id,
                   }))}
-                filter
-                className="w-full"
-                placeholder={i18nT("static.yrs9f6")}
-                onChange={(event) =>
-                  setPolicy({
-                    ...policy,
-                    income_component_id: (event.value as number | null) ?? null,
-                  })
-                }
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.1y9m5iq")}{" "}
-              <PrimeDatePicker
-                value={policy.effective_from}
-                onValueChange={(value) =>
-                  setPolicy({ ...policy, effective_from: value })
-                }
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
-              {i18nT("static.mq7icr")}{" "}
-              <PrimeDatePicker
-                value={policy.effective_to}
-                onValueChange={(value) =>
-                  setPolicy({ ...policy, effective_to: value })
-                }
-              />
-            </label>
+                  filter
+                  showClear
+                  className="w-full bg-white text-sm"
+                  placeholder="Semua Departemen (Global)"
+                  onChange={(event) =>
+                    setPolicy({
+                      ...policy,
+                      department_id: (event.value as number | null) ?? null,
+                      position_id: null,
+                    })
+                  }
+                />
+              </label>
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.12n22je")}{" "}
+                  <span className="font-normal text-slate-400">(Opsional)</span>
+                </span>
+                <Dropdown
+                  value={policy.position_id}
+                  options={positions
+                    .filter(
+                      (item) =>
+                        !policy.department_id ||
+                        item.department_id === policy.department_id,
+                    )
+                    .map((item) => ({ label: item.name, value: item.id }))}
+                  filter
+                  showClear
+                  className="w-full bg-white text-sm"
+                  placeholder="Semua Posisi"
+                  onChange={(event) =>
+                    setPolicy({
+                      ...policy,
+                      position_id: (event.value as number | null) ?? null,
+                    })
+                  }
+                />
+              </label>
+            </div>
           </div>
-          <div className="overflow-x-auto rounded border border-slate-200">
-            <table className="w-full min-w-[42rem] text-sm">
-              <thead className="bg-slate-50 text-left text-slate-600">
-                <tr>
-                  <th className="p-2">{i18nT("static.6s9hn9")}</th>
-                  <th className="p-2">{i18nT("static.iaukp0")}</th>
-                  <th className="p-2">{i18nT("static.n44ilu")}</th>
-                  <th className="p-2">{i18nT("static.7lgj73")}</th>
-                  <th className="p-2">{i18nT("static.wa149h")}</th>
-                  <th className="sticky right-0 z-10 bg-slate-50 p-2 shadow-[-4px_0_8px_-6px_rgba(15,23,42,0.35)]">
-                    {i18nT("static.2wk0tb")}{" "}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {policyRules.map((rule, index) => (
-                  <tr
-                    key={`policy-rule-${index}`}
-                    className="border-t border-slate-100"
-                  >
-                    <td className="p-2">
-                      <InputNumber
-                        value={rule.score_from}
-                        min={0}
-                        max={100}
-                        minFractionDigits={0}
-                        maxFractionDigits={2}
-                        onValueChange={(event) =>
-                          setPolicyRules((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, score_from: event.value ?? 0 }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <InputNumber
-                        value={rule.score_to}
-                        min={0}
-                        max={100}
-                        minFractionDigits={0}
-                        maxFractionDigits={2}
-                        onValueChange={(event) =>
-                          setPolicyRules((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, score_to: event.value ?? 0 }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <Dropdown
-                        value={rule.amount_mode}
-                        options={["FIXED", "PERCENTAGE"]}
-                        onChange={(event) =>
-                          setPolicyRules((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? {
-                                    ...item,
-                                    amount_mode: event.value as
-                                      "FIXED" | "PERCENTAGE",
-                                    fixed_amount:
-                                      event.value === "FIXED"
-                                        ? (item.fixed_amount ?? 0)
-                                        : null,
-                                    percentage:
-                                      event.value === "PERCENTAGE"
-                                        ? (item.percentage ?? 0)
-                                        : null,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <InputNumber
-                        value={rule.fixed_amount}
-                        disabled={rule.amount_mode !== "FIXED"}
-                        min={0}
-                        onValueChange={(event) =>
-                          setPolicyRules((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, fixed_amount: event.value ?? 0 }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="p-2">
-                      <InputNumber
-                        value={rule.percentage}
-                        disabled={rule.amount_mode !== "PERCENTAGE"}
-                        min={0}
-                        max={100}
-                        onValueChange={(event) =>
-                          setPolicyRules((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, percentage: event.value ?? 0 }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="sticky right-0 z-10 bg-white p-2 shadow-[-4px_0_8px_-6px_rgba(15,23,42,0.35)]">
-                      <Button
-                        icon="pi pi-trash"
-                        text
-                        severity="danger"
-                        aria-label={i18nT("static.1lbzegn")}
-                        disabled={policyRules.length <= 1}
-                        tooltip={
-                          policyRules.length <= 1
-                            ? i18nT("static.18up6m0")
-                            : i18nT("static.1lbzegn")
-                        }
-                        onClick={() =>
-                          setPolicyRules((current) =>
-                            current.filter(
-                              (_, itemIndex) => itemIndex !== index,
-                            ),
-                          )
-                        }
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t border-slate-200 p-2">
+
+          {/* Section 3: Component & Validity */}
+          <div className="rounded-lg border border-slate-200/80 bg-white p-4 shadow-xs">
+            <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
+              <i className="pi pi-calendar text-xs text-slate-400" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Komponen & Periode Berlaku
+              </span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.zdk34u")}{" "}
+                  <span className="text-red-500">*</span>
+                </span>
+                <Dropdown
+                  value={policy.income_component_id}
+                  options={incomeComponents
+                    .filter((item) => item.is_active)
+                    .map((item) => ({
+                      label: `${item.code} — ${item.name}`,
+                      value: item.id,
+                    }))}
+                  filter
+                  className="w-full text-sm"
+                  placeholder={i18nT("static.yrs9f6")}
+                  onChange={(event) =>
+                    setPolicy({
+                      ...policy,
+                      income_component_id:
+                        (event.value as number | null) ?? null,
+                    })
+                  }
+                />
+              </label>
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.1y9m5iq")}{" "}
+                  <span className="text-red-500">*</span>
+                </span>
+                <PrimeDatePicker
+                  value={policy.effective_from}
+                  onValueChange={(value) =>
+                    setPolicy({ ...policy, effective_from: value })
+                  }
+                />
+              </label>
+              <label className="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>
+                  {i18nT("static.mq7icr")}{" "}
+                  <span className="font-normal text-slate-400">(Opsional)</span>
+                </span>
+                <PrimeDatePicker
+                  value={policy.effective_to}
+                  onValueChange={(value) =>
+                    setPolicy({ ...policy, effective_to: value })
+                  }
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Section 4: Rules Table */}
+          <div className="rounded-lg border border-slate-200/80 bg-white p-4 shadow-xs">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <div className="flex items-center gap-2">
+                <i className="pi pi-list text-xs text-slate-400" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Aturan Rentang Skor & Besaran Bonus
+                </span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                  {policyRules.length} aturan
+                </span>
+              </div>
               <Button
                 label={i18nT("static.sol48k")}
                 icon="pi pi-plus"
-                text
                 size="small"
+                outlined
+                className="text-xs"
                 onClick={() =>
                   setPolicyRules((current) => [
                     ...current,
@@ -1218,6 +1395,179 @@ export default function PerformanceData() {
                   ])
                 }
               />
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full min-w-[36rem] text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+                  <tr>
+                    <th className="w-28 px-3 py-2.5">
+                      {i18nT("static.6s9hn9")}
+                    </th>
+                    <th className="w-28 px-3 py-2.5">
+                      {i18nT("static.iaukp0")}
+                    </th>
+                    <th className="w-48 px-3 py-2.5">
+                      {i18nT("static.n44ilu")}
+                    </th>
+                    <th className="px-3 py-2.5">{i18nT("static.a2ky21")}</th>
+                    <th className="w-16 px-3 py-2.5 text-center">
+                      {i18nT("static.2wk0tb")}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {policyRules.map((rule, index) => (
+                    <tr
+                      key={`policy-rule-${index}`}
+                      className="transition-colors hover:bg-slate-50/60"
+                    >
+                      <td className="px-3 py-2">
+                        <InputNumber
+                          value={rule.score_from}
+                          min={0}
+                          max={100}
+                          minFractionDigits={0}
+                          maxFractionDigits={2}
+                          className="w-full"
+                          inputClassName="w-full text-sm"
+                          onValueChange={(event) =>
+                            setPolicyRules((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, score_from: event.value ?? 0 }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <InputNumber
+                          value={rule.score_to}
+                          min={0}
+                          max={100}
+                          minFractionDigits={0}
+                          maxFractionDigits={2}
+                          className="w-full"
+                          inputClassName="w-full text-sm"
+                          onValueChange={(event) =>
+                            setPolicyRules((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, score_to: event.value ?? 0 }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Dropdown
+                          value={rule.amount_mode}
+                          options={[
+                            { label: "Nominal Tetap (Rp)", value: "FIXED" },
+                            { label: "Persentase (%)", value: "PERCENTAGE" },
+                          ]}
+                          className="w-full text-sm"
+                          onChange={(event) =>
+                            setPolicyRules((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? {
+                                      ...item,
+                                      amount_mode: event.value as
+                                        "FIXED" | "PERCENTAGE",
+                                      fixed_amount:
+                                        event.value === "FIXED"
+                                          ? (item.fixed_amount ?? 0)
+                                          : null,
+                                      percentage:
+                                        event.value === "PERCENTAGE"
+                                          ? (item.percentage ?? 0)
+                                          : null,
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        {rule.amount_mode === "FIXED" ? (
+                          <InputNumber
+                            value={rule.fixed_amount}
+                            prefix="Rp "
+                            min={0}
+                            placeholder="0"
+                            className="w-full"
+                            inputClassName="w-full text-sm font-medium"
+                            onValueChange={(event) =>
+                              setPolicyRules((current) =>
+                                current.map((item, itemIndex) =>
+                                  itemIndex === index
+                                    ? {
+                                        ...item,
+                                        fixed_amount: event.value ?? 0,
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                          />
+                        ) : (
+                          <InputNumber
+                            value={rule.percentage}
+                            suffix=" %"
+                            min={0}
+                            max={100}
+                            minFractionDigits={0}
+                            maxFractionDigits={2}
+                            placeholder="0"
+                            className="w-full"
+                            inputClassName="w-full text-sm font-medium"
+                            onValueChange={(event) =>
+                              setPolicyRules((current) =>
+                                current.map((item, itemIndex) =>
+                                  itemIndex === index
+                                    ? {
+                                        ...item,
+                                        percentage: event.value ?? 0,
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                          />
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <Button
+                          icon="pi pi-trash"
+                          text
+                          rounded
+                          severity="danger"
+                          size="small"
+                          aria-label={i18nT("static.1lbzegn")}
+                          disabled={policyRules.length <= 1}
+                          tooltip={
+                            policyRules.length <= 1
+                              ? i18nT("static.18up6m0")
+                              : i18nT("static.1lbzegn")
+                          }
+                          tooltipOptions={{ position: "left" }}
+                          onClick={() =>
+                            setPolicyRules((current) =>
+                              current.filter(
+                                (_, itemIndex) => itemIndex !== index,
+                              ),
+                            )
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -1371,26 +1721,92 @@ export default function PerformanceData() {
         resizable={false}
         style={{ width: "95vw", maxWidth: "34rem" }}
         onHide={close}
-        footer={footer("Submit", confirmSubmitReview)}
+        footer={footer(
+          "Submit",
+          confirmSubmitReview,
+          hasActiveGoals && (!isWeightValid || !allGoalsHaveScore),
+        )}
       >
         <div className="grid gap-4 py-2">
-          <p className="rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-            {i18nT("static.1shr12f")}{" "}
-          </p>
-          <label className="grid gap-2 text-sm font-medium text-slate-700">
-            {i18nT("static.1fhywqk")}{" "}
-            <span className="font-normal text-slate-400">
-              {i18nT("static.1wtopll")}
-            </span>
-            <InputNumber
-              value={submission.overall_score}
-              min={0}
-              max={100}
-              onValueChange={(e) =>
-                setSubmission({ ...submission, overall_score: e.value ?? null })
-              }
-            />
-          </label>
+          {hasActiveGoals ? (
+            <div className="flex flex-col gap-3">
+              {isWeightValid && allGoalsHaveScore ? (
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                  <div className="flex items-center justify-between font-semibold">
+                    <span>{i18nT("static.1fhywqk")}:</span>
+                    <span className="text-lg font-bold text-emerald-700">
+                      {calculatedGoalScore !== null
+                        ? calculatedGoalScore.toFixed(2)
+                        : "-"}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-emerald-600">
+                    <span>✓ Total Bobot: 100%</span>
+                    <span>•</span>
+                    <span>
+                      ✓ {activeSubmitGoals.length} Sasaran Kerja telah dinilai
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  <div className="font-semibold">
+                    Perhatian Sasaran Kerja (Goals):
+                  </div>
+                  <ul className="mt-1 list-inside list-disc text-xs text-amber-700">
+                    {!isWeightValid && (
+                      <li>
+                        Total bobot saat ini {totalGoalWeight}% (harus tepat
+                        100%).
+                      </li>
+                    )}
+                    {!allGoalsHaveScore && (
+                      <li>
+                        Ada sasaran kerja aktif yang belum memiliki skor. Harap
+                        lengkapi skor pada tombol Sasaran Kerja (Goals) sebelum
+                        submit.
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {i18nT("static.1fhywqk")}{" "}
+                <span className="font-normal text-slate-400">
+                  (Dihitung otomatis dari rata-rata tertimbang sasaran kerja)
+                </span>
+                <InputNumber
+                  value={submission.overall_score}
+                  min={0}
+                  max={100}
+                  disabled
+                />
+              </label>
+            </div>
+          ) : (
+            <>
+              <p className="rounded-md bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+                {i18nT("static.1shr12f")}{" "}
+              </p>
+              <label className="grid gap-2 text-sm font-medium text-slate-700">
+                {i18nT("static.1fhywqk")}{" "}
+                <span className="font-normal text-slate-400">
+                  {i18nT("static.1wtopll")}
+                </span>
+                <InputNumber
+                  value={submission.overall_score}
+                  min={0}
+                  max={100}
+                  onValueChange={(e) =>
+                    setSubmission({
+                      ...submission,
+                      overall_score: e.value ?? null,
+                    })
+                  }
+                />
+              </label>
+            </>
+          )}
           <label className="grid gap-2 text-sm font-medium text-slate-700">
             {i18nT("static.gq98mb")}{" "}
             <span className="font-normal text-slate-400">

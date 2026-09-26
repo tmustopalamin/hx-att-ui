@@ -52,6 +52,7 @@ export const routeTranslationKeys: Readonly<Record<string, string>> = {
   "my-attendance": "nav.webAttendance",
   "my-lifecycle-tasks": "nav.myLifecycleTasks",
   "my-payslips": "nav.myPayslips",
+  "my-performance": "nav.myPerformance",
   "my-profile": "nav.myProfile",
   notification: "nav.notificationCenter",
   "notification-center": "nav.notificationCenter",

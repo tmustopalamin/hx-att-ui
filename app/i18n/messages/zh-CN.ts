@@ -108,6 +108,7 @@ const messages: Record<keyof typeof en, string> = {
   "nav.overtimeRequest": "加班申请",
   "nav.myPayslips": "我的工资单",
   "nav.myLifecycleTasks": "我的生命周期任务",
+  "nav.myPerformance": "我的绩效",
   "nav.approvalInbox": "审批收件箱",
   "nav.approvalSettings": "审批设置",
   "nav.manageEmployee": "员工管理",

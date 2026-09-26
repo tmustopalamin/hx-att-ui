@@ -119,6 +119,7 @@ const messages: Record<keyof typeof en, string> = {
   "nav.overtimeRequest": "Pengajuan Lembur",
   "nav.myPayslips": "Slip Gaji Saya",
   "nav.myLifecycleTasks": "Tugas Siklus Saya",
+  "nav.myPerformance": "Kinerja Saya",
   "nav.approvalInbox": "Kotak Masuk Persetujuan",
   "nav.approvalSettings": "Pengaturan Persetujuan",
   "nav.manageEmployee": "Kelola Karyawan",

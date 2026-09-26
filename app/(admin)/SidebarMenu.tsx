@@ -71,6 +71,12 @@ const selfServiceItems: MenuItem[] = [
     label: "My Lifecycle Tasks",
     icon: "pi-list-check",
   },
+  {
+    href: "/my-performance",
+    label: "My Performance",
+    icon: "pi-chart-line",
+    permission: "performance.read",
+  },
 ];
 const approvalItems: MenuItem[] = [
   {
@@ -103,7 +109,7 @@ const employeeItems: MenuItem[] = [
     href: "/performance",
     label: "Performance",
     icon: "pi-chart-line",
-    permission: "performance.read",
+    anyOf: ["performance.manage", "approval.read"],
   },
   {
     href: "/training",
@@ -502,6 +508,7 @@ const menuTranslationKeys: Record<string, string> = {
   "Overtime Request": "nav.overtimeRequest",
   "My Payslips": "nav.myPayslips",
   "My Lifecycle Tasks": "nav.myLifecycleTasks",
+  "My Performance": "nav.myPerformance",
   "Approval Inbox": "nav.approvalInbox",
   "Approval Settings": "nav.approvalSettings",
   "Manage Employee": "nav.manageEmployee",
