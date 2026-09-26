@@ -37,6 +37,7 @@ import { InputText } from "primereact/inputtext";
 import { Paginator, PaginatorPageChangeEvent } from "primereact/paginator";
 import { Tag } from "primereact/tag";
 import { RadioButton } from "primereact/radiobutton";
+import { Checkbox } from "primereact/checkbox";
 
 import { useDispatch } from "react-redux";
 
@@ -235,6 +236,45 @@ const OvertimeProcessingModePicker = ({
   );
 };
 
+const SkipExistingOption = ({
+  initialChecked = false,
+  onChange,
+}: {
+  initialChecked?: boolean;
+  onChange: (checked: boolean) => void;
+}) => {
+  const [checked, setChecked] = useState(initialChecked);
+
+  return (
+    <div className="mt-2 flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-left">
+      <Checkbox
+        inputId="process-skip-existing"
+        checked={checked}
+        onChange={(e) => {
+          const next = Boolean(e.checked);
+          setChecked(next);
+          onChange(next);
+        }}
+        className="mt-0.5"
+      />
+      <label
+        htmlFor="process-skip-existing"
+        className="cursor-pointer select-none text-xs text-slate-700"
+      >
+        <span className="font-semibold block text-slate-800">
+          Lewati data yang sudah ada (Skip Existing)
+        </span>
+        <span className="text-slate-500 block mt-0.5">
+          Jangan hitung ulang data absensi yang sudah berhasil diproses
+          sebelumnya pada rentang tanggal ini. Pilihan ini menjaga data
+          ringkasan sebelumnya agar tidak tertimpa saat jadwal shift karyawan
+          diperbarui setelah pemrosesan awal.
+        </span>
+      </label>
+    </div>
+  );
+};
+
 const isIncompleteStatus = (status?: string | null) => {
   const normalized = normalizeStatus(status);
 
@@ -376,6 +416,7 @@ const processAttendanceSummary = async (
   startDate: Date,
   endDate: Date,
   overtimeProcessingMode: OvertimeProcessingMode,
+  skipExisting: boolean = false,
 ): Promise<ProcessResponse> => {
   const response = await apiFetchResponse("/api/attendance-summary/process", {
     method: "POST",
@@ -387,6 +428,7 @@ const processAttendanceSummary = async (
       start_date: dayjs(startDate).format("YYYY-MM-DD"),
       end_date: dayjs(endDate).format("YYYY-MM-DD"),
       overtime_processing_mode: overtimeProcessingMode,
+      skip_existing: skipExisting,
     }),
   });
 
@@ -461,6 +503,7 @@ const AttendanceSummaryTableData = () => {
   const overtimeProcessingModeRef = useRef<OvertimeProcessingMode>(
     DEFAULT_OVERTIME_PROCESSING_MODE,
   );
+  const skipExistingRef = useRef<boolean>(false);
 
   const [isExporting, setIsExporting] = useState(false);
 
@@ -825,7 +868,9 @@ const AttendanceSummaryTableData = () => {
       }
 
       const matchEmployee =
-        !employeeSearch || item.employee_search_name.includes(employeeSearch);
+        !employeeSearch ||
+        item.employee_search_name.includes(employeeSearch) ||
+        (item.shift_name ?? "").toLowerCase().includes(employeeSearch);
 
       return matchQuickFilter && matchEmployee;
     });
@@ -1022,6 +1067,7 @@ const AttendanceSummaryTableData = () => {
 
   const handleProcessAttendance = async (
     selectedOvertimeProcessingMode: OvertimeProcessingMode = overtimeProcessingModeRef.current,
+    skipExisting: boolean = skipExistingRef.current,
   ) => {
     if (!startDate || !endDate || hasInvalidDateRange) {
       return;
@@ -1043,6 +1089,7 @@ const AttendanceSummaryTableData = () => {
         startDate,
         endDate,
         selectedOvertimeProcessingMode,
+        skipExisting,
       );
 
       const jobId = result.data?.job_id;
@@ -1112,6 +1159,7 @@ const AttendanceSummaryTableData = () => {
     }
 
     overtimeProcessingModeRef.current = effectiveOvertimeProcessingMode;
+    skipExistingRef.current = false;
 
     requestActionConfirmation({
       header: i18nT("static.1kq1p6x"),
@@ -1133,12 +1181,22 @@ const AttendanceSummaryTableData = () => {
               overtimeProcessingModeRef.current = mode;
             }}
           />
+
+          <SkipExistingOption
+            initialChecked={false}
+            onChange={(val) => {
+              skipExistingRef.current = val;
+            }}
+          />
         </div>
       ),
       icon: "pi pi-exclamation-triangle",
       defaultFocus: "reject",
       accept: () => {
-        void handleProcessAttendance(overtimeProcessingModeRef.current);
+        void handleProcessAttendance(
+          overtimeProcessingModeRef.current,
+          skipExistingRef.current,
+        );
       },
       reject: () => undefined,
       footer: (options) => (
@@ -1578,6 +1636,36 @@ const AttendanceSummaryTableData = () => {
   const rowExpansionTemplate = (rowData: AttendanceSummaryRowView) => {
     return (
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+          <div className="flex items-center gap-2">
+            <i className="pi pi-user text-xs text-slate-500" />
+            <span className="text-xs font-semibold text-slate-800">
+              {rowData.employee_display_name}
+            </span>
+            {rowData.shift_name && (
+              <Tag
+                value={rowData.shift_name}
+                severity="info"
+                rounded
+                className="text-[10px]"
+              />
+            )}
+          </div>
+
+          <Button
+            type="button"
+            icon="pi pi-arrow-up"
+            label={i18nT("static.1vom8ft")}
+            text
+            size="small"
+            severity="secondary"
+            className="h-7 text-xs !py-0"
+            tooltip={i18nT("static.1vom8ft")}
+            tooltipOptions={{ position: "top" }}
+            onClick={onScrollToOverview}
+          />
+        </div>
+
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <section className="rounded-xl border border-slate-200 bg-white p-4">
             <h3 className="m-0 mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -1626,11 +1714,38 @@ const AttendanceSummaryTableData = () => {
           </section>
 
           <section className="rounded-xl border border-slate-200 bg-white p-4">
-            <h3 className="m-0 mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {i18nT("static.1iiunk1")}{" "}
-            </h3>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                {i18nT("static.1iiunk1")}{" "}
+              </h3>
+
+              <Tag
+                value={rowData.shift_name ?? i18nT("static.iwdx2m")}
+                severity={rowData.shift_name ? "info" : "secondary"}
+                rounded
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="col-span-2">
+                <p className="m-0 text-xs text-slate-500">
+                  {i18nT("static.1vjd9xi")}
+                </p>
+
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-slate-800">
+                    {rowData.shift_name ?? i18nT("static.iwdx2m")}
+                  </span>
+                  {rowData.scheduled_start_time &&
+                    rowData.scheduled_end_time && (
+                      <span className="text-xs text-slate-500">
+                        ({formatTimeOnly(rowData.scheduled_start_time)} -{" "}
+                        {formatTimeOnly(rowData.scheduled_end_time)})
+                      </span>
+                    )}
+                </div>
+              </div>
+
               <div>
                 <p className="m-0 text-xs text-slate-500">
                   {i18nT("static.30xvgf")}
@@ -1874,6 +1989,7 @@ const AttendanceSummaryTableData = () => {
   };
 
   const onScrollToOverview = () => {
+    setIsOverviewCollapsed(false);
     overviewSectionRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "start",
@@ -2576,12 +2692,12 @@ const AttendanceSummaryTableData = () => {
                         <Button
                           type="button"
                           icon="pi pi-arrow-up"
-                          label="Ringkasan"
+                          label={i18nT("static.1vom8ft")}
                           outlined
                           severity="secondary"
                           size="small"
                           className="h-8 text-xs"
-                          tooltip="Scroll ke Ringkasan Harian"
+                          tooltip={i18nT("static.1vom8ft")}
                           tooltipOptions={{ position: "top" }}
                           onClick={onScrollToOverview}
                         />
@@ -2707,17 +2823,32 @@ const AttendanceSummaryTableData = () => {
                         header={i18nT("static.1fak8xt")}
                         sortable
                         sortField="employee_display_name"
-                        body={(rowData: AttendanceSummaryRowView) => (
-                          <div className="min-w-[14rem]">
-                            <div className="font-medium text-slate-800">
-                              {rowData.employee_display_name}
-                            </div>
+                        body={(rowData: AttendanceSummaryRowView) => {
+                          const shiftScheduleText =
+                            rowData.scheduled_start_time &&
+                            rowData.scheduled_end_time
+                              ? `${formatTimeOnly(rowData.scheduled_start_time)} - ${formatTimeOnly(rowData.scheduled_end_time)}`
+                              : null;
 
-                            <div className="mt-1 text-xs text-slate-500">
-                              {rowData.shift_name ?? i18nT("static.iwdx2m")}
+                          return (
+                            <div className="min-w-[14rem]">
+                              <div className="font-medium text-slate-800">
+                                {rowData.employee_display_name}
+                              </div>
+
+                              <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-slate-500">
+                                <span>
+                                  {rowData.shift_name ?? i18nT("static.iwdx2m")}
+                                </span>
+                                {shiftScheduleText && (
+                                  <span className="text-slate-400">
+                                    • {shiftScheduleText}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          );
+                        }}
                         style={{
                           minWidth: "17rem",
                         }}
@@ -2767,6 +2898,27 @@ const AttendanceSummaryTableData = () => {
                         }}
                       />
                     </DataTable>
+
+                    <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="text-xs text-slate-500">
+                        {i18nT("static.1j6rifw")} {selectedGroupRows.length}{" "}
+                        {i18nT("static.t6uqnc")} {selectedGroup.rows.length}{" "}
+                        {i18nT("static.1rv8bm3")}
+                      </div>
+
+                      <Button
+                        type="button"
+                        icon="pi pi-arrow-up"
+                        label={i18nT("static.1vom8ft")}
+                        outlined
+                        severity="secondary"
+                        size="small"
+                        className="h-8 text-xs"
+                        tooltip={i18nT("static.1vom8ft")}
+                        tooltipOptions={{ position: "top" }}
+                        onClick={onScrollToOverview}
+                      />
+                    </div>
                   </div>
                 </section>
               )}

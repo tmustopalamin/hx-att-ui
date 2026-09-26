@@ -82,6 +82,15 @@ const formatStatusLabel = (status?: string | null) => {
     .join(" ");
 };
 
+const isDraftRequest = (row: OvertimeRequest) => {
+  return (
+    normalizeStatus(row.status) === "PENDING" &&
+    !row.deleted_at &&
+    !row.approval_request_id &&
+    !row.submitted_at
+  );
+};
+
 const formatDate = (value?: string | null) => {
   return formatDisplayDate(value);
 };
@@ -277,7 +286,8 @@ const OvertimeManagementTableData = () => {
     return {
       total: filteredData.length,
       pending: filteredData.filter(
-        (row) => normalizeStatus(row.status) === "PENDING",
+        (row) =>
+          !isDraftRequest(row) && normalizeStatus(row.status) === "PENDING",
       ).length,
       approved: filteredData.filter(
         (row) => normalizeStatus(row.status) === "APPROVED",
@@ -642,6 +652,17 @@ const OvertimeManagementTableData = () => {
   };
 
   const statusBody = (row: OvertimeRequest) => {
+    if (isDraftRequest(row)) {
+      return (
+        <Tag
+          value={i18nT("static.129n38s")}
+          severity="info"
+          icon="pi pi-pencil"
+          rounded
+        />
+      );
+    }
+
     const status = normalizeStatus(row.status);
 
     if (status === "APPROVED") {
@@ -759,10 +780,15 @@ const OvertimeManagementTableData = () => {
   };
 
   const actionBody = (row: OvertimeRequest) => {
+    const isDraft = isDraftRequest(row);
     const isPending = normalizeStatus(row.status) === "PENDING";
     const isCancellable =
-      isPending || normalizeStatus(row.status) === "APPROVED";
-    const showManagementDecision = isPending && !row.approval_request_id;
+      !isDraft && (isPending || normalizeStatus(row.status) === "APPROVED");
+    const showManagementDecision =
+      !isDraft &&
+      isPending &&
+      !row.approval_request_id &&
+      Boolean(row.submitted_at);
 
     const isCurrentRowProcessing = processingRowId === row.id;
 
