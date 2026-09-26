@@ -69,7 +69,8 @@ const employeeName = (employee?: EmployeeListRow) =>
   undefined;
 
 const GenerateScheduleWizard = () => {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, locale } = useI18n();
+  const isId = locale === "id";
   const router = useRouter();
   const dispatch = useDispatch();
   const profileState = useSelector((state: RootState) => state.profile);
@@ -561,6 +562,24 @@ const GenerateScheduleWizard = () => {
                 <p className="m-0 mt-2 pl-7 text-xs leading-5 text-slate-500">
                   {i18nT("static.employeeScheduleGenerateOverwriteHint")}
                 </p>
+              </div>
+
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs leading-5 text-blue-900">
+                <div className="flex items-start gap-2">
+                  <i className="pi pi-info-circle mt-0.5 shrink-0 text-blue-700" />
+                  <div>
+                    <span className="font-semibold">
+                      {isId
+                        ? "Prioritas Hari Libur & Akhir Pekan:"
+                        : "Weekend & Holiday Priority:"}
+                    </span>{" "}
+                    <span>
+                      {isId
+                        ? "Hari Sabtu, Minggu, dan Hari Libur Nasional (Master Holiday) otomatis diprioritaskan sebagai Day Off. Shift malam (overnight) yang check-in pada hari kerja sebelumnya (misalnya Jumat malam) tetap dihitung pada shift hari tersebut dan checkout Sabtu pagi tidak terbentur status Day Off."
+                        : "Saturdays, Sundays, and National Holidays (Master Holiday) are automatically prioritized as Day Off. Overnight shifts checking in on the preceding workday (e.g. Friday night) remain scheduled on that day and Saturday morning checkout does not conflict with Day Off."}
+                    </span>
+                  </div>
+                </div>
               </div>
               {hasInvalidDateRange && (
                 <p className="m-0 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">

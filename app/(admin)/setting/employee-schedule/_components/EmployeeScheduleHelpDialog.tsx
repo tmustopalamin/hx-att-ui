@@ -13,7 +13,7 @@ const EmployeeScheduleHelpDialog = ({
   visible,
   onHide,
 }: EmployeeScheduleHelpDialogProps) => {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, locale } = useI18n();
 
   return (
     <Dialog
@@ -60,6 +60,17 @@ const EmployeeScheduleHelpDialog = ({
             {i18nT("static.a0nkg3")}
           </dt>
           <dd className="m-0">{i18nT("static.1fdehkf")}</dd>
+
+          <dt className="font-semibold text-slate-800">
+            {locale === "id"
+              ? "Hari Libur & Akhir Pekan"
+              : "Weekends & Holidays"}
+          </dt>
+          <dd className="m-0">
+            {locale === "id"
+              ? "Hari Sabtu, Minggu, dan Hari Libur Nasional (Master Holiday) otomatis diprioritaskan sebagai Day Off. Untuk shift malam (overnight) yang check-in pada hari kerja sebelumnya (misalnya Jumat malam), checkout Sabtu pagi tetap tercatat pada shift kerja hari Jumat dan tidak terbentur status Day Off hari Sabtu."
+              : "Saturdays, Sundays, and National Holidays (Master Holiday) are automatically prioritized as Day Off. For overnight shifts checking in on the previous workday (e.g. Friday night), Saturday morning checkouts are recorded under Friday's shift and do not conflict with Saturday's Day Off status."}
+          </dd>
         </dl>
       </div>
     </Dialog>

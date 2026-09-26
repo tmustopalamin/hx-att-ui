@@ -584,6 +584,24 @@ const MassScheduleChangeWizard = () => {
                   <span>{i18nT("static.1rdsjzn")}</span>
                 </div>
               </div>
+
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs leading-5 text-blue-900">
+                <div className="flex items-start gap-2">
+                  <i className="pi pi-info-circle mt-0.5 shrink-0 text-blue-700" />
+                  <div>
+                    <span className="font-semibold">
+                      {isId
+                        ? "Prioritas Hari Libur & Akhir Pekan:"
+                        : "Weekend & Holiday Priority:"}
+                    </span>{" "}
+                    <span>
+                      {isId
+                        ? "Hari Sabtu, Minggu, dan Hari Libur Nasional (Master Holiday) otomatis diprioritaskan sebagai Day Off. Shift malam (overnight) yang check-in pada hari kerja sebelumnya (misalnya Jumat malam) tetap dihitung pada shift hari tersebut dan checkout Sabtu pagi tidak terbentur status Day Off."
+                        : "Saturdays, Sundays, and National Holidays (Master Holiday) are automatically prioritized as Day Off. Overnight shifts checking in on the preceding workday (e.g. Friday night) remain scheduled on that day and Saturday morning checkout does not conflict with Day Off."}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
