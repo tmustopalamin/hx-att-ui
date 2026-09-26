@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useParams } from "next/navigation";
 import useSWR from "swr";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,6 +20,7 @@ import {
   deletePayrollProfileItem,
   updateEmployeeBankAccount,
 } from "@/app/services/employee-payroll-profile-service";
+import type { EmployeePersonalData } from "@/app/types/employee-general";
 import type {
   EmployeeBankAccount,
   EmployeePayrollProfile,
@@ -67,7 +68,28 @@ export default function EmployeeBankAccountPanel() {
       : null;
   const { data, isLoading, isValidating, mutate } =
     useSWR<EmployeePayrollProfile>(key, fetcher);
+  const { data: employeeData, isLoading: employeeIsLoading } =
+    useSWR<EmployeePersonalData>(
+      Number.isSafeInteger(employeeId) && employeeId > 0
+        ? `/api/employees/${employeeId}/personal-data`
+        : null,
+      fetcher,
+    );
+  const employeeFullName = useMemo(() => {
+    if (!employeeData) return "";
+    return [
+      employeeData.first_name,
+      employeeData.middle_name,
+      employeeData.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [employeeData]);
   const [form, setForm] = useState<BankForm>(emptyForm);
+  const selectedBank = useMemo(
+    () => data?.bank_options?.find((b) => b.id === form.bank_id) ?? null,
+    [data?.bank_options, form.bank_id],
+  );
   const [visible, setVisible] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -386,9 +408,22 @@ export default function EmployeeBankAccountPanel() {
         </DataTable>
       </div>
       <Dialog
-        header={form.id ? i18nT("static.sx66rd") : i18nT("static.1o9mtgu")}
+        header={
+          <div className="flex items-center gap-2">
+            <i
+              className={`pi ${
+                form.id
+                  ? "pi-pencil text-amber-600"
+                  : "pi-plus-circle text-blue-600"
+              } text-lg`}
+            />
+            <span className="text-base font-semibold text-slate-800">
+              {form.id ? i18nT("static.sx66rd") : i18nT("static.1o9mtgu")}
+            </span>
+          </div>
+        }
         visible={visible}
-        style={{ width: "95vw", maxWidth: "42rem" }}
+        style={{ width: "95vw", maxWidth: "44rem" }}
         breakpoints={{ "640px": "95vw" }}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
@@ -428,11 +463,38 @@ export default function EmployeeBankAccountPanel() {
             void save();
           }}
         >
+          {/* Employee Context Summary Card */}
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 sm:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <i className="pi pi-user text-base" />
+              </div>
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {i18nT("static.1fak8xt")}
+                </span>
+                <span className="truncate text-sm font-semibold text-slate-800">
+                  {employeeFullName ||
+                    (employeeIsLoading
+                      ? i18nT("static.151p210")
+                      : `Employee #${employeeId}`)}
+                </span>
+              </div>
+            </div>
+            <Tag
+              severity="info"
+              value={`ID: ${employeeId}`}
+              rounded
+              className="font-mono text-xs"
+            />
+          </div>
+
           <Field
             id="employee-bank-account-bank"
             label={i18nT("static.192q8xj")}
             required
             error={formErrors.bank_id}
+            className="sm:col-span-2"
           >
             <Dropdown
               inputId="employee-bank-account-bank"
@@ -441,7 +503,7 @@ export default function EmployeeBankAccountPanel() {
               optionLabel="name"
               optionValue="id"
               filter
-              showClear
+              showClear={false}
               placeholder={i18nT("static.nfjo79")}
               className={`w-full ${formErrors.bank_id ? "p-invalid" : ""}`}
               onChange={(event) => {
@@ -457,6 +519,27 @@ export default function EmployeeBankAccountPanel() {
               }}
             />
           </Field>
+
+          {/* Selected Bank Information Card */}
+          {selectedBank && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs text-slate-600 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <i className="pi pi-building text-blue-600" />
+                  <span className="font-semibold text-slate-800">
+                    {selectedBank.name}
+                  </span>
+                </div>
+                {selectedBank.code && (
+                  <Tag
+                    value={selectedBank.code}
+                    severity="secondary"
+                    className="text-[11px]"
+                  />
+                )}
+              </div>
+            </div>
+          )}
 
           <Field
             id="employee-bank-account-number"
@@ -557,6 +640,7 @@ function Field({
   hint,
   error,
   children,
+  className = "",
 }: {
   id: string;
   label: string;
@@ -564,9 +648,10 @@ function Field({
   hint?: string;
   error?: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col gap-2 ${className}`}>
       <label htmlFor={id} className="text-sm font-medium text-slate-700">
         {label}
         {required && <span className="ml-1 text-red-500">*</span>}

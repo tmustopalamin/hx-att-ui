@@ -24,7 +24,6 @@ import type {
   PayrollPaymentBatchDetail,
   PayrollPaymentItemDetail,
 } from "@/app/types/payroll-batch";
-import type { ResponseTypeError } from "@/app/types/response-type";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/store";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
@@ -32,6 +31,7 @@ import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog
 import { useDirtyFormGuard } from "@/app/_components/useDirtyFormGuard";
 import { formatStatusLabel } from "@/app/i18n/statusLabel";
 import { isWhitespaceFreeIdentifier } from "@/app/utils/identifier-validation";
+import { getErrorMessage } from "@/app/utils/error-messages";
 
 interface PayrollPaymentDialogProps {
   batch: PayrollBatch | null;
@@ -42,7 +42,7 @@ interface PayrollPaymentDialogProps {
   onSuccess: (message: string) => void;
 }
 
-const formatCurrency = (value: string) => {
+const formatCurrency = (value: string | number) => {
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {
@@ -53,13 +53,7 @@ const formatCurrency = (value: string) => {
     : "-";
 };
 
-const errorMessage = (error: unknown) =>
-  typeof error === "object" &&
-  error !== null &&
-  "message" in error &&
-  typeof (error as ResponseTypeError).message === "string"
-    ? (error as ResponseTypeError).message
-    : "Payment processing could not be completed.";
+const errorMessage = (error: unknown) => getErrorMessage(error);
 
 export default function PayrollPaymentDialog({
   batch,
@@ -98,6 +92,8 @@ export default function PayrollPaymentDialog({
   const [paymentDate, setPaymentDate] = useState("");
   const [bankCode, setBankCode] = useState("");
   const [references, setReferences] = useState<Record<number, string>>({});
+  const [bulkReference, setBulkReference] = useState("");
+  const [settlingItemId, setSettlingItemId] = useState<number | null>(null);
   const [paymentFormTouched, setPaymentFormTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settling, setSettling] = useState(false);
@@ -107,10 +103,18 @@ export default function PayrollPaymentDialog({
   );
   const canPay = permissions.includes("payroll.pay");
   const canExport = permissions.includes("payroll.export");
+
+  const detail = paymentDetail;
+  const canSettle =
+    canPay &&
+    detail?.batch != null &&
+    detail.batch.status !== "PAID" &&
+    detail.batch.status !== "CANCELLED";
+
   const paymentFormDirty = visible && paymentFormTouched;
   const { confirmDiscard } = useDirtyFormGuard(
     paymentFormDirty,
-    !saving && !settling && !reconciling,
+    !saving && !settling && !reconciling && settlingItemId === null,
   );
 
   const draftValues = useMemo(() => {
@@ -125,8 +129,10 @@ export default function PayrollPaymentDialog({
     setPaymentBatchNo(draftValues.paymentBatchNo);
     setPaymentDate(draftValues.paymentDate);
     setBankCode("");
+    setBulkReference("");
     setPaymentFormTouched(false);
   };
+
   const handleHide = () => {
     if (!paymentFormDirty) {
       onHide();
@@ -168,32 +174,130 @@ export default function PayrollPaymentDialog({
     }
   };
 
-  const settle = async () => {
-    if (!paymentDetail) return;
-    const items = paymentDetail.items.map((item) => ({
-      payment_item_id: item.id,
-      bank_reference: (references[item.id] ?? item.bank_reference ?? "").trim(),
-    }));
-    if (items.some((item) => !item.bank_reference)) {
+  const applyBulkReference = () => {
+    const trimmed = bulkReference.trim();
+    if (!trimmed) {
+      onError("Masukkan nomor referensi transfer massal.");
+      return;
+    }
+    if (trimmed.length > 100) {
+      onError("Nomor referensi bank maksimal 100 karakter.");
+      return;
+    }
+    if (!detail) return;
+    const nextRefs = { ...references };
+    let appliedCount = 0;
+    for (const item of detail.items) {
+      if (item.status !== "PAID") {
+        nextRefs[item.id] = trimmed;
+        appliedCount++;
+      }
+    }
+    setReferences(nextRefs);
+    setPaymentFormTouched(true);
+    onSuccess(
+      `Nomor referensi berhasil diterapkan ke ${appliedCount} item yang belum dibayar.`,
+    );
+  };
+
+  const settleSingle = async (item: PayrollPaymentItemDetail) => {
+    if (!detail) return;
+    const bankRef = (references[item.id] ?? item.bank_reference ?? "").trim();
+    if (!bankRef) {
       onError(
-        "Enter the bank transfer reference for every payment item before confirming settlement.",
+        `Masukkan nomor referensi transfer bank untuk ${item.employee_name}.`,
       );
       return;
     }
+    if (bankRef.length > 100) {
+      onError("Nomor referensi bank maksimal 100 karakter.");
+      return;
+    }
     try {
-      setSettling(true);
+      setSettlingItemId(item.id);
       await settlePayrollPaymentBatch(
-        paymentDetail.batch.id,
-        paymentDetail.batch.row_version,
-        { items },
+        detail.batch.id,
+        detail.batch.row_version,
+        {
+          items: [
+            {
+              payment_item_id: item.id,
+              bank_reference: bankRef,
+            },
+          ],
+        },
       );
+      setPaymentFormTouched(false);
       await Promise.all([
         refreshPaymentDetail(),
         refreshPaymentBatches(),
         onSettled(),
       ]);
       onSuccess(
-        "All payment items were settled and the payroll was marked paid.",
+        `Pembayaran untuk ${item.employee_name} (${formatCurrency(item.amount)}) berhasil diselesaikan.`,
+      );
+    } catch (error: unknown) {
+      onError(errorMessage(error));
+    } finally {
+      setSettlingItemId(null);
+    }
+  };
+
+  const confirmSettleSingle = (item: PayrollPaymentItemDetail) => {
+    const bankRef = (references[item.id] ?? item.bank_reference ?? "").trim();
+    if (!bankRef) {
+      onError(
+        `Masukkan nomor referensi transfer bank untuk ${item.employee_name}.`,
+      );
+      return;
+    }
+    requestActionConfirmation({
+      action: "Selesaikan Pembayaran Karyawan",
+      target: `${item.employee_name} (${formatCurrency(item.amount)})`,
+      severity: "info",
+      confirmLabel: "Bayar Sekarang",
+      confirmIcon: "pi pi-check",
+      description: `Selesaikan pembayaran transfer bank sebesar ${formatCurrency(item.amount)} untuk ${item.employee_name} dengan no. referensi "${bankRef}"?`,
+      onAccept: () => void settleSingle(item),
+    });
+  };
+
+  const settleAll = async () => {
+    if (!detail) return;
+    const unpaidItems = detail.items.filter((item) => item.status !== "PAID");
+    if (unpaidItems.length === 0) {
+      onSuccess("Semua item pembayaran sudah lunas.");
+      return;
+    }
+    const items = unpaidItems.map((item) => ({
+      payment_item_id: item.id,
+      bank_reference: (references[item.id] ?? item.bank_reference ?? "").trim(),
+    }));
+    if (items.some((item) => !item.bank_reference)) {
+      onError(
+        "Masukkan nomor referensi transfer bank untuk seluruh item yang belum dibayar.",
+      );
+      return;
+    }
+    if (items.some((item) => item.bank_reference.length > 100)) {
+      onError("Nomor referensi bank maksimal 100 karakter.");
+      return;
+    }
+    try {
+      setSettling(true);
+      await settlePayrollPaymentBatch(
+        detail.batch.id,
+        detail.batch.row_version,
+        { items },
+      );
+      setPaymentFormTouched(false);
+      await Promise.all([
+        refreshPaymentDetail(),
+        refreshPaymentBatches(),
+        onSettled(),
+      ]);
+      onSuccess(
+        "Seluruh item pembayaran berhasil diselesaikan dan status payroll diperbarui.",
       );
     } catch (error: unknown) {
       onError(errorMessage(error));
@@ -201,15 +305,31 @@ export default function PayrollPaymentDialog({
       setSettling(false);
     }
   };
-  const confirmSettle = () => {
+
+  const confirmSettleAll = () => {
+    if (!detail) return;
+    const unpaidItems = detail.items.filter((item) => item.status !== "PAID");
+    if (unpaidItems.length === 0) {
+      onSuccess("Semua item pembayaran sudah lunas.");
+      return;
+    }
+    const missingRefs = unpaidItems.filter(
+      (item) => !(references[item.id] ?? item.bank_reference ?? "").trim(),
+    );
+    if (missingRefs.length > 0) {
+      onError(
+        `Terdapat ${missingRefs.length} item yang belum memiliki nomor referensi bank. Silakan isi terlebih dahulu atau gunakan fitur 'Terapkan ke Semua'.`,
+      );
+      return;
+    }
     requestActionConfirmation({
       action: i18nT("static.4e8rul"),
-      target: paymentDetail?.batch?.payment_batch_no,
+      target: detail.batch.payment_batch_no,
       severity: "danger",
       confirmLabel: i18nT("static.1mf1pgy"),
       confirmIcon: "pi pi-check-circle",
-      description: i18nT("static.1e3s0gx"),
-      onAccept: () => settle(),
+      description: `Selesaikan ${unpaidItems.length} item transfer gaji yang belum lunas dan tandai payroll sebagai paid?`,
+      onAccept: () => void settleAll(),
     });
   };
 
@@ -242,6 +362,7 @@ export default function PayrollPaymentDialog({
         detail.batch.row_version,
         file,
       );
+      setPaymentFormTouched(false);
       await Promise.all([
         refreshPaymentDetail(),
         refreshPaymentBatches(),
@@ -254,6 +375,7 @@ export default function PayrollPaymentDialog({
       setReconciling(false);
     }
   };
+
   const confirmReconcileFile = (file: File | undefined) => {
     if (!file) return;
     requestActionConfirmation({
@@ -267,9 +389,6 @@ export default function PayrollPaymentDialog({
     });
   };
 
-  const detail = paymentDetail;
-  const isDraft = detail?.batch?.status === "DRAFT";
-
   return (
     <Dialog
       header={i18nT("static.1cncklb")}
@@ -277,28 +396,42 @@ export default function PayrollPaymentDialog({
       modal
       draggable={false}
       resizable={false}
-      style={{ width: "95vw", maxWidth: "72rem" }}
+      style={{ width: "95vw", maxWidth: "76rem" }}
       onShow={() => {
         if (!paymentBatches?.length) openDraftValues();
       }}
       onHide={handleHide}
       footer={
-        <div className="flex justify-end gap-2">
-          <Button
-            label={i18nT("static.1l0xxoj")}
-            severity="secondary"
-            text
-            disabled={saving || settling || reconciling}
-            onClick={handleHide}
-          />
-          {isDraft && canPay && (
+        <div className="flex w-full items-center justify-between">
+          <div className="text-xs text-slate-500">
+            {detail && (
+              <span>
+                {detail.items.filter((i) => i.status === "PAID").length} dari{" "}
+                {detail.items.length} item lunas
+              </span>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
             <Button
-              label={i18nT("static.a2xljk")}
-              icon="pi pi-check"
-              loading={settling}
-              onClick={confirmSettle}
+              label={i18nT("static.1l0xxoj")}
+              severity="secondary"
+              text
+              disabled={
+                saving || settling || settlingItemId !== null || reconciling
+              }
+              onClick={handleHide}
             />
-          )}
+            {canSettle && (
+              <Button
+                label="Bayar Semua (Massal)"
+                icon="pi pi-check-circle"
+                severity="success"
+                loading={settling}
+                disabled={settlingItemId !== null || reconciling}
+                onClick={confirmSettleAll}
+              />
+            )}
+          </div>
         </div>
       }
     >
@@ -308,6 +441,15 @@ export default function PayrollPaymentDialog({
         </div>
       ) : !paymentBatches?.length && !selectedPaymentBatchId && canPay ? (
         <div className="grid grid-cols-1 gap-4 pt-2 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Message
+              severity="info"
+              className="w-full"
+              text={i18nT(
+                "Pastikan seluruh karyawan penerima gaji telah memiliki rekening bank aktif di menu Data Karyawan. Batch transfer akan dibuat dari data rekening terenkripsi karyawan.",
+              )}
+            />
+          </div>
           <Field label={i18nT("static.qzhmw0")}>
             <InputText
               value={paymentBatchNo || draftValues.paymentBatchNo}
@@ -361,6 +503,7 @@ export default function PayrollPaymentDialog({
         </div>
       ) : (
         <div className="flex flex-col gap-4 pt-2">
+          {/* Metrics summary */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric
               label={i18nT("static.g0ny45")}
@@ -379,29 +522,37 @@ export default function PayrollPaymentDialog({
               value={formatCurrency(detail.batch.total_amount)}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">
-              {i18nT("static.3pd73")}
-            </span>
-            <Tag
-              value={i18nT(formatStatusLabel(detail.batch.status))}
-              severity={detail.batch.status === "PAID" ? "success" : "warning"}
-            />
-            {canExport && (
-              <Button
-                label={i18nT("static.8p4e4z")}
-                icon="pi pi-download"
-                severity="secondary"
-                outlined
-                size="small"
-                onClick={() => void exportFile()}
+
+          {/* Status, Export & CSV upload bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-600">
+                {i18nT("static.3pd73")}:
+              </span>
+              <Tag
+                value={i18nT(formatStatusLabel(detail.batch.status))}
+                severity={
+                  detail.batch.status === "PAID"
+                    ? "success"
+                    : detail.batch.status === "FAILED"
+                      ? "danger"
+                      : "warning"
+                }
               />
-            )}
-            {canPay &&
-              !isDraft &&
-              detail.batch.status !== "PAID" &&
-              detail.batch.status !== "CANCELLED" && (
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {canExport && (
+                <Button
+                  label={i18nT("static.8p4e4z")}
+                  icon="pi pi-download"
+                  severity="secondary"
+                  outlined
+                  size="small"
+                  onClick={() => void exportFile()}
+                />
+              )}
+              {canSettle && (
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-100">
                   <i className="pi pi-upload" />
                   {reconciling
                     ? i18nT("static.9bz0qi")
@@ -410,7 +561,9 @@ export default function PayrollPaymentDialog({
                     type="file"
                     accept=".csv,text/csv"
                     className="sr-only"
-                    disabled={reconciling}
+                    disabled={
+                      reconciling || settling || settlingItemId !== null
+                    }
                     onChange={(event) => {
                       const file = event.currentTarget.files?.[0];
                       event.currentTarget.value = "";
@@ -419,7 +572,59 @@ export default function PayrollPaymentDialog({
                   />
                 </label>
               )}
+            </div>
           </div>
+
+          {/* Bulk settlement toolbar */}
+          {canSettle && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-100 bg-indigo-50/50 p-3">
+              <div className="flex min-w-[280px] flex-1 flex-wrap items-center gap-2">
+                <span className="whitespace-nowrap text-sm font-medium text-slate-700">
+                  No. Referensi Massal:
+                </span>
+                <div className="min-w-[180px] flex-1">
+                  <InputText
+                    value={bulkReference}
+                    placeholder="Contoh: TRF-BCA-20260925"
+                    className="w-full p-inputtext-sm"
+                    maxLength={100}
+                    disabled={
+                      settling || settlingItemId !== null || reconciling
+                    }
+                    onChange={(e) => setBulkReference(e.target.value)}
+                  />
+                </div>
+                <Button
+                  label="Terapkan ke Semua"
+                  icon="pi pi-copy"
+                  size="small"
+                  severity="secondary"
+                  outlined
+                  disabled={
+                    !bulkReference.trim() ||
+                    settling ||
+                    settlingItemId !== null ||
+                    reconciling
+                  }
+                  onClick={applyBulkReference}
+                  tooltip="Salin nomor referensi ini ke semua baris karyawan yang belum dibayar"
+                />
+              </div>
+              <div>
+                <Button
+                  label="Bayar Semua (Massal)"
+                  icon="pi pi-check-circle"
+                  size="small"
+                  severity="success"
+                  loading={settling}
+                  disabled={settlingItemId !== null || reconciling}
+                  onClick={confirmSettleAll}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Data Table */}
           <DataTable
             value={detail.items}
             dataKey="id"
@@ -427,10 +632,18 @@ export default function PayrollPaymentDialog({
             stripedRows
             scrollable
             responsiveLayout="scroll"
-            tableStyle={{ minWidth: "62rem" }}
+            tableStyle={{ minWidth: "68rem" }}
           >
-            <Column field="employee_code" header={i18nT("static.1lghzb2")} />
-            <Column field="employee_name" header={i18nT("static.1fak8xt")} />
+            <Column
+              field="employee_code"
+              header={i18nT("static.1lghzb2")}
+              style={{ width: "8rem" }}
+            />
+            <Column
+              field="employee_name"
+              header={i18nT("static.1fak8xt")}
+              style={{ minWidth: "10rem" }}
+            />
             <Column
               field="department_name"
               header={i18nT("static.1430r53")}
@@ -453,43 +666,122 @@ export default function PayrollPaymentDialog({
               body={(row: PayrollPaymentItemDetail) =>
                 formatCurrency(row.amount)
               }
+              style={{ width: "9rem", textAlign: "right" }}
+            />
+            <Column
+              header="Status"
+              body={(row: PayrollPaymentItemDetail) => {
+                const isPaid = row.status === "PAID";
+                const isFailed = row.status === "FAILED";
+                return (
+                  <Tag
+                    value={row.status || "PENDING"}
+                    severity={
+                      isPaid ? "success" : isFailed ? "danger" : "warning"
+                    }
+                  />
+                );
+              }}
+              style={{ width: "7rem", textAlign: "center" }}
             />
             <Column
               header={i18nT("static.127tzh3")}
-              body={(row: PayrollPaymentItemDetail) =>
-                isDraft ? (
-                  <InputText
-                    value={references[row.id] ?? row.bank_reference ?? ""}
-                    className="w-full"
-                    placeholder={i18nT("Enter bank transfer reference")}
-                    maxLength={100}
-                    onChange={(event) => {
-                      setPaymentFormTouched(true);
-                      setReferences((current) => ({
-                        ...current,
-                        [row.id]: event.target.value,
-                      }));
-                    }}
-                  />
-                ) : (
-                  (row.bank_reference ?? "-")
-                )
-              }
+              body={(row: PayrollPaymentItemDetail) => {
+                const isPaid = row.status === "PAID";
+                if (isPaid) {
+                  return (
+                    <span className="font-mono text-xs text-slate-700">
+                      {row.bank_reference ?? "-"}
+                    </span>
+                  );
+                }
+                if (canSettle) {
+                  return (
+                    <InputText
+                      value={references[row.id] ?? row.bank_reference ?? ""}
+                      className="w-full p-inputtext-sm"
+                      placeholder={i18nT("Enter bank transfer reference")}
+                      maxLength={100}
+                      disabled={
+                        settling || settlingItemId === row.id || reconciling
+                      }
+                      onChange={(event) => {
+                        setPaymentFormTouched(true);
+                        setReferences((current) => ({
+                          ...current,
+                          [row.id]: event.target.value,
+                        }));
+                      }}
+                    />
+                  );
+                }
+                return row.bank_reference ?? "-";
+              }}
+              style={{ minWidth: "12rem" }}
             />
-          </DataTable>
-          {isDraft && canPay && (
-            <p className="m-0 text-xs leading-5 text-amber-700">
-              {i18nT("static.boyvat")}{" "}
-            </p>
-          )}
-          {!isDraft &&
-            detail.batch.status !== "PAID" &&
-            detail.batch.status !== "CANCELLED" && (
-              <p className="m-0 text-xs leading-5 text-slate-500">
-                {i18nT("static.a6iu57")} <code>{i18nT("static.1ww8a0")} </code>
-                {i18nT("static.f50zx9")}{" "}
-              </p>
+            {canSettle && (
+              <Column
+                header="Aksi"
+                body={(row: PayrollPaymentItemDetail) => {
+                  const isPaid = row.status === "PAID";
+                  if (isPaid) {
+                    return (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600">
+                        <i className="pi pi-check text-xs" />
+                        Lunas
+                      </span>
+                    );
+                  }
+                  return (
+                    <Button
+                      label="Bayar"
+                      icon="pi pi-check"
+                      size="small"
+                      severity="success"
+                      outlined
+                      loading={settlingItemId === row.id}
+                      disabled={
+                        settling || settlingItemId !== null || reconciling
+                      }
+                      onClick={() => confirmSettleSingle(row)}
+                      tooltip="Bayar item ini saja"
+                    />
+                  );
+                }}
+                style={{ width: "6rem", textAlign: "center" }}
+              />
             )}
+          </DataTable>
+
+          {/* Guide / Status info */}
+          {canSettle ? (
+            <div className="flex flex-col gap-1 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+              <span className="font-semibold text-slate-700">
+                Pilihan metode penyelesaian pembayaran:
+              </span>
+              <div>
+                1. <strong>Tombol Massal:</strong> Masukkan &quot;No. Referensi
+                Massal&quot;, klik &quot;Terapkan ke Semua&quot;, lalu klik
+                &quot;Bayar Semua (Massal)&quot;.
+              </div>
+              <div>
+                2. <strong>Tombol Satuan:</strong> Masukkan nomor referensi
+                transfer pada baris karyawan yang diinginkan, lalu klik tombol
+                &quot;Bayar&quot; di baris tersebut.
+              </div>
+              <div>
+                3. <strong>Upload CSV:</strong> Unduh file dengan &quot;Download
+                CSV&quot;, lengkapi status (PAID/FAILED) &amp; referensi
+                transfer di CSV, lalu upload melalui tombol &quot;Upload CSV
+                Rekonsiliasi&quot;.
+              </div>
+            </div>
+          ) : detail.batch.status === "PAID" ? (
+            <Message
+              severity="success"
+              text="Seluruh item pembayaran telah lunas diselesaikan. Slip gaji karyawan telah dipublikasikan secara otomatis."
+            />
+          ) : null}
         </div>
       )}
     </Dialog>

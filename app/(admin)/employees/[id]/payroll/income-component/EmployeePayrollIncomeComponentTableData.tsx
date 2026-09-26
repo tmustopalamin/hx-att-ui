@@ -9,7 +9,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Controller, useForm } from "react-hook-form";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 import {
@@ -54,7 +54,7 @@ import {
 } from "@/app/(admin)/employees/[id]/payroll/_components/payroll-display-formatters";
 
 const EmployeePayrollEmployeeIncomeComponentTableData = () => {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, locale } = useI18n();
   const params = useParams();
   const id = params.id;
 
@@ -77,7 +77,6 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     useState<IncomeComponent | null>(null);
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
   const {
     control,
     handleSubmit,
@@ -86,6 +85,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     reset,
     clearErrors,
     setValue,
+    getValues,
   } = useForm<EmployeeIncomeComponent>();
   const { confirmDiscard } = useDirtyFormGuard(
     visible && isDirty,
@@ -106,10 +106,10 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
 
   const onClickNew = () => {
     clearErrors();
+    setSelectedData(null);
     setSelectedIncomeComponent(null);
     setIsAddNew(true);
     setVisible(true);
-    setPopupHeaderTitle("New Income Component");
     reset({
       id: 0,
       employee_id: Number(id),
@@ -177,14 +177,8 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     }`,
     fetcher,
   );
-  const {
-    data: employeeData,
-    error: employeeError,
-    isLoading: employeeIsLoading,
-  } = useSWR<EmployeePersonalData>(
-    `/api/employees/${id}/personal-data`,
-    fetcher,
-  );
+  const { data: employeeData, isLoading: employeeIsLoading } =
+    useSWR<EmployeePersonalData>(`/api/employees/${id}/personal-data`, fetcher);
   const {
     data: incomeComponentData,
     error: incomeComponentError,
@@ -195,30 +189,36 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     error: errorFrequency,
     isLoading: isLoadingFrequency,
   } = useSWR<Frequency[]>(`/api/frequency`, fetcher);
-  const employeeIncomeComponentActive = incomeComponentData?.filter(
-    (a) => a.is_active && a.assignment_mode === "EMPLOYEE",
+  const employeeIncomeComponentActive = useMemo(
+    () =>
+      incomeComponentData?.filter(
+        (a) =>
+          (a.is_active || a.id === selectedData?.income_component_master_id) &&
+          a.assignment_mode === "EMPLOYEE",
+      ) ?? [],
+    [incomeComponentData, selectedData?.income_component_master_id],
   );
-  const incomeComponentReferenceOptions = incomeComponentData?.filter(
-    (a) =>
-      a.is_active &&
-      (a.assignment_mode === "EMPLOYEE" ||
-        (a.assignment_mode === "SYSTEM" &&
-          a.code?.toUpperCase() === "BASIC_SALARY")),
+  const incomeComponentReferenceOptions = useMemo(
+    () =>
+      incomeComponentData?.filter(
+        (a) =>
+          a.is_active &&
+          (a.assignment_mode === "EMPLOYEE" ||
+            (a.assignment_mode === "SYSTEM" &&
+              a.code?.toUpperCase() === "BASIC_SALARY")),
+      ) ?? [],
+    [incomeComponentData],
   );
-  const employeeActive = employeeData
-    ? [
-        {
-          id: Number(id),
-          full_name: [
-            employeeData.first_name,
-            employeeData.middle_name,
-            employeeData.last_name,
-          ]
-            .filter(Boolean)
-            .join(" "),
-        },
-      ]
-    : [];
+  const employeeFullName = useMemo(() => {
+    if (!employeeData) return "";
+    return [
+      employeeData.first_name,
+      employeeData.middle_name,
+      employeeData.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [employeeData]);
   const activeFrequency = frequencyData?.filter((a) => a.is_active);
 
   useEffect(() => {
@@ -523,7 +523,6 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
   const onClickUpdate = (data: EmployeeIncomeComponent) => {
     setVisible(true);
     setIsAddNew(false);
-    setPopupHeaderTitle("Update Income Component");
 
     const updatedData = {
       ...data,
@@ -741,16 +740,58 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     );
     if (incomeComponent) {
       setSelectedIncomeComponent(incomeComponent);
+      const methodCode =
+        incomeComponent.calculation_method_code?.toUpperCase() ?? "";
+      const isAtt =
+        methodCode === "ATTENDANCE_DAYS" ||
+        methodCode === "DAILY_RATE" ||
+        incomeComponent.category === 4;
+
+      if (isAtt) {
+        const dailyFreq = frequencyData?.find(
+          (frequency) =>
+            frequency.is_active &&
+            !frequency.deleted_at &&
+            frequency.code.toUpperCase() === "DAILY",
+        );
+        if (dailyFreq) {
+          setValue("frequency", dailyFreq.id, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+        }
+      } else {
+        const currentFreqId = getValues("frequency");
+        const currentFreq = frequencyData?.find(
+          (frequency) => frequency.id === currentFreqId,
+        );
+        if (!currentFreqId || currentFreq?.code.toUpperCase() === "DAILY") {
+          const monthlyFreq = frequencyData?.find(
+            (frequency) =>
+              frequency.is_active &&
+              !frequency.deleted_at &&
+              frequency.code.toUpperCase() === "MONTHLY",
+          );
+          if (monthlyFreq) {
+            setValue("frequency", monthlyFreq.id, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }
+        }
+      }
     }
   };
 
   const calculationMethodCode =
     selectedIncomeComponent?.calculation_method_code?.toUpperCase() ?? "";
-  const isFixedAmount =
-    calculationMethodCode === "FIXED_AMOUNT" ||
-    calculationMethodCode === "FIXED";
   const isPercentage = calculationMethodCode === "PERCENTAGE";
   const isWorkingPeriod = calculationMethodCode === "WORKING_PERIOD";
+  const isAttendanceBased =
+    calculationMethodCode === "ATTENDANCE_DAYS" ||
+    calculationMethodCode === "DAILY_RATE" ||
+    selectedIncomeComponent?.category === 4;
+  const isFixedAmount = !isPercentage && !isWorkingPeriod;
 
   const incomeComponentReferenceOptionTemplate = (option: IncomeComponent) => (
     <div className="flex min-w-0 items-center justify-between gap-3">
@@ -871,6 +912,63 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       </span>
     </div>
   );
+
+  const frequencyOptionTemplate = (option: Frequency) => {
+    if (!option) return null;
+    const daysDesc =
+      option.days_in_period === 1
+        ? locale === "id"
+          ? "1 hari • per hari hadir"
+          : "1 day • per attendance day"
+        : option.days_in_period === 7
+          ? locale === "id"
+            ? "7 hari • mingguan"
+            : "7 days • weekly"
+          : locale === "id"
+            ? `${option.days_in_period} hari • bulanan`
+            : `${option.days_in_period} days • monthly`;
+
+    return (
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <span className="font-medium text-slate-800">{option.name}</span>
+        <span className="text-xs text-slate-500">{daysDesc}</span>
+      </div>
+    );
+  };
+
+  const selectedFrequencyTemplate = (
+    option: Frequency | number | null,
+    props: { placeholder?: string },
+  ) => {
+    const selected =
+      typeof option === "object" && option !== null
+        ? option
+        : activeFrequency?.find((f) => f.id === option);
+
+    if (!selected) {
+      return <span>{props.placeholder}</span>;
+    }
+
+    const daysDesc =
+      selected.days_in_period === 1
+        ? locale === "id"
+          ? "1 hari • per hari hadir"
+          : "1 day • per attendance day"
+        : selected.days_in_period === 7
+          ? locale === "id"
+            ? "7 hari • mingguan"
+            : "7 days • weekly"
+          : locale === "id"
+            ? `${selected.days_in_period} hari • bulanan`
+            : `${selected.days_in_period} days • monthly`;
+
+    return (
+      <div className="flex items-center gap-2">
+        <span className="font-medium text-slate-800">{selected.name}</span>
+        <span className="text-xs text-slate-500">({daysDesc})</span>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -1053,9 +1151,22 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
       </Card>
 
       <Dialog
-        header={popupHeaderTitle}
+        header={
+          <div className="flex items-center gap-2">
+            <i
+              className={`pi ${
+                isAddNew
+                  ? "pi-plus-circle text-blue-600"
+                  : "pi-pencil text-amber-600"
+              } text-lg`}
+            />
+            <span className="text-base font-semibold text-slate-800">
+              {isAddNew ? i18nT("static.x2sal3") : i18nT("static.5h4puf")}
+            </span>
+          </div>
+        }
         visible={visible}
-        style={{ width: "95vw", maxWidth: "46rem" }}
+        style={{ width: "95vw", maxWidth: "44rem" }}
         breakpoints={{ "640px": "95vw" }}
         modal
         draggable={false}
@@ -1073,72 +1184,73 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           onSubmit={handleSubmit((data) => onSubmit(data))}
           className="grid grid-cols-1 gap-5 pt-2 sm:grid-cols-2"
         >
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <label
-              htmlFor="employee_id"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.1fak8xt")}{" "}
-            </label>
-            <Controller
-              name="employee_id"
-              control={control}
-              rules={{ required: i18nT("static.2s9hk0") }}
-              render={({ field, fieldState }) => (
-                <>
-                  <Dropdown
-                    id="employee_id"
-                    appendTo={() => document.body}
-                    value={field.value}
-                    options={employeeActive}
-                    loading={employeeIsLoading}
-                    disabled={employeeIsLoading || !!employeeError}
-                    onChange={(e) => field.onChange(e.value)}
-                    optionLabel="full_name"
-                    optionValue="id"
-                    placeholder={
-                      employeeIsLoading
-                        ? i18nT("static.151p210")
-                        : i18nT("static.atd8u4")
-                    }
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                  {employeeError && (
-                    <small className="p-error">{i18nT("static.r7jgxj")} </small>
-                  )}
-                </>
-              )}
+          {/* Employee Context Summary Card */}
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 sm:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <i className="pi pi-user text-base" />
+              </div>
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {i18nT("static.1fak8xt")}
+                </span>
+                <span className="truncate text-sm font-semibold text-slate-800">
+                  {employeeFullName ||
+                    (employeeIsLoading
+                      ? i18nT("static.151p210")
+                      : `Employee #${id}`)}
+                </span>
+              </div>
+            </div>
+            <Tag
+              severity="info"
+              value={`ID: ${id}`}
+              rounded
+              className="font-mono text-xs"
             />
           </div>
 
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <label
-              htmlFor="income_component_master_id"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.14pnb2x")}{" "}
-              <span className="ml-1 text-red-500">*</span>
-            </label>
+          {/* Hidden Employee ID field to preserve form state */}
+          <Controller
+            name="employee_id"
+            control={control}
+            defaultValue={Number(id)}
+            render={({ field }) => (
+              <input type="hidden" name={field.name} value={field.value} />
+            )}
+          />
+
+          {/* Component Selection */}
+          <div className="sm:col-span-2">
             <Controller
               name="income_component_master_id"
               control={control}
-              rules={{ required: i18nT("static.r200e0") }}
+              rules={{
+                required: i18nT("static.r200e0"),
+                validate: (val) =>
+                  (val && Number(val) > 0) || i18nT("static.r200e0"),
+              }}
               render={({ field, fieldState }) => (
-                <>
+                <Field
+                  id="income_component_master_id"
+                  label={i18nT("static.14pnb2x")}
+                  required
+                  error={fieldState.error?.message}
+                  hint={
+                    incomeComponentError ? i18nT("static.10jyp93") : undefined
+                  }
+                >
                   <Dropdown
                     id="income_component_master_id"
                     appendTo={() => document.body}
-                    value={field.value}
+                    value={field.value || null}
                     options={employeeIncomeComponentActive}
                     loading={incomeComponentIsLoading}
                     disabled={
                       incomeComponentIsLoading || !!incomeComponentError
                     }
+                    filter
+                    showClear={false}
                     onChange={(e) => {
                       field.onChange(e.value);
                       onChangeIncomeComponent(e.value);
@@ -1152,307 +1264,343 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                  {incomeComponentError && (
-                    <small className="p-error font-bold">
-                      {i18nT("static.10jyp93")}{" "}
-                    </small>
-                  )}
-                </>
+                </Field>
               )}
             />
           </div>
 
-          {isFixedAmount && (
-            <>
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="amount"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  {i18nT("static.a2ky21")}
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-                <Controller
-                  name="amount"
-                  control={control}
-                  defaultValue={0}
-                  rules={{ required: i18nT("static.1lf34iw") }}
-                  render={({ field, fieldState }) => (
+          {/* Selected Component Information Banner */}
+          {selectedIncomeComponent && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs text-slate-600 sm:col-span-2 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-100/80 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-800 font-mono">
+                    {selectedIncomeComponent.code}
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600">
+                    Metode:{" "}
+                    <strong className="text-slate-800">
+                      {selectedIncomeComponent.calculation_method_name ||
+                        calculationMethodCode}
+                    </strong>
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Tag
+                    value={
+                      selectedIncomeComponent.is_taxable
+                        ? "Kena Pajak (PPh 21)"
+                        : "Bebas Pajak"
+                    }
+                    severity={
+                      selectedIncomeComponent.is_taxable
+                        ? "warning"
+                        : "secondary"
+                    }
+                    className="text-[11px]"
+                  />
+                  <Tag
+                    value={
+                      selectedIncomeComponent.is_fixed_allowance
+                        ? "Tunjangan Tetap"
+                        : "Tunjangan Tidak Tetap"
+                    }
+                    severity={
+                      selectedIncomeComponent.is_fixed_allowance
+                        ? "info"
+                        : "secondary"
+                    }
+                    className="text-[11px]"
+                  />
+                </div>
+              </div>
+
+              {/* BPJS Wage Base info */}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                  <i className="pi pi-shield text-blue-600 text-xs" />
+                  <span>Dasar Upah BPJS:</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {selectedIncomeComponent.include_in_bpjs_health ||
+                  selectedIncomeComponent.include_in_bpjs_employment ? (
                     <>
-                      <InputNumber
-                        id="amount"
-                        placeholder={i18nT("static.119fv83")}
-                        inputRef={field.ref}
-                        mode="currency"
-                        currency="IDR"
-                        locale="id-ID"
-                        min={0}
-                        onValueChange={(e) => {
-                          field.onChange(e.value);
-                        }}
-                        value={Number(field.value ? field.value : 0)}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {" "}
-                          {fieldState.error.message}{" "}
-                        </small>
+                      {selectedIncomeComponent.include_in_bpjs_health && (
+                        <Tag
+                          value="+ Dasar BPJS Kesehatan"
+                          severity="success"
+                          className="text-[11px]"
+                          title="Nominal tunjangan ini ditambahkan ke dasar perhitungan iuran BPJS Kesehatan"
+                        />
+                      )}
+                      {selectedIncomeComponent.include_in_bpjs_employment && (
+                        <Tag
+                          value="+ Dasar BPJS Ketenagakerjaan"
+                          severity="success"
+                          className="text-[11px]"
+                          title="Nominal tunjangan ini ditambahkan ke dasar perhitungan iuran BPJS Ketenagakerjaan"
+                        />
                       )}
                     </>
+                  ) : (
+                    <span className="text-slate-400 italic">
+                      Tidak masuk dasar upah BPJS
+                    </span>
                   )}
-                />
+                </div>
               </div>
-            </>
+            </div>
           )}
 
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="frequency"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.1m95xl7")}
-              <span className="ml-1 text-red-500">*</span>
-            </label>
+          {/* Working Period Banner */}
+          {isWorkingPeriod && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800 sm:col-span-2">
+              <i className="pi pi-info-circle mt-0.5 shrink-0 text-sm text-amber-600" />
+              <div className="leading-relaxed">
+                {i18nT("static.1l84av2")} Besaran komponen ini dihitung otomatis
+                berdasarkan tabel masa kerja (working period tiers). Frekuensi
+                otomatis bulanan (Monthly).
+              </div>
+            </div>
+          )}
+
+          {/* Fixed Amount / Attendance-based / Daily Amount */}
+          {isFixedAmount && (
             <Controller
-              name="frequency"
+              name="amount"
               control={control}
-              rules={{ required: i18nT("static.hva68e") }}
+              defaultValue={0}
+              rules={{
+                required: i18nT("static.1lf34iw"),
+                min: { value: 0, message: "Nominal tidak boleh negatif" },
+              }}
               render={({ field, fieldState }) => (
-                <>
+                <Field
+                  id="amount"
+                  label={
+                    isAttendanceBased
+                      ? "Nominal / Tarif Harian"
+                      : i18nT("static.a2ky21")
+                  }
+                  required
+                  error={fieldState.error?.message}
+                  hint={
+                    isAttendanceBased
+                      ? "Tarif per kehadiran yang dikalikan dengan hari hadir"
+                      : undefined
+                  }
+                >
+                  <InputNumber
+                    id="amount"
+                    placeholder={i18nT("static.119fv83")}
+                    inputRef={field.ref}
+                    mode="currency"
+                    currency="IDR"
+                    locale="id-ID"
+                    min={0}
+                    onValueChange={(e) => field.onChange(e.value)}
+                    value={Number(field.value ? field.value : 0)}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                </Field>
+              )}
+            />
+          )}
+
+          {/* Percentage Based On Component */}
+          {isPercentage && (
+            <Controller
+              name="based_on_component_id"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field
+                  id="based_on_component_id"
+                  label={i18nT("static.xgw1bf")}
+                  error={fieldState.error?.message}
+                  hint={
+                    incomeComponentError ? i18nT("static.10jyp93") : undefined
+                  }
+                >
                   <Dropdown
-                    id="frequency"
+                    id="based_on_component_id"
                     appendTo={() => document.body}
                     value={field.value}
-                    options={activeFrequency}
-                    loading={isLoadingFrequency}
+                    options={incomeComponentReferenceOptions}
+                    loading={incomeComponentIsLoading}
                     disabled={
-                      isWorkingPeriod || isLoadingFrequency || !!errorFrequency
+                      incomeComponentIsLoading || !!incomeComponentError
                     }
                     onChange={(e) => field.onChange(e.value)}
                     optionLabel="name"
                     optionValue="id"
+                    itemTemplate={incomeComponentReferenceOptionTemplate}
+                    filter
+                    showClear
                     placeholder={
-                      isLoadingFrequency
-                        ? i18nT("static.ah3k8b")
-                        : i18nT("static.veufz8")
+                      incomeComponentIsLoading
+                        ? i18nT("static.vznp1o")
+                        : i18nT("static.lg7l5k")
                     }
-                    className={
-                      fieldState.invalid ? "p-invalid w-full" : "w-full"
-                    }
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {isWorkingPeriod && (
-                    <small className="text-slate-500">
-                      {i18nT("static.1l84av2")}{" "}
-                    </small>
-                  )}
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                  {errorFrequency && (
-                    <small className="p-error font-bold">
-                      {i18nT("static.mqysi6")}{" "}
-                    </small>
-                  )}
-                </>
+                </Field>
+              )}
+            />
+          )}
+
+          {/* Percentage Value */}
+          {isPercentage && (
+            <Controller
+              name="percentage"
+              control={control}
+              defaultValue={0}
+              rules={{ required: i18nT("static.1lf34iw") }}
+              render={({ field, fieldState }) => (
+                <Field
+                  id="percentage"
+                  label={i18nT("static.wa149h")}
+                  required
+                  error={fieldState.error?.message}
+                >
+                  <InputNumber
+                    id="percentage"
+                    placeholder={i18nT("static.1eyj90v")}
+                    inputRef={field.ref}
+                    suffix="%"
+                    min={0}
+                    max={100}
+                    onValueChange={(e) => field.onChange(e.value)}
+                    value={Number(field.value ?? 0)}
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                </Field>
+              )}
+            />
+          )}
+
+          {/* Frequency */}
+          <Controller
+            name="frequency"
+            control={control}
+            rules={{ required: i18nT("static.hva68e") }}
+            render={({ field, fieldState }) => (
+              <Field
+                id="frequency"
+                label={`${i18nT("static.1m95xl7")} (Frequency)`}
+                required
+                error={fieldState.error?.message}
+                hint={
+                  isWorkingPeriod
+                    ? i18nT("static.1l84av2")
+                    : isAttendanceBased
+                      ? locale === "id"
+                        ? "Pilih 'Daily' agar nominal dihitung per hari kehadiran (nominal × hari hadir)."
+                        : "Select 'Daily' to calculate amount based on attendance days (rate × attendance days)."
+                      : errorFrequency
+                        ? i18nT("static.mqysi6")
+                        : locale === "id"
+                          ? "Basis periode pembayaran komponen (Daily untuk per hari hadir, Monthly untuk bulanan)."
+                          : "Component payment basis (Daily for attendance-based, Monthly for monthly)."
+                }
+                className={
+                  isFixedAmount
+                    ? ""
+                    : isPercentage
+                      ? "sm:col-span-2"
+                      : "sm:col-span-2"
+                }
+              >
+                <Dropdown
+                  id="frequency"
+                  appendTo={() => document.body}
+                  value={field.value}
+                  options={activeFrequency}
+                  loading={isLoadingFrequency}
+                  disabled={
+                    isWorkingPeriod || isLoadingFrequency || !!errorFrequency
+                  }
+                  onChange={(e) => field.onChange(e.value)}
+                  optionLabel="name"
+                  optionValue="id"
+                  itemTemplate={frequencyOptionTemplate}
+                  valueTemplate={selectedFrequencyTemplate}
+                  placeholder={
+                    isLoadingFrequency
+                      ? i18nT("static.ah3k8b")
+                      : i18nT("static.veufz8")
+                  }
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                />
+              </Field>
+            )}
+          />
+
+          {/* Start Date & End Date */}
+          <div className="grid grid-cols-1 gap-5 sm:col-span-2 sm:grid-cols-2">
+            <Controller
+              name="start_date"
+              control={control}
+              rules={{ required: i18nT("static.1lf34iw") }}
+              render={({ field, fieldState }) => (
+                <Field
+                  id="start_date"
+                  label={i18nT("static.7bl5hd")}
+                  required
+                  error={fieldState.error?.message}
+                >
+                  <Calendar
+                    dateFormat="dd MM yy"
+                    showIcon
+                    appendTo={() => document.body}
+                    {...field}
+                    id="start_date"
+                    value={field.value ? dayjs(field.value).toDate() : null}
+                    onChange={(e) => field.onChange(e.value)}
+                    hourFormat="24"
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="end_date"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field
+                  id="end_date"
+                  label={i18nT("static.1j4m31m")}
+                  hint="Kosongkan jika berlaku tanpa batas waktu"
+                  error={fieldState.error?.message}
+                >
+                  <Calendar
+                    dateFormat="dd MM yy"
+                    showIcon
+                    appendTo={() => document.body}
+                    {...field}
+                    id="end_date"
+                    value={field.value ? dayjs(field.value).toDate() : null}
+                    onChange={(e) => field.onChange(e.value)}
+                    hourFormat="24"
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                </Field>
               )}
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:col-span-2 sm:grid-cols-2">
-            <div className="flex flex-col">
-              <label
-                htmlFor="start_date"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                {i18nT("static.7bl5hd")}
-                <span className="ml-1 text-red-500">*</span>
-              </label>
-              <Controller
-                name="start_date"
-                control={control}
-                rules={{ required: i18nT("static.1lf34iw") }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Calendar
-                      dateFormat="dd MM yy"
-                      showIcon
-                      appendTo={() => document.body}
-                      {...field}
-                      id="start_date"
-                      value={field.value ? dayjs(field.value).toDate() : null}
-                      onChange={(e) => field.onChange(e.value)}
-                      hourFormat="24"
-                      className={
-                        fieldState.invalid ? "w-full p-invalid" : "w-full"
-                      }
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label
-                htmlFor="end_date"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                {i18nT("static.1j4m31m")}{" "}
-              </label>
-              <Controller
-                name="end_date"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Calendar
-                      dateFormat="dd MM yy"
-                      showIcon
-                      appendTo={() => document.body}
-                      {...field}
-                      id="end_date"
-                      value={field.value ? dayjs(field.value).toDate() : null}
-                      onChange={(e) => field.onChange(e.value)}
-                      hourFormat="24"
-                      className={
-                        fieldState.invalid ? "w-full p-invalid" : "w-full"
-                      }
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-          </div>
-
-          {isPercentage && (
-            <>
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="based_on_component_id"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  {i18nT("static.xgw1bf")}{" "}
-                </label>
-                <Controller
-                  name="based_on_component_id"
-                  control={control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <Dropdown
-                        id="based_on_component_id"
-                        appendTo={() => document.body}
-                        value={field.value}
-                        options={incomeComponentReferenceOptions}
-                        loading={incomeComponentIsLoading}
-                        disabled={
-                          incomeComponentIsLoading || !!incomeComponentError
-                        }
-                        onChange={(e) => field.onChange(e.value)}
-                        optionLabel="name"
-                        optionValue="id"
-                        itemTemplate={incomeComponentReferenceOptionTemplate}
-                        filter
-                        showClear
-                        placeholder={
-                          incomeComponentIsLoading
-                            ? i18nT("static.vznp1o")
-                            : i18nT("static.lg7l5k")
-                        }
-                        className={
-                          fieldState.invalid ? "p-invalid w-full" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                      {incomeComponentError && (
-                        <small className="p-error font-bold">
-                          {i18nT("static.10jyp93")}{" "}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </>
-          )}
-
-          {isPercentage && (
-            <>
-              <div className="flex flex-col gap-2">
-                <label
-                  htmlFor="percentage"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  {i18nT("static.wa149h")}
-                  <span className="ml-1 text-red-500">*</span>
-                </label>
-                <Controller
-                  name="percentage"
-                  control={control}
-                  defaultValue={0}
-                  rules={{ required: i18nT("static.1lf34iw") }}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <InputNumber
-                        id="percentage"
-                        placeholder={i18nT("static.1eyj90v")}
-                        inputRef={field.ref}
-                        suffix="%"
-                        min={0}
-                        max={100}
-                        onValueChange={(e) => field.onChange(e.value)}
-                        value={Number(field.value ?? 0)}
-                        className={
-                          fieldState.invalid ? "w-full p-invalid" : "w-full"
-                        }
-                      />
-                      {fieldState.error && (
-                        <small className="font-bold p-error">
-                          {fieldState.error.message}
-                        </small>
-                      )}
-                    </>
-                  )}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <label
-              htmlFor="notes"
-              className="mb-2 block text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.4f76ga")}{" "}
-            </label>
+          {/* Notes */}
+          <div className="sm:col-span-2">
             <Controller
               name="notes"
               control={control}
               render={({ field, fieldState }) => (
-                <>
+                <Field
+                  id="notes"
+                  label={i18nT("static.4f76ga")}
+                  error={fieldState.error?.message}
+                >
                   <InputTextarea
                     id="notes"
                     placeholder={i18nT("static.wu0ooo")}
@@ -1462,41 +1610,25 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
                     autoResize
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && (
-                    <small className="font-bold p-error">
-                      {" "}
-                      {fieldState.error.message}{" "}
-                    </small>
-                  )}
-                </>
+                </Field>
               )}
             />
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+          {/* Status Switch */}
+          <div className="sm:col-span-2">
             <Controller
               name="is_active"
               control={control}
               defaultValue={true}
               render={({ field }) => (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <label
-                      htmlFor="is_active"
-                      className="cursor-pointer text-sm font-medium text-slate-700"
-                    >
-                      {i18nT("static.1uu2ztk")}{" "}
-                    </label>
-                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      {i18nT("static.148ezbn")}{" "}
-                    </p>
-                  </div>
-                  <InputSwitch
-                    id="is_active"
-                    checked={Boolean(field.value)}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
-                </div>
+                <StatusOption
+                  inputId="is_active"
+                  label={i18nT("static.1uu2ztk")}
+                  description={i18nT("static.148ezbn")}
+                  checked={Boolean(field.value)}
+                  onChange={(checked) => field.onChange(checked)}
+                />
               )}
             />
           </div>
@@ -1505,5 +1637,79 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
     </>
   );
 };
+
+function Field({
+  id,
+  label,
+  required = false,
+  hint,
+  error,
+  children,
+  className = "",
+}: {
+  id?: string;
+  label: ReactNode;
+  required?: boolean;
+  hint?: ReactNode;
+  error?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      <label
+        htmlFor={id}
+        className="flex items-center gap-1 text-sm font-medium text-slate-700"
+      >
+        <span>{label}</span>
+        {required && <span className="font-bold text-red-500">*</span>}
+      </label>
+      {children}
+      {error ? (
+        <small className="text-xs p-error">{error}</small>
+      ) : (
+        hint && <small className="text-xs text-slate-500">{hint}</small>
+      )}
+    </div>
+  );
+}
+
+function StatusOption({
+  inputId,
+  label,
+  description,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  inputId: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <InputSwitch
+        inputId={inputId}
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(Boolean(event.value))}
+      />
+      <div className="min-w-0">
+        <label
+          htmlFor={inputId}
+          className="cursor-pointer text-sm font-semibold text-slate-700"
+        >
+          {label}
+        </label>
+        <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default EmployeePayrollEmployeeIncomeComponentTableData;

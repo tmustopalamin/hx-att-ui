@@ -20,12 +20,14 @@ import {
   createStatutoryEnrollment,
   createStatutoryWage,
   createTaxProfile,
+  deletePayrollProfileItem,
   updateStatutoryEnrollment,
 } from "@/app/services/employee-payroll-profile-service";
 import { getEmployeeIdentities } from "@/app/services/employee-general-service";
 import type {
   EmployeePayrollProfile,
   EmployeeStatutoryEnrollment,
+  EmployeeStatutoryWage,
   NewSalaryHistory,
   NewStatutoryEnrollment,
   NewStatutoryWage,
@@ -40,6 +42,7 @@ import { showToast } from "@/store/ToastSlice";
 import { RootState } from "@/store/store";
 import PrimeDatePicker from "@/app/_components/PrimeDatePicker";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
+import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 import { formatDate as formatDisplayDate } from "@/app/utils/date-format";
 
 type Mode = "bpjs" | "tax" | "salary";
@@ -177,6 +180,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
   const canCreate = useSelector((state: RootState) =>
     state.profile.permissions.includes("payroll.create"),
   );
+  const canManage = useSelector(
+    (state: RootState) =>
+      state.profile.permissions.includes("payroll.create") ||
+      state.profile.permissions.includes("payroll.update"),
+  );
+  const canDelete = useSelector(
+    (state: RootState) =>
+      state.profile.permissions.includes("payroll.delete") ||
+      state.profile.permissions.includes("payroll.update") ||
+      state.profile.permissions.includes("payroll.create"),
+  );
   const canOverrideTaxType = useSelector((state: RootState) =>
     state.profile.permissions.includes("payroll.tax-override"),
   );
@@ -252,6 +266,58 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDeleteEnrollment = (row: EmployeeStatutoryEnrollment) => {
+    requestActionConfirmation({
+      action: "Hapus Kepesertaan",
+      target: `${formatProgramLabel(row.program_name, row.program_code)}${
+        row.participant_number ? ` (${row.participant_number})` : ""
+      }`,
+      severity: "danger",
+      confirmLabel: "Hapus",
+      cancelLabel: "Batal",
+      confirmIcon: "pi pi-trash",
+      description:
+        "Apakah Anda yakin ingin menghapus data kepesertaan ini? Catatan kepesertaan yang dihapus tidak akan lagi diproses pada perhitungan payroll.",
+      onAccept: async () => {
+        await run(
+          () =>
+            deletePayrollProfileItem(
+              employeeId,
+              "enrollments",
+              row.id,
+              row.row_version,
+            ),
+          "Data kepesertaan berhasil dihapus.",
+        );
+      },
+    });
+  };
+
+  const handleDeleteStatutoryWage = (row: EmployeeStatutoryWage) => {
+    requestActionConfirmation({
+      action: "Hapus Penyesuaian Upah",
+      target: `${row.program_group} — ${formatDisplayDate(row.effective_from)}`,
+      severity: "danger",
+      confirmLabel: "Hapus",
+      cancelLabel: "Batal",
+      confirmIcon: "pi pi-trash",
+      description:
+        "Apakah Anda yakin ingin menghapus data penetapan upah wajib ini?",
+      onAccept: async () => {
+        await run(
+          () =>
+            deletePayrollProfileItem(
+              employeeId,
+              "statutory-wages",
+              row.id,
+              row.row_version,
+            ),
+          "Penetapan upah wajib berhasil dihapus.",
+        );
+      },
+    });
   };
 
   const openTaxDialog = async () => {
@@ -371,8 +437,7 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                   size="small"
                   className="w-full sm:w-auto"
                   onClick={() => {
-                    if (mode === "tax") {
-                      void openTaxDialog();
+                    if (mode === "bpjs") {
                       const enrolledProgramIds = new Set(
                         (data?.enrollments ?? [])
                           .filter((e) => e.effective_to === null)
@@ -384,6 +449,10 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                       );
                       const defaultProgramId =
                         availablePrograms[0]?.id ?? allPrograms[0]?.id ?? 0;
+                      const defaultProg = allPrograms.find(
+                        (p) => p.id === defaultProgramId,
+                      );
+                      const isDefaultJkk = defaultProg?.code === "BPJS_TK_JKK";
 
                       setIsEditingEnrollment(false);
                       setEditingEnrollmentId(null);
@@ -391,9 +460,14 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                       setEnrollment({
                         ...ENROLLMENT,
                         statutory_program_id: defaultProgramId,
+                        bpjs_risk_class_id: isDefaultJkk
+                          ? (data?.bpjs_risk_classes?.[0]?.id ?? null)
+                          : null,
                         effective_from: new Date().toISOString().slice(0, 10),
                       });
                       setDialog("primary");
+                    } else if (mode === "tax") {
+                      void openTaxDialog();
                     } else {
                       setDialog("primary");
                     }
@@ -452,7 +526,11 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                   />
                 )}
               />
-              <Column field="risk_class_code" header={i18nT("static.psbfa6")} />
+              <Column
+                field="risk_class_code"
+                header={i18nT("static.psbfa6")}
+                body={(row) => row.risk_class_code ?? "—"}
+              />
               <Column
                 field="effective_from"
                 header={i18nT("static.ypbwia")}
@@ -466,10 +544,10 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                 }
               />
               <Column
-                header={i18nT("static.4q4x6t")}
+                header={i18nT("static.2wk0tb")}
                 body={(row: EmployeeStatutoryEnrollment) => (
-                  <div className="flex items-center justify-center">
-                    {canCreate && (
+                  <div className="flex items-center justify-center gap-1">
+                    {canManage && (
                       <Button
                         type="button"
                         icon="pi pi-pencil"
@@ -480,6 +558,10 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                         tooltip="Perbarui Kepesertaan"
                         tooltipOptions={{ position: "top" }}
                         onClick={() => {
+                          const prog = (data?.statutory_programs ?? []).find(
+                            (p) => p.id === row.statutory_program_id,
+                          );
+                          const isRowJkk = prog?.code === "BPJS_TK_JKK";
                           setEnrollment({
                             statutory_program_id: row.statutory_program_id,
                             participant_number: row.participant_number,
@@ -488,7 +570,9 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                               row.effective_from ||
                               new Date().toISOString().slice(0, 10),
                             effective_to: row.effective_to,
-                            bpjs_risk_class_id: row.bpjs_risk_class_id,
+                            bpjs_risk_class_id: isRowJkk
+                              ? row.bpjs_risk_class_id
+                              : null,
                             company_registration_number:
                               row.company_registration_number,
                             notes: row.notes,
@@ -500,9 +584,22 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                         }}
                       />
                     )}
+                    {canDelete && (
+                      <Button
+                        type="button"
+                        icon="pi pi-trash"
+                        rounded
+                        text
+                        severity="danger"
+                        size="small"
+                        tooltip="Hapus Kepesertaan"
+                        tooltipOptions={{ position: "top" }}
+                        onClick={() => handleDeleteEnrollment(row)}
+                      />
+                    )}
                   </div>
                 )}
-                style={{ width: "4.5rem", textAlign: "center" }}
+                style={{ width: "6rem", textAlign: "center" }}
               />
             </DataTable>
             <h2 className="text-base font-semibold text-slate-800">
@@ -539,6 +636,27 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                 body={(row) =>
                   formatDisplayDate(row.effective_to, "Open ended")
                 }
+              />
+              <Column
+                header={i18nT("static.2wk0tb")}
+                body={(row: EmployeeStatutoryWage) => (
+                  <div className="flex items-center justify-center">
+                    {canDelete && (
+                      <Button
+                        type="button"
+                        icon="pi pi-trash"
+                        rounded
+                        text
+                        severity="danger"
+                        size="small"
+                        tooltip="Hapus Penyesuaian Upah"
+                        tooltipOptions={{ position: "top" }}
+                        onClick={() => handleDeleteStatutoryWage(row)}
+                      />
+                    )}
+                  </div>
+                )}
+                style={{ width: "4.5rem", textAlign: "center" }}
               />
             </DataTable>
           </>
@@ -748,6 +866,31 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                     notify("error", "Tanggal mulai berlaku wajib diisi.");
                     return;
                   }
+
+                  const selectedProg = (data?.statutory_programs ?? []).find(
+                    (p) => p.id === enrollment.statutory_program_id,
+                  );
+                  const isJkk = selectedProg?.code === "BPJS_TK_JKK";
+
+                  if (
+                    isJkk &&
+                    (!enrollment.bpjs_risk_class_id ||
+                      enrollment.bpjs_risk_class_id <= 0)
+                  ) {
+                    notify(
+                      "error",
+                      "Silakan pilih Kelas Risiko JKK terlebih dahulu.",
+                    );
+                    return;
+                  }
+
+                  const sanitizedEnrollment = {
+                    ...enrollment,
+                    bpjs_risk_class_id: isJkk
+                      ? enrollment.bpjs_risk_class_id
+                      : null,
+                  };
+
                   if (
                     isEditingEnrollment &&
                     editingEnrollmentId &&
@@ -760,14 +903,17 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                           editingEnrollmentId,
                           editingEnrollmentRowVersion,
                           {
-                            participant_number: enrollment.participant_number,
-                            enrollment_status: enrollment.enrollment_status,
-                            effective_from: enrollment.effective_from,
-                            effective_to: enrollment.effective_to,
-                            bpjs_risk_class_id: enrollment.bpjs_risk_class_id,
+                            participant_number:
+                              sanitizedEnrollment.participant_number,
+                            enrollment_status:
+                              sanitizedEnrollment.enrollment_status,
+                            effective_from: sanitizedEnrollment.effective_from,
+                            effective_to: sanitizedEnrollment.effective_to,
+                            bpjs_risk_class_id:
+                              sanitizedEnrollment.bpjs_risk_class_id,
                             company_registration_number:
-                              enrollment.company_registration_number,
-                            notes: enrollment.notes,
+                              sanitizedEnrollment.company_registration_number,
+                            notes: sanitizedEnrollment.notes,
                           },
                         ),
                       "Data kepesertaan berhasil diperbarui.",
@@ -776,12 +922,13 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                     const existingActive = (data?.enrollments ?? []).find(
                       (e) =>
                         e.statutory_program_id ===
-                          enrollment.statutory_program_id &&
+                          sanitizedEnrollment.statutory_program_id &&
                         e.effective_to === null,
                     );
                     if (
                       existingActive &&
-                      enrollment.effective_from <= existingActive.effective_from
+                      sanitizedEnrollment.effective_from <=
+                        existingActive.effective_from
                     ) {
                       notify(
                         "error",
@@ -790,7 +937,11 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
                       return;
                     }
                     void run(
-                      () => createStatutoryEnrollment(employeeId, enrollment),
+                      () =>
+                        createStatutoryEnrollment(
+                          employeeId,
+                          sanitizedEnrollment,
+                        ),
                       "Kepesertaan berhasil didaftarkan.",
                     );
                   }
@@ -983,11 +1134,11 @@ function EnrollmentForm({
               const prog = (profile?.statutory_programs ?? []).find(
                 (p) => p.id === programId,
               );
+              const progIsJkk = prog?.code === "BPJS_TK_JKK";
               change((v) => ({
                 ...v,
                 statutory_program_id: programId,
-                bpjs_risk_class_id:
-                  prog?.code === "BPJS_KESEHATAN" ? null : v.bpjs_risk_class_id,
+                bpjs_risk_class_id: progIsJkk ? v.bpjs_risk_class_id : null,
               }));
             }}
           />
@@ -998,6 +1149,7 @@ function EnrollmentForm({
           id="enrollment-participant-number"
           label={i18nT("static.3yqbxz")}
           hint="Nomor kartu BPJS Kesehatan (13 digit) atau KPJ (11 digit)"
+          className={isJkk ? "" : "sm:col-span-2"}
         >
           <InputText
             id="enrollment-participant-number"
@@ -1013,56 +1165,47 @@ function EnrollmentForm({
           />
         </Field>
 
-        <Field
-          id="enrollment-risk-class"
-          label={
-            <span className="inline-flex items-center gap-1.5">
-              <span>{i18nT("static.psbfa6")}</span>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 focus:outline-none transition-colors"
-                title="Lihat panduan & tarif kelas risiko JKK"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setRiskInfoOpen(true);
-                }}
-              >
-                <i className="pi pi-info-circle text-xs" />
-              </button>
-            </span>
-          }
-          required={isJkk}
-          hint={
-            isBpjsKes
-              ? "Tidak berlaku untuk BPJS Kesehatan"
-              : isJkk
-                ? "Wajib dipilih untuk menentukan tarif iuran JKK"
-                : "Khusus program BPJS Ketenagakerjaan (JKK)"
-          }
-        >
-          <Dropdown
-            inputId="enrollment-risk-class"
-            value={value.bpjs_risk_class_id}
-            options={profile?.bpjs_risk_classes ?? []}
-            optionLabel="name"
-            optionValue="id"
-            showClear
-            disabled={isBpjsKes}
-            placeholder={
-              isBpjsKes
-                ? "Tidak berlaku (BPJS Kesehatan)"
-                : "Pilih Kelas Risiko JKK"
+        {isJkk && (
+          <Field
+            id="enrollment-risk-class"
+            label={
+              <span className="inline-flex items-center gap-1.5">
+                <span>{i18nT("static.psbfa6")}</span>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center w-5 h-5 rounded-full text-slate-400 hover:text-blue-600 hover:bg-blue-50 focus:outline-none transition-colors"
+                  title="Lihat panduan & tarif kelas risiko JKK"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setRiskInfoOpen(true);
+                  }}
+                >
+                  <i className="pi pi-info-circle text-xs" />
+                </button>
+              </span>
             }
-            className="w-full"
-            onChange={(e) =>
-              change((v) => ({
-                ...v,
-                bpjs_risk_class_id: e.value ? Number(e.value) : null,
-              }))
-            }
-          />
-        </Field>
+            required
+            hint="Wajib dipilih untuk menentukan tarif iuran JKK (PP 44/2015)"
+          >
+            <Dropdown
+              inputId="enrollment-risk-class"
+              value={value.bpjs_risk_class_id}
+              options={profile?.bpjs_risk_classes ?? []}
+              optionLabel="name"
+              optionValue="id"
+              showClear
+              placeholder="Pilih Kelas Risiko JKK"
+              className="w-full"
+              onChange={(e) =>
+                change((v) => ({
+                  ...v,
+                  bpjs_risk_class_id: e.value ? Number(e.value) : null,
+                }))
+              }
+            />
+          </Field>
+        )}
 
         {/* Row 3: Status Kepesertaan & NPP Perusahaan */}
         <Field

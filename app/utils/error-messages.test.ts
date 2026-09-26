@@ -35,4 +35,26 @@ describe("getErrorMessage", () => {
       ERROR_MESSAGES.PAYROLL_PRORATION_SHIFT_RULE_REQUIRED,
     );
   });
+
+  it("formats PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE with employee details", () => {
+    const apiError = {
+      code: "PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE::Aditya Dava Samsudin (10251)",
+      message: "",
+    };
+
+    expect(getErrorMessage(apiError)).toBe(
+      "Data rekening bank belum lengkap untuk karyawan: Aditya Dava Samsudin (10251). Silakan lengkapi data rekening bank aktif di menu Data Karyawan sebelum membuat batch pembayaran.",
+    );
+  });
+
+  it("falls back to default Indonesian message for standard PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE", () => {
+    const apiError = {
+      code: "PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE",
+      message: "",
+    };
+
+    expect(getErrorMessage(apiError)).toBe(
+      ERROR_MESSAGES.PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE,
+    );
+  });
 });

@@ -115,9 +115,21 @@ export default function PerformanceEarningPanel({
               data.length === 0 ||
               !data.some((row) => row.reason === null)
             }
+            tooltip={
+              batchStatus !== "READY" ? i18nT("static.1j2sq29") : undefined
+            }
+            tooltipOptions={{ position: "left" }}
             onClick={confirmGenerate}
           />
         </div>
+        {batchStatus !== "READY" && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            <i className="pi pi-info-circle text-sm text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span>{i18nT("static.1j2sq29")}</span>
+            </div>
+          </div>
+        )}
         <DataTable
           value={data}
           dataKey="performance_review_id"
@@ -155,20 +167,27 @@ export default function PerformanceEarningPanel({
           />
           <Column
             header={i18nT("static.3pd73")}
-            body={(row: PayrollPerformanceEarningPreview) =>
-              row.reason ? (
-                <Tag value={row.reason} severity="warning" />
-              ) : (
-                <Tag value={i18nT("static.ile4gg")} severity="success" />
-              )
-            }
+            body={(row: PayrollPerformanceEarningPreview) => {
+              if (!row.reason) {
+                return (
+                  <Tag value={i18nT("static.ile4gg")} severity="success" />
+                );
+              }
+              if (row.reason.startsWith("ALREADY_GENERATED_")) {
+                return (
+                  <Tag
+                    value={row.reason.replace(
+                      "ALREADY_GENERATED_",
+                      "GENERATED: ",
+                    )}
+                    severity="info"
+                  />
+                );
+              }
+              return <Tag value={row.reason} severity="warning" />;
+            }}
           />
         </DataTable>
-        {batchStatus !== "READY" && (
-          <p className="m-0 text-xs text-slate-500">
-            {i18nT("static.1j2sq29")}{" "}
-          </p>
-        )}
       </div>
     </Card>
   );

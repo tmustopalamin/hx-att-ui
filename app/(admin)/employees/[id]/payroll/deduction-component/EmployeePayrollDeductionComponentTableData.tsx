@@ -9,7 +9,7 @@ import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
 import { Controller, useForm } from "react-hook-form";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
-import { useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/app/utils/fetcher";
 import {
@@ -68,13 +68,14 @@ const EmployeePayrollDeductionComponentTableData = () => {
   const canPurge = archivedAccess.canPurge;
   const [selectedData, setSelectedData] =
     useState<EmployeeDeductionComponent | null>(null);
+  const [selectedDeductionComponent, setSelectedDeductionComponent] =
+    useState<DeductionComponent | null>(null);
   const [globalFilterValue, setGlobalFilterValue] = useState("");
   const [filters, setFilters] = useState({
     global: { value: "", matchMode: FilterMatchMode.CONTAINS },
   });
   const [isAddNew, setIsAddNew] = useState(false);
   const [visible, setVisible] = useState(false);
-  const [popupHeaderTitle, setPopupHeaderTitle] = useState("");
   const {
     control,
     handleSubmit,
@@ -102,9 +103,10 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
   const onClickNew = () => {
     clearErrors();
+    setSelectedData(null);
+    setSelectedDeductionComponent(null);
     setIsAddNew(true);
     setVisible(true);
-    setPopupHeaderTitle("New Deduction Component");
     reset({
       id: 0,
       employee_id: Number(id),
@@ -171,14 +173,8 @@ const EmployeePayrollDeductionComponentTableData = () => {
     }`,
     fetcher,
   );
-  const {
-    data: employeeData,
-    error: employeeError,
-    isLoading: employeeIsLoading,
-  } = useSWR<EmployeePersonalData>(
-    `/api/employees/${id}/personal-data`,
-    fetcher,
-  );
+  const { data: employeeData, isLoading: employeeIsLoading } =
+    useSWR<EmployeePersonalData>(`/api/employees/${id}/personal-data`, fetcher);
   const {
     data: employeeDeductionComponentData,
     error: employeeDeductionComponentError,
@@ -189,24 +185,29 @@ const EmployeePayrollDeductionComponentTableData = () => {
     error: frequencyError,
     isLoading: frequencyLoading,
   } = useSWR<Frequency[]>(`/api/frequency`, fetcher);
-  const employeeActive = employeeData
-    ? [
-        {
-          id: Number(id),
-          full_name: [
-            employeeData.first_name,
-            employeeData.middle_name,
-            employeeData.last_name,
-          ]
-            .filter(Boolean)
-            .join(" "),
-        },
-      ]
-    : [];
-  const employeeDeductionComponentActive =
-    employeeDeductionComponentData?.filter(
-      (a) => a.is_active && a.assignment_mode === "EMPLOYEE",
-    );
+  const employeeFullName = useMemo(() => {
+    if (!employeeData) return "";
+    return [
+      employeeData.first_name,
+      employeeData.middle_name,
+      employeeData.last_name,
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }, [employeeData]);
+  const employeeDeductionComponentActive = useMemo(
+    () =>
+      employeeDeductionComponentData?.filter(
+        (a) =>
+          (a.is_active ||
+            a.id === selectedData?.deduction_component_master_id) &&
+          a.assignment_mode === "EMPLOYEE",
+      ) ?? [],
+    [
+      employeeDeductionComponentData,
+      selectedData?.deduction_component_master_id,
+    ],
+  );
   const activeFrequency = frequencyData?.filter(
     (frequency) => frequency.is_active,
   );
@@ -458,10 +459,16 @@ const EmployeePayrollDeductionComponentTableData = () => {
     }
   };
 
+  const onChangeDeductionComponent = (componentId: number) => {
+    const found = employeeDeductionComponentData?.find(
+      (c) => c.id === componentId,
+    );
+    setSelectedDeductionComponent(found ?? null);
+  };
+
   const onClickUpdate = (data: EmployeeDeductionComponent) => {
     setVisible(true);
     setIsAddNew(false);
-    setPopupHeaderTitle("Update Deduction Component");
 
     const updatedData = {
       ...data,
@@ -471,6 +478,11 @@ const EmployeePayrollDeductionComponentTableData = () => {
 
     reset(updatedData);
     setSelectedData(updatedData);
+    setSelectedDeductionComponent(
+      employeeDeductionComponentData?.find(
+        (c) => c.id === data.deduction_component_master_id,
+      ) ?? null,
+    );
   };
 
   const activeColumnBody = (rowData: EmployeeDeductionComponent) => {
@@ -876,9 +888,22 @@ const EmployeePayrollDeductionComponentTableData = () => {
       </Card>
 
       <Dialog
-        header={popupHeaderTitle}
+        header={
+          <div className="flex items-center gap-2">
+            <i
+              className={`pi ${
+                isAddNew
+                  ? "pi-plus-circle text-blue-600"
+                  : "pi-pencil text-amber-600"
+              } text-lg`}
+            />
+            <span className="text-base font-semibold text-slate-800">
+              {isAddNew ? i18nT("static.14tpx85") : i18nT("static.8rzjp")}
+            </span>
+          </div>
+        }
         visible={visible}
-        style={{ width: "95vw", maxWidth: "46rem" }}
+        style={{ width: "95vw", maxWidth: "44rem" }}
         breakpoints={{ "640px": "95vw" }}
         modal
         draggable={false}
@@ -896,74 +921,80 @@ const EmployeePayrollDeductionComponentTableData = () => {
           onSubmit={handleSubmit((data) => onSubmit(data))}
           className="grid grid-cols-1 gap-5 pt-2 sm:grid-cols-2"
         >
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <label
-              htmlFor="employee_id"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.1fak8xt")}{" "}
-            </label>
-            <Controller
-              name="employee_id"
-              control={control}
-              rules={{ required: i18nT("static.2s9hk0") }}
-              render={({ field, fieldState }) => (
-                <>
-                  <Dropdown
-                    id="employee_id"
-                    appendTo={() => document.body}
-                    value={field.value}
-                    options={employeeActive}
-                    loading={employeeIsLoading}
-                    disabled={employeeIsLoading || !!employeeError}
-                    onChange={(e) => field.onChange(e.value)}
-                    optionLabel="full_name"
-                    optionValue="id"
-                    placeholder={
-                      employeeIsLoading
-                        ? i18nT("static.151p210")
-                        : i18nT("static.atd8u4")
-                    }
-                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
-                  />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                  {employeeError && (
-                    <small className="p-error">{i18nT("static.r7jgxj")} </small>
-                  )}
-                </>
-              )}
+          {/* Employee Context Summary Card */}
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 sm:col-span-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                <i className="pi pi-user text-base" />
+              </div>
+              <div className="min-w-0">
+                <span className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {i18nT("static.1fak8xt")}
+                </span>
+                <span className="truncate text-sm font-semibold text-slate-800">
+                  {employeeFullName ||
+                    (employeeIsLoading
+                      ? i18nT("static.151p210")
+                      : `Employee #${id}`)}
+                </span>
+              </div>
+            </div>
+            <Tag
+              severity="info"
+              value={`ID: ${id}`}
+              rounded
+              className="font-mono text-xs"
             />
           </div>
 
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <label
-              htmlFor="deduction_component_master_id"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.wfytj7")}{" "}
-              <span className="ml-1 text-red-500">*</span>
-            </label>
+          {/* Hidden Employee ID field to preserve form state */}
+          <Controller
+            name="employee_id"
+            control={control}
+            defaultValue={Number(id)}
+            render={({ field }) => (
+              <input type="hidden" name={field.name} value={field.value} />
+            )}
+          />
+
+          {/* Component Selection */}
+          <div className="sm:col-span-2">
             <Controller
               name="deduction_component_master_id"
               control={control}
-              rules={{ required: i18nT("static.1lbe6bq") }}
+              rules={{
+                required: i18nT("static.1lbe6bq"),
+                validate: (val) =>
+                  (val && Number(val) > 0) || i18nT("static.1lbe6bq"),
+              }}
               render={({ field, fieldState }) => (
-                <>
+                <Field
+                  id="deduction_component_master_id"
+                  label={i18nT("static.wfytj7")}
+                  required
+                  error={fieldState.error?.message}
+                  hint={
+                    employeeDeductionComponentError
+                      ? i18nT("static.1n8ef6d")
+                      : undefined
+                  }
+                >
                   <Dropdown
                     id="deduction_component_master_id"
                     appendTo={() => document.body}
-                    value={field.value}
+                    value={field.value || null}
                     options={employeeDeductionComponentActive}
                     loading={employeeDeductionComponentIsLoading}
                     disabled={
                       employeeDeductionComponentIsLoading ||
                       !!employeeDeductionComponentError
                     }
-                    onChange={(e) => field.onChange(e.value)}
+                    filter
+                    showClear={false}
+                    onChange={(e) => {
+                      field.onChange(e.value);
+                      onChangeDeductionComponent(e.value);
+                    }}
                     optionLabel="name"
                     optionValue="id"
                     placeholder={
@@ -973,190 +1004,175 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     }
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && (
-                    <small className="p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                  {employeeDeductionComponentError && (
-                    <small className="p-error font-bold">
-                      {i18nT("static.1n8ef6d")}{" "}
-                    </small>
-                  )}
-                </>
+                </Field>
               )}
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="amount"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.a2ky21")}
-              <span className="ml-1 text-red-500">*</span>
-            </label>
+          {/* Selected Component Information Banner */}
+          {selectedDeductionComponent && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 text-xs text-slate-600 sm:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-slate-800">
+                    {selectedDeductionComponent.code}
+                  </span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-600">
+                    Metode:{" "}
+                    <strong className="text-slate-800">
+                      {selectedDeductionComponent.calculation_method_name ||
+                        selectedDeductionComponent.calculation_display ||
+                        "Standard"}
+                    </strong>
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Tag
+                    value={
+                      selectedDeductionComponent.is_taxable
+                        ? "Mengurangi Pajak"
+                        : "Tidak Mengurangi Pajak"
+                    }
+                    severity={
+                      selectedDeductionComponent.is_taxable
+                        ? "info"
+                        : "secondary"
+                    }
+                    className="text-[11px]"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Amount */}
+          <Controller
+            name="amount"
+            control={control}
+            defaultValue={0}
+            rules={{
+              required: i18nT("static.1lf34iw"),
+              min: { value: 0, message: "Nominal tidak boleh negatif" },
+            }}
+            render={({ field, fieldState }) => (
+              <Field
+                id="amount"
+                label={i18nT("static.a2ky21")}
+                required
+                error={fieldState.error?.message}
+              >
+                <InputNumber
+                  id="amount"
+                  placeholder={i18nT("static.119fv83")}
+                  inputRef={field.ref}
+                  mode="currency"
+                  currency="IDR"
+                  locale="id-ID"
+                  min={0}
+                  onValueChange={(e) => field.onChange(e.value)}
+                  value={Number(field.value ? field.value : 0)}
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                />
+              </Field>
+            )}
+          />
+
+          {/* Frequency */}
+          <Controller
+            name="frequency"
+            control={control}
+            rules={{ required: i18nT("static.hva68e") }}
+            render={({ field, fieldState }) => (
+              <Field
+                id="frequency"
+                label={i18nT("static.1m95xl7")}
+                required
+                error={fieldState.error?.message}
+                hint={frequencyError ? i18nT("static.mqysi6") : undefined}
+              >
+                <Dropdown
+                  id="frequency"
+                  appendTo={() => document.body}
+                  value={field.value}
+                  options={activeFrequency}
+                  loading={frequencyLoading}
+                  disabled={frequencyLoading || !!frequencyError}
+                  onChange={(event) => field.onChange(event.value)}
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder={i18nT("static.veufz8")}
+                  className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                />
+              </Field>
+            )}
+          />
+
+          {/* Start Date & End Date */}
+          <div className="grid grid-cols-1 gap-5 sm:col-span-2 sm:grid-cols-2">
             <Controller
-              name="amount"
+              name="start_date"
               control={control}
-              defaultValue={0}
               rules={{ required: i18nT("static.1lf34iw") }}
               render={({ field, fieldState }) => (
-                <>
-                  <InputNumber
-                    id="amount"
-                    placeholder={i18nT("static.119fv83")}
-                    inputRef={field.ref}
-                    mode="currency"
-                    currency="IDR"
-                    locale="id-ID"
-                    min={0}
-                    onValueChange={(e) => {
-                      field.onChange(e.value);
-                    }}
-                    value={Number(field.value ? field.value : 0)}
-                    className={
-                      fieldState.invalid ? "w-full p-invalid" : "w-full"
-                    }
-                  />
-                  {fieldState.error && (
-                    <small className="font-bold p-error">
-                      {" "}
-                      {fieldState.error.message}{" "}
-                    </small>
-                  )}
-                </>
-              )}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="frequency"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.1m95xl7")}
-              <span className="ml-1 text-red-500">*</span>
-            </label>
-            <Controller
-              name="frequency"
-              control={control}
-              rules={{ required: i18nT("static.hva68e") }}
-              render={({ field, fieldState }) => (
-                <>
-                  <Dropdown
-                    id="frequency"
+                <Field
+                  id="start_date"
+                  label={i18nT("static.7bl5hd")}
+                  required
+                  error={fieldState.error?.message}
+                >
+                  <Calendar
+                    dateFormat="dd MM yy"
+                    showIcon
                     appendTo={() => document.body}
-                    value={field.value}
-                    options={activeFrequency}
-                    loading={frequencyLoading}
-                    disabled={frequencyLoading || !!frequencyError}
-                    onChange={(event) => field.onChange(event.value)}
-                    optionLabel="name"
-                    optionValue="id"
-                    placeholder={i18nT("static.veufz8")}
-                    className={
-                      fieldState.invalid ? "p-invalid w-full" : "w-full"
-                    }
+                    {...field}
+                    id="start_date"
+                    value={field.value ? dayjs(field.value).toDate() : null}
+                    onChange={(e) => field.onChange(e.value)}
+                    hourFormat="24"
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && (
-                    <small className="font-bold p-error">
-                      {fieldState.error.message}
-                    </small>
-                  )}
-                </>
+                </Field>
+              )}
+            />
+
+            <Controller
+              name="end_date"
+              control={control}
+              render={({ field, fieldState }) => (
+                <Field
+                  id="end_date"
+                  label={i18nT("static.1j4m31m")}
+                  hint="Kosongkan jika berlaku tanpa batas waktu"
+                  error={fieldState.error?.message}
+                >
+                  <Calendar
+                    dateFormat="dd MM yy"
+                    showIcon
+                    appendTo={() => document.body}
+                    {...field}
+                    id="end_date"
+                    value={field.value ? dayjs(field.value).toDate() : null}
+                    onChange={(e) => field.onChange(e.value)}
+                    hourFormat="24"
+                    className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
+                  />
+                </Field>
               )}
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:col-span-2 sm:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="start_date"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                {i18nT("static.7bl5hd")}
-                <span className="ml-1 text-red-500">*</span>
-              </label>
-              <Controller
-                name="start_date"
-                control={control}
-                rules={{ required: i18nT("static.1lf34iw") }}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Calendar
-                      dateFormat="dd MM yy"
-                      showIcon
-                      appendTo={() => document.body}
-                      {...field}
-                      id="start_date"
-                      value={field.value ? dayjs(field.value).toDate() : null}
-                      onChange={(e) => field.onChange(e.value)}
-                      hourFormat="24"
-                      className={
-                        fieldState.invalid ? "w-full p-invalid" : "w-full"
-                      }
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="end_date"
-                className="mb-2 block text-sm font-medium text-slate-700"
-              >
-                {i18nT("static.1j4m31m")}{" "}
-              </label>
-              <Controller
-                name="end_date"
-                control={control}
-                render={({ field, fieldState }) => (
-                  <>
-                    <Calendar
-                      dateFormat="dd MM yy"
-                      showIcon
-                      appendTo={() => document.body}
-                      {...field}
-                      id="end_date"
-                      value={field.value ? dayjs(field.value).toDate() : null}
-                      onChange={(e) => field.onChange(e.value)}
-                      hourFormat="24"
-                      className={
-                        fieldState.invalid ? "w-full p-invalid" : "w-full"
-                      }
-                    />
-                    {fieldState.error && (
-                      <small className="font-bold p-error">
-                        {" "}
-                        {fieldState.error.message}{" "}
-                      </small>
-                    )}
-                  </>
-                )}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:col-span-2">
-            <label
-              htmlFor="notes"
-              className="text-sm font-medium text-slate-700"
-            >
-              {i18nT("static.4f76ga")}{" "}
-            </label>
+          {/* Notes */}
+          <div className="sm:col-span-2">
             <Controller
               name="notes"
               control={control}
               render={({ field, fieldState }) => (
-                <>
+                <Field
+                  id="notes"
+                  label={i18nT("static.4f76ga")}
+                  error={fieldState.error?.message}
+                >
                   <InputTextarea
                     id="notes"
                     placeholder={i18nT("static.wu0ooo")}
@@ -1166,41 +1182,25 @@ const EmployeePayrollDeductionComponentTableData = () => {
                     autoResize
                     className={`w-full ${fieldState.invalid ? "p-invalid" : ""}`}
                   />
-                  {fieldState.error && (
-                    <small className="font-bold p-error">
-                      {" "}
-                      {fieldState.error.message}{" "}
-                    </small>
-                  )}
-                </>
+                </Field>
               )}
             />
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+          {/* Status Switch */}
+          <div className="sm:col-span-2">
             <Controller
               name="is_active"
               control={control}
               defaultValue={true}
               render={({ field }) => (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <label
-                      htmlFor="is_active"
-                      className="cursor-pointer text-sm font-medium text-slate-700"
-                    >
-                      {i18nT("static.1uu2ztk")}{" "}
-                    </label>
-                    <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
-                      {i18nT("static.148ezbn")}{" "}
-                    </p>
-                  </div>
-                  <InputSwitch
-                    id="is_active"
-                    checked={Boolean(field.value)}
-                    onChange={(e) => field.onChange(e.value)}
-                  />
-                </div>
+                <StatusOption
+                  inputId="is_active"
+                  label={i18nT("static.1uu2ztk")}
+                  description={i18nT("static.148ezbn")}
+                  checked={Boolean(field.value)}
+                  onChange={(checked) => field.onChange(checked)}
+                />
               )}
             />
           </div>
@@ -1209,5 +1209,79 @@ const EmployeePayrollDeductionComponentTableData = () => {
     </>
   );
 };
+
+function Field({
+  id,
+  label,
+  required = false,
+  hint,
+  error,
+  children,
+  className = "",
+}: {
+  id?: string;
+  label: ReactNode;
+  required?: boolean;
+  hint?: ReactNode;
+  error?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      <label
+        htmlFor={id}
+        className="flex items-center gap-1 text-sm font-medium text-slate-700"
+      >
+        <span>{label}</span>
+        {required && <span className="font-bold text-red-500">*</span>}
+      </label>
+      {children}
+      {error ? (
+        <small className="text-xs p-error">{error}</small>
+      ) : (
+        hint && <small className="text-xs text-slate-500">{hint}</small>
+      )}
+    </div>
+  );
+}
+
+function StatusOption({
+  inputId,
+  label,
+  description,
+  checked,
+  disabled = false,
+  onChange,
+}: {
+  inputId: string;
+  label: string;
+  description: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <InputSwitch
+        inputId={inputId}
+        checked={checked}
+        disabled={disabled}
+        onChange={(event) => onChange(Boolean(event.value))}
+      />
+      <div className="min-w-0">
+        <label
+          htmlFor={inputId}
+          className="cursor-pointer text-sm font-semibold text-slate-700"
+        >
+          {label}
+        </label>
+        <p className="m-0 mt-1 text-xs leading-5 text-slate-500">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default EmployeePayrollDeductionComponentTableData;

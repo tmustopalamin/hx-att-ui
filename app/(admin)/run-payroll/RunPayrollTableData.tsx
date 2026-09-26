@@ -13,6 +13,7 @@ import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { InputText } from "primereact/inputtext";
 import { MultiSelect } from "primereact/multiselect";
+import { Checkbox } from "primereact/checkbox";
 import { Tag } from "primereact/tag";
 import { Message } from "primereact/message";
 
@@ -83,6 +84,7 @@ const emptyBatch = (): NewPayrollBatch => ({
   payroll_date: "",
   notes: null,
   regulation_package_ids: [],
+  include_thr: false,
 });
 
 const statusSeverity = (
@@ -478,7 +480,25 @@ export default function RunPayrollTableData() {
           tableStyle={{ minWidth: "58rem" }}
           emptyMessage={i18nT("static.u167jf")}
         >
-          <Column field="batch_no" header={i18nT("static.19kijc8")} sortable />
+          <Column
+            field="batch_no"
+            header={i18nT("static.19kijc8")}
+            sortable
+            body={(row: PayrollBatch) => (
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium text-slate-800">
+                  {row.batch_no}
+                </span>
+                {row.include_thr && (
+                  <Tag
+                    value="THR"
+                    severity="warning"
+                    className="text-[10px] px-1.5 py-0.5"
+                  />
+                )}
+              </div>
+            )}
+          />
           <Column
             header={i18nT("static.11hwh7o")}
             body={(row: PayrollBatch) =>
@@ -870,6 +890,34 @@ export default function RunPayrollTableData() {
                 }
               />
             </Field>
+          </div>
+          <div className="sm:col-span-2">
+            <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+              <Checkbox
+                inputId="include_thr"
+                checked={Boolean(batch.include_thr)}
+                onChange={(e) =>
+                  setBatch((current) => ({
+                    ...current,
+                    include_thr: Boolean(e.checked),
+                  }))
+                }
+                className="mt-0.5"
+              />
+              <div className="flex flex-col">
+                <label
+                  htmlFor="include_thr"
+                  className="cursor-pointer text-sm font-semibold text-slate-800"
+                >
+                  {i18nT("Sertakan Periode THR Keagamaan")}
+                </label>
+                <span className="text-xs leading-relaxed text-slate-500">
+                  {i18nT(
+                    "Aktifkan jika batch ini diterbitkan untuk pembayaran Tunjangan Hari Raya (THR) Keagamaan (Permenaker No. 6/2016). Panel kalkulasi THR hanya akan muncul pada batch yang menyertakan opsi ini.",
+                  )}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </Dialog>

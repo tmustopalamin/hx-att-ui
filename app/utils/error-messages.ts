@@ -145,6 +145,20 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "Scheduled Working Days proration could not determine the employee schedule for this payroll period.",
   PAYROLL_PRORATION_PERIOD_INVALID:
     "The payroll period is invalid for proration calculation.",
+  PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE:
+    "Data rekening bank karyawan belum lengkap. Pastikan seluruh karyawan yang menerima gaji telah memiliki rekening bank aktif di menu Data Karyawan sebelum membuat batch pembayaran.",
+  PAYROLL_PAYMENT_ENCRYPTION_UNAVAILABLE:
+    "Kunci enkripsi pembayaran payroll tidak tersedia. Hubungi administrator sistem.",
+  PAYROLL_PAYMENT_BATCH_ALREADY_EXISTS:
+    "Nomor batch pembayaran sudah terdaftar. Gunakan nomor batch pembayaran yang berbeda.",
+  PAYROLL_PAYMENT_BATCH_STATE_INVALID:
+    "Status batch pembayaran tidak valid untuk aksi ini. Segarkan halaman dan coba lagi.",
+  PAYROLL_PAYMENT_SETTLEMENT_REQUIRED:
+    "Tidak ada karyawan dengan gaji bersih lebih dari 0 untuk dibuatkan batch pembayaran.",
+  PAYROLL_PAYMENT_SETTLEMENT_INVALID:
+    "Referensi transfer bank belum lengkap. Pastikan nomor referensi telah terisi sebelum konfirmasi settlement.",
+  PAYROLL_PAYMENT_NOT_SETTLED: "Batch pembayaran belum diselesaikan.",
+  PAYROLL_PAYMENT_BATCH_NUMBER_REQUIRED: "Nomor batch pembayaran wajib diisi.",
 };
 
 const FALLBACK_ERROR_MESSAGE =
@@ -243,6 +257,12 @@ export function getErrorMessage(
   }
 
   const { code, message } = getErrorDetails(err);
+  if (code.startsWith("PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE::")) {
+    const details = code
+      .slice("PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE::".length)
+      .trim();
+    return `Data rekening bank belum lengkap untuk karyawan: ${details}. Silakan lengkapi data rekening bank aktif di menu Data Karyawan sebelum membuat batch pembayaran.`;
+  }
   const mappedMessage = code ? ERROR_MESSAGES[code] : undefined;
 
   if (source === "code") {
@@ -254,6 +274,12 @@ export function getErrorMessage(
     message !== "Request failed. Please try again." &&
     message !== FALLBACK_ERROR_MESSAGE
   ) {
+    if (message.startsWith("PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE::")) {
+      const details = message
+        .slice("PAYROLL_PAYMENT_SNAPSHOT_UNAVAILABLE::".length)
+        .trim();
+      return `Data rekening bank belum lengkap untuk karyawan: ${details}. Silakan lengkapi data rekening bank aktif di menu Data Karyawan sebelum membuat batch pembayaran.`;
+    }
     return message;
   }
   return mappedMessage || message || FALLBACK_ERROR_MESSAGE;

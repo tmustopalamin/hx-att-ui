@@ -17,6 +17,8 @@ import type {
   PayrollPerformanceEarningGeneration,
   PayrollHolidayPositionIncentivePreview,
   PayrollHolidayPositionIncentiveGeneration,
+  PayrollThrPreview,
+  PayrollThrGeneration,
 } from "@/app/types/payroll-batch";
 import {
   apiFetchResponse,
@@ -85,6 +87,27 @@ export const exportPayrollPaymentBatch = async (id: number): Promise<Blob> => {
   );
   if (!response.ok) throw new Error("Payment export failed.");
   return response.blob();
+};
+
+export const exportPayrollEbupot21 = async (
+  id: number,
+): Promise<{ blob: Blob; filename: string }> => {
+  const response = await apiFetchResponse(
+    `/api/payroll-batches/${id}/export-ebupot21`,
+    {
+      credentials: "include",
+      headers: { Accept: "text/csv" },
+    },
+  );
+  if (!response.ok) throw new Error("e-Bupot export failed.");
+  const disposition = response.headers.get("content-disposition");
+  let filename = `ebupot21_batch_${id}.csv`;
+  if (disposition) {
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    if (match?.[1]) filename = match[1];
+  }
+  const blob = await response.blob();
+  return { blob, filename };
 };
 
 export const reconcilePayrollPaymentBatch = async (
@@ -227,4 +250,15 @@ export const transitionPayrollBatch = (
       "If-Match": String(rowVersion),
     },
     body: JSON.stringify({ status }),
+  });
+
+export const previewPayrollThr = (
+  batchId: number,
+): Promise<PayrollThrPreview[]> => apiFetch(`${URL}/${batchId}/thr/preview`);
+
+export const generatePayrollThr = (
+  batchId: number,
+): Promise<PayrollThrGeneration> =>
+  apiFetch(`${URL}/${batchId}/thr/generate`, {
+    method: "POST",
   });

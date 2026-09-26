@@ -29,6 +29,7 @@ export interface PayrollBatch {
   updated_at: string;
   updated_by: number | null;
   row_version: number;
+  include_thr?: boolean;
 }
 
 export interface PayrollBatchSettingOption {
@@ -64,6 +65,7 @@ export interface NewPayrollBatch {
   payroll_date: string;
   notes: string | null;
   regulation_package_ids: number[];
+  include_thr?: boolean;
 }
 
 export interface PayrollBatchValidationResult {
@@ -191,6 +193,9 @@ export interface PayrollPayslipSnapshot {
     employee_name: string;
     /** Added to new snapshots; absent on legacy payslips generated before this field existed. */
     department_name?: string | null;
+    position_name?: string | null;
+    employment_status_name?: string | null;
+    branch_name?: string | null;
   };
   amounts: PayrollPayslipSnapshotAmounts;
   attendance: Record<string, string | number>;
@@ -350,4 +355,27 @@ export interface PayrollHolidayPositionIncentivePreview {
 export interface PayrollHolidayPositionIncentiveGeneration {
   created: PayrollAdjustment[];
   skipped: PayrollHolidayPositionIncentivePreview[];
+}
+
+export interface PayrollThrPreview {
+  employee_id: number;
+  employee_code: string;
+  employee_name: string;
+  join_date: string;
+  calculation_date: string;
+  tenure_months: number;
+  tenure_days: number;
+  base_salary: string | number;
+  fixed_allowances: string | number;
+  thr_wage_base: string | number;
+  proration_factor: string | number;
+  amount: string | number;
+  is_eligible: boolean;
+  eligibility_note: string;
+  existing_adjustment_status: string | null;
+}
+
+export interface PayrollThrGeneration {
+  created: PayrollAdjustment[];
+  skipped: PayrollThrPreview[];
 }
