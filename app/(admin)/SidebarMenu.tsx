@@ -182,6 +182,32 @@ const payrollItems: MenuItem[] = [
     permission: "payroll.read",
   },
 ];
+const reportItems: MenuItem[] = [
+  {
+    href: "/reports/attendance-log",
+    label: "Attendance Log Report",
+    icon: "pi-clock",
+    permission: "attendance-log.read",
+  },
+  {
+    href: "/reports/attendance-summary",
+    label: "Attendance Summary Report",
+    icon: "pi-calendar",
+    permission: "attendance-summary.read",
+  },
+  {
+    href: "/reports/employee",
+    label: "Employee Report",
+    icon: "pi-users",
+    permission: "employee.read",
+  },
+  {
+    href: "/reports/payroll",
+    label: "Payroll Report",
+    icon: "pi-calculator",
+    permission: "payroll.read",
+  },
+];
 const settingSubMenus: SettingSubMenu[] = [
   {
     key: "organization",
@@ -499,8 +525,19 @@ const topMenuSections: MenuSection[] = [
     icon: "pi-calculator",
     items: payrollItems,
   },
+  {
+    key: "report",
+    label: "Report",
+    icon: "pi-chart-bar",
+    items: reportItems,
+  },
 ];
 const menuTranslationKeys: Record<string, string> = {
+  Report: "nav.reports",
+  "Attendance Log Report": "nav.reportAttendanceLog",
+  "Attendance Summary Report": "nav.reportAttendanceSummary",
+  "Employee Report": "nav.reportEmployee",
+  "Payroll Report": "nav.reportPayroll",
   "My Profile": "nav.myProfile",
   "Web Attendance": "nav.webAttendance",
   "Attendance History": "nav.attendanceHistory",

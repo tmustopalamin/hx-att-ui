@@ -68,6 +68,8 @@ export const routeTranslationKeys: Readonly<Record<string, string>> = {
   "proration-method": "nav.prorationMethod",
   recruitment: "nav.recruitment",
   relationship: "nav.relationship",
+  report: "nav.reports",
+  reports: "nav.reports",
   "request-leave": "nav.requestLeave",
   role: "nav.roles",
   "role-permissions": "nav.rolePermissions",
