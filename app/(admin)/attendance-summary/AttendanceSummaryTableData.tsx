@@ -56,6 +56,9 @@ import { showToast } from "@/store/ToastSlice";
 import { getBackgroundJobDetail } from "@/app/services/background-job-service";
 import { getAttendanceProcessingSetting } from "@/app/services/attendance-settings-service";
 import type { OvertimeProcessingMode } from "@/app/types/attendance-settings";
+import ExportAttendanceSummaryDialog, {
+  AttendanceSummaryExportFilters,
+} from "./ExportAttendanceSummaryDialog";
 
 const DEFAULT_OVERTIME_PROCESSING_MODE: OvertimeProcessingMode =
   "ACTUAL_LOGS_AND_APPROVAL";
@@ -340,12 +343,23 @@ const getFileNameFromDisposition = (contentDisposition: string | null) => {
 const downloadAttendanceSummaryExcel = async (
   startDate: Date,
   endDate: Date,
+  filters?: AttendanceSummaryExportFilters,
 ): Promise<string> => {
   const query = new URLSearchParams();
   const startStr = formatApiDate(startDate);
   if (startStr) query.set("start_date", startStr);
   const endStr = formatApiDate(endDate);
   if (endStr) query.set("end_date", endStr);
+
+  if (filters?.departmentIds && filters.departmentIds.length > 0) {
+    query.set("department_ids", filters.departmentIds.join(","));
+  }
+  if (filters?.positionIds && filters.positionIds.length > 0) {
+    query.set("position_ids", filters.positionIds.join(","));
+  }
+  if (filters?.agencyIds && filters.agencyIds.length > 0) {
+    query.set("agency_ids", filters.agencyIds.join(","));
+  }
 
   const response = await apiFetchResponse(
     `/api/attendance-summary/export-excel?${query.toString()}`,
@@ -506,6 +520,7 @@ const AttendanceSummaryTableData = () => {
   const skipExistingRef = useRef<boolean>(false);
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -1222,7 +1237,9 @@ const AttendanceSummaryTableData = () => {
     });
   };
 
-  const exportExcel = async () => {
+  const handleExportWithFilters = async (
+    filters: AttendanceSummaryExportFilters,
+  ) => {
     clearActionMessage();
 
     if (!startDate || !endDate) {
@@ -1246,7 +1263,11 @@ const AttendanceSummaryTableData = () => {
     try {
       setIsExporting(true);
 
-      const fileName = await downloadAttendanceSummaryExcel(startDate, endDate);
+      const fileName = await downloadAttendanceSummaryExcel(
+        startDate,
+        endDate,
+        filters,
+      );
 
       const message = i18nT("Attendance summary exported successfully: {p0}", {
         p0: fileName,
@@ -1254,6 +1275,7 @@ const AttendanceSummaryTableData = () => {
 
       setActionSuccess(message);
       showSuccess(message);
+      setIsExportDialogOpen(false);
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -2128,7 +2150,7 @@ const AttendanceSummaryTableData = () => {
                 }
                 className="w-full sm:w-auto"
                 onClick={() => {
-                  void exportExcel();
+                  setIsExportDialogOpen(true);
                 }}
               />
             </div>
@@ -2933,6 +2955,18 @@ const AttendanceSummaryTableData = () => {
           )}
         </div>
       </Card>
+
+      <ExportAttendanceSummaryDialog
+        visible={isExportDialogOpen}
+        onHide={() => setIsExportDialogOpen(false)}
+        onExport={handleExportWithFilters}
+        isExporting={isExporting}
+        dateRangeText={
+          startDate && endDate
+            ? `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`
+            : undefined
+        }
+      />
     </>
   );
 };
