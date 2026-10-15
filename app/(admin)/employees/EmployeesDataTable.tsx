@@ -1276,6 +1276,20 @@ const EmployeesDataTable = () => {
                   {canCreateEmployee && (
                     <Button
                       type="button"
+                      label="Import Excel"
+                      icon="pi pi-file-excel"
+                      severity="success"
+                      outlined
+                      size="small"
+                      disabled={isProcessing || isSaving}
+                      className="w-full sm:w-auto"
+                      onClick={() => router.push("/employees/import")}
+                    />
+                  )}
+
+                  {canCreateEmployee && (
+                    <Button
+                      type="button"
                       label={i18nT("static.70a3xf")}
                       icon="pi pi-plus"
                       size="small"
