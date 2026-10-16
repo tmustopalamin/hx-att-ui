@@ -1,7 +1,7 @@
 "use client";
 import { useI18n } from "@/app/i18n";
 
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
@@ -27,6 +27,8 @@ import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputSwitch } from "primereact/inputswitch";
 import { InputText } from "primereact/inputtext";
+import { Menu } from "primereact/menu";
+import { MenuItem } from "primereact/menuitem";
 import { SelectButton } from "primereact/selectbutton";
 import { Tag } from "primereact/tag";
 
@@ -66,6 +68,7 @@ import { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import EmployeeSummaryCards from "./components/EmployeeSummaryCards";
 import EmployeePageHeader from "./components/EmployeePageHeader";
+import PermanentDeleteEmployeeDialog from "./components/PermanentDeleteEmployeeDialog";
 
 type EmployeeListRow = Employee & {
   gender_name?: string | null;
@@ -280,9 +283,55 @@ const EmployeesDataTable = () => {
     [profileState.permissions],
   );
   const canCreateEmployee = permissionSet.has("employee.create");
+  const canManageCompensation =
+    permissionSet.has("payroll.create") ||
+    permissionSet.has("payroll.update") ||
+    canCreateEmployee;
+
+  const importMenuRef = useRef<Menu>(null);
+
+  const importMenuItems = useMemo<MenuItem[]>(() => {
+    const items: MenuItem[] = [];
+    if (canCreateEmployee) {
+      items.push({
+        label: "Import Karyawan",
+        icon: "pi pi-users",
+        command: () => router.push("/employees/import"),
+      });
+    }
+    if (canManageCompensation) {
+      items.push({
+        label: "Import Kompensasi",
+        icon: "pi pi-wallet",
+        command: () => router.push("/employees/compensation-import"),
+      });
+    }
+    return items;
+  }, [canCreateEmployee, canManageCompensation, router]);
+
+  const hasImportAccess = canCreateEmployee || canManageCompensation;
+
   const canDeleteEmployee = permissionSet.has("employee.delete");
   const canRestoreEmployee = archivedAccess.canRestore;
   const canPurgeEmployee = archivedAccess.canPurge;
+
+  const userRoles = useMemo(() => profileState.role ?? [], [profileState.role]);
+  const canPermanentDelete = useMemo(() => {
+    return userRoles.some((r) => {
+      const clean = r.trim().toLowerCase();
+      return clean === "superadmin" || clean === "hr" || clean === "developer";
+    });
+  }, [userRoles]);
+
+  const [permanentDeleteDialogVisible, setPermanentDeleteDialogVisible] =
+    useState(false);
+  const [selectedPermanentDeleteEmployee, setSelectedPermanentDeleteEmployee] =
+    useState<EmployeeListRow | null>(null);
+
+  const onClickPermanentDelete = (data: EmployeeListRow) => {
+    setSelectedPermanentDeleteEmployee(data);
+    setPermanentDeleteDialogVisible(true);
+  };
 
   const isProcessing = processingRowId !== null;
 
@@ -1085,6 +1134,24 @@ const EmployeesDataTable = () => {
               onClick={() => onClickPurge(rowData)}
             />
           )}
+
+          {canPermanentDelete && (
+            <Button
+              type="button"
+              icon="pi pi-times-circle"
+              rounded
+              outlined
+              severity="danger"
+              size="small"
+              tooltip="Hapus Permanen Bersih (Wipe All Data)"
+              tooltipOptions={{
+                appendTo: getBody,
+                position: "top",
+              }}
+              disabled={isProcessing}
+              onClick={() => onClickPermanentDelete(rowData)}
+            />
+          )}
         </div>
       );
     }
@@ -1126,6 +1193,24 @@ const EmployeesDataTable = () => {
           disabled={isProcessing}
           onClick={() => onClickDelete(rowData)}
         />
+
+        {canPermanentDelete && (
+          <Button
+            type="button"
+            icon="pi pi-times-circle"
+            rounded
+            outlined
+            severity="danger"
+            size="small"
+            tooltip="Hapus Permanen Bersih (Wipe All Data)"
+            tooltipOptions={{
+              appendTo: getBody,
+              position: "top",
+            }}
+            disabled={isProcessing}
+            onClick={() => onClickPermanentDelete(rowData)}
+          />
+        )}
       </div>
     );
   };
@@ -1273,18 +1358,30 @@ const EmployeesDataTable = () => {
                     onClick={handleRefresh}
                   />
 
-                  {canCreateEmployee && (
-                    <Button
-                      type="button"
-                      label="Import Excel"
-                      icon="pi pi-file-excel"
-                      severity="success"
-                      outlined
-                      size="small"
-                      disabled={isProcessing || isSaving}
-                      className="w-full sm:w-auto"
-                      onClick={() => router.push("/employees/import")}
-                    />
+                  {hasImportAccess && (
+                    <>
+                      <Button
+                        type="button"
+                        label="Import"
+                        icon="pi pi-upload"
+                        severity="success"
+                        outlined
+                        size="small"
+                        disabled={isProcessing || isSaving}
+                        className="w-full sm:w-auto"
+                        onClick={(event) =>
+                          importMenuRef.current?.toggle(event)
+                        }
+                        aria-controls="employee_import_menu"
+                        aria-haspopup
+                      />
+                      <Menu
+                        model={importMenuItems}
+                        popup
+                        ref={importMenuRef}
+                        id="employee_import_menu"
+                      />
+                    </>
                   )}
 
                   {canCreateEmployee && (
@@ -2386,6 +2483,18 @@ const EmployeesDataTable = () => {
           </div>
         </div>
       </Dialog>
+
+      <PermanentDeleteEmployeeDialog
+        visible={permanentDeleteDialogVisible}
+        onHide={() => {
+          setPermanentDeleteDialogVisible(false);
+          setSelectedPermanentDeleteEmployee(null);
+        }}
+        employee={selectedPermanentDeleteEmployee}
+        onSuccess={async () => {
+          await refreshEmployeesData();
+        }}
+      />
     </>
   );
 };

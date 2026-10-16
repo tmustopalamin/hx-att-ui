@@ -12,6 +12,8 @@ import { Column } from "primereact/column";
 import { Tag } from "primereact/tag";
 import { ProgressBar } from "primereact/progressbar";
 import { Dialog } from "primereact/dialog";
+import { Menu } from "primereact/menu";
+import { MenuItem } from "primereact/menuitem";
 
 import { fetcher } from "@/app/utils/fetcher";
 import { showToast } from "@/store/ToastSlice";
@@ -201,6 +203,25 @@ export default function EmployeeImportPage() {
     }
   };
 
+  const templateMenuRef = useRef<Menu>(null);
+
+  const templateMenuItems = useMemo<MenuItem[]>(
+    () => [
+      {
+        label: "Template Kosong",
+        icon: "pi pi-download",
+        command: handleDownloadTemplate,
+      },
+      {
+        label: "Data Karyawan Saat Ini",
+        icon: "pi pi-file-export",
+        command: handleExportExisting,
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [masterReferences, employeesData],
+  );
+
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -337,24 +358,35 @@ export default function EmployeeImportPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
-            label="Unduh Contoh Template"
+            label="Unduh Template"
             icon="pi pi-download"
             severity="secondary"
             outlined
             size="small"
-            onClick={handleDownloadTemplate}
+            onClick={(e) => templateMenuRef.current?.toggle(e)}
+            aria-controls="template_download_menu"
+            aria-haspopup
           />
+          <Menu
+            model={templateMenuItems}
+            popup
+            ref={templateMenuRef}
+            id="template_download_menu"
+          />
+
           <Button
             type="button"
-            label="Unduh Data Karyawan Saat Ini"
-            icon="pi pi-file-export"
-            severity="info"
+            label="Import Kompensasi"
+            icon="pi pi-wallet"
+            severity="help"
             outlined
             size="small"
-            onClick={handleExportExisting}
+            onClick={() => router.push("/employees/compensation-import")}
+            tooltip="Beralih ke import tunjangan, insentif & potongan"
+            tooltipOptions={{ position: "bottom" }}
           />
         </div>
       </div>
