@@ -59,6 +59,7 @@ import type { OvertimeProcessingMode } from "@/app/types/attendance-settings";
 import ExportAttendanceSummaryDialog, {
   AttendanceSummaryExportFilters,
 } from "./ExportAttendanceSummaryDialog";
+import AttendanceResolutionDialog from "./AttendanceResolutionDialog";
 
 const DEFAULT_OVERTIME_PROCESSING_MODE: OvertimeProcessingMode =
   "ACTUAL_LOGS_AND_APPROVAL";
@@ -472,7 +473,8 @@ const processAttendanceSummary = async (
 };
 
 const AttendanceSummaryTableData = () => {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, locale } = useI18n();
+  const isId = locale === "id";
   const dispatch = useDispatch();
 
   const defaultRange = useMemo(() => {
@@ -521,6 +523,19 @@ const AttendanceSummaryTableData = () => {
 
   const [isExporting, setIsExporting] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isResolutionDialogOpen, setIsResolutionDialogOpen] = useState(false);
+  const [selectedSingleRow, setSelectedSingleRow] =
+    useState<AttendanceSummary | null>(null);
+
+  const handleOpenResolutionForSingle = (row: AttendanceSummary) => {
+    setSelectedSingleRow(row);
+    setIsResolutionDialogOpen(true);
+  };
+
+  const handleOpenResolutionForBatch = () => {
+    setSelectedSingleRow(null);
+    setIsResolutionDialogOpen(true);
+  };
 
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -1730,7 +1745,21 @@ const AttendanceSummaryTableData = () => {
                   {i18nT("static.3pd73")}
                 </p>
 
-                <div className="mt-1">{renderStatusTag(rowData.status)}</div>
+                <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  {renderStatusTag(rowData.status)}
+                  {isIncompleteStatus(rowData.status) && (
+                    <Button
+                      type="button"
+                      label={isId ? "Koreksi Presensi Ini" : "Resolve Punch"}
+                      icon="pi pi-user-edit"
+                      size="small"
+                      severity="warning"
+                      outlined
+                      className="text-xs py-0.5 px-2 font-semibold"
+                      onClick={() => handleOpenResolutionForSingle(rowData)}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </section>
@@ -2135,6 +2164,26 @@ const AttendanceSummaryTableData = () => {
                 }
                 className="w-full sm:w-auto"
                 onClick={onClickProcessAttendance}
+              />
+
+              <Button
+                type="button"
+                label={isId ? "Koreksi Presensi" : "Attendance Resolution"}
+                icon="pi pi-user-edit"
+                severity="warning"
+                outlined
+                size="small"
+                disabled={
+                  isProcessing || !startDate || !endDate || hasInvalidDateRange
+                }
+                className="w-full sm:w-auto font-semibold"
+                badge={
+                  summaryStats.incomplete > 0
+                    ? String(summaryStats.incomplete)
+                    : undefined
+                }
+                badgeClassName="p-badge-warning"
+                onClick={handleOpenResolutionForBatch}
               />
 
               <Button
@@ -2880,11 +2929,38 @@ const AttendanceSummaryTableData = () => {
                         field="status"
                         header={i18nT("static.3pd73")}
                         sortable
-                        body={(rowData: AttendanceSummaryRowView) =>
-                          renderStatusTag(rowData.status)
-                        }
+                        body={(rowData: AttendanceSummaryRowView) => {
+                          const isIncomplete = isIncompleteStatus(
+                            rowData.status,
+                          );
+                          return (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {renderStatusTag(rowData.status)}
+                              {isIncomplete && (
+                                <Button
+                                  type="button"
+                                  label={isId ? "Koreksi" : "Resolve"}
+                                  icon="pi pi-user-edit"
+                                  size="small"
+                                  severity="warning"
+                                  outlined
+                                  className="text-[10px] py-0.5 px-1.5 font-semibold"
+                                  title={
+                                    isId
+                                      ? `Koreksi presensi ${rowData.employee_display_name}`
+                                      : `Resolve punch for ${rowData.employee_display_name}`
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenResolutionForSingle(rowData);
+                                  }}
+                                />
+                              )}
+                            </div>
+                          );
+                        }}
                         style={{
-                          minWidth: "12rem",
+                          minWidth: "14rem",
                         }}
                       />
 
@@ -2961,6 +3037,24 @@ const AttendanceSummaryTableData = () => {
         onHide={() => setIsExportDialogOpen(false)}
         onExport={handleExportWithFilters}
         isExporting={isExporting}
+        dateRangeText={
+          startDate && endDate
+            ? `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`
+            : undefined
+        }
+      />
+
+      <AttendanceResolutionDialog
+        visible={isResolutionDialogOpen}
+        onHide={() => {
+          setIsResolutionDialogOpen(false);
+          setSelectedSingleRow(null);
+        }}
+        onSuccess={async () => {
+          await refreshAttendanceSummaryData();
+        }}
+        availableIncompleteRows={attendanceSummaryData ?? []}
+        initialRow={selectedSingleRow}
         dateRangeText={
           startDate && endDate
             ? `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`
