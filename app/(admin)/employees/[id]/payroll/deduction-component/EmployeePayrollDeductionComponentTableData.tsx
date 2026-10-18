@@ -61,11 +61,17 @@ const EmployeePayrollDeductionComponentTableData = () => {
   const profileState = useSelector((state: RootState) => state.profile);
   const archivedAccess = useArchivedDataAccess("payroll");
   const permissionSet = new Set(profileState.permissions);
-  const canCreate = permissionSet.has("payroll.create");
-  const canUpdate = permissionSet.has("payroll.update");
-  const canDelete = permissionSet.has("payroll.delete");
-  const canRestore = archivedAccess.canRestore;
-  const canPurge = archivedAccess.canPurge;
+  const isSuperAdmin = profileState.role?.some(
+    (r) => r.toLowerCase() === "superadmin" || r.toLowerCase() === "developer",
+  );
+  const canCreate = isSuperAdmin || permissionSet.has("payroll.create");
+  const canUpdate = isSuperAdmin || permissionSet.has("payroll.update");
+  const canDelete =
+    isSuperAdmin ||
+    permissionSet.has("payroll.delete") ||
+    permissionSet.has("payroll.update");
+  const canRestore = isSuperAdmin || archivedAccess.canRestore;
+  const canPurge = isSuperAdmin || archivedAccess.canPurge;
   const [selectedData, setSelectedData] =
     useState<EmployeeDeductionComponent | null>(null);
   const [selectedDeductionComponent, setSelectedDeductionComponent] =
