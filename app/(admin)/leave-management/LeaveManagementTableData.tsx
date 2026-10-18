@@ -19,6 +19,7 @@ import { Dialog } from "primereact/dialog";
 import { Dropdown } from "primereact/dropdown";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
+import { InputNumber } from "primereact/inputnumber";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Tag } from "primereact/tag";
@@ -32,6 +33,7 @@ import {
   approveLeaveManagement,
   rejectLeaveManagement,
 } from "@/app/services/leave-management-service";
+import { rolloverEmployeeLeaveBalance } from "@/app/services/employee-leave-balance-service";
 
 import { LeaveManagementRow } from "@/app/types/request-leave";
 
@@ -112,6 +114,10 @@ const LeaveManagementTableData = () => {
 
   const [processingAction, setProcessingAction] =
     useState<ProcessingAction>(null);
+
+  const [rolloverDialogVisible, setRolloverDialogVisible] = useState(false);
+  const [targetYear, setTargetYear] = useState<number>(dayjs().year());
+  const [isRollingOver, setIsRollingOver] = useState(false);
 
   const {
     data: leaveManagementData,
@@ -464,6 +470,24 @@ const LeaveManagementTableData = () => {
     }
   };
 
+  const handleTriggerRollover = async () => {
+    try {
+      setIsRollingOver(true);
+      const res = await rolloverEmployeeLeaveBalance({
+        target_year: targetYear,
+      });
+      setRolloverDialogVisible(false);
+      const summary = res.data
+        ? `Tahun: ${res.data.target_year} | Karyawan: ${res.data.total_eligible_employees} | Saldo Terbuat: ${res.data.created_balances} | Hangus Ditutup: ${res.data.expired_balances_closed} | Dilewati: ${res.data.skipped_existing}`
+        : res.message || "Rollover saldo cuti berhasil diproses.";
+      showSuccess(summary);
+    } catch (err: unknown) {
+      showError(err);
+    } finally {
+      setIsRollingOver(false);
+    }
+  };
+
   const statusBody = (row: LeaveManagementRow) => {
     const status = normalizeStatus(row.status);
 
@@ -727,18 +751,34 @@ const LeaveManagementTableData = () => {
               </div>
             </div>
 
-            <Button
-              type="button"
-              label={i18nT("static.28r6qc")}
-              icon="pi pi-refresh"
-              severity="secondary"
-              outlined
-              size="small"
-              loading={isValidating}
-              disabled={isValidating || isActionRunning}
-              className="w-full sm:w-auto"
-              onClick={handleRefresh}
-            />
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                type="button"
+                label={i18nT("static.28r6qc")}
+                icon="pi pi-refresh"
+                severity="secondary"
+                outlined
+                size="small"
+                loading={isValidating}
+                disabled={isValidating || isActionRunning}
+                className="w-full sm:w-auto"
+                onClick={handleRefresh}
+              />
+
+              <Button
+                type="button"
+                label="Rollover Saldo Cuti"
+                icon="pi pi-sync"
+                outlined
+                size="small"
+                disabled={isActionRunning}
+                className="w-full sm:w-auto"
+                onClick={() => {
+                  setTargetYear(dayjs().year());
+                  setRolloverDialogVisible(true);
+                }}
+              />
+            </div>
           </div>
 
           {/* Summary */}
@@ -1140,6 +1180,72 @@ const LeaveManagementTableData = () => {
                 {rejectNote.length}/{MAX_REJECTION_NOTE_LENGTH}
               </small>
             </div>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        header="Rollover Saldo Cuti Tahunan"
+        visible={rolloverDialogVisible}
+        style={{ width: "90vw", maxWidth: "520px" }}
+        modal
+        closable={!isRollingOver}
+        closeOnEscape={!isRollingOver}
+        onHide={() => setRolloverDialogVisible(false)}
+        footer={
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
+              type="button"
+              label={i18nT("static.ew9em3") || "Batal"}
+              icon="pi pi-times"
+              text
+              severity="secondary"
+              disabled={isRollingOver}
+              onClick={() => setRolloverDialogVisible(false)}
+            />
+            <Button
+              type="button"
+              label="Proses Rollover"
+              icon="pi pi-check"
+              loading={isRollingOver}
+              disabled={isRollingOver || !targetYear}
+              onClick={handleTriggerRollover}
+            />
+          </div>
+        }
+      >
+        <div className="flex flex-col gap-4 pt-2">
+          <div className="rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+            <p className="m-0 text-xs leading-5 text-slate-600">
+              Proses ini akan meng-generate saldo cuti untuk seluruh karyawan
+              aktif pada tahun yang dipilih. Jika jenis cuti memiliki opsi{" "}
+              <strong>Carry Forward</strong> aktif, sisa saldo tahun sebelumnya
+              akan dipindahkan menjadi saldo awal tahun baru. Jika tidak, sisa
+              saldo tahun lalu akan ditutup (hangus).
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="target_year"
+              className="text-sm font-medium text-slate-700"
+            >
+              Tahun Target <span className="text-red-500">*</span>
+            </label>
+            <InputNumber
+              id="target_year"
+              value={targetYear}
+              onValueChange={(e) => setTargetYear(e.value ?? dayjs().year())}
+              useGrouping={false}
+              min={2000}
+              max={2100}
+              disabled={isRollingOver}
+              className="w-full"
+            />
+            <span className="text-xs text-slate-400">
+              Pilih tahun kalender yang ingin diproses (contoh: {dayjs().year()}{" "}
+              atau {dayjs().year() + 1}).
+            </span>
           </div>
         </div>
       </Dialog>

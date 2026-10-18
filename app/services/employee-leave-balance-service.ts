@@ -156,3 +156,32 @@ export const restoreEmployeeLeaveBalance = async (
   await ensureOk(res);
   return res.json();
 };
+
+export interface RolloverLeaveBalanceRequest {
+  target_year?: number;
+  employee_ids?: number[];
+}
+
+export interface RolloverLeaveBalanceResult {
+  target_year: number;
+  total_eligible_employees: number;
+  created_balances: number;
+  expired_balances_closed: number;
+  skipped_existing: number;
+}
+
+export const rolloverEmployeeLeaveBalance = async (
+  payload?: RolloverLeaveBalanceRequest,
+) => {
+  const res = await apiFetchResponse(`${API_URL}/leave-balance/rollover`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload ?? {}),
+  });
+
+  await ensureOk(res);
+  return res.json();
+};
