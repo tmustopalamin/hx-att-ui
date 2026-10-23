@@ -28,6 +28,7 @@ import type {
   EmployeePayrollProfile,
   EmployeeStatutoryEnrollment,
   EmployeeStatutoryWage,
+  EmployeeTaxProfile,
   NewSalaryHistory,
   NewStatutoryEnrollment,
   NewStatutoryWage,
@@ -315,6 +316,31 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               row.row_version,
             ),
           "Penetapan upah wajib berhasil dihapus.",
+        );
+      },
+    });
+  };
+
+  const handleDeleteTaxProfile = (row: EmployeeTaxProfile) => {
+    requestActionConfirmation({
+      action: "Hapus Profil Pajak",
+      target: `${row.ptkp_code} (${row.tax_method}) — ${formatDisplayDate(row.effective_from)}`,
+      severity: "danger",
+      confirmLabel: "Hapus",
+      cancelLabel: "Batal",
+      confirmIcon: "pi pi-trash",
+      description:
+        "Apakah Anda yakin ingin menghapus data profil pajak ini? Profil pajak yang dihapus tidak akan lagi digunakan dalam perhitungan PPh 21.",
+      onAccept: async () => {
+        await run(
+          () =>
+            deletePayrollProfileItem(
+              employeeId,
+              "tax-profiles",
+              row.id,
+              row.row_version,
+            ),
+          "Profil pajak berhasil dihapus.",
         );
       },
     });
@@ -726,6 +752,27 @@ export default function EmployeePayrollProfilePanel({ mode }: { mode: Mode }) {
               field="effective_to"
               header={i18nT("static.mtbgcr")}
               body={(row) => formatDisplayDate(row.effective_to, "Open ended")}
+            />
+            <Column
+              header={i18nT("static.2wk0tb")}
+              body={(row: EmployeeTaxProfile) => (
+                <div className="flex items-center justify-center">
+                  {canDelete && (
+                    <Button
+                      type="button"
+                      icon="pi pi-trash"
+                      rounded
+                      text
+                      severity="danger"
+                      size="small"
+                      tooltip="Hapus Profil Pajak"
+                      tooltipOptions={{ position: "top" }}
+                      onClick={() => handleDeleteTaxProfile(row)}
+                    />
+                  )}
+                </div>
+              )}
+              style={{ width: "4.5rem", textAlign: "center" }}
             />
           </DataTable>
         )}
