@@ -29,6 +29,13 @@ const formatStatusLabel = (status?: string | null) => {
 };
 
 const formatCurrency = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return "-";
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "-";
   return new Intl.NumberFormat("id-ID", {

@@ -43,6 +43,12 @@ interface PayrollBatchDetailDataProps {
 }
 
 const formatCurrency = (amount: string | number) => {
+  if (
+    typeof amount === "string" &&
+    (amount.includes("•") || amount === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const value = Number(amount);
   if (!Number.isFinite(value)) return "-";
   return new Intl.NumberFormat("id-ID", {

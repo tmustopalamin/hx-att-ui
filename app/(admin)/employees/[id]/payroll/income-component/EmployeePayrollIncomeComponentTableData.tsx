@@ -868,7 +868,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
             severity="success"
           />
           <span className="font-semibold text-slate-800">
-            {formatPayrollCurrency(Number(row.amount ?? 0))}
+            {formatPayrollCurrency(row.amount)}
           </span>
         </div>
       );
@@ -880,8 +880,7 @@ const EmployeePayrollEmployeeIncomeComponentTableData = () => {
           {methodName ?? i18nT("static.4tqh3i")}
         </span>
         <span className="text-xs text-slate-500">
-          {i18nT("static.1igt8mo")}{" "}
-          {formatPayrollCurrency(Number(row.amount ?? 0))}
+          {i18nT("static.1igt8mo")} {formatPayrollCurrency(row.amount)}
         </span>
       </div>
     );

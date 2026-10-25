@@ -65,6 +65,22 @@ const AvatarWithSidebar = () => {
       ? `/api/public/images/uploads/${encodeURIComponent(filename)}`
       : undefined;
   }, [profileData?.photo_url]);
+  const userRolesDisplay = useMemo(() => {
+    if (!profileData?.role || profileData.role.length === 0) {
+      return t("auth.accountMenu.user");
+    }
+    return profileData.role
+      .map((r) => {
+        const clean = r.trim();
+        if (clean.toLowerCase() === "hr") return "HR";
+        if (clean.toLowerCase() === "superadmin") return "Superadmin";
+        return clean
+          .split(/[\s_-]+/)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(" ");
+      })
+      .join(", ");
+  }, [profileData?.role, t]);
   const mobileAppUrl = useMemo(
     () => getSafeExternalUrl(mobileAppSettings?.target_url),
     [mobileAppSettings?.target_url],
@@ -130,14 +146,15 @@ const AvatarWithSidebar = () => {
       >
         {" "}
         <div className="hidden min-w-0 text-right sm:block">
-          {" "}
           <p className="max-w-[12rem] truncate text-sm font-semibold text-slate-700">
-            {" "}
-            {profileData?.name || t("auth.accountMenu.user")}{" "}
-          </p>{" "}
-          <p className="text-xs text-slate-500">
-            {t("auth.accountMenu.account")}
-          </p>{" "}
+            {profileData?.name || t("auth.accountMenu.user")}
+          </p>
+          <p
+            className="max-w-[12rem] truncate text-xs text-slate-500"
+            title={userRolesDisplay}
+          >
+            {userRolesDisplay}
+          </p>
         </div>{" "}
         <Avatar
           size="large"
@@ -169,19 +186,18 @@ const AvatarWithSidebar = () => {
                 shape="circle"
               />{" "}
               <div className="min-w-0">
-                {" "}
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  {" "}
-                  {t("auth.accountMenu.signedInAs")}{" "}
-                </p>{" "}
+                  {t("auth.accountMenu.signedInAs")}
+                </p>
                 <h3 className="mt-1 truncate text-lg font-semibold text-slate-900">
-                  {" "}
-                  {profileData?.name || t("auth.accountMenu.user")}{" "}
-                </h3>{" "}
+                  {profileData?.name || t("auth.accountMenu.user")}
+                </h3>
+                <p className="mt-0.5 truncate text-sm font-medium text-blue-600">
+                  {userRolesDisplay}
+                </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  {" "}
-                  {t("auth.accountMenu.description")}{" "}
-                </p>{" "}
+                  {t("auth.accountMenu.description")}
+                </p>
               </div>{" "}
             </div>{" "}
           </div>{" "}

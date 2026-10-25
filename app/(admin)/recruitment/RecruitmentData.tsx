@@ -1706,13 +1706,16 @@ export default function RecruitmentData() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm text-slate-600">
                       {selectedPipelineOffer.offered_salary
-                        ? new Intl.NumberFormat("id-ID", {
-                            style: "currency",
-                            currency: "IDR",
-                            maximumFractionDigits: 0,
-                          }).format(
-                            Number(selectedPipelineOffer.offered_salary),
-                          )
+                        ? selectedPipelineOffer.offered_salary.includes("•") ||
+                          selectedPipelineOffer.offered_salary === "••••••••"
+                          ? "Rp ••••••••"
+                          : new Intl.NumberFormat("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                              maximumFractionDigits: 0,
+                            }).format(
+                              Number(selectedPipelineOffer.offered_salary),
+                            )
                         : "-"}
                     </span>
                     <Tag

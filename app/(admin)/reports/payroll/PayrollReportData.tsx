@@ -35,6 +35,9 @@ import {
 } from "../_components/report-export-utils";
 
 const formatCurrency = (val: string | number | undefined | null) => {
+  if (typeof val === "string" && (val.includes("•") || val === "••••••••")) {
+    return "Rp ••••••••";
+  }
   const num =
     typeof val === "string" ? Number.parseFloat(val) : Number(val || 0);
   if (isNaN(num)) return "Rp 0";

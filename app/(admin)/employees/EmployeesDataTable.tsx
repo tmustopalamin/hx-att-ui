@@ -282,11 +282,16 @@ const EmployeesDataTable = () => {
     () => new Set(profileState.permissions),
     [profileState.permissions],
   );
+  const userRoles = useMemo(() => profileState.role ?? [], [profileState.role]);
+  const isHr = useMemo(
+    () => userRoles.some((r) => r.trim().toLowerCase() === "hr"),
+    [userRoles],
+  );
   const canCreateEmployee = permissionSet.has("employee.create");
   const canManageCompensation =
-    permissionSet.has("payroll.create") ||
-    permissionSet.has("payroll.update") ||
-    canCreateEmployee;
+    isHr &&
+    (permissionSet.has("payroll.create") ||
+      permissionSet.has("payroll.update"));
 
   const importMenuRef = useRef<Menu>(null);
 
@@ -315,7 +320,6 @@ const EmployeesDataTable = () => {
   const canRestoreEmployee = archivedAccess.canRestore;
   const canPurgeEmployee = archivedAccess.canPurge;
 
-  const userRoles = useMemo(() => profileState.role ?? [], [profileState.role]);
   const canPermanentDelete = useMemo(() => {
     return userRoles.some((r) => {
       const clean = r.trim().toLowerCase();

@@ -61,7 +61,14 @@ const emptyForm = (): PolicyForm => ({
   position_ids: [],
 });
 
-const formatCurrency = (value: string | number) => {
+const formatCurrency = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return "-";
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {

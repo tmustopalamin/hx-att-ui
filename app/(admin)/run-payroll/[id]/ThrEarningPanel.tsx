@@ -20,7 +20,14 @@ import { getErrorMessage } from "@/app/utils/error-messages";
 import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 
-const currency = (value: string | number) => {
+const currency = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return "-";
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {

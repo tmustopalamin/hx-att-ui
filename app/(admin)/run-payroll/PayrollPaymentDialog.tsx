@@ -43,6 +43,12 @@ interface PayrollPaymentDialogProps {
 }
 
 const formatCurrency = (value: string | number) => {
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {

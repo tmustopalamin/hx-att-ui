@@ -19,8 +19,14 @@ import type { RootState } from "@/store/store";
 import { showToast } from "@/store/ToastSlice";
 import { requestActionConfirmation } from "@/app/_components/ActionConfirmDialog";
 
-const currency = (value: string | number | null) => {
-  if (value === null) return "-";
+const currency = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return "-";
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {

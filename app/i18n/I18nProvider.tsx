@@ -43,7 +43,7 @@ type I18nContextValue = {
   ) => string;
   formatPercent: (value: number | null | undefined) => string;
   formatCurrency: (
-    value: number | null | undefined,
+    value: number | string | null | undefined,
     currency?: string,
   ) => string;
 };
@@ -135,14 +135,25 @@ const fallbackI18nContext: I18nContextValue = {
           style: "percent",
           maximumFractionDigits: 2,
         }).format(value),
-  formatCurrency: (value, currency = "IDR") =>
-    value == null || !Number.isFinite(value)
+  formatCurrency: (
+    value: number | string | null | undefined,
+    currency = "IDR",
+  ) => {
+    if (
+      typeof value === "string" &&
+      (value.includes("•") || value === "••••••••")
+    ) {
+      return currency === "IDR" ? "Rp ••••••••" : "••••••••";
+    }
+    const num = typeof value === "string" ? Number(value) : value;
+    return num == null || !Number.isFinite(num)
       ? "-"
       : new Intl.NumberFormat(DEFAULT_LOCALE, {
           style: "currency",
           currency,
           maximumFractionDigits: 0,
-        }).format(value),
+        }).format(num);
+  },
 };
 
 export function I18nProvider({
@@ -232,12 +243,20 @@ export function I18nProvider({
   );
 
   const formatCurrency = useCallback(
-    (value: number | null | undefined, currency = "IDR") =>
-      formatNumber(value, {
+    (value: number | string | null | undefined, currency = "IDR") => {
+      if (
+        typeof value === "string" &&
+        (value.includes("•") || value === "••••••••")
+      ) {
+        return currency === "IDR" ? "Rp ••••••••" : "••••••••";
+      }
+      const num = typeof value === "string" ? Number(value) : value;
+      return formatNumber(num, {
         style: "currency",
         currency,
         maximumFractionDigits: 0,
-      }),
+      });
+    },
     [formatNumber],
   );
 

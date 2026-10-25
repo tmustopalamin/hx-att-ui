@@ -134,6 +134,12 @@ const PTKP_OPTIONS = [
 
 const formatIdr = (value: string | null | undefined) => {
   if (!value) return "—";
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {

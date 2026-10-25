@@ -19,12 +19,20 @@ import {
 } from "@/app/utils/date-format";
 import EmployeeDetailTableHeader from "@/app/(admin)/employees/[id]/_components/EmployeeDetailTableHeader";
 
-const currency = (value: string) =>
-  new Intl.NumberFormat("id-ID", {
+const currency = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return "-";
+  const str = String(value);
+  if (str.includes("•") || str === "••••••••") {
+    return "Rp ••••••••";
+  }
+  const num = Number(str);
+  if (isNaN(num)) return str;
+  return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(Number(value));
+  }).format(num);
+};
 
 const formatStatusLabel = (status?: string | null) => {
   const normalized = String(status ?? "")

@@ -699,8 +699,7 @@ const EmployeePayrollDeductionComponentTableData = () => {
       <div className="flex min-w-[15rem] flex-col gap-1">
         <Tag value={methodName} severity="warning" />
         <span className="font-semibold text-slate-800">
-          {i18nT("static.x64815")}{" "}
-          {formatPayrollCurrency(Number(row.amount ?? 0))}
+          {i18nT("static.x64815")} {formatPayrollCurrency(row.amount)}
         </span>
       </div>
     );

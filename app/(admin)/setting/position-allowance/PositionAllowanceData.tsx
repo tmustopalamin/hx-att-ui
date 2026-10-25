@@ -73,6 +73,13 @@ const emptyForm = (): PolicyForm => ({
 });
 
 const formatCurrency = (value: string | number | null | undefined) => {
+  if (value === null || value === undefined) return "-";
+  if (
+    typeof value === "string" &&
+    (value.includes("•") || value === "••••••••")
+  ) {
+    return "Rp ••••••••";
+  }
   const amount = Number(value);
   return Number.isFinite(amount)
     ? new Intl.NumberFormat("id-ID", {
