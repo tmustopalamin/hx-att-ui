@@ -403,16 +403,32 @@ export default function EmployeeImportPage() {
             </h3>
             <ul className="list-disc pl-5 m-0 space-y-1.5">
               <li>
-                <strong>Pembaruan Otomatis Berdasarkan NIK:</strong> Sistem
-                menggunakan kolom <code>NIK / Employee Code*</code> sebagai
-                pengenal utama. Jika nomor NIK sudah terdaftar, data karyawan
-                tersebut akan <strong>diperbarui dengan data terbaru</strong>.
-                Jika nomor NIK belum pernah ada di sistem, maka otomatis{" "}
+                <strong>Pembaruan Otomatis Berdasarkan Employee Code:</strong>{" "}
+                Sistem menggunakan kolom <code>Employee Code*</code> sebagai
+                pengenal utama pegawai di perusahaan (contoh:{" "}
+                <code>EMP001</code>). Jika Employee Code sudah terdaftar, data
+                karyawan tersebut akan{" "}
+                <strong>diperbarui dengan data terbaru</strong>. Jika belum ada
+                di sistem, otomatis{" "}
                 <strong>didaftarkan sebagai karyawan baru</strong>.
               </li>
               <li>
+                <strong>NIK (No. KTP) Kependudukan:</strong> Kolom{" "}
+                <code>NIK (No. KTP)</code> adalah nomor KTP 16 digit. Jika
+                diisi, sistem akan otomatis mendaftarkannya ke tab{" "}
+                <em>Identitas & Alamat (Identity & Address)</em> dan profil
+                pajak PPh 21.
+              </li>
+              <li>
+                <strong>NPWP & BPJS Otomatis Terhubung:</strong> Nomor NPWP,
+                BPJS Ketenagakerjaan, dan BPJS Kesehatan yang diisi pada
+                template Excel akan otomatis dicatat ke tab{" "}
+                <em>Identitas & Alamat</em> sekaligus didaftarkan ke profil
+                payroll/penggajian karyawan.
+              </li>
+              <li>
                 <strong>Kolom Wajib Diisi (Bertanda *):</strong> Kolom{" "}
-                <code>NIK / Employee Code*</code>, <code>Nama Depan*</code>,{" "}
+                <code>Employee Code*</code>, <code>Nama Depan*</code>,{" "}
                 <code>Nama Belakang*</code>, <code>Tempat Lahir*</code>,{" "}
                 <code>Tanggal Lahir*</code> (penulisan tahun-bulan-hari:{" "}
                 <code>YYYY-MM-DD</code>, contoh: <code>1992-05-14</code>), dan{" "}
@@ -428,13 +444,12 @@ export default function EmployeeImportPage() {
               </li>
               <li>
                 <strong>Atasan Langsung / Supervisor:</strong> Anda dapat
-                mengisi NIK atau Nama Lengkap atasan pada kolom{" "}
+                mengisi Employee Code atau Nama Lengkap atasan pada kolom{" "}
                 <code>Atasan Langsung / Supervisor</code>. Sesuai aturan sistem,
                 atasan harus merupakan akun yang memiliki wewenang persetujuan
                 (memiliki role <em>Superadmin</em>, <em>Admin</em>, <em>HR</em>,
-                atau <em>Approver</em>). Daftar atasan yang sah dan NIK-nya
-                dapat Anda lihat di sheet kedua (
-                <em>"Pilihan Data & Referensi"</em>).
+                atau <em>Approver</em>). Daftar atasan yang sah dapat Anda lihat
+                di sheet kedua (<em>"Pilihan Data & Referensi"</em>).
               </li>
               <li>
                 <strong>Tips Mengubah Data Lama Lebih Cepat:</strong> Anda dapat
@@ -690,9 +705,15 @@ export default function EmployeeImportPage() {
 
               <Column
                 field="code"
-                header="NIK / Kode Karyawan"
+                header="Employee Code"
                 sortable
                 style={{ width: "9rem" }}
+              />
+              <Column
+                field="nik"
+                header="NIK (No. KTP)"
+                sortable
+                style={{ width: "10rem" }}
               />
               <Column
                 header="Nama Lengkap"

@@ -40,7 +40,7 @@ export const COMPENSATION_TEMPLATE_COLUMNS: Array<{
   required?: boolean;
   width?: number;
 }> = [
-  { header: "NIK / Employee Code*", field: "code", required: true, width: 22 },
+  { header: "Employee Code*", field: "code", required: true, width: 22 },
   { header: "Nama Karyawan (Opsional)", field: "employee_name", width: 26 },
   {
     header: "Tipe Komponen* (TUNJANGAN / POTONGAN)",
@@ -83,7 +83,7 @@ export const COMPENSATION_TEMPLATE_COLUMNS: Array<{
 
 export const SAMPLE_COMPENSATION_ROWS: Record<string, string | number>[] = [
   {
-    "NIK / Employee Code*": "EMP001",
+    "Employee Code*": "EMP001",
     "Nama Karyawan (Opsional)": "Budi Santoso Prasetyo",
     "Tipe Komponen* (TUNJANGAN / POTONGAN)": "TUNJANGAN",
     "Nama / Kode Komponen*": "Tunjangan Transport",
@@ -96,7 +96,7 @@ export const SAMPLE_COMPENSATION_ROWS: Record<string, string | number>[] = [
     "Keterangan / Catatan": "Tunjangan transport operasional",
   },
   {
-    "NIK / Employee Code*": "EMP001",
+    "Employee Code*": "EMP001",
     "Nama Karyawan (Opsional)": "Budi Santoso Prasetyo",
     "Tipe Komponen* (TUNJANGAN / POTONGAN)": "TUNJANGAN",
     "Nama / Kode Komponen*": "Insentif Kehadiran",
@@ -109,7 +109,7 @@ export const SAMPLE_COMPENSATION_ROWS: Record<string, string | number>[] = [
     "Keterangan / Catatan": "Insentif kehadiran bulanan",
   },
   {
-    "NIK / Employee Code*": "EMP001",
+    "Employee Code*": "EMP001",
     "Nama Karyawan (Opsional)": "Budi Santoso Prasetyo",
     "Tipe Komponen* (TUNJANGAN / POTONGAN)": "POTONGAN",
     "Nama / Kode Komponen*": "Potongan Koperasi",
@@ -122,7 +122,7 @@ export const SAMPLE_COMPENSATION_ROWS: Record<string, string | number>[] = [
     "Keterangan / Catatan": "Iuran wajib anggota koperasi",
   },
   {
-    "NIK / Employee Code*": "EMP002",
+    "Employee Code*": "EMP002",
     "Nama Karyawan (Opsional)": "Siti Nurhaliza",
     "Tipe Komponen* (TUNJANGAN / POTONGAN)": "TUNJANGAN",
     "Nama / Kode Komponen*": "Tunjangan Makan",
@@ -452,9 +452,12 @@ export async function parseCompensationSpreadsheet(
     const rowNumber = index + 2;
 
     const code = findValue(row, [
+      "Employee Code*",
+      "Employee Code",
+      "Kode Karyawan",
+      "Kode Pegawai",
       "NIK / Employee Code*",
       "NIK",
-      "Employee Code",
       "Employee ID",
       "NIK Karyawan",
     ]);
@@ -536,9 +539,9 @@ export async function parseCompensationSpreadsheet(
 
     const validationErrors: string[] = [];
 
-    // 1. NIK
+    // 1. Employee Code
     if (!code) {
-      validationErrors.push("NIK / Employee Code wajib diisi.");
+      validationErrors.push("Employee Code wajib diisi.");
     }
 
     // 2. Component Name

@@ -21,7 +21,8 @@ export const TEMPLATE_COLUMNS: Array<{
   required?: boolean;
   width?: number;
 }> = [
-  { header: "NIK / Employee Code*", field: "code", required: true, width: 20 },
+  { header: "Employee Code*", field: "code", required: true, width: 18 },
+  { header: "NIK (No. KTP)", field: "nik", width: 22 },
   { header: "Nama Depan*", field: "first_name", required: true, width: 18 },
   { header: "Nama Tengah", field: "middle_name", width: 18 },
   { header: "Nama Belakang*", field: "last_name", required: true, width: 18 },
@@ -63,7 +64,8 @@ export const TEMPLATE_COLUMNS: Array<{
 
 export const SAMPLE_ROWS: Record<string, string | number>[] = [
   {
-    "NIK / Employee Code*": "EMP001",
+    "Employee Code*": "EMP001",
+    "NIK (No. KTP)": "3201011504900003",
     "Nama Depan*": "Budi",
     "Nama Tengah": "Santoso",
     "Nama Belakang*": "Prasetyo",
@@ -94,7 +96,8 @@ export const SAMPLE_ROWS: Record<string, string | number>[] = [
     "No. BPJS Kesehatan": "00012345678",
   },
   {
-    "NIK / Employee Code*": "EMP002",
+    "Employee Code*": "EMP002",
+    "NIK (No. KTP)": "3201015509950002",
     "Nama Depan*": "Siti",
     "Nama Tengah": "",
     "Nama Belakang*": "Nurhaliza",
@@ -249,7 +252,13 @@ export function exportEmployeesToExcel(
 
   const exportRows = employees.map((emp) => {
     return {
-      "NIK / Employee Code*": String(emp.code || ""),
+      "Employee Code*": String(emp.code || ""),
+      "NIK (No. KTP)": String(
+        (emp as any).nik ||
+          (emp as any).ktp_number ||
+          (emp as any).identity_number ||
+          "",
+      ),
       "Nama Depan*": String(emp.first_name || ""),
       "Nama Tengah": String(emp.middle_name || ""),
       "Nama Belakang*": String(emp.last_name || ""),
@@ -372,7 +381,45 @@ export async function parseEmployeeSpreadsheet(
       return "";
     };
 
-    const code = getVal(["code", "nik"]);
+    const code =
+      getVal([
+        "employeecode",
+        "kodekaryawan",
+        "kodepegawai",
+        "nikemployeecode",
+      ]) ||
+      (() => {
+        for (const key of Object.keys(r)) {
+          const clean = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+          if (clean === "code" || clean === "kode") {
+            return String(r[key] || "").trim();
+          }
+        }
+        return getVal(["code", "nik"]);
+      })();
+
+    const nik =
+      getVal(["noktp", "ktp", "nikktp", "nomorindukkependudukan"]) ||
+      (() => {
+        const hasSeparateCode = Object.keys(r).some((k) => {
+          const c = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+          return (
+            c.includes("employeecode") ||
+            c.includes("kodekaryawan") ||
+            c === "code"
+          );
+        });
+        if (hasSeparateCode) {
+          for (const key of Object.keys(r)) {
+            const clean = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+            if (clean === "nik" || clean === "nonik") {
+              return String(r[key] || "").trim();
+            }
+          }
+        }
+        return "";
+      })();
+
     const firstName = getVal(["namadepan", "firstname", "nama"]);
     const middleName = getVal(["namatengah", "middlename"]);
     const lastName = getVal(["namabelakang", "lastname"]);
@@ -421,7 +468,7 @@ export async function parseEmployeeSpreadsheet(
     }
 
     const validationErrors: string[] = [];
-    if (!code) validationErrors.push("NIK / Kode Karyawan belum diisi");
+    if (!code) validationErrors.push("Employee Code belum diisi");
     if (!firstName) validationErrors.push("Nama Depan belum diisi");
     if (!lastName) validationErrors.push("Nama Belakang belum diisi");
     if (!dob || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
@@ -435,6 +482,7 @@ export async function parseEmployeeSpreadsheet(
 
     result.push({
       code,
+      nik: nik || null,
       first_name: firstName,
       middle_name: middleName || null,
       last_name: lastName,

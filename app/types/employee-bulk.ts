@@ -1,5 +1,6 @@
 export interface EmployeeBulkImportRow {
   code: string;
+  nik?: string | null;
   first_name: string;
   middle_name?: string | null;
   last_name: string;
