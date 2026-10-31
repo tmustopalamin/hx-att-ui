@@ -8,6 +8,7 @@ import { Button } from "primereact/button";
 import { Card } from "primereact/card";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
+import { Sidebar } from "primereact/sidebar";
 import { Tag } from "primereact/tag";
 import { Message } from "primereact/message";
 import { useDispatch, useSelector } from "react-redux";
@@ -76,7 +77,8 @@ const statusSeverity = (
 export default function PayrollBatchDetailData({
   batchId,
 }: PayrollBatchDetailDataProps) {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, locale } = useI18n();
+  const isId = locale === "id";
   const dispatch = useDispatch();
   const { mutate: mutateKey } = useSWRConfig();
   const permissions = useSelector(
@@ -103,6 +105,7 @@ export default function PayrollBatchDetailData({
     getPayrollBatchSourceReadiness(batchId),
   );
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
+  const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const selectedResult = useMemo(
     () =>
       data?.employee_results?.find(
@@ -372,10 +375,20 @@ export default function PayrollBatchDetailData({
             dataKey="id"
             selectionMode="single"
             selection={selectedResult}
-            onSelectionChange={(event) =>
-              setSelectedResultId(
-                (event.value as PayrollEmployeeResultDetail).id,
-              )
+            onSelectionChange={(event) => {
+              if (event.value) {
+                setSelectedResultId(
+                  (event.value as PayrollEmployeeResultDetail).id,
+                );
+                setDrawerVisible(true);
+              }
+            }}
+            onRowClick={(event) => {
+              setSelectedResultId(event.data.id);
+              setDrawerVisible(true);
+            }}
+            rowClassName={() =>
+              "cursor-pointer hover:bg-blue-50/50 transition-colors"
             }
             paginator
             rows={10}
@@ -432,11 +445,52 @@ export default function PayrollBatchDetailData({
                 />
               )}
             />
+            <Column
+              header={isId ? "Aksi" : "Action"}
+              align="center"
+              style={{ width: "5rem" }}
+              body={(row: PayrollEmployeeResultDetail) => (
+                <Button
+                  icon="pi pi-eye"
+                  rounded
+                  text
+                  severity="info"
+                  tooltip={isId ? "Lihat Rincian Gaji" : "View Salary Details"}
+                  aria-label={
+                    isId ? "Lihat Rincian Gaji" : "View Salary Details"
+                  }
+                  className="btn-view-detail"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedResultId(row.id);
+                    setDrawerVisible(true);
+                  }}
+                />
+              )}
+            />
           </DataTable>
         </div>
       </Card>
 
-      {selectedResult && <EmployeeResultPanel result={selectedResult} />}
+      <Sidebar
+        visible={drawerVisible && Boolean(selectedResult)}
+        position="right"
+        onHide={() => setDrawerVisible(false)}
+        className="!w-full sm:!w-[50rem] md:!w-[60rem] lg:!w-[70rem] payroll-employee-drawer"
+        header={
+          <div className="flex items-center gap-2">
+            <i className="pi pi-id-card text-blue-600 text-lg" />
+            <span className="font-semibold text-slate-800 text-base">
+              {isId
+                ? "Transparansi Rincian Gaji Karyawan"
+                : "Employee Salary Transparency Details"}
+            </span>
+          </div>
+        }
+      >
+        {selectedResult && <EmployeeResultPanel result={selectedResult} />}
+      </Sidebar>
+
       <PerformanceEarningPanel
         batchId={data.batch.id}
         batchStatus={data.batch.status}
@@ -464,7 +518,8 @@ function PayrollSourceReadinessPanel({
 }: {
   readiness: PayrollBatchSourceReadiness;
 }) {
-  const { t: i18nT } = useI18n();
+  const { t: i18nT, locale } = useI18n();
+  const isId = locale === "id";
   const statusSeverity = (status: string) => {
     if (status === "READY") return "success" as const;
     if (status === "WARNING") return "warning" as const;
@@ -1200,22 +1255,28 @@ function EmployeeResultPanel({
             value={result.take_home_pay}
             emphasized
           />
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="m-0 text-xs font-medium text-slate-500">
+          <div
+            id="proration-factor-card"
+            className="rounded-lg border border-blue-300 bg-blue-50/70 p-3 proration-factor-card"
+          >
+            <p className="m-0 text-xs font-semibold text-blue-700">
               {i18nT("static.1kc2dwu")}{" "}
             </p>
-            <p className="m-0 mt-1 text-sm font-semibold text-slate-800">
+            <p className="m-0 mt-1 text-sm font-bold text-blue-900">
               {result.proration_factor}
             </p>
           </div>
         </div>
 
         {Object.keys(proration).length > 0 && (
-          <section>
+          <section id="proration-metrics-section">
             <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
               {i18nT("static.1cigod8")}{" "}
             </h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div
+              id="proration-metrics-grid"
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 proration-metrics-grid"
+            >
               <Metric
                 label={i18nT("static.16cmxjk")}
                 value={formatProrationMethod(
@@ -1331,11 +1392,12 @@ function EmployeeResultPanel({
           </section>
         )}
 
-        <section>
+        <section id="payroll-components-section">
           <h3 className="m-0 mb-3 text-sm font-semibold text-slate-800">
             {i18nT("static.168fn3r")}{" "}
           </h3>
           <DataTable
+            id="employee-components-table"
             value={result.components}
             dataKey="id"
             size="small"
@@ -1344,6 +1406,9 @@ function EmployeeResultPanel({
             responsiveLayout="scroll"
             tableStyle={{ minWidth: "46rem" }}
             emptyMessage={i18nT("static.bqd1tu")}
+            rowClassName={(row: PayrollComponentResult) =>
+              row.component_code === "BASIC_SALARY" ? "row-basic-salary" : ""
+            }
           >
             <Column
               field="component_name"
