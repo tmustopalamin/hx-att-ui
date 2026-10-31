@@ -58,6 +58,19 @@ interface PaginatedAttendanceLogResponse {
 type DatePreset =
   "TODAY" | "THIS_WEEK" | "THIS_MONTH" | "LAST_MONTH" | "CUSTOM";
 
+// Safe Coordinate Formatter
+function formatCoords(
+  lat?: number | string | null,
+  lng?: number | string | null,
+): string {
+  if (lat === null || lat === undefined || lng === null || lng === undefined)
+    return "-";
+  const nLat = Number(lat);
+  const nLng = Number(lng);
+  if (isNaN(nLat) || isNaN(nLng)) return "-";
+  return `${nLat.toFixed(4)}, ${nLng.toFixed(4)}`;
+}
+
 export default function AttendanceLogReportData() {
   const { locale } = useI18n();
   const isId = locale === "id";
@@ -581,15 +594,16 @@ export default function AttendanceLogReportData() {
               />
               <Column
                 header={isId ? "Lokasi GPS" : "Location"}
-                body={(row: AttendanceLogItem) =>
-                  row.latitude && row.longitude ? (
+                body={(row: AttendanceLogItem) => {
+                  const coords = formatCoords(row.latitude, row.longitude);
+                  return coords !== "-" ? (
                     <span className="font-mono text-[11px] text-slate-600">
-                      {row.latitude.toFixed(4)}, {row.longitude.toFixed(4)}
+                      {coords}
                     </span>
                   ) : (
                     <span className="text-slate-400">-</span>
-                  )
-                }
+                  );
+                }}
                 style={{ width: "10rem" }}
               />
             </DataTable>
@@ -696,9 +710,7 @@ export default function AttendanceLogReportData() {
                     {row.processed ? "Ya" : "Belum"}
                   </td>
                   <td className="border border-slate-300 p-1 font-mono text-[9px]">
-                    {row.latitude && row.longitude
-                      ? `${row.latitude.toFixed(4)}, ${row.longitude.toFixed(4)}`
-                      : "-"}
+                    {formatCoords(row.latitude, row.longitude)}
                   </td>
                 </tr>
               ))
