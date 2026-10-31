@@ -387,8 +387,8 @@ export default function PayrollBatchDetailData({
               setSelectedResultId(event.data.id);
               setDrawerVisible(true);
             }}
-            rowClassName={() =>
-              "cursor-pointer hover:bg-blue-50/50 transition-colors"
+            rowClassName={(row: PayrollEmployeeResultDetail) =>
+              `cursor-pointer hover:bg-blue-50/50 transition-colors row-emp-${row.employee_code}`
             }
             paginator
             rows={10}
@@ -491,24 +491,32 @@ export default function PayrollBatchDetailData({
         {selectedResult && <EmployeeResultPanel result={selectedResult} />}
       </Sidebar>
 
-      <PerformanceEarningPanel
-        batchId={data.batch.id}
-        batchStatus={data.batch.status}
-      />
-      <HolidayPositionIncentivePanel
-        batchId={data.batch.id}
-        batchStatus={data.batch.status}
-      />
-      {Boolean(data.batch.include_thr) && (
-        <ThrEarningPanel
+      <div id="performance-earning-panel">
+        <PerformanceEarningPanel
           batchId={data.batch.id}
           batchStatus={data.batch.status}
         />
+      </div>
+      <div id="holiday-position-incentive-panel">
+        <HolidayPositionIncentivePanel
+          batchId={data.batch.id}
+          batchStatus={data.batch.status}
+        />
+      </div>
+      {Boolean(data.batch.include_thr) && (
+        <div id="thr-earning-panel">
+          <ThrEarningPanel
+            batchId={data.batch.id}
+            batchStatus={data.batch.status}
+          />
+        </div>
       )}
-      <PayrollAdjustmentPanel
-        batchId={data.batch.id}
-        batchStatus={data.batch.status}
-      />
+      <div id="payroll-adjustment-panel">
+        <PayrollAdjustmentPanel
+          batchId={data.batch.id}
+          batchStatus={data.batch.status}
+        />
+      </div>
     </div>
   );
 }
@@ -1407,7 +1415,7 @@ function EmployeeResultPanel({
             tableStyle={{ minWidth: "46rem" }}
             emptyMessage={i18nT("static.bqd1tu")}
             rowClassName={(row: PayrollComponentResult) =>
-              row.component_code === "BASIC_SALARY" ? "row-basic-salary" : ""
+              `${row.component_code === "BASIC_SALARY" ? "row-basic-salary " : ""}row-component-${row.component_code.toLowerCase().replace(/_/g, "-")}`
             }
           >
             <Column
