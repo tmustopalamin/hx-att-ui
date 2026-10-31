@@ -1279,24 +1279,27 @@ const UserTableData = () => {
   };
 
   const rowClassName = (rowData: UserListRow) => {
+    const base = `row-user-${rowData.username.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
+
     if (rowData.deleted_at) {
-      return "bg-red-50/20 text-slate-500";
+      return `${base} bg-red-50/20 text-slate-500`;
     }
 
     if (!rowData.is_active) {
-      return "bg-slate-50";
+      return `${base} bg-slate-50`;
     }
 
     if (!rowData.employee_id) {
-      return "bg-amber-50/30";
+      return `${base} bg-amber-50/30`;
     }
 
-    return "";
+    return base;
   };
 
   const dialogFooter = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
+        id="btn-cancel-user"
         type="button"
         label={i18nT("static.ew9em3")}
         icon="pi pi-times"
@@ -1308,6 +1311,7 @@ const UserTableData = () => {
       />
 
       <Button
+        id="btn-save-user"
         type="submit"
         form="user-form"
         label={isAddNew ? i18nT("static.1pjr6lw") : i18nT("static.6gmm1l")}
@@ -1354,6 +1358,7 @@ const UserTableData = () => {
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
               {canCreateUser && (
                 <Button
+                  id="btn-refresh-user"
                   type="button"
                   label={i18nT("static.28r6qc")}
                   icon="pi pi-refresh"
@@ -1370,6 +1375,7 @@ const UserTableData = () => {
               )}
 
               <Button
+                id="btn-export-user"
                 type="button"
                 label={i18nT("static.1tpgeic")}
                 icon="pi pi-file-excel"
@@ -1388,6 +1394,7 @@ const UserTableData = () => {
 
               {canCreateUser && (
                 <Button
+                  id="btn-add-user"
                   type="button"
                   label={i18nT("static.1okrgyo")}
                   icon="pi pi-plus"
@@ -1470,6 +1477,7 @@ const UserTableData = () => {
               <InputIcon className="pi pi-search" />
 
               <InputText
+                id="input-search-user"
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
                 placeholder={i18nT("static.ztctil")}
@@ -1481,6 +1489,7 @@ const UserTableData = () => {
           {/* Table */}
           <div className="w-full overflow-hidden">
             <DataTable
+              id="user-datatable"
               value={rows}
               dataKey="id"
               filters={filters}

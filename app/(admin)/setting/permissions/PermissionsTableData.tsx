@@ -670,6 +670,7 @@ const PermissionsTableData = () => {
   const dialogFooter = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
+        id="btn-cancel-permission"
         type="button"
         label={i18nT("static.ew9em3")}
         icon="pi pi-times"
@@ -681,6 +682,7 @@ const PermissionsTableData = () => {
       />
 
       <Button
+        id="btn-save-permission"
         type="submit"
         form="permission-form"
         label={isAddNew ? i18nT("static.w92jc") : i18nT("static.6gmm1l")}
@@ -724,6 +726,7 @@ const PermissionsTableData = () => {
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
+                id="btn-refresh-permission"
                 type="button"
                 label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
@@ -738,6 +741,7 @@ const PermissionsTableData = () => {
 
               {canCreatePermission && (
                 <Button
+                  id="btn-add-permission"
                   type="button"
                   label={i18nT("static.agq3us")}
                   icon="pi pi-plus"
@@ -776,6 +780,7 @@ const PermissionsTableData = () => {
               <InputIcon className="pi pi-search" />
 
               <InputText
+                id="input-search-permission"
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
                 placeholder={i18nT("static.3syr3q")}
@@ -787,6 +792,7 @@ const PermissionsTableData = () => {
           {/* Permission Table */}
           <div className="w-full overflow-hidden">
             <DataTable
+              id="permissions-datatable"
               value={permissionsData ?? []}
               dataKey="id"
               filters={filters}
@@ -798,6 +804,9 @@ const PermissionsTableData = () => {
                 "group_name",
               ]}
               paginator
+              rowClassName={(row: Permissions) =>
+                `row-permission-${row.code.toLowerCase().replace(/[^a-z0-9]/g, "-")}`
+              }
               rows={10}
               rowsPerPageOptions={[10, 25, 50]}
               stripedRows

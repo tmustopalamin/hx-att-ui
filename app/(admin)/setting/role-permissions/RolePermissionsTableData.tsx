@@ -575,6 +575,7 @@ const RolePermissionsTableData = () => {
             </div>
 
             <Button
+              id="btn-refresh-role-permissions"
               type="button"
               label={i18nT("static.28r6qc")}
               icon="pi pi-refresh"
@@ -750,6 +751,7 @@ const RolePermissionsTableData = () => {
                       <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
                         <div className="flex flex-1 gap-2 xl:flex-none">
                           <Button
+                            id="btn-select-all-permissions"
                             type="button"
                             label={i18nT("static.1l0m2oi")}
                             icon="pi pi-check-square"
@@ -766,6 +768,7 @@ const RolePermissionsTableData = () => {
                           />
 
                           <Button
+                            id="btn-unselect-all-permissions"
                             type="button"
                             label={i18nT("static.1oq4azp")}
                             icon="pi pi-times"
@@ -788,6 +791,7 @@ const RolePermissionsTableData = () => {
                           <InputIcon className="pi pi-search" />
 
                           <InputText
+                            id="input-search-permissions"
                             value={permissionSearchValue}
                             onChange={onPermissionSearchChange}
                             placeholder={i18nT("static.10t3ztu")}
@@ -1037,6 +1041,7 @@ const RolePermissionsTableData = () => {
       {selectedRoleCode && isDirty && (
         <div className="fixed bottom-4 right-4 z-50 w-[calc(100%-2rem)] sm:w-auto">
           <Button
+            id="btn-save-role-permissions"
             type="button"
             label={i18nT("static.6gmm1l")}
             icon="pi pi-check"

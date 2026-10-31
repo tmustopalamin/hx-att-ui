@@ -609,6 +609,7 @@ const RoleTableData = () => {
   const dialogFooter = (
     <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
       <Button
+        id="btn-cancel-role"
         type="button"
         label={i18nT("static.ew9em3")}
         icon="pi pi-times"
@@ -620,6 +621,7 @@ const RoleTableData = () => {
       />
 
       <Button
+        id="btn-save-role"
         type="submit"
         form="role-form"
         label={isAddNew ? i18nT("static.lmq4z7") : i18nT("static.6gmm1l")}
@@ -663,6 +665,7 @@ const RoleTableData = () => {
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
               <Button
+                id="btn-refresh-role"
                 type="button"
                 label={i18nT("static.28r6qc")}
                 icon="pi pi-refresh"
@@ -677,11 +680,12 @@ const RoleTableData = () => {
 
               {canCreateRole && (
                 <Button
+                  id="btn-add-role"
                   type="button"
                   label={i18nT("static.14js23r")}
                   icon="pi pi-plus"
                   size="small"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto btn-add-role"
                   onClick={onClickNew}
                 />
               )}
@@ -715,6 +719,7 @@ const RoleTableData = () => {
               <InputIcon className="pi pi-search" />
 
               <InputText
+                id="input-search-role"
                 value={globalFilterValue}
                 onChange={onGlobalFilterChange}
                 placeholder={i18nT("static.41pktm")}
@@ -726,11 +731,15 @@ const RoleTableData = () => {
           {/* Role Table */}
           <div className="w-full overflow-hidden">
             <DataTable
+              id="role-datatable"
               value={roleData ?? []}
               dataKey="id"
               filters={filters}
               globalFilterFields={["code", "name", "description"]}
               paginator
+              rowClassName={(row: Role) =>
+                `row-role-${row.code.toLowerCase().replace(/_/g, "-")}`
+              }
               rows={10}
               rowsPerPageOptions={[10, 25, 50]}
               stripedRows
